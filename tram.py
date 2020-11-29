@@ -69,7 +69,7 @@ async def init(host, port):
     await web.TCPSite(runner, host, port).start()
 
 
-def main(host, port, taxii_local=False, build=False, json_file=None):
+def start(host, port, taxii_local=False, build=False, json_file=None):
     """
     Main function to start app
     :param host: Address to reach webserver on
@@ -88,12 +88,15 @@ def main(host, port, taxii_local=False, build=False, json_file=None):
         pass
 
 
-if __name__ == '__main__':
+def main(external_caller=True):
+    global website_handler, data_svc, ml_svc
+
     logging.getLogger().setLevel('DEBUG')
     logging.info('Welcome to TRAM')
     dao = Dao(os.path.join('database', 'tram.db'))
 
-    with open('conf/config.yml') as c:
+    config_dir = os.path.join("tram", "conf") if external_caller else "conf"
+    with open(os.path.join(config_dir, "config.yml")) as c:
         config = yaml.safe_load(c)
         conf_build = config['build']
         host = config['host']
@@ -115,5 +118,8 @@ if __name__ == '__main__':
     rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao)
     services = dict(dao=dao, data_svc=data_svc, ml_svc=ml_svc, reg_svc=reg_svc, web_svc=web_svc, rest_svc=rest_svc)
     website_handler = WebAPI(services=services)
-    main(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict)
+    start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict)
 
+
+if __name__ == '__main__':
+    main(external_caller=False)
