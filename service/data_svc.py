@@ -1,3 +1,4 @@
+import os
 import re
 import json
 import logging
@@ -18,9 +19,10 @@ def defang_text(text):
 
 class DataService:
 
-    def __init__(self, dao, web_svc):
+    def __init__(self, dao, web_svc, externally_called=False):
         self.dao = dao
         self.web_svc = web_svc
+        self.externally_called = externally_called
 
     async def reload_database(self, schema='conf/schema.sql'):
         """
@@ -28,6 +30,7 @@ class DataService:
         :param schema: SQL schema file to build database from
         :return: nil
         """
+        schema = os.path.join('tram', schema) if self.externally_called else schema
         with open(schema) as schema:
             await self.dao.build((schema.read()))
 

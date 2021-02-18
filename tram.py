@@ -17,6 +17,7 @@ from service.rest_svc import RestService
 
 from database.dao import Dao
 
+externally_called = False
 
 @asyncio.coroutine
 async def background_tasks(taxii_local='online', build=False, json_file=None):
@@ -60,16 +61,18 @@ async def init(host, port):
     app.router.add_route('*', '/rest', website_handler.rest_api)
     app.router.add_route('GET', '/export/pdf/{file}', website_handler.pdf_export)
     app.router.add_route('GET', '/export/nav/{file}', website_handler.nav_export)
-    app.router.add_static('/theme/', 'webapp/theme/')
+    webapp_dir = os.path.join('tram', 'webapp') if externally_called else 'webapp'
+    logging.info('webapp dir is %s' % (webapp_dir))
+    app.router.add_static('/theme/', os.path.join(webapp_dir, 'theme'))
 
-    aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('webapp/html'))
+    aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(os.path.join(webapp_dir, 'html')))
 
     runner = web.AppRunner(app)
     await runner.setup()
     await web.TCPSite(runner, host, port).start()
 
 
-def main(host, port, taxii_local=False, build=False, json_file=None):
+def start(host, port, taxii_local=False, build=False, json_file=None):
     """
     Main function to start app
     :param host: Address to reach webserver on
@@ -88,12 +91,19 @@ def main(host, port, taxii_local=False, build=False, json_file=None):
         pass
 
 
-if __name__ == '__main__':
+def main(external_caller=True):
+    global website_handler, data_svc, ml_svc, externally_called
+
     logging.getLogger().setLevel('DEBUG')
     logging.info('Welcome to TRAM')
-    dao = Dao(os.path.join('database', 'tram.db'))
 
-    with open('conf/config.yml') as c:
+    externally_called = external_caller
+    db_path = os.path.join('database', 'tram.db')
+    db_path = os.path.join('tram', db_path) if external_caller else db_path
+    config_dir = os.path.join('tram', 'conf') if external_caller else 'conf'
+    dao = Dao(db_path)
+
+    with open(os.path.join(config_dir, 'config.yml')) as c:
         config = yaml.safe_load(c)
         conf_build = config['build']
         host = config['host']
@@ -104,16 +114,19 @@ if __name__ == '__main__':
 
         if conf_build:
             if taxii_local == 'local-json' and bool(os.path.isfile(json_file)):
-                logging.debug("Will build model from static file")
+                logging.debug('Will build model from static file')
                 attack_dict = os.path.abspath(json_file)
 
     # Start services and initiate main function
     web_svc = WebService()
     reg_svc = RegService(dao=dao)
-    data_svc = DataService(dao=dao, web_svc=web_svc)
+    data_svc = DataService(dao=dao, web_svc=web_svc, externally_called=external_caller)
     ml_svc = MLService(web_svc=web_svc, dao=dao)
     rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao)
     services = dict(dao=dao, data_svc=data_svc, ml_svc=ml_svc, reg_svc=reg_svc, web_svc=web_svc, rest_svc=rest_svc)
     website_handler = WebAPI(services=services)
-    main(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict)
+    start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict)
 
+
+if __name__ == '__main__':
+    main(external_caller=False)
