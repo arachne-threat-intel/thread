@@ -1,11 +1,14 @@
-import json
 import asyncio
-from io import StringIO
+import json
+import os
 import pandas as pd
+
+from io import StringIO
+
 
 class RestService:
 
-    def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao):
+    def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, externally_called=False):
         self.dao = dao
         self.data_svc = data_svc
         self.web_svc = web_svc
@@ -13,6 +16,7 @@ class RestService:
         self.reg_svc = reg_svc
         self.queue = asyncio.Queue() # task queue
         self.resources = [] # resource array
+        self.externally_called = externally_called
 
     async def false_negative(self, criteria=None):
         sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
@@ -131,7 +135,9 @@ class RestService:
 
     async def start_analysis(self, criteria=None):
         tech_data = await self.dao.get('attack_uids')
-        json_tech = json.load(open("models/attack_dict.json", "r", encoding="utf_8"))
+        attack_dict_loc = 'models/attack_dict.json'
+        attack_dict_loc = os.path.join('tram', attack_dict_loc) if self.externally_called else attack_dict_loc
+        json_tech = json.load(open(attack_dict_loc, 'r', encoding='utf_8'))
         techniques = {}
         for row in tech_data:
             await asyncio.sleep(0.01)

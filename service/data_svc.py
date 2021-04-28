@@ -2,8 +2,14 @@ import os
 import re
 import json
 import logging
-from taxii2client import Collection
 from stix2 import TAXIICollectionSource, Filter
+
+try:
+    # This is the appropriate import for Python 3.9; this might fail in older Python versions
+    from taxii2client.v20 import Collection
+except ModuleNotFoundError:
+    # The original import statement used in case of error
+    from taxii2client import Collection
 
 
 def defang_text(text):

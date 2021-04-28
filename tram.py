@@ -122,7 +122,7 @@ def main(external_caller=True):
     reg_svc = RegService(dao=dao)
     data_svc = DataService(dao=dao, web_svc=web_svc, externally_called=external_caller)
     ml_svc = MLService(web_svc=web_svc, dao=dao)
-    rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao)
+    rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao, externally_called=external_caller)
     services = dict(dao=dao, data_svc=data_svc, ml_svc=ml_svc, reg_svc=reg_svc, web_svc=web_svc, rest_svc=rest_svc)
     website_handler = WebAPI(services=services)
     start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict)
