@@ -6,7 +6,7 @@ import logging
 from stix2 import TAXIICollectionSource, Filter
 
 try:
-    # This is the appropriate import for Python 3.9; this might fail in older Python versions
+    # This is the appropriate import for taxii-client v2.x; this might fail in older taxii-client versions
     from taxii2client.v20 import Collection
 except ModuleNotFoundError:
     # The original import statement used in case of error
