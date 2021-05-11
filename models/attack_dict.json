@@ -330,7 +330,7 @@
       "has been known to dump credentials."
     ],
     "id": "T1003",
-    "name": "Credential Dumping",
+    "name": "OS Credential Dumping",
     "similar_words": [
       "Credential Dumping"
     ]

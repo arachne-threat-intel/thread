@@ -1,2 +1,5 @@
 __pycache__/
+# Local database file
 database/tram.db
+# Pre-trained models
+models/model_dict.p
