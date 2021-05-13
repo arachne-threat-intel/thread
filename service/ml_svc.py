@@ -141,8 +141,8 @@ class MLService:
             try:
                 cv, logreg = model_dict[i]
             except KeyError:  # Report to user if a model can't be retrieved
-                logging.warning(' '.join(('Technique', i, 'has no model to analyse with. You can try deleting/moving '
-                                                          'models/model_dict.p to trigger re-build of models.')))
+                logging.warning('Technique \'' + i + '\' has no model to analyse with. You can try deleting/moving '
+                                                     'models/model_dict.p to trigger re-build of models.')
                 # Skip this technique and move onto the next one
                 continue
             final_df = await self.analyze_document(cv, logreg, list_of_sentences)
@@ -171,9 +171,9 @@ class MLService:
                     attack_uid = await self.dao.get('attack_uids', dict(uid=similar_word[0]['attack_uid']))
             # If the attack has still not been retrieved, report to user that this cannot be saved against the sentence
             if not attack_uid:
-                logging.warning(' '.join(('Sentence ID:', sentence_id, 'ML Technique', technique, 'could not be'
-                                          + ' retrieved from the database; cannot save this technique\'s association '
-                                            'with the sentence.')))
+                logging.warning(' '.join(('Sentence ID:', str(sentence_id), 'ML Technique:', technique, '- Technique'
+                                          + 'could not be retrieved from the database; cannot save this technique\'s '
+                                            'association with the sentence.')))
                 # Skip this technique and continue with the next one
                 continue
             attack_technique = attack_uid[0]['uid']
