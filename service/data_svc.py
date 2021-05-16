@@ -2,8 +2,16 @@ import os
 import re
 import json
 import logging
-from taxii2client import Collection
+import uuid
+
 from stix2 import TAXIICollectionSource, Filter
+
+try:
+    # This is the appropriate import for taxii-client v2.x; this might fail in older taxii-client versions
+    from taxii2client.v20 import Collection
+except ModuleNotFoundError:
+    # The original import statement used in case of error
+    from taxii2client import Collection
 
 
 def defang_text(text):
@@ -98,11 +106,13 @@ class DataService:
                 await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v['description']), tid=v['id'],
                                                           name=v['name']))
                 if 'regex_patterns' in v:
-                    [await self.dao.insert('regex_patterns', dict(uid=k, regex_pattern=defang_text(x))) for x in
-                     v['regex_patterns']]
+                    [await self.dao.insert('regex_patterns', dict(uid=str(uuid.uuid4()), attack_uid=k,
+                                                                  regex_pattern=defang_text(x)))
+                     for x in v['regex_patterns']]
                 if 'similar_words' in v:
-                    [await self.dao.insert('similar_words', dict(uid=k, similar_word=defang_text(x))) for x in
-                     v['similar_words']]
+                    [await self.dao.insert('similar_words', dict(uid=str(uuid.uuid4()), attack_uid=k,
+                                                                 similar_word=defang_text(x)))
+                     for x in v['similar_words']]
                 if 'false_negatives' in v:
                     [await self.dao.insert('false_negatives', dict(uid=k, false_negative=defang_text(x))) for x in
                      v['false_negatives']]

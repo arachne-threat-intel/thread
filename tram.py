@@ -19,7 +19,7 @@ from database.dao import Dao
 
 externally_called = False
 
-@asyncio.coroutine
+
 async def background_tasks(taxii_local='online', build=False, json_file=None):
     """
     Function to run background tasks at startup
@@ -43,7 +43,6 @@ async def background_tasks(taxii_local='online', build=False, json_file=None):
             await data_svc.insert_attack_json_data(json_file)
 
 
-@asyncio.coroutine
 async def init(host, port):
     """
     Function to initialize the aiohttp app
@@ -91,7 +90,7 @@ def start(host, port, taxii_local=False, build=False, json_file=None):
         pass
 
 
-def main(external_caller=True):
+def main(external_caller=False):
     global website_handler, data_svc, ml_svc, externally_called
 
     logging.getLogger().setLevel('DEBUG')
@@ -121,12 +120,12 @@ def main(external_caller=True):
     web_svc = WebService()
     reg_svc = RegService(dao=dao)
     data_svc = DataService(dao=dao, web_svc=web_svc, externally_called=external_caller)
-    ml_svc = MLService(web_svc=web_svc, dao=dao)
-    rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao)
+    ml_svc = MLService(web_svc=web_svc, dao=dao, externally_called=external_caller)
+    rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao, externally_called=external_caller)
     services = dict(dao=dao, data_svc=data_svc, ml_svc=ml_svc, reg_svc=reg_svc, web_svc=web_svc, rest_svc=rest_svc)
     website_handler = WebAPI(services=services)
     start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict)
 
 
 if __name__ == '__main__':
-    main(external_caller=False)
+    main()

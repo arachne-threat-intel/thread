@@ -1,11 +1,14 @@
-import json
 import asyncio
-from io import StringIO
+import json
+import os
 import pandas as pd
+
+from io import StringIO
+
 
 class RestService:
 
-    def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao):
+    def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, externally_called=False):
         self.dao = dao
         self.data_svc = data_svc
         self.web_svc = web_svc
@@ -13,6 +16,7 @@ class RestService:
         self.reg_svc = reg_svc
         self.queue = asyncio.Queue() # task queue
         self.resources = [] # resource array
+        self.externally_called = externally_called
 
     async def false_negative(self, criteria=None):
         sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
@@ -102,12 +106,12 @@ class RestService:
         await asyncio.sleep(0.01)
 
     async def check_queue(self):
-        '''
+        """
         description: executes as concurrent job, manages taking jobs off the queue and executing them.
         If a job is already being processed, wait until that job is done, then execute next job on queue.
         input: nil
         output: nil
-        '''
+        """
         for task in range(len(self.resources)):  # check resources for finished tasks
             if self.resources[task].done():
                 del self.resources[task]  # delete finished tasks
@@ -131,7 +135,10 @@ class RestService:
 
     async def start_analysis(self, criteria=None):
         tech_data = await self.dao.get('attack_uids')
-        json_tech = json.load(open("models/attack_dict.json", "r", encoding="utf_8"))
+        attack_dict_loc = 'models/attack_dict.json'
+        attack_dict_loc = os.path.join('tram', attack_dict_loc) if self.externally_called else attack_dict_loc
+        with open(attack_dict_loc, 'r', encoding='utf_8') as attack_dict_f:
+            json_tech = json.load(attack_dict_f)
         techniques = {}
         for row in tech_data:
             await asyncio.sleep(0.01)
@@ -176,7 +183,7 @@ class RestService:
 
         # update card to reflect the end of queue
         await self.dao.update('reports', 'title', criteria['title'], dict(current_status='needs_review'))
-        temp = await self.dao.get('reports',dict(title=criteria['title']))
+        temp = await self.dao.get('reports', dict(title=criteria['title']))
         criteria['id'] = temp[0]['uid']
         # criteria['id'] = await self.dao.update('reports', dict(title=criteria['title'], url=criteria['url'],current_status="needs_review"))
         report_id = criteria['id']
