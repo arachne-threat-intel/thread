@@ -3,9 +3,7 @@ import re
 import json
 import logging
 import uuid
-import zlib
 
-from base64 import urlsafe_b64encode as b64encode, urlsafe_b64decode as b64decode
 from stix2 import TAXIICollectionSource, Filter
 
 try:
@@ -14,10 +12,6 @@ try:
 except ModuleNotFoundError:
     # The original import statement used in case of error
     from taxii2client import Collection
-
-# Obfuscate modes for obfuscation methods
-OBFUSCATE = 1
-DEOBFUSCATE = 2
 
 
 def defang_text(text):
@@ -29,43 +23,6 @@ def defang_text(text):
     text = text.replace("'", "''")
     text = text.replace('"', '""')
     return text
-
-
-def _obfuscate(given_id, mode=OBFUSCATE, return_int=False):
-    """
-    Function to obfuscate or de-obfuscate a given ID
-    :param given_id: ID to obfuscate or de-obfuscate
-    :param mode: Whether we are obfuscating or de-obfuscating
-    :param return_int: Whether to return a de-obfuscated ID as an int
-    :return: Obfuscated or De-obfuscated ID
-    """
-    # If no ID has been given, return None
-    if given_id is None:
-        return None
-    # If we do not have a string ID, convert to string; this is so encode() can be called
-    if not isinstance(given_id, str):
-        given_id = str(given_id)
-    result = None
-    # Execute obfuscation if that is the specified mode
-    if mode == OBFUSCATE:
-        # zlib.compress works with bytes so encode() is called
-        # Overall method returns bytes so decode() is called to return string
-        result = b64encode(zlib.compress(given_id.encode())).decode()
-    # Else if we are de-obfuscating...
-    if mode == DEOBFUSCATE:
-        # Attempt to do so, may fail if string is not decompress-able
-        try:
-            result = zlib.decompress(b64decode(given_id.encode())).decode()
-        except zlib.error as e:
-            logging.error(' '.join(('Error de-obfuscating ID', given_id, str(e))))
-        # Apply int-conversion if requested
-        if return_int:
-            try:
-                result = int(result)
-            except ValueError as e:
-                logging.warning(' '.join(('Error converting de-obfuscated ID', given_id, 'to int', str(e))))
-    # Return final result
-    return result
 
 
 class DataService:
@@ -293,11 +250,3 @@ class DataService:
             except:
                 print(v)
         return list_of_legacy, list_of_techs
-
-    @staticmethod
-    def obfuscate_id(given_id):
-        return _obfuscate(given_id)
-
-    @staticmethod
-    def deobfuscate_id(obfuscated, return_int=False):
-        return _obfuscate(obfuscated, mode=DEOBFUSCATE, return_int=return_int)
