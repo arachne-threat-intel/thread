@@ -239,6 +239,61 @@ class DataService:
         # Return the list of confirmed techniques
         return techniques
 
+    async def get_unique_title(self, title):
+        """
+        Function to retrieve a unique title whilst checking for a given title in the database.
+        :param title: The current title to check for duplicates in the database.
+        :return: A title that will be unique in the reports table of the database.
+        """
+        # Check for any duplicates of the given title
+        existing = await self.dao.get('reports', dict(title=title))
+        # If there is already a report with this title...
+        if existing:
+            # Search for duplicates in the reports table like title_1, title_2, etc
+            # Using 'like' operator means any literal %s and _s need to be escaped
+            title_escaped = title.replace('%', '\\%').replace('_', '\\_')
+            # The query with a qmark placeholder for the title and stating an escape character is used
+            query = 'SELECT * FROM reports WHERE title LIKE ? ESCAPE \'\\\';'
+            # Run the query with the escaped-title as a parameter plus a _X suffix
+            underscore_hits = await self.dao.raw_select(query, parameters=(f'{title_escaped}\\_%',))
+            # If we have matches...
+            if underscore_hits:
+                # Collect all the numerical suffixes
+                suffixes = set()
+                # Collect them by iterating through each matched report...
+                for match in underscore_hits:
+                    match_title = match.get('title')
+                    if match_title:
+                        # and obtaining substring in title after last occurrence of _
+                        suffix = match_title.rpartition('_')[-1]
+                        # Add this to the suffixes list if it's a number else skip to next match
+                        try:
+                            suffixes.add(int(suffix))
+                        except ValueError:
+                            pass
+                # If we have numerical suffixes...
+                if suffixes:
+                    # Get the range from 1 to the max suffix number collected (+1 as range() doesn't include this)
+                    true_range = set(range(1, max(suffixes) + 1))
+                    # See what numbers are missing from the collected suffixes by doing a difference with the sets
+                    suffix_diff = true_range - suffixes
+                    # If there is a difference, the next number will be the minimum in this set
+                    if suffix_diff:
+                        return title + '_' + str(min(suffix_diff))
+                    # If there is no difference, all numbers in the range are found as suffixes with title
+                    # so return the next number along from suffixes
+                    else:
+                        return title + '_' + str(max(suffixes) + 1)
+                # Else there were no numerical suffixes so can return title_1
+                else:
+                    return title + '_1'
+            # Else no matches on suffix (title_X) so can return title_1
+            else:
+                return title + '_1'
+        # Else no reports currently have this title so the title can be used as is
+        else:
+            return title
+
     async def ml_reg_split(self, techniques):
         list_of_legacy, list_of_techs = [], []
         for k, v in techniques.items():

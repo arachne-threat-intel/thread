@@ -6,6 +6,9 @@ class Attack:
     def __init__(self, database):
         self.database = database
 
+    # TODO check any execute() calls have parameters where strings have been formatted
+    # e.g. sql += (' AND %s = "%s"' % (k, v)) in get()
+
     async def build(self, schema):
         try:
             with sqlite3.connect(self.database) as conn:
@@ -71,11 +74,14 @@ class Attack:
             conn.commit()
             return rv[0] if rv else None if one else rv
 
-    async def raw_select(self, sql):
+    async def raw_select(self, sql, parameters=None):
         with sqlite3.connect(self.database) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute(sql)
+            if parameters is None:
+                cursor.execute(sql)
+            else:
+                cursor.execute(sql, parameters)
             rows = cursor.fetchall()
             return [dict(ix) for ix in rows]
 

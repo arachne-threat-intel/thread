@@ -14,8 +14,8 @@ class RestService:
         self.web_svc = web_svc
         self.ml_svc = ml_svc
         self.reg_svc = reg_svc
-        self.queue = asyncio.Queue() # task queue
-        self.resources = [] # resource array
+        self.queue = asyncio.Queue()  # task queue
+        self.resources = []  # resource array
         self.externally_called = externally_called
 
     async def false_negative(self, criteria=None):
@@ -87,19 +87,18 @@ class RestService:
         # criteria['id'] = await self.dao.insert('reports', dict(title=criteria['title'], url=criteria['url'],
         #                                                       current_status="needs_review"))
         for i in range(len(criteria['title'])):
-            temp_dict = dict(title=criteria['title'][i], url=criteria['url'][i],current_status="queue")
+            criteria['title'][i] = await self.data_svc.get_unique_title(criteria['title'][i])
+            temp_dict = dict(title=criteria['title'][i], url=criteria['url'][i], current_status="queue")
             temp_dict['id'] = await self.dao.insert('reports', temp_dict)
             await self.queue.put(temp_dict)
-        # criteria = dict(title=criteria['title'], url=criteria['url'],current_status="needs_review")
-        # await self.queue.put(criteria)
-        asyncio.create_task(self.check_queue()) # check queue background task
+        asyncio.create_task(self.check_queue())  # check queue background task
         await asyncio.sleep(0.01)
 
-    async def insert_csv(self,criteria=None):
+    async def insert_csv(self, criteria=None):
         file = StringIO(criteria['file'])
         df = pd.read_csv(file)
         for row in range(df.shape[0]):
-            temp_dict = dict(title=df['title'][row],url=df['url'][row],current_status="queue")
+            temp_dict = dict(title=df['title'][row], url=df['url'][row], current_status="queue")
             temp_dict['id'] = await self.dao.insert('reports', temp_dict)
             await self.queue.put(temp_dict)
         asyncio.create_task(self.check_queue())

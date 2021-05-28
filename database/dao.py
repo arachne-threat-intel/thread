@@ -26,5 +26,5 @@ class Dao:
     async def raw_query(self, query, one=False):
         return await self.db.raw_query(query, one)
         
-    async def raw_select(self, query):
-        return await self.db.raw_select(query)
+    async def raw_select(self, query, parameters=None):
+        return await self.db.raw_select(query, parameters=parameters)
