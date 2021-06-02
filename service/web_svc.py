@@ -1,12 +1,14 @@
-import requests
-from nltk.corpus import stopwords
-import re
-import nltk
-import newspaper
-from nltk.stem import SnowballStemmer
-from html2text import html2text
-from bs4 import BeautifulSoup
 import asyncio
+import newspaper
+import nltk
+import re
+import requests
+
+from bs4 import BeautifulSoup
+from html2text import html2text
+from lxml import etree
+from nltk.corpus import stopwords
+from nltk.stem import SnowballStemmer
 
 
 class WebService:
@@ -18,7 +20,7 @@ class WebService:
         results, plaintext, htmltext, images, seen_images = [], [], [], [], []
         images = await self._collect_all_images(a.images)
         plaintext = await self._extract_text_as_list(a.text)
-        htmltext = await self._extract_html_as_list(a.article_html)
+        htmltext = self._extract_html_as_list(a.article_html)
 
         # Loop through pt one by one, matching its line with a forward-advancing pointer on the html
         counter = 0
@@ -30,7 +32,7 @@ class WebService:
             image_found = False
             for forward_advancer in range(counter, len(htmltext)):
                 if 'src=' in htmltext[forward_advancer] and htmltext[forward_advancer] not in seen_images and image_found is False:
-                    # Found an image, put it in data but don't advance incase there's text.
+                    # Found an image, put it in data but don't advance in case there's text.
                     soup = BeautifulSoup(htmltext[forward_advancer], 'html.parser')
                     source = soup.img['src']
                     img_dict = await self._match_and_construct_img(images, source)
@@ -180,11 +182,13 @@ class WebService:
         return plaintext
 
     @staticmethod
-    async def _extract_html_as_list(html_doc):
-        htmltext = []
-        for html_line in html_doc.split('\n'):
-            htmltext.append(html_line)
-        return htmltext
+    def _extract_html_as_list(html_doc):
+        # newspaper uses etree.tostring() to produce html as string; get its etree form
+        doc_as_etree = etree.fromstring(html_doc)
+        # Keep all elements that have child nodes, have text or are images
+        filtered = [element for element in doc_as_etree if element.text or len(element) or element.tag == 'img']
+        # Then return the filtered elements as a string list
+        return [etree.tostring(element, method='html').decode() for element in filtered]
 
     @staticmethod
     async def _match_and_construct_img(images, source):
