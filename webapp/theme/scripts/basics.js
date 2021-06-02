@@ -228,5 +228,7 @@ function addMissingTechnique(){
     uid = $("#missingTechniqueSelect :selected").val();
     restRequest('POST', {'index':'missing_technique', 'sentence_id': sentence_id, 'attack_uid':uid, 'element_tag':element_clicked_tag}, show_info);
     restRequest('POST', {'index':'confirmed_sentences', 'sentence_id': sentence_id, 'element_tag':element_clicked_tag}, updateConfirmedContext);
+    // If an attack has been added to a temporarily highlighted sentence, the highlighting isn't temporary anymore
+    tempHighlighted = undefined
 }
 
