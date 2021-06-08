@@ -7,7 +7,7 @@ import requests
 
 from bs4 import BeautifulSoup
 from html2text import html2text
-from lxml import etree
+from lxml import etree, html
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 
@@ -30,47 +30,55 @@ class WebService:
         a = newspaper.Article(url_input, keep_article_html=True)
         a.download()
         a.parse()
-        results, plaintext, htmltext, images, seen_images = [], [], [], [], []
+        results, plaintext, images, seen_images = [], [], [], []
         images = await self._collect_all_images(a.images)
         plaintext = await self._extract_text_as_list(a.text)
-        htmltext = self._extract_html_as_list(a.article_html)
+        html_elements, htmltags, htmltext = self._extract_html_as_list(a.article_html)
 
         # Loop through pt one by one, matching its line with a forward-advancing pointer on the html
         counter = 0
-        for pt in plaintext:
+        # Any plaintext which we haven't mapped
+        missing_pt = set()
+        for pt_idx, pt in enumerate(plaintext):
             await asyncio.sleep(0.01)
             words = pt.split(' ')
             first_word = words[0]
             text_match_found = False
             image_found = False
-            for forward_advancer in range(counter, len(htmltext)):
-                if 'src=' in htmltext[forward_advancer] and htmltext[forward_advancer] not in seen_images and image_found is False:
+            # Check if we can immediately find a plaintext match
+            if pt.strip() in htmltext:
+                text_match_found = True
+                # Append to results by passing its corresponding html tag
+                results.append(self._construct_text_dict(pt, htmltags[htmltext.index(pt)]))
+            # Loop through the html elements to process images and text (if we didn't find the plaintext)
+            for forward_advancer in range(counter, len(html_elements)):
+                if 'src=' in html_elements[forward_advancer] and html_elements[forward_advancer] not in seen_images and image_found is False:
                     # Found an image, put it in data but don't advance in case there's text.
-                    soup = BeautifulSoup(htmltext[forward_advancer], 'html.parser')
+                    soup = BeautifulSoup(html_elements[forward_advancer], 'html.parser')
                     source = soup.img['src']
                     img_dict = await self._match_and_construct_img(images, source)
 
                     results.append(img_dict)
                     seen_images.append(source)
                     image_found = True
-        
-                if first_word in htmltext[forward_advancer]:
+                if first_word in htmltext[forward_advancer] and not text_match_found:
                     # Found the matching word, put the text into the data.
-                    res_dict = dict()
-                    if '<h' in htmltext[forward_advancer]:
-                        res_dict = await self._construct_text_dict(pt, 'header')
-                    elif '<li' in htmltext[forward_advancer]:
-                        res_dict = await self._construct_text_dict(pt, 'li')
-                    else: 
-                        res_dict = await self._construct_text_dict(pt, 'p')
-                    results.append(res_dict)
+                    results.append(self._construct_text_dict(pt, htmltags[forward_advancer]))
                     counter = forward_advancer + 1
                     text_match_found = True
                     break
-            if image_found is True and text_match_found is False:
-                # Didn't find matching text, but found an image. Image is misplaced.
-                seen_images = seen_images[:-1]
-                results = results[:-1]
+            # Tidy up depending on if images or text were found
+            if not text_match_found:
+                if image_found:
+                    # Didn't find matching text, but found an image. Image is misplaced.
+                    seen_images = seen_images[:-1]
+                    results = results[:-1]
+                # Make a note of this missing text to map later
+                missing_pt.add(pt_idx)
+                results.append({})
+        # Before returning final results, add any missing text with default <p> tags
+        for pt_idx in missing_pt:
+            results[pt_idx] = self._construct_text_dict(plaintext[pt_idx], 'p')
         return results
 
     async def build_final_html(self, original_html, sentences):
@@ -214,12 +222,35 @@ class WebService:
 
     @staticmethod
     def _extract_html_as_list(html_doc):
-        # newspaper uses etree.tostring() to produce html as string; get its etree form
-        doc_as_etree = etree.fromstring(html_doc)
+        """Get list of html data given a html string.
+        :param html_doc: the html string.
+        :return: Three lists: 1. the list of html elements as strings.
+                2. the tag of each html element.
+                3. the list of texts for each html element.
+                Each list will be the same length.
+        """
+        # Get the html element object based on the provided string
+        html_parsed = html.fromstring(html_doc)
         # Keep all elements that have child nodes, have text or are images
-        filtered = [element for element in doc_as_etree if element.text or len(element) or element.tag == 'img']
-        # Then return the filtered elements as a string list
-        return [etree.tostring(element, method='html').decode() for element in filtered]
+        filtered = [element for element in html_parsed if element.text or len(element) or element.tag == 'img']
+        # Set up the three lists for the elements, tags and text
+        html_elements, html_tags_list, html_text_list = [], [], []
+        # Iterate through each element and populate the three lists
+        for element in filtered:
+            # element as string including the tags
+            element_as_text = etree.tostring(element, method='html').decode()
+            html_elements.append(element_as_text)
+            # element's text content (without tags)
+            html_text_list.append(str(element.text_content()).strip())
+            # tram currently supports these types of tags, populate the tag list with one of these
+            if '<h' in element_as_text:
+                html_tags_list.append('header')
+            elif '<li' in element_as_text:
+                html_tags_list.append('li')
+            else:
+                html_tags_list.append('p')
+        # Return the three lists
+        return html_elements, html_tags_list, html_text_list
 
     @staticmethod
     async def _match_and_construct_img(images, source):
@@ -235,7 +266,7 @@ class WebService:
         return img_dict
 
     @staticmethod
-    async def _construct_text_dict(plaintext, tag):
+    def _construct_text_dict(plaintext, tag):
         res_dict = dict()
         res_dict['text'] = plaintext
         res_dict['tag'] = tag
