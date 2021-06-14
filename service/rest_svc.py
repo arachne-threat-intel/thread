@@ -171,7 +171,7 @@ class RestService:
 
         true_negatives = await self.ml_svc.get_true_negs()
         # Here we build the sentence dictionary
-        html_sentences = await self.web_svc.tokenize_sentence(article['html_text'])
+        html_sentences = self.web_svc.tokenize_sentence(article['html_text'])
         model_dict = await self.ml_svc.build_pickle_file(list_of_techs, json_tech, true_negatives)
 
         ml_analyzed_html = await self.ml_svc.analyze_html(list_of_techs, model_dict, html_sentences)
@@ -199,7 +199,7 @@ class RestService:
         for element in original_html:
             html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'], found_status="false")
             await self.dao.insert('original_html', html_element)
-        logging.info('Finished analysing report ' + report_id)
+        logging.info('Finished analysing report ' + str(report_id))
 
     async def missing_technique(self, criteria=None):
         # Get the attack information for this attack id
