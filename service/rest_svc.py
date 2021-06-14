@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import pandas as pd
 
@@ -198,6 +199,7 @@ class RestService:
         for element in original_html:
             html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'], found_status="false")
             await self.dao.insert('original_html', html_element)
+        logging.info('Finished analysing report ' + report_id)
 
     async def missing_technique(self, criteria=None):
         # Get the attack information for this attack id

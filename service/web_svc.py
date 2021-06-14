@@ -14,7 +14,7 @@ from nltk.stem import SnowballStemmer
 # The different ways a sentence can end
 SENTENCE_DELIMITERS = ['.', '!', '?']
 # A sentence may also have these characters after a delimiter (e.g. end of a quote)
-OPTIONAL_SENTENCE_DELIMITERS = ['"', '\'']
+OPTIONAL_SENTENCE_DELIMITERS = ['"', '\'', '”', '’']
 # Build a regex to detect these delimiters by `([part-1][part-2]?\s)`
 # part-1 -> there must be an occurrence of one of these delimiters
 # part-2 -> optional: there might be an occurrence of one of these delimiters; add ? after this
@@ -39,17 +39,9 @@ class WebService:
         counter = 0
         # Any plaintext which we haven't mapped
         missing_pt = set()
-        for pt_idx, pt in enumerate(plaintext):
-            await asyncio.sleep(0.01)
-            words = pt.split(' ')
-            first_word = words[0]
+        for pt in plaintext:
             text_match_found = False
             image_found = False
-            # Check if we can immediately find a plaintext match
-            if pt.strip() in htmltext:
-                text_match_found = True
-                # Append to results by passing its corresponding html tag
-                results.append(self._construct_text_dict(pt, htmltags[htmltext.index(pt)]))
             # Loop through the html elements to process images and text (if we didn't find the plaintext)
             for forward_advancer in range(counter, len(html_elements)):
                 if 'src=' in html_elements[forward_advancer] and html_elements[forward_advancer] not in seen_images and image_found is False:
@@ -57,15 +49,18 @@ class WebService:
                     soup = BeautifulSoup(html_elements[forward_advancer], 'html.parser')
                     source = soup.img['src']
                     img_dict = await self._match_and_construct_img(images, source)
-
-                    results.append(img_dict)
-                    seen_images.append(source)
-                    image_found = True
-                if first_word in htmltext[forward_advancer] and not text_match_found:
-                    # Found the matching word, put the text into the data.
-                    results.append(self._construct_text_dict(pt, htmltags[forward_advancer]))
-                    counter = forward_advancer + 1
-                    text_match_found = True
+                    if img_dict['text'] not in seen_images:
+                        results.append(img_dict)
+                        seen_images.append(source)
+                        image_found = True
+                for temp in [pt, pt.strip()]:
+                    if temp == htmltext[forward_advancer]:
+                        # Found the matching word, put the text into the data.
+                        results.append(self._construct_text_dict(temp, htmltags[forward_advancer]))
+                        counter = forward_advancer + 1
+                        text_match_found = True
+                        break
+                if text_match_found:
                     break
             # Tidy up depending on if images or text were found
             if not text_match_found:
@@ -73,9 +68,10 @@ class WebService:
                     # Didn't find matching text, but found an image. Image is misplaced.
                     seen_images = seen_images[:-1]
                     results = results[:-1]
-                # Make a note of this missing text to map later
-                missing_pt.add(pt_idx)
-                results.append({})
+                else:
+                    # Make a note of this missing text to map later
+                    results.append({})
+                    missing_pt.add(len(results)-1)
         # Before returning final results, add any missing text with default <p> tags
         for pt_idx in missing_pt:
             results[pt_idx] = self._construct_text_dict(plaintext[pt_idx], 'p')
