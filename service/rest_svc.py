@@ -24,7 +24,8 @@ class RestService:
         sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
         sentence_to_strip = sentence_dict[0]['text']
         sentence_to_insert = self.web_svc.remove_html_markup_and_found(sentence_to_strip)
-        await self.dao.insert('false_negatives', dict(sentence_id=sentence_dict[0]['uid'], uid=criteria['attack_uid'],
+        await self.dao.insert('false_negatives', dict(uid=str(uuid.uuid4()), sentence_id=sentence_dict[0]['uid'],
+                                                      attack_uid=criteria['attack_uid'],
                                                       false_negative=sentence_to_insert))
         return dict(status='inserted')
 
@@ -81,7 +82,8 @@ class RestService:
         sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
         last = await self.data_svc.last_technique_check(criteria)
-        await self.dao.insert('false_positives', dict(sentence_id=sentence_dict[0]['uid'], uid=criteria['attack_uid'],
+        await self.dao.insert('false_positives', dict(uid=str(uuid.uuid4()), sentence_id=sentence_dict[0]['uid'],
+                                                      attack_uid=criteria['attack_uid'],
                                                       false_positive=sentence_to_insert))
         return dict(status='inserted', last=last)
 
@@ -152,11 +154,11 @@ class RestService:
                 for t in true_pos:
                     tp.append(t['true_positive'])
                 # query for false negatives
-                false_neg = await self.dao.get('false_negatives', dict(uid=row['uid']))
+                false_neg = await self.dao.get('false_negatives', dict(attack_uid=row['uid']))
                 for f in false_neg:
                     tp.append(f['false_negative'])
                 # query for false positives for this technique
-                false_positives = await self.dao.get('false_positives', dict(uid=row['uid']))
+                false_positives = await self.dao.get('false_positives', dict(attack_uid=row['uid']))
                 for fps in false_positives:
                     fp.append(fps['false_positive'])
 

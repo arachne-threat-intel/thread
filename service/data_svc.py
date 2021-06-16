@@ -114,11 +114,13 @@ class DataService:
                                            dict(uid=str(uuid.uuid4()), attack_uid=k, similar_word=defang_text(x)))
                      for x in v['similar_words']]
                 if 'false_negatives' in v:
-                    [await self.dao.insert('false_negatives', dict(uid=k, false_negative=defang_text(x))) for x in
-                     v['false_negatives']]
+                    [await self.dao.insert('false_negatives',
+                                           dict(uid=str(uuid.uuid4()), attack_uid=k, false_negative=defang_text(x)))
+                     for x in v['false_negatives']]
                 if 'false_positives' in v:
-                    [await self.dao.insert('false_positives', dict(uid=k, false_positive=defang_text(x))) for x in
-                     v['false_positives']]
+                    [await self.dao.insert('false_positives',
+                                           dict(uid=str(uuid.uuid4()), attack_uid=k, false_positive=defang_text(x)))
+                     for x in v['false_positives']]
                 if 'true_positives' in v:
                     [await self.dao.insert('true_positives',
                                            dict(uid=str(uuid.uuid4()), attack_uid=k, true_positive=defang_text(x)))
@@ -227,7 +229,7 @@ class DataService:
             f"UNION "
             f"SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, report_sentence_hits.attack_tid, false_negatives.false_negative " 
             f"FROM ((report_sentences INNER JOIN report_sentence_hits ON report_sentences.uid = report_sentence_hits.sentence_id) " 
-            f"INNER JOIN false_negatives ON report_sentence_hits.sentence_id = false_negatives.sentence_id AND report_sentence_hits.attack_uid = false_negatives.uid) " 
+            f"INNER JOIN false_negatives ON report_sentence_hits.sentence_id = false_negatives.sentence_id AND report_sentence_hits.attack_uid = false_negatives.attack_uid) " 
             f"WHERE report_sentence_hits.report_uid = {report_id}")
         # Run the SQL select join query
         hits = await self.dao.raw_select(select_join_query)

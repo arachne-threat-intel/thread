@@ -18,26 +18,29 @@ CREATE TABLE if not exists true_positives (
 );
 
 CREATE TABLE if not exists true_negatives (
-    uid VARCHAR(60),
+    uid VARCHAR(60) PRIMARY KEY,
+    attack_uid VARCHAR(60),
     sentence_id VARCHAR(60),
     sentence TEXT,
-    FOREIGN KEY(uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
     FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
 );
 
 CREATE TABLE if not exists false_positives (
-    uid VARCHAR(60),
+    uid VARCHAR(60) PRIMARY KEY,
+    attack_uid VARCHAR(60),
     sentence_id VARCHAR(60),
     false_positive TEXT,
-    FOREIGN KEY(uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
     FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
 );
 
 CREATE TABLE if not exists false_negatives (
-    uid VARCHAR(60),
+    uid VARCHAR(60) PRIMARY KEY,
+    attack_uid VARCHAR(60),
     sentence_id VARCHAR(60),
     false_negative TEXT,
-    FOREIGN KEY(uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
     FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
 );
 

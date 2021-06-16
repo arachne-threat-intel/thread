@@ -171,8 +171,8 @@ class WebAPI:
                 for t in true_pos:
                     tp.append(t['true_positive'])
                 # query for false negatives and false positives
-                false_neg = await self.dao.get('false_negatives', dict(uid=row['uid']))
-                false_positives = await self.dao.get('false_positives', dict(uid=row['uid']))
+                false_neg = await self.dao.get('false_negatives', dict(attack_uid=row['uid']))
+                false_positives = await self.dao.get('false_positives', dict(attack_uid=row['uid']))
                 for f in false_neg:
                     tp.append(f['false_negative'])
                 fp = []
