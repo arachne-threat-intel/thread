@@ -45,28 +45,30 @@ CREATE TABLE if not exists similar_words (
     );
 
 CREATE TABLE if not exists reports (
-    uid integer PRIMARY KEY AUTOINCREMENT,
+    uid VARCHAR(60) PRIMARY KEY,
     title TEXT,
     url TEXT,
     attack_key TEXT,
     current_status TEXT
-    );
+);
 
 CREATE TABLE if not exists report_sentences (
     uid integer PRIMARY KEY AUTOINCREMENT,
-    report_uid INTEGER,
+    report_uid VARCHAR(60),
     text TEXT,
     html TEXT,
-    found_status TEXT
-    );
+    found_status TEXT,
+    FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
+);
 
 CREATE TABLE if not exists report_sentence_hits (
     uid INTEGER,
     attack_uid TEXT,
     attack_technique_name TEXT,
-    report_uid INTEGER,
-    attack_tid TEXT
-    );
+    report_uid VARCHAR(60),
+    attack_tid TEXT,
+    FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
+);
 
 CREATE TABLE if not exists true_negatives (
     uid VARCHAR(60),
@@ -76,8 +78,9 @@ CREATE TABLE if not exists true_negatives (
 
 CREATE TABLE if not exists original_html (
     uid INTEGER PRIMARY KEY AUTOINCREMENT,
-    report_uid INTEGER,
+    report_uid VARCHAR(60),
     text TEXT,
     tag TEXT,
-    found_status TEXT
-    );
+    found_status TEXT,
+    FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
+);

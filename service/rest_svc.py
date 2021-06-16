@@ -35,8 +35,6 @@ class RestService:
 
     async def delete_report(self, criteria=None):
         await self.dao.delete('reports', dict(uid=criteria['report_id']))
-        await self.dao.delete('report_sentences', dict(report_uid=criteria['report_id']))
-        await self.dao.delete('report_sentence_hits', dict(report_uid=criteria['report_id']))
 
     async def remove_sentences(self, criteria=None):
         if not criteria['sentence_id']:
@@ -88,11 +86,10 @@ class RestService:
         return dict(status='inserted', last=last)
 
     async def insert_report(self, criteria=None):
-        # criteria['id'] = await self.dao.insert('reports', dict(title=criteria['title'], url=criteria['url'],
-        #                                                       current_status="needs_review"))
         for i in range(len(criteria['title'])):
             criteria['title'][i] = await self.data_svc.get_unique_title(criteria['title'][i])
-            temp_dict = dict(title=criteria['title'][i], url=criteria['url'][i], current_status="queue")
+            temp_dict = dict(uid=str(uuid.uuid4()), title=criteria['title'][i], url=criteria['url'][i],
+                             current_status='queue')
             temp_dict['id'] = await self.dao.insert('reports', temp_dict)
             await self.queue.put(temp_dict)
         asyncio.create_task(self.check_queue())  # check queue background task
@@ -102,7 +99,7 @@ class RestService:
         file = StringIO(criteria['file'])
         df = pd.read_csv(file)
         for row in range(df.shape[0]):
-            temp_dict = dict(title=df['title'][row], url=df['url'][row], current_status="queue")
+            temp_dict = dict(uid=str(uuid.uuid4()), title=df['title'][row], url=df['url'][row], current_status='queue')
             temp_dict['id'] = await self.dao.insert('reports', temp_dict)
             await self.queue.put(temp_dict)
         asyncio.create_task(self.check_queue())
