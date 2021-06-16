@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import pandas as pd
 
@@ -14,8 +15,8 @@ class RestService:
         self.web_svc = web_svc
         self.ml_svc = ml_svc
         self.reg_svc = reg_svc
-        self.queue = asyncio.Queue() # task queue
-        self.resources = [] # resource array
+        self.queue = asyncio.Queue()  # task queue
+        self.resources = []  # resource array
         self.externally_called = externally_called
 
     async def false_negative(self, criteria=None):
@@ -87,19 +88,18 @@ class RestService:
         # criteria['id'] = await self.dao.insert('reports', dict(title=criteria['title'], url=criteria['url'],
         #                                                       current_status="needs_review"))
         for i in range(len(criteria['title'])):
-            temp_dict = dict(title=criteria['title'][i], url=criteria['url'][i],current_status="queue")
+            criteria['title'][i] = await self.data_svc.get_unique_title(criteria['title'][i])
+            temp_dict = dict(title=criteria['title'][i], url=criteria['url'][i], current_status="queue")
             temp_dict['id'] = await self.dao.insert('reports', temp_dict)
             await self.queue.put(temp_dict)
-        # criteria = dict(title=criteria['title'], url=criteria['url'],current_status="needs_review")
-        # await self.queue.put(criteria)
-        asyncio.create_task(self.check_queue()) # check queue background task
+        asyncio.create_task(self.check_queue())  # check queue background task
         await asyncio.sleep(0.01)
 
-    async def insert_csv(self,criteria=None):
+    async def insert_csv(self, criteria=None):
         file = StringIO(criteria['file'])
         df = pd.read_csv(file)
         for row in range(df.shape[0]):
-            temp_dict = dict(title=df['title'][row],url=df['url'][row],current_status="queue")
+            temp_dict = dict(title=df['title'][row], url=df['url'][row], current_status="queue")
             temp_dict['id'] = await self.dao.insert('reports', temp_dict)
             await self.queue.put(temp_dict)
         asyncio.create_task(self.check_queue())
@@ -171,7 +171,7 @@ class RestService:
 
         true_negatives = await self.ml_svc.get_true_negs()
         # Here we build the sentence dictionary
-        html_sentences = await self.web_svc.tokenize_sentence(article['html_text'])
+        html_sentences = self.web_svc.tokenize_sentence(article['html_text'])
         model_dict = await self.ml_svc.build_pickle_file(list_of_techs, json_tech, true_negatives)
 
         ml_analyzed_html = await self.ml_svc.analyze_html(list_of_techs, model_dict, html_sentences)
@@ -199,6 +199,7 @@ class RestService:
         for element in original_html:
             html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'], found_status="false")
             await self.dao.insert('original_html', html_element)
+        logging.info('Finished analysing report ' + str(report_id))
 
     async def missing_technique(self, criteria=None):
         # Get the attack information for this attack id
