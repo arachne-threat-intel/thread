@@ -198,7 +198,8 @@ class RestService:
                 await self.dao.insert('report_sentences', data)
 
         for element in original_html:
-            html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'], found_status="false")
+            html_element = dict(uid=str(uuid.uuid4()), report_uid=report_id, text=element['text'], tag=element['tag'],
+                                found_status='false')
             await self.dao.insert('original_html', html_element)
         logging.info('Finished analysing report ' + str(report_id))
 

@@ -42,24 +42,23 @@ CREATE TABLE if not exists false_negatives (
 );
 
 CREATE TABLE if not exists regex_patterns (
-    uid integer PRIMARY KEY AUTOINCREMENT,
+    uid VARCHAR(60) PRIMARY KEY,
     attack_uid VARCHAR(60),
     regex_pattern TEXT,
     FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid)
-    );
+);
 
 CREATE TABLE if not exists similar_words (
-    uid VARCHAR(60),
+    uid VARCHAR(60) PRIMARY KEY,
     attack_uid TEXT,
     similar_word TEXT,
     FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid)
-    );
+);
 
 CREATE TABLE if not exists reports (
     uid VARCHAR(60) PRIMARY KEY,
     title TEXT,
     url TEXT,
-    attack_key TEXT,
     current_status TEXT
 );
 
@@ -85,7 +84,7 @@ CREATE TABLE if not exists report_sentence_hits (
 );
 
 CREATE TABLE if not exists original_html (
-    uid INTEGER PRIMARY KEY AUTOINCREMENT,
+    uid VARCHAR(60) PRIMARY KEY,
     report_uid VARCHAR(60),
     text TEXT,
     tag TEXT,
