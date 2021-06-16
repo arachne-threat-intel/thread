@@ -106,12 +106,12 @@ class DataService:
                 await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v['description']), tid=v['id'],
                                                           name=v['name']))
                 if 'regex_patterns' in v:
-                    [await self.dao.insert('regex_patterns', dict(uid=str(uuid.uuid4()), attack_uid=k,
-                                                                  regex_pattern=defang_text(x)))
+                    [await self.dao.insert('regex_patterns',
+                                           dict(uid=str(uuid.uuid4()), attack_uid=k, regex_pattern=defang_text(x)))
                      for x in v['regex_patterns']]
                 if 'similar_words' in v:
-                    [await self.dao.insert('similar_words', dict(uid=str(uuid.uuid4()), attack_uid=k,
-                                                                 similar_word=defang_text(x)))
+                    [await self.dao.insert('similar_words',
+                                           dict(uid=str(uuid.uuid4()), attack_uid=k, similar_word=defang_text(x)))
                      for x in v['similar_words']]
                 if 'false_negatives' in v:
                     [await self.dao.insert('false_negatives', dict(uid=k, false_negative=defang_text(x))) for x in
@@ -120,11 +120,13 @@ class DataService:
                     [await self.dao.insert('false_positives', dict(uid=k, false_positive=defang_text(x))) for x in
                      v['false_positives']]
                 if 'true_positives' in v:
-                    [await self.dao.insert('true_positives', dict(uid=k, true_positive=defang_text(x))) for x in
-                     v['true_positives']]
+                    [await self.dao.insert('true_positives',
+                                           dict(uid=str(uuid.uuid4()), attack_uid=k, true_positive=defang_text(x)))
+                     for x in v['true_positives']]
                 if 'example_uses' in v:
-                    [await self.dao.insert('true_positives', dict(uid=k, true_positive=defang_text(x))) for x in
-                     v['example_uses']]
+                    [await self.dao.insert('true_positives',
+                                           dict(uid=str(uuid.uuid4()), attack_uid=k, true_positive=defang_text(x)))
+                     for x in v['example_uses']]
         logging.info('[!] DB Item Count: {}'.format(len(await self.dao.get('attack_uids'))))
 
     async def insert_attack_json_data(self, buildfile):
@@ -181,8 +183,9 @@ class DataService:
             await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v['description']), tid=v['id'],
                                                       name=v['name']))
             if 'example_uses' in v:
-                [await self.dao.insert('true_positives', dict(uid=k, true_positive=defang_text(x))) for x in
-                 v['example_uses']]
+                [await self.dao.insert('true_positives',
+                                       dict(uid=str(uuid.uuid4()), attack_uid=k, true_positive=defang_text(x)))
+                 for x in v['example_uses']]
 
     async def status_grouper(self, status):
         reports = await self.dao.get('reports', dict(current_status=status))
@@ -218,7 +221,7 @@ class DataService:
         select_join_query = (
             f"SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, report_sentence_hits.attack_tid, true_positives.true_positive " 
             f"FROM ((report_sentences INNER JOIN report_sentence_hits ON report_sentences.uid = report_sentence_hits.uid) " 
-            f"INNER JOIN true_positives ON report_sentence_hits.uid = true_positives.sentence_id AND report_sentence_hits.attack_uid = true_positives.uid) " 
+            f"INNER JOIN true_positives ON report_sentence_hits.uid = true_positives.sentence_id AND report_sentence_hits.attack_uid = true_positives.attack_uid) " 
             f"WHERE report_sentence_hits.report_uid = {report_id} "
             f"UNION "
             f"SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, report_sentence_hits.attack_tid, false_negatives.false_negative " 

@@ -166,7 +166,7 @@ class WebAPI:
                 continue
             else:
                 # query for true positives
-                true_pos = await self.dao.get('true_positives', dict(uid=row['uid']))
+                true_pos = await self.dao.get('true_positives', dict(attack_uid=row['uid']))
                 tp = []
                 for t in true_pos:
                     tp.append(t['true_positive'])

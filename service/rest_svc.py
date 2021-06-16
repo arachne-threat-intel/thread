@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import pandas as pd
+import uuid
 
 from io import StringIO
 
@@ -65,15 +66,17 @@ class RestService:
         techniques = await self.dao.get('true_positives',
                                         dict(sentence_id=criteria['sentence_id'], element_tag=criteria['element_tag']))
         for tech in techniques:
-            name = await self.dao.get('attack_uids', dict(uid=tech['uid']))
+            name = await self.dao.get('attack_uids', dict(uid=tech['attack_uid']))
             tmp.append(name[0])
         return tmp
 
     async def true_positive(self, criteria=None):
         sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
-        await self.dao.insert('true_positives', dict(sentence_id=sentence_dict[0]['uid'], uid=criteria['attack_uid'],
-                                                    true_positive=sentence_to_insert, element_tag=criteria['element_tag']))
+        await self.dao.insert('true_positives', dict(uid=str(uuid.uuid4()), sentence_id=sentence_dict[0]['uid'],
+                                                     attack_uid=criteria['attack_uid'],
+                                                     true_positive=sentence_to_insert,
+                                                     element_tag=criteria['element_tag']))
         return dict(status='inserted')
 
     async def false_positive(self, criteria=None):
@@ -147,7 +150,7 @@ class RestService:
                 continue
             else:
                 # query for true positives
-                true_pos = await self.dao.get('true_positives', dict(uid=row['uid']))
+                true_pos = await self.dao.get('true_positives', dict(attack_uid=row['uid']))
                 tp, fp = [], []
                 for t in true_pos:
                     tp.append(t['true_positive'])
@@ -212,8 +215,8 @@ class RestService:
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
         
         # Insert new row in the true_positives database table to indicate a new confirmed technique
-        await self.dao.insert('true_positives', dict(sentence_id=sentence_dict[0]['uid'],
-                                                     uid=criteria['attack_uid'],
+        await self.dao.insert('true_positives', dict(uid=str(uuid.uuid4()), sentence_id=sentence_dict[0]['uid'],
+                                                     attack_uid=criteria['attack_uid'],
                                                      true_positive=sentence_to_insert,
                                                      element_tag=criteria['element_tag']))
         
