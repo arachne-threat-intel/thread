@@ -10,25 +10,36 @@ CREATE TABLE if not exists attack_uids (
 CREATE TABLE if not exists true_positives (
     uid VARCHAR(60) PRIMARY KEY,
     attack_uid VARCHAR(60),
-    sentence_id integer,
+    sentence_id VARCHAR(60),
     true_positive TEXT,
     element_tag TEXT,
-    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid)
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
+);
+
+CREATE TABLE if not exists true_negatives (
+    uid VARCHAR(60),
+    sentence_id VARCHAR(60),
+    sentence TEXT,
+    FOREIGN KEY(uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
 );
 
 CREATE TABLE if not exists false_positives (
     uid VARCHAR(60),
-    sentence_id integer,
+    sentence_id VARCHAR(60),
     false_positive TEXT,
-    FOREIGN KEY(uid) REFERENCES attack_uids(uid)
-    );
+    FOREIGN KEY(uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
+);
 
 CREATE TABLE if not exists false_negatives (
     uid VARCHAR(60),
-    sentence_id INTEGER,
+    sentence_id VARCHAR(60),
     false_negative TEXT,
-    FOREIGN KEY(uid) REFERENCES attack_uids(uid)
-    );
+    FOREIGN KEY(uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
+);
 
 CREATE TABLE if not exists regex_patterns (
     uid integer PRIMARY KEY AUTOINCREMENT,
@@ -53,7 +64,7 @@ CREATE TABLE if not exists reports (
 );
 
 CREATE TABLE if not exists report_sentences (
-    uid integer PRIMARY KEY AUTOINCREMENT,
+    uid VARCHAR(60) PRIMARY KEY,
     report_uid VARCHAR(60),
     text TEXT,
     html TEXT,
@@ -62,19 +73,16 @@ CREATE TABLE if not exists report_sentences (
 );
 
 CREATE TABLE if not exists report_sentence_hits (
-    uid INTEGER,
+    uid VARCHAR(60) PRIMARY KEY,
     attack_uid TEXT,
     attack_technique_name TEXT,
     report_uid VARCHAR(60),
+    sentence_id VARCHAR(60),
     attack_tid TEXT,
-    FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE,
+    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
 );
-
-CREATE TABLE if not exists true_negatives (
-    uid VARCHAR(60),
-    sentence TEXT,
-    FOREIGN KEY(uid) REFERENCES attack_uids(uid)
-    );
 
 CREATE TABLE if not exists original_html (
     uid INTEGER PRIMARY KEY AUTOINCREMENT,

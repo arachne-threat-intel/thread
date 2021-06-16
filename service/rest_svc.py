@@ -52,9 +52,9 @@ class RestService:
             return dict(status='Successfully moved sentence ' + criteria['sentence_id'])
 
     async def sentence_context(self, criteria=None):
-        if criteria['element_tag']=='img':
+        if criteria['element_tag'] == 'img':
             return []
-        sentence_hits = await self.dao.get('report_sentence_hits', dict(uid=criteria['uid']))
+        sentence_hits = await self.dao.get('report_sentence_hits', dict(sentence_id=criteria['uid']))
         for hit in sentence_hits:
             hit['element_tag'] = criteria['element_tag']
         return sentence_hits
@@ -193,7 +193,8 @@ class RestService:
             elif sentence['reg_techniques_found']:
                 await self.reg_svc.reg_techniques_found(report_id, sentence)
             else:
-                data = dict(report_uid=report_id, text=sentence['text'], html=sentence['html'], found_status="false")
+                data = dict(uid=str(uuid.uuid4()), report_uid=report_id, text=sentence['text'], html=sentence['html'],
+                            found_status='false')
                 await self.dao.insert('report_sentences', data)
 
         for element in original_html:
@@ -219,7 +220,7 @@ class RestService:
         
         # Insert new row in the report_sentence_hits database table to indicate a new confirmed technique
         # This is needed to ensure that requests to get all confirmed techniques works correctly
-        await self.dao.insert('report_sentence_hits', dict(uid=criteria['sentence_id'],
+        await self.dao.insert('report_sentence_hits', dict(uid=str(uuid.uuid4()), sentence_id=criteria['sentence_id'],
                                                            attack_uid=criteria['attack_uid'],
                                                            attack_technique_name=attack_dict[0]['name'],
                                                            report_uid=sentence_dict[0]['report_uid'],

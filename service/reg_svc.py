@@ -1,4 +1,5 @@
 import re
+import uuid
 
 
 class RegService:
@@ -40,8 +41,8 @@ class RegService:
 
     async def reg_techniques_found(self, report_id, sentence):
         sentence_id = await self.dao.insert('report_sentences',
-                                            dict(report_uid=report_id, text=sentence['text'],
-                                                 html=sentence['html'], found_status="true"))
+                                            dict(uid=str(uuid.uuid4()), report_uid=report_id, text=sentence['text'],
+                                                 html=sentence['html'], found_status='true'))
         for technique in sentence['reg_techniques_found']:
             attack_uid = await self.dao.get('attack_uids', dict(name=technique))
             if not attack_uid:
@@ -52,5 +53,6 @@ class RegService:
             attack_technique_name = '{} (r)'.format(attack_uid[0]['name'])
             attack_tid = attack_uid[0]['tid']
             await self.dao.insert('report_sentence_hits',
-                                  dict(uid=sentence_id, attack_uid=attack_technique,
-                                       attack_technique_name=attack_technique_name, report_uid=report_id, attack_tid = attack_tid))
+                                  dict(uid=str(uuid.uuid4()), sentence_id=sentence_id, attack_uid=attack_technique,
+                                       attack_technique_name=attack_technique_name, report_uid=report_id,
+                                       attack_tid=attack_tid))

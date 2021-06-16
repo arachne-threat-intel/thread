@@ -194,8 +194,9 @@ class DataService:
         return reports
 
     async def last_technique_check(self, criteria):
-        await self.dao.delete('report_sentence_hits', dict(uid=criteria['sentence_id'], attack_uid=criteria['attack_uid']))
-        number_of_techniques = await self.dao.get('report_sentence_hits', dict(uid=criteria['sentence_id']))
+        await self.dao.delete('report_sentence_hits', dict(sentence_id=criteria['sentence_id'],
+                                                           attack_uid=criteria['attack_uid']))
+        number_of_techniques = await self.dao.get('report_sentence_hits', dict(sentence_id=criteria['sentence_id']))
         if len(number_of_techniques) == 0:
             await self.dao.update('report_sentences', 'uid', criteria['sentence_id'], dict(found_status='false'))
             return dict(status='true')
@@ -205,7 +206,7 @@ class DataService:
     async def build_sentences(self, report_id):
         sentences = await self.dao.get('report_sentences', dict(report_uid=report_id))
         for sentence in sentences:
-            sentence['hits'] = await self.dao.get('report_sentence_hits', dict(uid=sentence['uid']))
+            sentence['hits'] = await self.dao.get('report_sentence_hits', dict(sentence_id=sentence['uid']))
             if await self.dao.get('true_positives', dict(sentence_id=sentence['uid'])):
                 sentence['confirmed'] = 'true'
             else:
@@ -220,13 +221,13 @@ class DataService:
         # The SQL select join query to retrieve the confirmed techniques for the report from the database
         select_join_query = (
             f"SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, report_sentence_hits.attack_tid, true_positives.true_positive " 
-            f"FROM ((report_sentences INNER JOIN report_sentence_hits ON report_sentences.uid = report_sentence_hits.uid) " 
-            f"INNER JOIN true_positives ON report_sentence_hits.uid = true_positives.sentence_id AND report_sentence_hits.attack_uid = true_positives.attack_uid) " 
+            f"FROM ((report_sentences INNER JOIN report_sentence_hits ON report_sentences.uid = report_sentence_hits.sentence_id) " 
+            f"INNER JOIN true_positives ON report_sentence_hits.sentence_id = true_positives.sentence_id AND report_sentence_hits.attack_uid = true_positives.attack_uid) " 
             f"WHERE report_sentence_hits.report_uid = {report_id} "
             f"UNION "
             f"SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, report_sentence_hits.attack_tid, false_negatives.false_negative " 
-            f"FROM ((report_sentences INNER JOIN report_sentence_hits ON report_sentences.uid = report_sentence_hits.uid) " 
-            f"INNER JOIN false_negatives ON report_sentence_hits.uid = false_negatives.sentence_id AND report_sentence_hits.attack_uid = false_negatives.uid) " 
+            f"FROM ((report_sentences INNER JOIN report_sentence_hits ON report_sentences.uid = report_sentence_hits.sentence_id) " 
+            f"INNER JOIN false_negatives ON report_sentence_hits.sentence_id = false_negatives.sentence_id AND report_sentence_hits.attack_uid = false_negatives.uid) " 
             f"WHERE report_sentence_hits.report_uid = {report_id}")
         # Run the SQL select join query
         hits = await self.dao.raw_select(select_join_query)

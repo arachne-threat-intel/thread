@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import pickle
 import random
+import uuid
 
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -156,8 +157,8 @@ class MLService:
 
     async def ml_techniques_found(self, report_id, sentence):
         sentence_id = await self.dao.insert('report_sentences',
-                                            dict(report_uid=report_id, text=sentence['text'], html=sentence['html'],
-                                                 found_status="true"))
+                                            dict(uid=str(uuid.uuid4()), report_uid=report_id, text=sentence['text'],
+                                                 html=sentence['html'], found_status='true'))
         for technique in sentence['ml_techniques_found']:
             attack_uid = await self.dao.get('attack_uids', dict(name=technique))
             # If the attack cannot be found via the 'name' column, try the 'tid' column
@@ -180,8 +181,9 @@ class MLService:
             attack_technique_name = '{} (m)'.format(attack_uid[0]['name'])
             attack_tid = attack_uid[0]['tid']
             await self.dao.insert('report_sentence_hits',
-                                  dict(uid=sentence_id, attack_uid=attack_technique,
-                                       attack_technique_name=attack_technique_name, report_uid=report_id, attack_tid=attack_tid))
+                                  dict(uid=str(uuid.uuid4()), sentence_id=sentence_id, attack_uid=attack_technique,
+                                       attack_technique_name=attack_technique_name, report_uid=report_id,
+                                       attack_tid=attack_tid))
 
     async def get_true_negs(self):
         true_negs = await self.dao.get('true_negatives')
