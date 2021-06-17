@@ -71,7 +71,7 @@
                                 {% for report in needs_review %}
                                 <div class="card draggable shadow-sm" id="needs_review-{{report.uid}}" draggable="true" ondragstart="drag(event)">
                                 <div class="card-body">
-                                    <a onclick="deleteReport({{report.uid}})"
+                                    <a onclick="deleteReport('{{report.uid}}')"
                                        class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
                                     <p>
                                     <p class="card-text">{{report.title}}</p>
@@ -97,7 +97,7 @@
                                 {% for report in in_review %}
                                 <div class="card draggable shadow-sm" id="review-{{report.uid}}" draggable="true" ondragstart="drag(event)">
                                 <div class="card-body">
-                                    <a onclick="deleteReport({{report.uid}})"
+                                    <a onclick="deleteReport('{{report.uid}}')"
                                        class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
                                     <p>
                                     <p class="card-text">{{report.title}}</p>
@@ -123,7 +123,7 @@
                                 {% for report in completed %}
                                 <div class="card draggable shadow-sm" id="completed-{{report.uid}}" draggable="true" ondragstart="drag(event)">
                                 <div class="card-body">
-                                    <a onclick="deleteReport({{report.uid}})"
+                                    <a onclick="deleteReport('{{report.uid}}')"
                                        class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
                                     <p>
                                     <p class="card-text">{{report.title}}</p>

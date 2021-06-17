@@ -2,7 +2,6 @@ import os
 import re
 import json
 import logging
-import uuid
 
 from stix2 import TAXIICollectionSource, Filter
 
@@ -106,28 +105,28 @@ class DataService:
                 await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v['description']), tid=v['id'],
                                                           name=v['name']))
                 if 'regex_patterns' in v:
-                    [await self.dao.insert('regex_patterns',
-                                           dict(uid=str(uuid.uuid4()), attack_uid=k, regex_pattern=defang_text(x)))
+                    [await self.dao.insert_generate_uid('regex_patterns',
+                                                        dict(attack_uid=k, regex_pattern=defang_text(x)))
                      for x in v['regex_patterns']]
                 if 'similar_words' in v:
-                    [await self.dao.insert('similar_words',
-                                           dict(uid=str(uuid.uuid4()), attack_uid=k, similar_word=defang_text(x)))
+                    [await self.dao.insert_generate_uid('similar_words',
+                                                        dict(attack_uid=k, similar_word=defang_text(x)))
                      for x in v['similar_words']]
                 if 'false_negatives' in v:
-                    [await self.dao.insert('false_negatives',
-                                           dict(uid=str(uuid.uuid4()), attack_uid=k, false_negative=defang_text(x)))
+                    [await self.dao.insert_generate_uid('false_negatives',
+                                                        dict(attack_uid=k, false_negative=defang_text(x)))
                      for x in v['false_negatives']]
                 if 'false_positives' in v:
-                    [await self.dao.insert('false_positives',
-                                           dict(uid=str(uuid.uuid4()), attack_uid=k, false_positive=defang_text(x)))
+                    [await self.dao.insert_generate_uid('false_positives',
+                                                        dict(attack_uid=k, false_positive=defang_text(x)))
                      for x in v['false_positives']]
                 if 'true_positives' in v:
-                    [await self.dao.insert('true_positives',
-                                           dict(uid=str(uuid.uuid4()), attack_uid=k, true_positive=defang_text(x)))
+                    [await self.dao.insert_generate_uid('true_positives',
+                                                        dict(attack_uid=k, true_positive=defang_text(x)))
                      for x in v['true_positives']]
                 if 'example_uses' in v:
-                    [await self.dao.insert('true_positives',
-                                           dict(uid=str(uuid.uuid4()), attack_uid=k, true_positive=defang_text(x)))
+                    [await self.dao.insert_generate_uid('true_positives',
+                                                        dict(attack_uid=k, true_positive=defang_text(x)))
                      for x in v['example_uses']]
         logging.info('[!] DB Item Count: {}'.format(len(await self.dao.get('attack_uids'))))
 
@@ -185,8 +184,7 @@ class DataService:
             await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v['description']), tid=v['id'],
                                                       name=v['name']))
             if 'example_uses' in v:
-                [await self.dao.insert('true_positives',
-                                       dict(uid=str(uuid.uuid4()), attack_uid=k, true_positive=defang_text(x)))
+                [await self.dao.insert_generate_uid('true_positives', dict(attack_uid=k, true_positive=defang_text(x)))
                  for x in v['example_uses']]
 
     async def status_grouper(self, status):

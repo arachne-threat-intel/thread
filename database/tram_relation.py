@@ -1,4 +1,5 @@
 import sqlite3
+import uuid
 
 
 class Attack:
@@ -45,6 +46,22 @@ class Attack:
             id = cursor.lastrowid
             conn.commit()
             return id
+
+    async def insert_generate_uid(self, table, data, id_field='uid'):
+        """Method to generate an ID value whilst inserting into db."""
+        data[id_field] = str(uuid.uuid4())
+        try:
+            # Attempt this insertion with the ID field generated
+            await self.insert(table, data)
+        except sqlite3.IntegrityError as e:
+            # If it failed because the ID was not unique, attempt once more
+            if 'UNIQUE' in str(e) and table + '.' + 'uid' in str(e):
+                data[id_field] = str(uuid.uuid4())
+                await self.insert(table, data)
+            else:
+                raise e
+        # Finally, return the ID value used for insertion
+        return data[id_field]
 
     async def update(self, table, key, value, data):
         with sqlite3.connect(self.database) as conn:

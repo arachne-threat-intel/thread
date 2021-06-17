@@ -3,7 +3,6 @@ import json
 import logging
 import os
 import pandas as pd
-import uuid
 
 from io import StringIO
 
@@ -24,9 +23,9 @@ class RestService:
         sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
         sentence_to_strip = sentence_dict[0]['text']
         sentence_to_insert = self.web_svc.remove_html_markup_and_found(sentence_to_strip)
-        await self.dao.insert('false_negatives', dict(uid=str(uuid.uuid4()), sentence_id=sentence_dict[0]['uid'],
-                                                      attack_uid=criteria['attack_uid'],
-                                                      false_negative=sentence_to_insert))
+        await self.dao.insert_generate_uid('false_negatives',
+                                           dict(sentence_id=sentence_dict[0]['uid'], attack_uid=criteria['attack_uid'],
+                                                false_negative=sentence_to_insert))
         return dict(status='inserted')
 
     async def set_status(self, criteria=None):
@@ -72,27 +71,25 @@ class RestService:
     async def true_positive(self, criteria=None):
         sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
-        await self.dao.insert('true_positives', dict(uid=str(uuid.uuid4()), sentence_id=sentence_dict[0]['uid'],
-                                                     attack_uid=criteria['attack_uid'],
-                                                     true_positive=sentence_to_insert,
-                                                     element_tag=criteria['element_tag']))
+        await self.dao.insert_generate_uid('true_positives',
+                                           dict(sentence_id=sentence_dict[0]['uid'], attack_uid=criteria['attack_uid'],
+                                                true_positive=sentence_to_insert, element_tag=criteria['element_tag']))
         return dict(status='inserted')
 
     async def false_positive(self, criteria=None):
         sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
         last = await self.data_svc.last_technique_check(criteria)
-        await self.dao.insert('false_positives', dict(uid=str(uuid.uuid4()), sentence_id=sentence_dict[0]['uid'],
-                                                      attack_uid=criteria['attack_uid'],
-                                                      false_positive=sentence_to_insert))
+        await self.dao.insert_generate_uid('false_positives',
+                                           dict(sentence_id=sentence_dict[0]['uid'], attack_uid=criteria['attack_uid'],
+                                                false_positive=sentence_to_insert))
         return dict(status='inserted', last=last)
 
     async def insert_report(self, criteria=None):
         for i in range(len(criteria['title'])):
             criteria['title'][i] = await self.data_svc.get_unique_title(criteria['title'][i])
-            temp_dict = dict(uid=str(uuid.uuid4()), title=criteria['title'][i], url=criteria['url'][i],
-                             current_status='queue')
-            temp_dict['id'] = await self.dao.insert('reports', temp_dict)
+            temp_dict = dict(title=criteria['title'][i], url=criteria['url'][i], current_status='queue')
+            temp_dict['id'] = await self.dao.insert_generate_uid('reports', temp_dict)
             await self.queue.put(temp_dict)
         asyncio.create_task(self.check_queue())  # check queue background task
         await asyncio.sleep(0.01)
@@ -101,8 +98,8 @@ class RestService:
         file = StringIO(criteria['file'])
         df = pd.read_csv(file)
         for row in range(df.shape[0]):
-            temp_dict = dict(uid=str(uuid.uuid4()), title=df['title'][row], url=df['url'][row], current_status='queue')
-            temp_dict['id'] = await self.dao.insert('reports', temp_dict)
+            temp_dict = dict(title=df['title'][row], url=df['url'][row], current_status='queue')
+            temp_dict['id'] = await self.dao.insert_generate_uid('reports', temp_dict)
             await self.queue.put(temp_dict)
         asyncio.create_task(self.check_queue())
         await asyncio.sleep(0.01)
@@ -195,14 +192,12 @@ class RestService:
             elif sentence['reg_techniques_found']:
                 await self.reg_svc.reg_techniques_found(report_id, sentence)
             else:
-                data = dict(uid=str(uuid.uuid4()), report_uid=report_id, text=sentence['text'], html=sentence['html'],
-                            found_status='false')
-                await self.dao.insert('report_sentences', data)
+                data = dict(report_uid=report_id, text=sentence['text'], html=sentence['html'], found_status='false')
+                await self.dao.insert_generate_uid('report_sentences', data)
 
         for element in original_html:
-            html_element = dict(uid=str(uuid.uuid4()), report_uid=report_id, text=element['text'], tag=element['tag'],
-                                found_status='false')
-            await self.dao.insert('original_html', html_element)
+            html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'], found_status='false')
+            await self.dao.insert_generate_uid('original_html', html_element)
         logging.info('Finished analysing report ' + str(report_id))
 
     async def missing_technique(self, criteria=None):
@@ -215,19 +210,18 @@ class RestService:
         # Get the sentence to insert by removing html markup
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
         
-        # Insert new row in the true_positives database table to indicate a new confirmed technique
-        await self.dao.insert('true_positives', dict(uid=str(uuid.uuid4()), sentence_id=sentence_dict[0]['uid'],
-                                                     attack_uid=criteria['attack_uid'],
-                                                     true_positive=sentence_to_insert,
-                                                     element_tag=criteria['element_tag']))
+        # Insert new row in the false_negatives database table to indicate a new confirmed technique
+        await self.dao.insert_generate_uid('false_negatives',
+                                           dict(sentence_id=sentence_dict[0]['uid'], attack_uid=criteria['attack_uid'],
+                                                true_positive=sentence_to_insert, element_tag=criteria['element_tag']))
         
         # Insert new row in the report_sentence_hits database table to indicate a new confirmed technique
         # This is needed to ensure that requests to get all confirmed techniques works correctly
-        await self.dao.insert('report_sentence_hits', dict(uid=str(uuid.uuid4()), sentence_id=criteria['sentence_id'],
-                                                           attack_uid=criteria['attack_uid'],
-                                                           attack_technique_name=attack_dict[0]['name'],
-                                                           report_uid=sentence_dict[0]['report_uid'],
-                                                           attack_tid=attack_dict[0]['tid']))
+        await self.dao.insert_generate_uid('report_sentence_hits',
+                                           dict(sentence_id=criteria['sentence_id'], attack_uid=criteria['attack_uid'],
+                                                attack_technique_name=attack_dict[0]['name'],
+                                                report_uid=sentence_dict[0]['report_uid'],
+                                                attack_tid=attack_dict[0]['tid']))
         
         # If the found_status for the sentence id is set to false when adding a missing technique
         # then update the found_status value to true for the sentence id in the report_sentence table 
@@ -236,4 +230,3 @@ class RestService:
         
         # Return status message
         return dict(status='inserted')
-

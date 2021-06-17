@@ -20,6 +20,9 @@ class Dao:
     async def insert(self, table, data):
         return await self.db.insert(table, data)
 
+    async def insert_generate_uid(self, table, data, id_field='uid'):
+        return await self.db.insert_generate_uid(table, data, id_field)
+
     async def delete(self, table, data):
         await self.db.delete(table, data)
 

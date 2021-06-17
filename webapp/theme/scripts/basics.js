@@ -51,7 +51,6 @@ function deleteReport(report_id){
 
 function false_negative(type, attack_uid){
     restRequest('POST', {'index':'false_negative', 'sentence_type':type, 'sentence_id':sentence_id, 'attack_uid':attack_uid}, show_info);
-    alert(sentence_id)
 }
 
 function set_status(set_status, file_name){
@@ -148,8 +147,8 @@ function updateSentenceContext(data) {
     if (data && data.length > 0) {
         $.each(data, function(index, op) {
             td1 = "<td><a href=https://attack.mitre.org/techniques/" + op.attack_tid + " target=_blank>" + op.attack_technique_name + "</a></td>";
-            td2 = `<td><button class='btn btn-success' onclick='true_positive(true_positive, ${op.uid}, \"${op.attack_uid}\", "${op.element_tag}")'>Accept</button></td>`;
-            td3 = `<td><button class='btn btn-danger' onclick='false_positive(true_positive, ${op.uid}, \"${op.attack_uid}\")'>Reject</button></td>`;
+            td2 = `<td><button class='btn btn-success' onclick='true_positive(true_positive, "${op.sentence_id}", "${op.attack_uid}", "${op.element_tag}")'>Accept</button></td>`;
+            td3 = `<td><button class='btn btn-danger' onclick='false_positive(true_positive, "${op.sentence_id}", "${op.attack_uid}")'>Reject</button></td>`;
             tmp = `<tr id="sentence-tid${op.attack_uid.substr(op.attack_uid.length - 4)}">${td1}${td2}${td3}</tr>`;
             $("#tableSentenceInfo").find('tbody').append(tmp);
         });
