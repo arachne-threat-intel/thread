@@ -52,17 +52,11 @@ class RestService:
             return dict(status='Successfully moved sentence ' + criteria['sentence_id'])
 
     async def sentence_context(self, criteria=None):
-        if criteria['element_tag'] == 'img':
-            return []
-        sentence_hits = await self.dao.get('report_sentence_hits', dict(sentence_id=criteria['uid']))
-        for hit in sentence_hits:
-            hit['element_tag'] = criteria['element_tag']
-        return sentence_hits
+        return await self.dao.get('report_sentence_hits', dict(sentence_id=criteria['uid']))
 
     async def confirmed_sentences(self, criteria=None):
         tmp = []
-        techniques = await self.dao.get('true_positives',
-                                        dict(sentence_id=criteria['sentence_id'], element_tag=criteria['element_tag']))
+        techniques = await self.dao.get('true_positives', dict(sentence_id=criteria['sentence_id']))
         for tech in techniques:
             name = await self.dao.get('attack_uids', dict(uid=tech['attack_uid']))
             tmp.append(name[0])
@@ -73,7 +67,7 @@ class RestService:
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
         await self.dao.insert_generate_uid('true_positives',
                                            dict(sentence_id=sentence_dict[0]['uid'], attack_uid=criteria['attack_uid'],
-                                                true_positive=sentence_to_insert, element_tag=criteria['element_tag']))
+                                                true_positive=sentence_to_insert))
         return dict(status='inserted')
 
     async def false_positive(self, criteria=None):
@@ -213,7 +207,7 @@ class RestService:
         # Insert new row in the false_negatives database table to indicate a new confirmed technique
         await self.dao.insert_generate_uid('false_negatives',
                                            dict(sentence_id=sentence_dict[0]['uid'], attack_uid=criteria['attack_uid'],
-                                                true_positive=sentence_to_insert, element_tag=criteria['element_tag']))
+                                                false_negative=sentence_to_insert))
         
         # Insert new row in the report_sentence_hits database table to indicate a new confirmed technique
         # This is needed to ensure that requests to get all confirmed techniques works correctly

@@ -12,7 +12,6 @@ CREATE TABLE if not exists true_positives (
     attack_uid VARCHAR(60),
     sentence_id VARCHAR(60),
     true_positive TEXT,
-    element_tag TEXT,
     FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
     FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
 );

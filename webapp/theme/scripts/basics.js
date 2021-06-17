@@ -1,11 +1,10 @@
 // The current sentence that's selected
 var sentence_id = 0;
-// The html tag of the selected sentence
-var element_clicked_tag = "";
 // A temporarily highlighted sentence
 var tempHighlighted = undefined;
-// The class used for highlighting a sentence
+// The classes used for highlighting a sentence or image
 var highlightClass = "bg-warning";
+var highlightClassImg = "imgHighlight";
 
 function restRequest(type, data, callback) {
     $.ajax({
@@ -23,15 +22,14 @@ function remove_sentences(){
     restRequest('POST', {'index':'remove_sentences', 'sentence_id':sentence_id}, show_info);
 }
 
-function true_positive(type, id, attack_uid, element_tag){
-    $("#sentence" + id).addClass(highlightClass);
-    restRequest('POST', {'index':'true_positive', 'sentence_type':type, 'sentence_id':id, 'attack_uid':attack_uid, 'element_tag':element_tag}, show_info);
-    sentenceContext(id, element_tag, attack_uid)
+function true_positive(type, id, attack_uid) {
+    restRequest('POST', {'index':'true_positive', 'sentence_type':type, 'sentence_id':id, 'attack_uid':attack_uid}, show_info);
+    sentenceContext(id, attack_uid)
 }
 
-function false_positive(type, id, attack_uid){
+function false_positive(type, id, attack_uid) {
     document.getElementById("sentence-tid" + attack_uid.substr(attack_uid.length - 4)).remove();
-    //$(`#sentence${id}`).removeClass('bg-warning');
+    $("#elmt" + id).removeClass(highlightClass);
     restRequest('POST', {'index':'false_positive', 'sentence_type':type, 'sentence_id':id, 'attack_uid':attack_uid}, show_info);
 }
 
@@ -126,19 +124,19 @@ function savedAlert(){
     }
  }
 
-function sentenceContext(data, element_tag, attack_uid) {
-    // Update selected sentence global variables
-    element_clicked_tag = element_tag;
+function sentenceContext(data, attack_uid) {
+    // Update selected sentence global variable
     sentence_id = data;
     // Fire off requests to get info on this sentence
-    restRequest('POST', {'index':'sentence_context', 'uid': data, 'attack_uid':attack_uid, 'element_tag':element_tag}, updateSentenceContext);
-    restRequest('POST', {'index':'confirmed_sentences', 'sentence_id': data, 'element_tag':element_tag}, updateConfirmedContext);
+    restRequest('POST', {'index':'sentence_context', 'uid': data, 'attack_uid':attack_uid}, updateSentenceContext);
+    restRequest('POST', {'index':'confirmed_sentences', 'sentence_id': data}, updateConfirmedContext);
 }
 
 function updateSentenceContext(data) {
     // If we previously highlighted a sentence before and this is a new sentence, remove the previous highlighting
     if (tempHighlighted !== undefined && tempHighlighted !== sentence_id) {
         $("#elmt" + tempHighlighted).removeClass(highlightClass);
+        $("#img" + tempHighlighted).removeClass(highlightClassImg);
         tempHighlighted = undefined;
     }
     // Reset any 'Techniques Found' list
@@ -147,7 +145,7 @@ function updateSentenceContext(data) {
     if (data && data.length > 0) {
         $.each(data, function(index, op) {
             td1 = "<td><a href=https://attack.mitre.org/techniques/" + op.attack_tid + " target=_blank>" + op.attack_technique_name + "</a></td>";
-            td2 = `<td><button class='btn btn-success' onclick='true_positive(true_positive, "${op.sentence_id}", "${op.attack_uid}", "${op.element_tag}")'>Accept</button></td>`;
+            td2 = `<td><button class='btn btn-success' onclick='true_positive(true_positive, "${op.sentence_id}", "${op.attack_uid}")'>Accept</button></td>`;
             td3 = `<td><button class='btn btn-danger' onclick='false_positive(true_positive, "${op.sentence_id}", "${op.attack_uid}")'>Reject</button></td>`;
             tmp = `<tr id="sentence-tid${op.attack_uid.substr(op.attack_uid.length - 4)}">${td1}${td2}${td3}</tr>`;
             $("#tableSentenceInfo").find('tbody').append(tmp);
@@ -155,15 +153,19 @@ function updateSentenceContext(data) {
     // Else this sentence doesn't have attack data
     } else {
         // If the user is clicking on a sentence that's already highlighted, remove the highlighting
-        if ($("#elmt" + sentence_id).hasClass(highlightClass)) {
+        if ($("#elmt" + sentence_id).hasClass(highlightClass) || $("#img" + sentence_id).hasClass(highlightClassImg)) {
             $("#elmt" + sentence_id).removeClass(highlightClass);
+            $("#img" + sentence_id).removeClass(highlightClassImg);
             tempHighlighted = undefined;
         // else this sentence wasn't highlighted before; add the highlighting
         } else {
             $("#elmt" + sentence_id).addClass(highlightClass);
+            $("#img" + sentence_id).addClass(highlightClassImg);
             tempHighlighted = sentence_id;
         }
     }
+    // Permit clicking missing techniques button depending if an image is currently highlighted
+    $("#missingTechBtn").prop("disabled", $(`.${highlightClassImg}`).length > 0);
 }
 
 function updateConfirmedContext(data) {
@@ -223,11 +225,13 @@ $(window).resize(function() {
   autoHeight();
 });
 
-function addMissingTechnique(){
-    uid = $("#missingTechniqueSelect :selected").val();
-    restRequest('POST', {'index':'missing_technique', 'sentence_id': sentence_id, 'attack_uid':uid, 'element_tag':element_clicked_tag}, show_info);
-    restRequest('POST', {'index':'confirmed_sentences', 'sentence_id': sentence_id, 'element_tag':element_clicked_tag}, updateConfirmedContext);
-    // If an attack has been added to a temporarily highlighted sentence, the highlighting isn't temporary anymore
-    tempHighlighted = undefined
+function addMissingTechnique() {
+    // If an image is currently not highlighted (don't imply images can be mapped to attacks)
+    if($(`.${highlightClassImg}`).length == 0) {
+        uid = $("#missingTechniqueSelect :selected").val();
+        restRequest('POST', {'index':'missing_technique', 'sentence_id': sentence_id, 'attack_uid':uid}, show_info);
+        restRequest('POST', {'index':'confirmed_sentences', 'sentence_id': sentence_id}, updateConfirmedContext);
+        // If an attack has been added to a temporarily highlighted sentence, the highlighting isn't temporary anymore
+        tempHighlighted = undefined
+    }
 }
-
