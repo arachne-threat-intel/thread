@@ -158,7 +158,7 @@ class MLService:
     async def ml_techniques_found(self, report_id, sentence):
         sentence_id = await self.dao.insert_generate_uid('report_sentences',
                                                          dict(report_uid=report_id, text=sentence['text'],
-                                                              html=sentence['html'], found_status='true'))
+                                                              html=sentence['html'], found_status=1))
         for technique in sentence['ml_techniques_found']:
             attack_uid = await self.dao.get('attack_uids', dict(name=technique))
             # If the attack cannot be found via the 'name' column, try the 'tid' column

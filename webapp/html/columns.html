@@ -58,11 +58,11 @@
                 <img src="{{elmt.text}}" id="img{{elmt.uid}}" class="normalImage" onclick="sentenceContext('{{elmt.uid}}')"> <br><br>
             {% elif elmt.tag == 'header' %}
                 <h3>{{elmt.text}}</h3> 
-            {% elif elmt.tag == 'li' and elmt.found_status == 'true' %}
+            {% elif elmt.tag == 'li' and elmt.found_status == 1 %}
                 <li><a class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a></li> <br>
             {% elif elmt.tag == 'li' %}
                 <li><a id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a></li> <br>
-            {% elif elmt.found_status == 'true' %}
+            {% elif elmt.found_status == 1 %}
                 <a class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a> <br><br>
             {% else %}
                 <a id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a> <br><br>

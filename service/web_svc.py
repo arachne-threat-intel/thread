@@ -260,7 +260,7 @@ class WebService:
         img_dict = dict()
         img_dict['text'] = source
         img_dict['tag'] = 'img'
-        img_dict['found_status'] = False
+        img_dict['found_status'] = 0
         img_dict['ml_techniques_found'] = []
         img_dict['res_techniques_found'] = []
         return img_dict
@@ -270,7 +270,7 @@ class WebService:
         res_dict = dict()
         res_dict['text'] = plaintext
         res_dict['tag'] = tag
-        res_dict['found_status'] = False
+        res_dict['found_status'] = 0
         res_dict['ml_techniques_found'] = []
         res_dict['res_techniques_found'] = []
         return res_dict

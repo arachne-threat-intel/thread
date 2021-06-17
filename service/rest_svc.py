@@ -186,11 +186,11 @@ class RestService:
             elif sentence['reg_techniques_found']:
                 await self.reg_svc.reg_techniques_found(report_id, sentence)
             else:
-                data = dict(report_uid=report_id, text=sentence['text'], html=sentence['html'], found_status='false')
+                data = dict(report_uid=report_id, text=sentence['text'], html=sentence['html'], found_status=0)
                 await self.dao.insert_generate_uid('report_sentences', data)
 
         for element in original_html:
-            html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'], found_status='false')
+            html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'], found_status=0)
             await self.dao.insert_generate_uid('original_html', html_element)
         logging.info('Finished analysing report ' + str(report_id))
 
@@ -219,8 +219,8 @@ class RestService:
         
         # If the found_status for the sentence id is set to false when adding a missing technique
         # then update the found_status value to true for the sentence id in the report_sentence table 
-        if sentence_dict[0]['found_status'] == 'false':
-            await self.dao.update('report_sentences', 'uid', criteria['sentence_id'], dict(found_status='true'))
+        if sentence_dict[0]['found_status'] == 0:
+            await self.dao.update('report_sentences', 'uid', criteria['sentence_id'], dict(found_status=1))
         
         # Return status message
         return dict(status='inserted')

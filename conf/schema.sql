@@ -69,7 +69,7 @@ CREATE TABLE if not exists report_sentences (
     report_uid VARCHAR(60),
     text TEXT,
     html TEXT,
-    found_status TEXT,
+    found_status BOOLEAN DEFAULT 0,
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
 );
 
@@ -90,6 +90,6 @@ CREATE TABLE if not exists original_html (
     report_uid VARCHAR(60),
     text TEXT,
     tag TEXT,
-    found_status TEXT,
+    found_status BOOLEAN DEFAULT 0,
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
 );

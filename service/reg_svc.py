@@ -41,7 +41,7 @@ class RegService:
     async def reg_techniques_found(self, report_id, sentence):
         sentence_id = await self.dao.insert_generate_uid('report_sentences',
                                                          dict(report_uid=report_id, text=sentence['text'],
-                                                              html=sentence['html'], found_status='true'))
+                                                              html=sentence['html'], found_status=1))
         for technique in sentence['reg_techniques_found']:
             attack_uid = await self.dao.get('attack_uids', dict(name=technique))
             if not attack_uid:
