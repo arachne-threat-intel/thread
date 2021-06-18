@@ -20,18 +20,21 @@ class Attack:
             print('! error building db : {}'.format(exc))
 
     async def get(self, table, criteria=None):
+        sql = 'SELECT * FROM %s' % table
+        qparams = []
+        if criteria:
+            where = next(iter(criteria))
+            value = criteria.pop(where)
+            if value:
+                sql += ' WHERE %s = ?' % where
+                qparams.append(value)
+                for k, v in criteria.items():
+                    sql += ' AND %s = ?' % k
+                    qparams.append(v)
         with sqlite3.connect(self.database) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            sql = 'SELECT * FROM %s ' % table
-            if criteria:
-                where = next(iter(criteria))
-                value = criteria.pop(where)
-                if value:
-                    sql += (' WHERE %s = "%s"' % (where, value))
-                    for k, v in criteria.items():
-                        sql += (' AND %s = "%s"' % (k, v))
-            cursor.execute(sql)
+            cursor.execute(sql, tuple(qparams))
             rows = cursor.fetchall()
             return [dict(ix) for ix in rows]
 
@@ -99,15 +102,18 @@ class Attack:
             conn.commit()
 
     async def delete(self, table, data):
+        sql = 'DELETE FROM %s' % table
+        qparams = []
+        where = next(iter(data))
+        value = data.pop(where)
+        sql += ' WHERE %s = ?' % where
+        qparams.append(value)
+        for k, v in data.items():
+            sql += ' AND %s = ?' % k
+            qparams.append(v)
         with sqlite3.connect(self.database) as conn:
             cursor = conn.cursor()
-            sql = 'DELETE FROM %s ' % table
-            where = next(iter(data))
-            value = data.pop(where)
-            sql += (' WHERE %s = "%s"' % (where, value))
-            for k, v in data.items():
-                sql += (' AND %s = "%s"' % (k, v))
-            cursor.execute(sql)
+            cursor.execute(sql, tuple(qparams))
             conn.commit()
 
     async def raw_query(self, query, one=False):
