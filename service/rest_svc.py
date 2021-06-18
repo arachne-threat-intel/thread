@@ -30,7 +30,8 @@ class RestService:
 
     async def set_status(self, criteria=None):
         report_dict = await self.dao.get('reports', dict(title=criteria['file_name']))
-        await self.dao.update('reports', 'uid', report_dict[0]['uid'], dict(current_status=criteria['set_status']))
+        await self.dao.update('reports', where=dict(uid=report_dict[0]['uid']),
+                              data=dict(current_status=criteria['set_status']))
         return dict(status="Report status updated to " + criteria['set_status'])
 
     async def delete_report(self, criteria=None):
@@ -175,10 +176,9 @@ class RestService:
         analyzed_html = await self.ml_svc.combine_ml_reg(ml_analyzed_html, reg_analyzed_html)
 
         # update card to reflect the end of queue
-        await self.dao.update('reports', 'title', criteria['title'], dict(current_status='needs_review'))
+        await self.dao.update('reports', where=dict(title=criteria['title']), data=dict(current_status='needs_review'))
         temp = await self.dao.get('reports', dict(title=criteria['title']))
         criteria['id'] = temp[0]['uid']
-        # criteria['id'] = await self.dao.update('reports', dict(title=criteria['title'], url=criteria['url'],current_status="needs_review"))
         report_id = criteria['id']
         for sentence in analyzed_html:
             if sentence['ml_techniques_found']:
@@ -220,7 +220,8 @@ class RestService:
         # If the found_status for the sentence id is set to false when adding a missing technique
         # then update the found_status value to true for the sentence id in the report_sentence table 
         if sentence_dict[0]['found_status'] == 0:
-            await self.dao.update('report_sentences', 'uid', criteria['sentence_id'], dict(found_status=1))
+            await self.dao.update('report_sentences', where=dict(uid=criteria['sentence_id']),
+                                  data=dict(found_status=1))
         
         # Return status message
         return dict(status='inserted')

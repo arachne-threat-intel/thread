@@ -198,7 +198,8 @@ class DataService:
                                                            attack_uid=criteria['attack_uid']))
         number_of_techniques = await self.dao.get('report_sentence_hits', dict(sentence_id=criteria['sentence_id']))
         if len(number_of_techniques) == 0:
-            await self.dao.update('report_sentences', 'uid', criteria['sentence_id'], dict(found_status=0))
+            await self.dao.update('report_sentences', where=dict(uid=criteria['sentence_id']),
+                                  data=dict(found_status=0))
             return dict(status='true')
         else:
             return dict(status='false', id=criteria['sentence_id'])

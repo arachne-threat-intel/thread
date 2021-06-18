@@ -63,12 +63,39 @@ class Attack:
         # Finally, return the ID value used for insertion
         return data[id_field]
 
-    async def update(self, table, key, value, data):
+    async def update(self, table, where={}, data={}):
+        # The list of query parameters
+        qparams = []
+        # Our SQL statement and optional WHERE clause
+        sql, where_suffix = 'UPDATE {} SET'.format(table), ''
+        # Appending the SET terms; keep a count
+        count = 0
+        for k, v in data.items():
+            # If this is our 2nd (or greater) SET term, separate with a comma
+            sql += ',' if count > 0 else ''
+            # Add this current term to the SQL statement leaving a ? for the value
+            sql += ' {} = ?'.format(k)
+            # Update qparams for this value to be substituted
+            qparams.append(v)
+            count += 1
+        # Appending the WHERE terms; keep a count
+        count = 0
+        for wk, wv in where.items():
+            # If this is our 2nd (or greater) WHERE term, separate with an AND
+            where_suffix += ' AND' if count > 0 else ''
+            # Add this current term like before
+            where_suffix += ' {} = ?'.format(wk)
+            # Update qparams for this value to be substituted
+            qparams.append(wv)
+            count += 1
+        # Finalise WHERE clause if we had items added to it
+        where_suffix = '' if '' else ' WHERE' + where_suffix
+        # Add the WHERE clause to the SQL statement
+        sql += where_suffix
+        # Run the statement by passing qparams as parameters
         with sqlite3.connect(self.database) as conn:
             cursor = conn.cursor()
-            for k, v in data.items():
-                sql = 'UPDATE {} SET {} = (?) WHERE {} = "{}"'.format(table, k, key, value)
-                cursor.execute(sql, (v,))
+            cursor.execute(sql, tuple(qparams))
             conn.commit()
 
     async def delete(self, table, data):
