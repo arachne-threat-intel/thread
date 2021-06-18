@@ -54,4 +54,4 @@ class RegService:
             await self.dao.insert_generate_uid('report_sentence_hits',
                                                dict(sentence_id=sentence_id, attack_uid=attack_technique,
                                                     attack_technique_name=attack_technique_name, report_uid=report_id,
-                                                    attack_tid=attack_tid))
+                                                    attack_tid=attack_tid, initial_model_match=1))

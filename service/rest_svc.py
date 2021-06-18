@@ -53,7 +53,7 @@ class RestService:
             return dict(status='Successfully moved sentence ' + criteria['sentence_id'])
 
     async def sentence_context(self, criteria=None):
-        return await self.dao.get('report_sentence_hits', dict(sentence_id=criteria['uid']))
+        return await self.data_svc.get_active_sentence_hits(sentence_id=criteria['uid'])
 
     async def confirmed_sentences(self, criteria=None):
         tmp = []
@@ -195,33 +195,43 @@ class RestService:
         logging.info('Finished analysing report ' + str(report_id))
 
     async def missing_technique(self, criteria=None):
+        # The sentence and attack IDs
+        sen_id, attack_id = criteria['sentence_id'], criteria['attack_uid']
         # Get the attack information for this attack id
-        attack_dict = await self.dao.get('attack_uids', dict(uid=criteria['attack_uid']))
-
+        attack_dict = await self.dao.get('attack_uids', dict(uid=attack_id))
         # Get the report sentence information for the sentence id
-        sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
-        
+        sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
         # Get the sentence to insert by removing html markup
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
-        
-        # Insert new row in the false_negatives database table to indicate a new confirmed technique
-        await self.dao.insert_generate_uid('false_negatives',
-                                           dict(sentence_id=sentence_dict[0]['uid'], attack_uid=criteria['attack_uid'],
-                                                false_negative=sentence_to_insert))
-        
-        # Insert new row in the report_sentence_hits database table to indicate a new confirmed technique
-        # This is needed to ensure that requests to get all confirmed techniques works correctly
-        await self.dao.insert_generate_uid('report_sentence_hits',
-                                           dict(sentence_id=criteria['sentence_id'], attack_uid=criteria['attack_uid'],
-                                                attack_technique_name=attack_dict[0]['name'],
-                                                report_uid=sentence_dict[0]['report_uid'],
-                                                attack_tid=attack_dict[0]['tid']))
-        
+        # Check if the model initially predicted this attack for this sentence
+        model_initially_predicted = await self.data_svc.model_predicted_attack(sentence_id=sen_id, attack_id=attack_id)
+        if model_initially_predicted:
+            # Insert new row in the true_positives database table to indicate ML model agreed with user
+            await self.dao.insert_generate_uid('true_positives', dict(sentence_id=sen_id, attack_uid=attack_id,
+                                                                      true_positive=sentence_to_insert))
+        else:
+            # Insert new row in the false_negatives database table to indicate a new confirmed technique
+            await self.dao.insert_generate_uid('false_negatives', dict(sentence_id=sen_id, attack_uid=attack_id,
+                                                                       false_negative=sentence_to_insert))
+
+        # Check this sentence + attack combination isn't already in report_sentence_hits
+        historic_hits = self.dao.get('report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id))
+        # If it is, flag it as an active hit
+        if historic_hits:
+            await self.dao.update('report_sentence_hits', where=dict(sentence_id=sen_id, attack_uid=attack_id),
+                                  data=dict(active_hit=1))
+        else:
+            # Insert new row in the report_sentence_hits database table to indicate a new confirmed technique
+            # This is needed to ensure that requests to get all confirmed techniques works correctly
+            await self.dao.insert_generate_uid('report_sentence_hits',
+                                               dict(sentence_id=sen_id, attack_uid=attack_id,
+                                                    attack_technique_name=attack_dict[0]['name'],
+                                                    report_uid=sentence_dict[0]['report_uid'],
+                                                    attack_tid=attack_dict[0]['tid']))
+
         # If the found_status for the sentence id is set to false when adding a missing technique
         # then update the found_status value to true for the sentence id in the report_sentence table 
         if sentence_dict[0]['found_status'] == 0:
-            await self.dao.update('report_sentences', where=dict(uid=criteria['sentence_id']),
-                                  data=dict(found_status=1))
-        
+            await self.dao.update('report_sentences', where=dict(uid=sen_id), data=dict(found_status=1))
         # Return status message
         return dict(status='inserted')

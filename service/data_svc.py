@@ -194,9 +194,16 @@ class DataService:
         return reports
 
     async def last_technique_check(self, criteria):
+        # Delete any sentence-hits where the model didn't initially guess the attack
         await self.dao.delete('report_sentence_hits', dict(sentence_id=criteria['sentence_id'],
-                                                           attack_uid=criteria['attack_uid']))
-        number_of_techniques = await self.dao.get('report_sentence_hits', dict(sentence_id=criteria['sentence_id']))
+                                                           attack_uid=criteria['attack_uid'],
+                                                           initial_model_match=0))
+        # For sentence-hits where the model did guess the attack, flag as inactive
+        await self.dao.update('report_sentence_hits', where=dict(sentence_id=criteria['sentence_id'],
+                                                                 attack_uid=criteria['attack_uid'],
+                                                                 initial_model_match=1),
+                              data=dict(active_hit=0))
+        number_of_techniques = await self.get_active_sentence_hits(sentence_id=criteria['sentence_id'])
         if len(number_of_techniques) == 0:
             await self.dao.update('report_sentences', where=dict(uid=criteria['sentence_id']),
                                   data=dict(found_status=0))
@@ -207,7 +214,7 @@ class DataService:
     async def build_sentences(self, report_id):
         sentences = await self.dao.get('report_sentences', dict(report_uid=report_id))
         for sentence in sentences:
-            sentence['hits'] = await self.dao.get('report_sentence_hits', dict(sentence_id=sentence['uid']))
+            sentence['hits'] = await self.get_active_sentence_hits(sentence_id=sentence['uid'])
             if await self.dao.get('true_positives', dict(sentence_id=sentence['uid'])):
                 sentence['confirmed'] = 'true'
             else:
@@ -221,17 +228,23 @@ class DataService:
     async def get_confirmed_techniques(self, report_id):
         # The SQL select join query to retrieve the confirmed techniques for the report from the database
         select_join_query = (
-            f"SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, report_sentence_hits.attack_tid, true_positives.true_positive " 
-            f"FROM ((report_sentences INNER JOIN report_sentence_hits ON report_sentences.uid = report_sentence_hits.sentence_id) " 
-            f"INNER JOIN true_positives ON report_sentence_hits.sentence_id = true_positives.sentence_id AND report_sentence_hits.attack_uid = true_positives.attack_uid) " 
-            f"WHERE report_sentence_hits.report_uid = {report_id} "
-            f"UNION "
-            f"SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, report_sentence_hits.attack_tid, false_negatives.false_negative " 
-            f"FROM ((report_sentences INNER JOIN report_sentence_hits ON report_sentences.uid = report_sentence_hits.sentence_id) " 
-            f"INNER JOIN false_negatives ON report_sentence_hits.sentence_id = false_negatives.sentence_id AND report_sentence_hits.attack_uid = false_negatives.attack_uid) " 
-            f"WHERE report_sentence_hits.report_uid = {report_id}")
+            "SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, "
+            "report_sentence_hits.attack_tid, true_positives.true_positive " 
+            "FROM ((report_sentences INNER JOIN report_sentence_hits "
+            "ON report_sentences.uid = report_sentence_hits.sentence_id) " 
+            "INNER JOIN true_positives ON report_sentence_hits.sentence_id = true_positives.sentence_id "
+            "AND report_sentence_hits.attack_uid = true_positives.attack_uid) " 
+            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.active_hit = 1 "
+            "UNION "
+            "SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, "
+            "report_sentence_hits.attack_tid, false_negatives.false_negative " 
+            "FROM ((report_sentences INNER JOIN report_sentence_hits "
+            "ON report_sentences.uid = report_sentence_hits.sentence_id) " 
+            "INNER JOIN false_negatives ON report_sentence_hits.sentence_id = false_negatives.sentence_id "
+            "AND report_sentence_hits.attack_uid = false_negatives.attack_uid) " 
+            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.active_hit = 1")
         # Run the SQL select join query
-        hits = await self.dao.raw_select(select_join_query)
+        hits = await self.dao.raw_select(select_join_query, parameters=tuple([report_id, report_id]))
         techniques = []
         for hit in hits:
             # For each confirmed technique returned,
@@ -243,6 +256,15 @@ class DataService:
             techniques.append(technique)
         # Return the list of confirmed techniques
         return techniques
+
+    async def get_active_sentence_hits(self, sentence_id=''):
+        """Function to retrieve active sentence hits (and ignoring historic ones, e.g. a model's initial prediction)."""
+        return await self.dao.get('report_sentence_hits', dict(sentence_id=sentence_id, active_hit=1))
+
+    async def model_predicted_attack(self, sentence_id='', attack_id=''):
+        """Function to return if the ML model for an attack initially predicted the attack for a sentence."""
+        return bool(await self.dao.get('report_sentence_hits',
+                                       dict(sentence_id=sentence_id, attack_uid=attack_id, initial_model_match=1)))
 
     async def get_unique_title(self, title):
         """

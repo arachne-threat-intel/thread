@@ -80,6 +80,8 @@ CREATE TABLE if not exists report_sentence_hits (
     report_uid VARCHAR(60),
     sentence_id VARCHAR(60),
     attack_tid TEXT,
+    initial_model_match BOOLEAN DEFAULT 0,
+    active_hit BOOLEAN DEFAULT 1,
     FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE,
     FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
