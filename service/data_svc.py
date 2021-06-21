@@ -198,11 +198,11 @@ class DataService:
         await self.dao.delete('report_sentence_hits', dict(sentence_id=criteria['sentence_id'],
                                                            attack_uid=criteria['attack_uid'],
                                                            initial_model_match=0))
-        # For sentence-hits where the model did guess the attack, flag as inactive
+        # For sentence-hits where the model did guess the attack, flag as inactive and unconfirmed
         await self.dao.update('report_sentence_hits', where=dict(sentence_id=criteria['sentence_id'],
                                                                  attack_uid=criteria['attack_uid'],
                                                                  initial_model_match=1),
-                              data=dict(active_hit=0))
+                              data=dict(active_hit=0, confirmed=0))
         number_of_techniques = await self.get_active_sentence_hits(sentence_id=criteria['sentence_id'])
         if len(number_of_techniques) == 0:
             await self.dao.update('report_sentences', where=dict(uid=criteria['sentence_id']),
@@ -229,22 +229,16 @@ class DataService:
         # The SQL select join query to retrieve the confirmed techniques for the report from the database
         select_join_query = (
             "SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, "
-            "report_sentence_hits.attack_tid, true_positives.true_positive " 
-            "FROM ((report_sentences INNER JOIN report_sentence_hits "
-            "ON report_sentences.uid = report_sentence_hits.sentence_id) " 
-            "INNER JOIN true_positives ON report_sentence_hits.sentence_id = true_positives.sentence_id "
-            "AND report_sentence_hits.attack_uid = true_positives.attack_uid) " 
-            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.active_hit = 1 "
-            "UNION "
-            "SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, "
-            "report_sentence_hits.attack_tid, false_negatives.false_negative " 
-            "FROM ((report_sentences INNER JOIN report_sentence_hits "
-            "ON report_sentences.uid = report_sentence_hits.sentence_id) " 
-            "INNER JOIN false_negatives ON report_sentence_hits.sentence_id = false_negatives.sentence_id "
-            "AND report_sentence_hits.attack_uid = false_negatives.attack_uid) " 
-            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.active_hit = 1")
+            "report_sentence_hits.attack_tid, report_sentences.text "
+            "FROM (report_sentences INNER JOIN report_sentence_hits "
+            "ON report_sentences.uid = report_sentence_hits.sentence_id) "
+            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = 1")
         # Run the SQL select join query
-        hits = await self.dao.raw_select(select_join_query, parameters=tuple([report_id, report_id]))
+        return await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
+
+    async def get_confirmed_techniques_for_report(self, report_id):
+        # Get the confirmed hits
+        hits = await self.get_confirmed_techniques(report_id)
         techniques = []
         for hit in hits:
             # For each confirmed technique returned,

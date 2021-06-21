@@ -100,7 +100,7 @@ class WebAPI:
         }]
 
         # Get confirmed techniques for the report from the database
-        techniques = await self.data_svc.get_confirmed_techniques(report[0]['uid'])
+        techniques = await self.data_svc.get_confirmed_techniques_for_report(report[0]['uid'])
 
         # Append techniques to enterprise layer
         for technique in techniques:

@@ -216,10 +216,10 @@ class RestService:
 
         # Check this sentence + attack combination isn't already in report_sentence_hits
         historic_hits = self.dao.get('report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id))
-        # If it is, flag it as an active hit
+        # If it is, flag it as an active and confirmed hit
         if historic_hits:
             await self.dao.update('report_sentence_hits', where=dict(sentence_id=sen_id, attack_uid=attack_id),
-                                  data=dict(active_hit=1))
+                                  data=dict(active_hit=1, confirmed=1))
         else:
             # Insert new row in the report_sentence_hits database table to indicate a new confirmed technique
             # This is needed to ensure that requests to get all confirmed techniques works correctly
@@ -227,7 +227,7 @@ class RestService:
                                                dict(sentence_id=sen_id, attack_uid=attack_id,
                                                     attack_technique_name=attack_dict[0]['name'],
                                                     report_uid=sentence_dict[0]['report_uid'],
-                                                    attack_tid=attack_dict[0]['tid']))
+                                                    attack_tid=attack_dict[0]['tid'], confirmed=1))
 
         # If the found_status for the sentence id is set to false when adding a missing technique
         # then update the found_status value to true for the sentence id in the report_sentence table 
