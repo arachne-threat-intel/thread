@@ -194,22 +194,21 @@ class DataService:
         return reports
 
     async def last_technique_check(self, criteria):
+        # The sentence and attack IDs
+        sen_id, attack_id = criteria['sentence_id'], criteria['attack_uid']
         # Delete any sentence-hits where the model didn't initially guess the attack
-        await self.dao.delete('report_sentence_hits', dict(sentence_id=criteria['sentence_id'],
-                                                           attack_uid=criteria['attack_uid'],
+        await self.dao.delete('report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id,
                                                            initial_model_match=0))
         # For sentence-hits where the model did guess the attack, flag as inactive and unconfirmed
-        await self.dao.update('report_sentence_hits', where=dict(sentence_id=criteria['sentence_id'],
-                                                                 attack_uid=criteria['attack_uid'],
+        await self.dao.update('report_sentence_hits', where=dict(sentence_id=sen_id, attack_uid=attack_id,
                                                                  initial_model_match=1),
                               data=dict(active_hit=0, confirmed=0))
-        number_of_techniques = await self.get_active_sentence_hits(sentence_id=criteria['sentence_id'])
+        number_of_techniques = await self.get_active_sentence_hits(sentence_id=sen_id)
         if len(number_of_techniques) == 0:
-            await self.dao.update('report_sentences', where=dict(uid=criteria['sentence_id']),
-                                  data=dict(found_status=0))
+            await self.dao.update('report_sentences', where=dict(uid=sen_id), data=dict(found_status=0))
             return dict(status='true')
         else:
-            return dict(status='false', id=criteria['sentence_id'])
+            return dict(status='false', id=sen_id)
 
     async def build_sentences(self, report_id):
         sentences = await self.dao.get('report_sentences', dict(report_uid=report_id))
@@ -252,11 +251,6 @@ class DataService:
     async def get_active_sentence_hits(self, sentence_id=''):
         """Function to retrieve active sentence hits (and ignoring historic ones, e.g. a model's initial prediction)."""
         return await self.dao.get('report_sentence_hits', dict(sentence_id=sentence_id, active_hit=1))
-
-    async def model_predicted_attack(self, sentence_id='', attack_id=''):
-        """Function to return if the ML model for an attack initially predicted the attack for a sentence."""
-        return bool(await self.dao.get('report_sentence_hits',
-                                       dict(sentence_id=sentence_id, attack_uid=attack_id, initial_model_match=1)))
 
     async def get_unique_title(self, title):
         """

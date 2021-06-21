@@ -36,17 +36,15 @@ class WebAPI:
         index = data.pop('index')
         options = dict(
             POST=dict(
-                false_positive=lambda d: self.rest_svc.false_positive(criteria=d),
-                true_positive=lambda d: self.rest_svc.true_positive(criteria=d),
-                false_negative=lambda d: self.rest_svc.false_negative(criteria=d),
+                add_attack=lambda d: self.rest_svc.add_attack(criteria=d),
+                reject_attack=lambda d: self.rest_svc.reject_attack(criteria=d),
                 set_status=lambda d: self.rest_svc.set_status(criteria=d),
                 insert_report=lambda d: self.rest_svc.insert_report(criteria=d),
                 insert_csv=lambda d: self.rest_svc.insert_csv(criteria=d),
                 remove_sentences=lambda d: self.rest_svc.remove_sentences(criteria=d),
                 delete_report=lambda d: self.rest_svc.delete_report(criteria=d),
                 sentence_context=lambda d: self.rest_svc.sentence_context(criteria=d),
-                confirmed_sentences=lambda d: self.rest_svc.confirmed_sentences(criteria=d),
-                missing_technique=lambda d: self.rest_svc.missing_technique(criteria=d)
+                confirmed_sentences=lambda d: self.rest_svc.confirmed_sentences(criteria=d)
             ))
         output = await options[request.method][index](data)
         return web.json_response(output)
@@ -79,7 +77,7 @@ class WebAPI:
         layer_name = f"{report_title}"
         enterprise_layer_description = f"Enterprise techniques used by {report_title}, ATT&CK"
         version = '1.0'
-        if (version): # add version number if it exists
+        if (version):  # add version number if it exists
             enterprise_layer_description += f" v{version}"
 
         # Enterprise navigator layer
@@ -89,11 +87,8 @@ class WebAPI:
         enterprise_layer['domain'] = "mitre-enterprise"
         enterprise_layer['version'] = "2.2"
         enterprise_layer['techniques'] = []
-        enterprise_layer["gradient"] = { # white for nonused, blue for used
-		    "colors": ["#ffffff", "#66b1ff"],
-		    "minValue": 0,
-    		"maxValue": 1
-	    }
+        # white for non-used, blue for used
+        enterprise_layer["gradient"] = {"colors": ["#ffffff", "#66b1ff"], "minValue": 0, "maxValue": 1}
         enterprise_layer['legendItems'] = [{
             'label': f'used by {report_title}',
             'color': "#66b1ff"

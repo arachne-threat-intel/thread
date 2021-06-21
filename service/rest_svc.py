@@ -19,15 +19,6 @@ class RestService:
         self.resources = []  # resource array
         self.externally_called = externally_called
 
-    async def false_negative(self, criteria=None):
-        sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
-        sentence_to_strip = sentence_dict[0]['text']
-        sentence_to_insert = self.web_svc.remove_html_markup_and_found(sentence_to_strip)
-        await self.dao.insert_generate_uid('false_negatives',
-                                           dict(sentence_id=sentence_dict[0]['uid'], attack_uid=criteria['attack_uid'],
-                                                false_negative=sentence_to_insert))
-        return dict(status='inserted')
-
     async def set_status(self, criteria=None):
         report_dict = await self.dao.get('reports', dict(title=criteria['file_name']))
         await self.dao.update('reports', where=dict(uid=report_dict[0]['uid']),
@@ -62,23 +53,6 @@ class RestService:
             name = await self.dao.get('attack_uids', dict(uid=tech['attack_uid']))
             tmp.append(name[0])
         return tmp
-
-    async def true_positive(self, criteria=None):
-        sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
-        sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
-        await self.dao.insert_generate_uid('true_positives',
-                                           dict(sentence_id=sentence_dict[0]['uid'], attack_uid=criteria['attack_uid'],
-                                                true_positive=sentence_to_insert))
-        return dict(status='inserted')
-
-    async def false_positive(self, criteria=None):
-        sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
-        sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
-        last = await self.data_svc.last_technique_check(criteria)
-        await self.dao.insert_generate_uid('false_positives',
-                                           dict(sentence_id=sentence_dict[0]['uid'], attack_uid=criteria['attack_uid'],
-                                                false_positive=sentence_to_insert))
-        return dict(status='inserted', last=last)
 
     async def insert_report(self, criteria=None):
         for i in range(len(criteria['title'])):
@@ -194,7 +168,7 @@ class RestService:
             await self.dao.insert_generate_uid('original_html', html_element)
         logging.info('Finished analysing report ' + str(report_id))
 
-    async def missing_technique(self, criteria=None):
+    async def add_attack(self, criteria=None):
         # The sentence and attack IDs
         sen_id, attack_id = criteria['sentence_id'], criteria['attack_uid']
         # Get the attack information for this attack id
@@ -203,23 +177,20 @@ class RestService:
         sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
         # Get the sentence to insert by removing html markup
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
-        # Check if the model initially predicted this attack for this sentence
-        model_initially_predicted = await self.data_svc.model_predicted_attack(sentence_id=sen_id, attack_id=attack_id)
-        if model_initially_predicted:
-            # Insert new row in the true_positives database table to indicate ML model agreed with user
-            await self.dao.insert_generate_uid('true_positives', dict(sentence_id=sen_id, attack_uid=attack_id,
-                                                                      true_positive=sentence_to_insert))
-        else:
-            # Insert new row in the false_negatives database table to indicate a new confirmed technique
-            await self.dao.insert_generate_uid('false_negatives', dict(sentence_id=sen_id, attack_uid=attack_id,
-                                                                       false_negative=sentence_to_insert))
-
+        # A flag to determine if the model initially predicted this attack for this sentence
+        model_initially_predicted = False
         # Check this sentence + attack combination isn't already in report_sentence_hits
         historic_hits = self.dao.get('report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id))
-        # If it is, flag it as an active and confirmed hit
         if historic_hits:
+            returned_hit = historic_hits[0]
+            # If this attack is already confirmed for this sentence, we are not going to do anything further
+            if returned_hit['confirmed']:
+                return dict(status='ignored; attack already confirmed')
+            # Else update the hit as active and confirmed
             await self.dao.update('report_sentence_hits', where=dict(sentence_id=sen_id, attack_uid=attack_id),
                                   data=dict(active_hit=1, confirmed=1))
+            # Update model_initially_predicted flag using returned historic_hits
+            model_initially_predicted = returned_hit['initial_model_match']
         else:
             # Insert new row in the report_sentence_hits database table to indicate a new confirmed technique
             # This is needed to ensure that requests to get all confirmed techniques works correctly
@@ -228,10 +199,42 @@ class RestService:
                                                     attack_technique_name=attack_dict[0]['name'],
                                                     report_uid=sentence_dict[0]['report_uid'],
                                                     attack_tid=attack_dict[0]['tid'], confirmed=1))
-
+        # As this will now be either a true positive or false negative, ensure it is not a false positive too
+        await self.dao.delete('false_positives', dict(sentence_id=sen_id, attack_uid=attack_id))
+        # If the ML model correctly predicted this attack, then it is a true positive
+        if model_initially_predicted:
+            # Insert new row in the true_positives database table
+            await self.dao.insert_generate_uid('true_positives', dict(sentence_id=sen_id, attack_uid=attack_id,
+                                                                      true_positive=sentence_to_insert))
+        else:
+            # Insert new row in the false_negatives database table as model incorrectly flagged as not an attack
+            await self.dao.insert_generate_uid('false_negatives', dict(sentence_id=sen_id, attack_uid=attack_id,
+                                                                       false_negative=sentence_to_insert))
         # If the found_status for the sentence id is set to false when adding a missing technique
         # then update the found_status value to true for the sentence id in the report_sentence table 
         if sentence_dict[0]['found_status'] == 0:
             await self.dao.update('report_sentences', where=dict(uid=sen_id), data=dict(found_status=1))
         # Return status message
         return dict(status='inserted')
+
+    async def reject_attack(self, criteria=None):
+        # The sentence and attack IDs
+        sen_id, attack_id = criteria['sentence_id'], criteria['attack_uid']
+        # Get the report sentence information for the sentence id
+        sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
+        # Get the sentence to insert by removing html markup
+        sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
+        # Tidy up report_sentence_hits table whilst checking if this is the last technique
+        last = await self.data_svc.last_technique_check(criteria)
+        # This previously-highlighted sentence may have been added as a true positive or false negative; delete these
+        await self.dao.delete('true_positives', dict(sentence_id=sen_id, attack_uid=attack_id))
+        await self.dao.delete('false_negatives', dict(sentence_id=sen_id, attack_uid=attack_id))
+        # Check if the ML model initially predicted this attack
+        model_initially_predicted = \
+            len(await self.dao.get('report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id,
+                                                                initial_model_match=1)))
+        # If it did, then this is a false positive
+        if model_initially_predicted:
+            await self.dao.insert_generate_uid('false_positives', dict(sentence_id=sen_id, attack_uid=attack_id,
+                                                                       false_positive=sentence_to_insert))
+        return dict(status='inserted', last=last)

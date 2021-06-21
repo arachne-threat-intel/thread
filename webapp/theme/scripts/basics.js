@@ -22,21 +22,17 @@ function remove_sentences(){
     restRequest('POST', {'index':'remove_sentences', 'sentence_id':sentence_id}, show_info);
 }
 
-function true_positive(type, id, attack_uid) {
-    restRequest('POST', {'index':'true_positive', 'sentence_type':type, 'sentence_id':id, 'attack_uid':attack_uid}, show_info);
-    sentenceContext(id, attack_uid)
+function acceptAttack(id, attack_uid) {
+    restRequest('POST', {'index':'add_attack', 'sentence_id':id, 'attack_uid':attack_uid}, show_info);
+    // TODO debug and see how this may be spamming Confirmed Techniques list
+    sentenceContext(id, attack_uid);
 }
 
-function false_positive(type, id, attack_uid) {
+function rejectAttack(id, attack_uid) {
     document.getElementById("sentence-tid" + attack_uid.substr(attack_uid.length - 4)).remove();
+    // TODO replace with a check if this is the last attack being rejected, else we want highlighting to remain
     $("#elmt" + id).removeClass(highlightClass);
-    restRequest('POST', {'index':'false_positive', 'sentence_type':type, 'sentence_id':id, 'attack_uid':attack_uid}, show_info);
-}
-
-function false_negative_update(data){
-    if (data.last == 'true') {
-            $(`#sentence${data.id}`).removeClass(highlightClass);
-    }
+    restRequest('POST', {'index':'reject_attack', 'sentence_id':id, 'attack_uid':attack_uid}, show_info);
 }
 
 function deleteReport(report_id){
@@ -45,10 +41,6 @@ function deleteReport(report_id){
     window.location.reload(true);
   } else {}
 
-}
-
-function false_negative(type, attack_uid){
-    restRequest('POST', {'index':'false_negative', 'sentence_type':type, 'sentence_id':sentence_id, 'attack_uid':attack_uid}, show_info);
 }
 
 function set_status(set_status, file_name){
@@ -122,7 +114,7 @@ function savedAlert(){
     } else {
       $("footer").removeClass('sticky-footer');
     }
- }
+}
 
 function sentenceContext(data, attack_uid) {
     // Update selected sentence global variable
@@ -145,8 +137,8 @@ function updateSentenceContext(data) {
     if (data && data.length > 0) {
         $.each(data, function(index, op) {
             td1 = "<td><a href=https://attack.mitre.org/techniques/" + op.attack_tid + " target=_blank>" + op.attack_technique_name + "</a></td>";
-            td2 = `<td><button class='btn btn-success' onclick='true_positive(true_positive, "${op.sentence_id}", "${op.attack_uid}")'>Accept</button></td>`;
-            td3 = `<td><button class='btn btn-danger' onclick='false_positive(true_positive, "${op.sentence_id}", "${op.attack_uid}")'>Reject</button></td>`;
+            td2 = `<td><button class='btn btn-success' onclick='acceptAttack("${op.sentence_id}", "${op.attack_uid}")'>Accept</button></td>`;
+            td3 = `<td><button class='btn btn-danger' onclick='rejectAttack("${op.sentence_id}", "${op.attack_uid}")'>Reject</button></td>`;
             tmp = `<tr id="sentence-tid${op.attack_uid.substr(op.attack_uid.length - 4)}">${td1}${td2}${td3}</tr>`;
             $("#tableSentenceInfo").find('tbody').append(tmp);
         });
@@ -229,7 +221,7 @@ function addMissingTechnique() {
     // If an image is currently not highlighted (don't imply images can be mapped to attacks)
     if($(`.${highlightClassImg}`).length == 0) {
         uid = $("#missingTechniqueSelect :selected").val();
-        restRequest('POST', {'index':'missing_technique', 'sentence_id': sentence_id, 'attack_uid':uid}, show_info);
+        restRequest('POST', {'index':'add_attack', 'sentence_id': sentence_id, 'attack_uid':uid}, show_info);
         restRequest('POST', {'index':'confirmed_sentences', 'sentence_id': sentence_id}, updateConfirmedContext);
         // If an attack has been added to a temporarily highlighted sentence, the highlighting isn't temporary anymore
         tempHighlighted = undefined
