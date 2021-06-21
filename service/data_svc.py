@@ -229,7 +229,7 @@ class DataService:
         # The SQL select join query to retrieve the confirmed techniques for the report from the database
         select_join_query = (
             "SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, "
-            "report_sentence_hits.attack_tid, report_sentences.text "
+            "report_sentence_hits.attack_tid, report_sentences.text, report_sentence_hits.initial_model_match "
             "FROM (report_sentences INNER JOIN report_sentence_hits "
             "ON report_sentences.uid = report_sentence_hits.sentence_id) "
             "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = 1")
@@ -243,10 +243,8 @@ class DataService:
         for hit in hits:
             # For each confirmed technique returned,
             # create a technique object and add it to the list of techniques.
-            technique = {}
-            technique['score'] = 1
-            technique['techniqueID'] = hit['attack_tid'] 
-            technique['comment'] = hit['true_positive']
+            technique = {'model_score': hit['initial_model_match'], 'techniqueID': hit['attack_tid'],
+                         'comment': self.web_svc.remove_html_markup_and_found(hit['text'])}
             techniques.append(technique)
         # Return the list of confirmed techniques
         return techniques
