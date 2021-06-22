@@ -44,7 +44,7 @@ class WebAPI:
                 remove_sentences=lambda d: self.rest_svc.remove_sentences(criteria=d),
                 delete_report=lambda d: self.rest_svc.delete_report(criteria=d),
                 sentence_context=lambda d: self.rest_svc.sentence_context(criteria=d),
-                confirmed_sentences=lambda d: self.rest_svc.confirmed_sentences(criteria=d)
+                confirmed_attacks=lambda d: self.rest_svc.confirmed_attacks(criteria=d)
             ))
         output = await options[request.method][index](data)
         return web.json_response(output)

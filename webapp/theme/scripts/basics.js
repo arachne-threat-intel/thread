@@ -121,7 +121,7 @@ function sentenceContext(data, attack_uid) {
     sentence_id = data;
     // Fire off requests to get info on this sentence
     restRequest('POST', {'index':'sentence_context', 'uid': data, 'attack_uid':attack_uid}, updateSentenceContext);
-    restRequest('POST', {'index':'confirmed_sentences', 'sentence_id': data}, updateConfirmedContext);
+    restRequest('POST', {'index':'confirmed_attacks', 'sentence_id': data}, updateConfirmedContext);
 }
 
 function updateSentenceContext(data) {
@@ -222,7 +222,7 @@ function addMissingTechnique() {
     if($(`.${highlightClassImg}`).length == 0) {
         uid = $("#missingTechniqueSelect :selected").val();
         restRequest('POST', {'index':'add_attack', 'sentence_id': sentence_id, 'attack_uid':uid}, show_info);
-        restRequest('POST', {'index':'confirmed_sentences', 'sentence_id': sentence_id}, updateConfirmedContext);
+        restRequest('POST', {'index':'confirmed_attacks', 'sentence_id': sentence_id}, updateConfirmedContext);
         // If an attack has been added to a temporarily highlighted sentence, the highlighting isn't temporary anymore
         tempHighlighted = undefined
     }

@@ -46,13 +46,8 @@ class RestService:
     async def sentence_context(self, criteria=None):
         return await self.data_svc.get_active_sentence_hits(sentence_id=criteria['uid'])
 
-    async def confirmed_sentences(self, criteria=None):
-        tmp = []
-        techniques = await self.dao.get('true_positives', dict(sentence_id=criteria['sentence_id']))
-        for tech in techniques:
-            name = await self.dao.get('attack_uids', dict(uid=tech['attack_uid']))
-            tmp.append(name[0])
-        return tmp
+    async def confirmed_attacks(self, criteria=None):
+        return await self.data_svc.get_confirmed_attacks(sentence_id=criteria['sentence_id'])
 
     async def insert_report(self, criteria=None):
         for i in range(len(criteria['title'])):

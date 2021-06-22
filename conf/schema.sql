@@ -102,7 +102,7 @@ CREATE TABLE if not exists report_sentences (
 CREATE TABLE if not exists report_sentence_hits (
     uid VARCHAR(60) PRIMARY KEY,
     -- Attack ID
-    attack_uid TEXT,
+    attack_uid VARCHAR(60),
     -- The name of the attack
     attack_technique_name TEXT,
     -- The report ID for this sentence-hit

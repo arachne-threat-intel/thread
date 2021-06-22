@@ -197,7 +197,7 @@ class DataService:
         sentences = await self.dao.get('report_sentences', dict(report_uid=report_id))
         for sentence in sentences:
             sentence['hits'] = await self.get_active_sentence_hits(sentence_id=sentence['uid'])
-            if await self.dao.get('true_positives', dict(sentence_id=sentence['uid'])):
+            if await self.dao.get('report_sentence_hits', dict(sentence_id=sentence['uid'], confirmed=1)):
                 sentence['confirmed'] = 'true'
             else:
                 sentence['confirmed'] = 'false'
@@ -217,6 +217,14 @@ class DataService:
             "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = 1")
         # Run the SQL select join query
         return await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
+
+    async def get_confirmed_attacks(self, sentence_id=''):
+        """Function to retrieve confirmed-attack data for a sentence."""
+        select_join_query = (
+            "SELECT attack_uids.* "
+            "FROM (attack_uids INNER JOIN report_sentence_hits ON attack_uids.uid = report_sentence_hits.attack_uid) "
+            "WHERE report_sentence_hits.sentence_id = ? AND report_sentence_hits.confirmed = 1")
+        return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
 
     async def get_confirmed_techniques_for_report(self, report_id):
         # Get the confirmed hits
