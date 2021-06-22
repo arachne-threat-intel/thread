@@ -193,23 +193,6 @@ class DataService:
             report.update(dict(link="/edit/{}".format(report['title'])))
         return reports
 
-    async def last_technique_check(self, criteria):
-        # The sentence and attack IDs
-        sen_id, attack_id = criteria['sentence_id'], criteria['attack_uid']
-        # Delete any sentence-hits where the model didn't initially guess the attack
-        await self.dao.delete('report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id,
-                                                           initial_model_match=0))
-        # For sentence-hits where the model did guess the attack, flag as inactive and unconfirmed
-        await self.dao.update('report_sentence_hits', where=dict(sentence_id=sen_id, attack_uid=attack_id,
-                                                                 initial_model_match=1),
-                              data=dict(active_hit=0, confirmed=0))
-        number_of_techniques = await self.get_active_sentence_hits(sentence_id=sen_id)
-        if len(number_of_techniques) == 0:
-            await self.dao.update('report_sentences', where=dict(uid=sen_id), data=dict(found_status=0))
-            return dict(status='true')
-        else:
-            return dict(status='false', id=sen_id)
-
     async def build_sentences(self, report_id):
         sentences = await self.dao.get('report_sentences', dict(report_uid=report_id))
         for sentence in sentences:
