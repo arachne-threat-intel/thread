@@ -170,7 +170,7 @@ class WebService:
                 out = out + c
         sep = '!FOUND:'
         out = out.split(sep, 1)[0]
-        return out
+        return out.strip().replace('\n', ' ')
 
     @staticmethod
     async def get_url(url, returned_format=None):

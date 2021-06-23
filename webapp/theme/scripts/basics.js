@@ -23,16 +23,13 @@ function remove_sentences(){
 }
 
 function acceptAttack(id, attack_uid) {
-    restRequest('POST', {'index':'add_attack', 'sentence_id':id, 'attack_uid':attack_uid}, show_info);
-    // TODO debug and see how this may be spamming Confirmed Techniques list
+    restRequest('POST', {'index':'add_attack', 'sentence_id': id, 'attack_uid': attack_uid}, show_info);
     sentenceContext(id, attack_uid);
 }
 
 function rejectAttack(id, attack_uid) {
-    document.getElementById("sentence-tid" + attack_uid.substr(attack_uid.length - 4)).remove();
-    // TODO replace with a check if this is the last attack being rejected, else we want highlighting to remain
-    $("#elmt" + id).removeClass(highlightClass);
-    restRequest('POST', {'index':'reject_attack', 'sentence_id':id, 'attack_uid':attack_uid}, show_info);
+    restRequest('POST', {'index':'reject_attack', 'sentence_id': id, 'attack_uid': attack_uid}, show_info);
+    sentenceContext(id, attack_uid);
 }
 
 function deleteReport(report_id){
@@ -120,7 +117,7 @@ function sentenceContext(data, attack_uid) {
     // Update selected sentence global variable
     sentence_id = data;
     // Fire off requests to get info on this sentence
-    restRequest('POST', {'index':'sentence_context', 'uid': data, 'attack_uid':attack_uid}, updateSentenceContext);
+    restRequest('POST', {'index':'sentence_context', 'uid': data, 'attack_uid': attack_uid}, updateSentenceContext);
     restRequest('POST', {'index':'confirmed_attacks', 'sentence_id': data}, updateConfirmedContext);
 }
 

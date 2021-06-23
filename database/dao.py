@@ -15,7 +15,7 @@ class Dao:
         return await self.db.get(table, equal=equal, not_equal=not_equal)
 
     async def update(self, table, where={}, data={}, return_sql=False):
-        await self.db.update(table, where=where, data=data, return_sql=return_sql)
+        return await self.db.update(table, where=where, data=data, return_sql=return_sql)
 
     async def insert(self, table, data, return_sql=False):
         return await self.db.insert(table, data, return_sql=return_sql)
@@ -24,7 +24,7 @@ class Dao:
         return await self.db.insert_generate_uid(table, data, id_field, return_sql=return_sql)
 
     async def delete(self, table, data, return_sql=False):
-        await self.db.delete(table, data, return_sql=return_sql)
+        return await self.db.delete(table, data, return_sql=return_sql)
 
     async def raw_query(self, query, one=False):
         return await self.db.raw_query(query, one)

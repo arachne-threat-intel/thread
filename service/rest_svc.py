@@ -26,7 +26,9 @@ class RestService:
         return dict(status="Report status updated to " + criteria['set_status'])
 
     async def delete_report(self, criteria=None):
-        await self.dao.delete('reports', dict(uid=criteria['report_id']))
+        report_id = criteria['report_id']
+        await self.dao.delete('reports', dict(uid=report_id))
+        return dict(status='Successfully deleted report ' + report_id)
 
     async def remove_sentences(self, criteria=None):
         if not criteria['sentence_id']:
@@ -177,7 +179,7 @@ class RestService:
         # The list of SQL commands to run in a single transaction
         sql_commands = []
         # Check this sentence + attack combination isn't already in report_sentence_hits
-        historic_hits = self.dao.get('report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id))
+        historic_hits = await self.dao.get('report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id))
         if historic_hits:
             returned_hit = historic_hits[0]
             # If this attack is already confirmed for this sentence, we are not going to do anything further
