@@ -18,12 +18,16 @@ class RestService:
         self.queue = asyncio.Queue()  # task queue
         self.resources = []  # resource array
         self.externally_called = externally_called
+        # A dictionary to keep track of report statuses we have seen
+        self.seen_report_status = dict()
 
     async def set_status(self, criteria=None):
+        new_status = criteria['set_status']
         report_dict = await self.dao.get('reports', dict(title=criteria['file_name']))
-        await self.dao.update('reports', where=dict(uid=report_dict[0]['uid']),
-                              data=dict(current_status=criteria['set_status']))
-        return dict(status="Report status updated to " + criteria['set_status'])
+        report_id = report_dict[0]['uid']
+        await self.dao.update('reports', where=dict(uid=report_id), data=dict(current_status=new_status))
+        self.seen_report_status[report_id] = new_status
+        return dict(status='Report status updated to ' + new_status)
 
     async def delete_report(self, criteria=None):
         report_id = criteria['report_id']
@@ -139,8 +143,6 @@ class RestService:
         # Merge ML and Reg hits
         analyzed_html = await self.ml_svc.combine_ml_reg(ml_analyzed_html, reg_analyzed_html)
 
-        # update card to reflect the end of queue
-        await self.dao.update('reports', where=dict(title=criteria['title']), data=dict(current_status='needs_review'))
         temp = await self.dao.get('reports', dict(title=criteria['title']))
         criteria['id'] = temp[0]['uid']
         report_id = criteria['id']
@@ -156,6 +158,9 @@ class RestService:
         for element in original_html:
             html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'], found_status=0)
             await self.dao.insert_generate_uid('original_html', html_element)
+
+        # Update card to reflect the end of queue
+        await self.dao.update('reports', where=dict(title=criteria['title']), data=dict(current_status='needs_review'))
         logging.info('Finished analysing report ' + str(report_id))
 
     async def add_attack(self, criteria=None):
@@ -213,6 +218,8 @@ class RestService:
                 'report_sentences', where=dict(uid=sen_id), data=dict(found_status=1), return_sql=True))
         # Run the updates, deletions and insertions for this method altogether
         await self.dao.run_sql_list(sql_list=sql_commands)
+        # As a technique has been added, ensure the report's status reflects analysis has started
+        await self.check_report_status(report_id=sentence_dict[0]['report_uid'])
         # Return status message
         return dict(status='inserted')
 
@@ -259,4 +266,21 @@ class RestService:
             last = dict(status='false', id=sen_id)
         # Run the updates, deletions and insertions for this method altogether
         await self.dao.run_sql_list(sql_list=sql_commands)
+        # As a technique has been rejected, ensure the report's status reflects analysis has started
+        await self.check_report_status(report_id=sentence_dict[0]['report_uid'])
         return dict(status='inserted', last=last)
+
+    async def check_report_status(self, report_id='', status='in_review'):
+        """Function to check a report is of the given status and updates it if not."""
+        # A quick check without a db call; if the status is right, exit method
+        if self.seen_report_status.get(report_id) == status:
+            return
+        # Check the db
+        report_dict = await self.dao.get('reports', dict(uid=report_id))
+        if report_dict[0]['current_status'] == status:
+            # Before exiting method as status matches, update dictionary for future checks
+            self.seen_report_status[report_id] = status
+            return
+        # Update the report status in the db and the dictionary variable for future checks
+        await self.dao.update('reports', where=dict(uid=report_id), data=dict(current_status=status))
+        self.seen_report_status[report_id] = status
