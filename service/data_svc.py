@@ -226,6 +226,21 @@ class DataService:
             "WHERE report_sentence_hits.sentence_id = ? AND report_sentence_hits.confirmed = 1")
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
 
+    async def get_unconfirmed_attack_count(self, report_id=''):
+        """Function to retrieve the number of unconfirmed attacks for a report."""
+        # Retrieve all unconfirmed attacks
+        all_unconfirmed = await self.dao.get('report_sentence_hits', dict(report_uid=report_id, confirmed=0))
+        # Ignore entries in the database where the model was incorrect (i.e. is unconfirmed because it was rejected and
+        # we are storing in report_sentence_hits that initial_model_match=1 so confirmed=0): these are false positives
+        select_join_query = (
+            "SELECT * FROM (report_sentence_hits INNER JOIN false_positives "
+            "ON report_sentence_hits.attack_uid = false_positives.attack_uid "
+            "AND report_sentence_hits.sentence_id = false_positives.sentence_id) "
+            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = 0")
+        ignore = await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
+        # Ideally would use an SQL MINUS query but this caused errors
+        return len(all_unconfirmed) - len(ignore)
+
     async def get_confirmed_techniques_for_report(self, report_id):
         # Get the confirmed hits
         hits = await self.get_confirmed_techniques(report_id)

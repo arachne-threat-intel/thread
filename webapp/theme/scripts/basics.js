@@ -69,15 +69,27 @@ function rejectAttack(id, attack_uid) {
     sentenceContext(id, attack_uid);
 }
 
-function deleteReport(report_id){
+function deleteReport(report_id) {
   if (confirm('Are you sure you want to delete this report?')) {
     restRequest('POST', {'index':'delete_report', 'report_id':report_id}, show_info)
     window.location.reload(true);
   }
 }
 
-function set_status(set_status, file_name){
-    restRequest('POST', {'index':'set_status', 'set_status':set_status, 'file_name':file_name}, show_info);
+function finish_analysis() {
+    var report_id = $('meta#reportinfo').data('reportid');
+    if (confirm('Are you sure you are finished with this report?')) {
+        restRequest('POST', {'index':'set_status', 'set_status': 'completed', 'report_id': report_id}, post_analysis);
+    }
+}
+
+function post_analysis(data) {
+    if (data.status) {
+        show_info(data);
+        window.location.reload(true);
+    } else if (data.error) {
+        alert(data.error);
+    }
 }
 
 function submit_report() {
@@ -95,19 +107,19 @@ function submit_report() {
     }
 }
 
-function upload_file(){
+function upload_file() {
   //var fileName = this.val().split("\\").pop();
 
   console.log(document.getElementById("csv_file"))
   var file = document.getElementById("csv_file").files[0];
-  if(file){
+  if(file) {
     var reader = new FileReader();
     reader.readAsText(file, "UTF-8");
-    reader.onload = function(evt){
+    reader.onload = function(evt) {
       console.log(evt.target.result)
       restRequest('POST', {'index':'insert_csv','file':evt.target.result},show_info);
     }
-    reader.onerror = function(evt){
+    reader.onerror = function(evt) {
       alert("Error reading file");
     }
   }
@@ -133,11 +145,11 @@ function filterFunction(input1, id1) {
   }
 }
 
-function show_info(data){
+function show_info(data) {
     console.log(data.status);
 }
 
-function savedAlert(){
+function savedAlert() {
     console.log("saved");
 }
 
@@ -208,7 +220,7 @@ function updateConfirmedContext(data) {
     });
 }
 
-function downloadLayer(data){
+function downloadLayer(data) {
   // Create the name of the JSON download file from the name of the report
   var json = JSON.parse(data) 
   var title = json['name'] //document.getElementById("title").value;
@@ -229,11 +241,11 @@ function downloadLayer(data){
   a.remove();
 }
 
-function viewLayer(data){
+function viewLayer(data) {
   console.info("viewLayer: " + data)
 }
 
-function divSentenceReload(){
+function divSentenceReload() {
     $('#sentenceContextSection').load(document.URL +  ' #sentenceContextSection');
 }
 
@@ -247,8 +259,8 @@ function autoHeight() {
 
  // onDocumentReady function bind
 $(document).ready(function() {
-  $("header").css("height", $(".navbar").outerHeight());
-  autoHeight();
+    $("header").css("height", $(".navbar").outerHeight());
+    autoHeight();
 });
 
 // onResize bind of the function

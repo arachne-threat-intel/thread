@@ -22,9 +22,11 @@ class RestService:
         self.seen_report_status = dict()
 
     async def set_status(self, criteria=None):
-        new_status = criteria['set_status']
-        report_dict = await self.dao.get('reports', dict(title=criteria['file_name']))
-        report_id = report_dict[0]['uid']
+        new_status, report_id = criteria['set_status'], criteria['report_id']
+        if new_status == 'completed':
+            unchecked = await self.data_svc.get_unconfirmed_attack_count(report_id=report_id)
+            if unchecked:
+                return dict(error='There are ' + str(unchecked) + ' attacks unconfirmed for this report.')
         await self.dao.update('reports', where=dict(uid=report_id), data=dict(current_status=new_status))
         self.seen_report_status[report_id] = new_status
         return dict(status='Report status updated to ' + new_status)
