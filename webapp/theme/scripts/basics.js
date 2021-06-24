@@ -17,9 +17,46 @@ function restRequest(type, data, callback) {
     });
 }
 
-function remove_sentences(){
-    var sentence_id =  document.getElementById("sentence_id").value;
-    restRequest('POST', {'index':'remove_sentences', 'sentence_id':sentence_id}, show_info);
+function remove_sentence() {
+    // The selected image or sentence
+    var selectedSentence = document.getElementById(`elmt${sentence_id}`);
+    var selectedImage = document.getElementById(`img${sentence_id}`);
+    // The final selected element to be removed
+    var selected = undefined;
+    // Data which informs user of what is being removed
+    var messageInfo = "";
+    // If it is a sentence that is selected
+    if (selectedSentence) {
+        // Prepare the first three words of the sentence as a reminder to the user of the sentence that is selected
+        sen_text = selectedSentence.text;
+        truncated = sen_text.split(' ').slice(0,3).join(' ');
+        // Add trailing ellipsis if the sentence has more than three words
+        truncated += (truncated == sen_text) ? "" : "...";
+        messageInfo = `sentence ("${truncated.trim()}")`;
+        // Flag selected to be this sentence to be removed
+        selected = selectedSentence;
+    } else if (selectedImage) {  // Else if an image is selected
+        messageInfo = "image";
+        // Flag selected to be this image to be removed
+        selected = selectedImage;
+    } else {  // Else we do not have an item selected for removal
+        alert("Unable to determine selected item in report. Please try refreshing page.");
+        return;
+    }
+    // Confirm with the user that this is being removed
+    if (confirm("Are you sure you want to remove the currently selected " + messageInfo
+        + "? This can only be retrieved by re-submitting this report.")) {
+        // Remove the element itself and any related elements (e.g. buffering <br>s)
+        selected.remove();
+        $(`.elmtRelated${sentence_id}`).remove();
+        // Nothing is currently selected after this removal
+        tempHighlighted = undefined;
+        // Disable further actions until another item is selected
+        $("#missingTechBtn").prop("disabled", true);
+        $("#delSenBtn").prop("disabled", true);
+        // Send off request to delete from the db
+        restRequest('POST', {'index':'remove_sentence', 'sentence_id': sentence_id}, show_info);
+    }
 }
 
 function acceptAttack(id, attack_uid) {
@@ -36,8 +73,7 @@ function deleteReport(report_id){
   if (confirm('Are you sure you want to delete this report?')) {
     restRequest('POST', {'index':'delete_report', 'report_id':report_id}, show_info)
     window.location.reload(true);
-  } else {}
-
+  }
 }
 
 function set_status(set_status, file_name){
@@ -130,6 +166,8 @@ function updateSentenceContext(data) {
     }
     // Reset any 'Techniques Found' list
     $("#tableSentenceInfo tr").remove();
+    // Flag we will enable any disabled sentence buttons
+    enableSenButtons = true;
     // If this sentence has attacks, display the attacks as normal
     if (data && data.length > 0) {
         $.each(data, function(index, op) {
@@ -146,6 +184,8 @@ function updateSentenceContext(data) {
             $("#elmt" + sentence_id).removeClass(highlightClass);
             $("#img" + sentence_id).removeClass(highlightClassImg);
             tempHighlighted = undefined;
+            // Indicate to the user no actions can be taken as they have unselected something
+            enableSenButtons = false;
         // else this sentence wasn't highlighted before; add the highlighting
         } else {
             $("#elmt" + sentence_id).addClass(highlightClass);
@@ -154,7 +194,9 @@ function updateSentenceContext(data) {
         }
     }
     // Permit clicking missing techniques button depending if an image is currently highlighted
-    $("#missingTechBtn").prop("disabled", $(`.${highlightClassImg}`).length > 0);
+    $("#missingTechBtn").prop("disabled", $(`.${highlightClassImg}`).length > 0 || !enableSenButtons);
+    // Allow 'remove selected' button
+    $("#delSenBtn").prop("disabled", !enableSenButtons);
 }
 
 function updateConfirmedContext(data) {
@@ -218,8 +260,7 @@ function addMissingTechnique() {
     // If an image is currently not highlighted (don't imply images can be mapped to attacks)
     if($(`.${highlightClassImg}`).length == 0) {
         uid = $("#missingTechniqueSelect :selected").val();
-        restRequest('POST', {'index':'add_attack', 'sentence_id': sentence_id, 'attack_uid':uid}, show_info);
-        restRequest('POST', {'index':'confirmed_attacks', 'sentence_id': sentence_id}, updateConfirmedContext);
+        acceptAttack(sentence_id, uid);
         // If an attack has been added to a temporarily highlighted sentence, the highlighting isn't temporary anymore
         tempHighlighted = undefined
     }

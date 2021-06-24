@@ -41,9 +41,9 @@ Note: If a “Needs Review” card pops up right away, this generally means the 
 </p>
 <p>
     <ul style="list-style-type:none;">
-    <li><b>Accepting</b> a technique means the correct technique is in the selected highlighted sentence. That sentence and technique will go to the <b>"True Positives"</b> table in the database.</li>
-    <li><b>Rejecting</b> a technique means the technique is not in the highlighted sentence. That sentence and technique goes to the <b>"False Positives"</b> table in the database.</li>
-    <li><b>Add a Missing Technique</b> allows users to manually add any techniques that were missed in highlighted or un-highlighted sentences. Click the grey button and start typing in the technique you want to map, and click it when it appears. When a missing technique is added, it will be put <b>"True Negatives"</b> table in the database.</li>
+    <li><b>Accepting</b> a technique means the correct technique is in the selected highlighted sentence. That sentence and technique will go to the <b>"True Positives"</b> table in the database (if this is not a missing technique you have introduced).</li>
+    <li><b>Rejecting</b> a technique means the technique is not in the highlighted sentence. That sentence and technique goes to the <b>"False Positives"</b> table in the database (again, if this is not a missing technique you have introduced).</li>
+    <li><b>Add a Missing Technique</b> allows users to manually add any techniques that were missed in highlighted or un-highlighted sentences. Click the grey button and start typing in the technique you want to map, and click it when it appears. When a missing technique is added, it will be put in the <b>"False Negatives"</b> table of the database (if this is not a technique you initially rejected).</li>
     </ul>
     The new data and corresponding tables can then be used to rebuild the models. As more data is fed to the tool, analyst reviewed, and the model rebuilt we expect these predictions to get more accurate.
 </p>

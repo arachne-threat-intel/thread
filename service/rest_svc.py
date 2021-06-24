@@ -30,20 +30,13 @@ class RestService:
         await self.dao.delete('reports', dict(uid=report_id))
         return dict(status='Successfully deleted report ' + report_id)
 
-    async def remove_sentences(self, criteria=None):
-        if not criteria['sentence_id']:
-            return dict(status="Please enter a number.")
-        else:
-            true_positives = await self.dao.get('true_positives', dict(sentence_id=criteria['sentence_id']))
-            false_positives = await self.dao.get('false_positives', dict(sentence_id=criteria['sentence_id']))
-            false_negatives = await self.dao.get('false_negatives', dict(sentence_id=criteria['sentence_id']))
-        if not true_positives and not false_positives and not false_negatives:
-            return dict(status="There is no entry for sentence id " + criteria['sentence_id'])
-        else:
-            await self.dao.delete('true_positives', dict(sentence_id=criteria['sentence_id']))
-            await self.dao.delete('false_positives', dict(sentence_id=criteria['sentence_id']))
-            await self.dao.delete('false_negatives', dict(sentence_id=criteria['sentence_id']))
-            return dict(status='Successfully moved sentence ' + criteria['sentence_id'])
+    async def remove_sentence(self, criteria=None):
+        sen_id = criteria['sentence_id']
+        # This is most likely a sentence ID sent through, so delete as expected
+        await self.dao.delete('report_sentences', dict(uid=sen_id))
+        # This could also be an image, so delete from original_html table too
+        await self.dao.delete('original_html', dict(uid=sen_id))
+        return dict(status='Successfully deleted item ' + sen_id)
 
     async def sentence_context(self, criteria=None):
         return await self.data_svc.get_active_sentence_hits(sentence_id=criteria['uid'])

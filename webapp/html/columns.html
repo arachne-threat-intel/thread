@@ -28,7 +28,11 @@
     }
 
 	a:hover {
-  	background-color: #ffffbd;
+  	    background-color: #ffffbd;
+	}
+
+	.btn:disabled {
+	    cursor: not-allowed;
 	}
 </style>
 
@@ -55,17 +59,17 @@
     <div class="col reportSentencesDiv">
         {% for elmt in final_html %}
             {% if elmt.tag == 'img' %}
-                <img src="{{elmt.text}}" id="img{{elmt.uid}}" class="normalImage" onclick="sentenceContext('{{elmt.uid}}')"> <br><br>
+                <img src="{{elmt.text}}" id="img{{elmt.uid}}" class="normalImage" onclick="sentenceContext('{{elmt.uid}}')"> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
             {% elif elmt.tag == 'header' %}
                 <h3>{{elmt.text}}</h3> 
             {% elif elmt.tag == 'li' and elmt.found_status == 1 %}
-                <li><a class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a></li> <br>
+                <li class="elmtRelated{{elmt.uid}}"><a class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a></li> <br class="elmtRelated{{elmt.uid}}">
             {% elif elmt.tag == 'li' %}
-                <li><a id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a></li> <br>
+                <li class="elmtRelated{{elmt.uid}}"><a id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a></li> <br class="elmtRelated{{elmt.uid}}">
             {% elif elmt.found_status == 1 %}
-                <a class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a> <br><br>
+                <a class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
             {% else %}
-                <a id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a> <br><br>
+                <a id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
             {% endif %}
         {% endfor %}
     </div>
@@ -108,7 +112,8 @@
                 </div>
             </div>
             <br>
-            &nbsp;&nbsp;&nbsp;<button id="missingTechBtn" onclick="addMissingTechnique()" class="btn btn-md btn-outline-primary">Add Technique</button> <br><br>
+            <button disabled id="missingTechBtn" onclick="addMissingTechnique()" class="btn btn-md btn-outline-primary">Add Technique</button> <br><br>
+            <button disabled id="delSenBtn" onclick="remove_sentence()" class="btn btn-md btn-danger">Remove Selected</button> <br><br>
         </div>
 
 
