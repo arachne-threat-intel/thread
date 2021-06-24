@@ -1,6 +1,8 @@
 import sqlite3
 import uuid
 
+ENABLE_FOREIGN_KEYS = 'PRAGMA foreign_keys = ON'
+
 
 class Attack:
 
@@ -40,7 +42,7 @@ class Attack:
                     sql += (' AND %s %s= ?' % (k, '!' if eq == 'not_equal' else ''))
                     qparams.append(v)
         with sqlite3.connect(self.database) as conn:
-            conn.execute('PRAGMA foreign_keys = ON')
+            conn.execute(ENABLE_FOREIGN_KEYS)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             cursor.execute(sql, tuple(qparams))
@@ -55,7 +57,7 @@ class Attack:
         if return_sql:
             return tuple([sql, tuple(data.values())])
         with sqlite3.connect(self.database) as conn:
-            conn.execute('PRAGMA foreign_keys = ON')
+            conn.execute(ENABLE_FOREIGN_KEYS)
             cursor = conn.cursor()
             cursor.execute(sql, tuple(data.values()))
             saved_id = cursor.lastrowid
@@ -111,7 +113,7 @@ class Attack:
             return tuple([sql, tuple(qparams)])
         # Run the statement by passing qparams as parameters
         with sqlite3.connect(self.database) as conn:
-            conn.execute('PRAGMA foreign_keys = ON')
+            conn.execute(ENABLE_FOREIGN_KEYS)
             cursor = conn.cursor()
             cursor.execute(sql, tuple(qparams))
             conn.commit()
@@ -129,14 +131,14 @@ class Attack:
         if return_sql:
             return tuple([sql, tuple(qparams)])
         with sqlite3.connect(self.database) as conn:
-            conn.execute('PRAGMA foreign_keys = ON')
+            conn.execute(ENABLE_FOREIGN_KEYS)
             cursor = conn.cursor()
             cursor.execute(sql, tuple(qparams))
             conn.commit()
 
     async def raw_query(self, query, one=False):
         with sqlite3.connect(self.database) as conn:
-            conn.execute('PRAGMA foreign_keys = ON')
+            conn.execute(ENABLE_FOREIGN_KEYS)
             cursor = conn.cursor()
             cursor.execute(query)
             rv = cursor.fetchall()
@@ -145,7 +147,7 @@ class Attack:
 
     async def raw_select(self, sql, parameters=None):
         with sqlite3.connect(self.database) as conn:
-            conn.execute('PRAGMA foreign_keys = ON')
+            conn.execute(ENABLE_FOREIGN_KEYS)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             if parameters is None:
@@ -157,7 +159,7 @@ class Attack:
 
     async def raw_update(self, sql):
         with sqlite3.connect(self.database) as conn:
-            conn.execute('PRAGMA foreign_keys = ON')
+            conn.execute(ENABLE_FOREIGN_KEYS)
             cursor = conn.cursor()
             cursor.execute(sql)
             conn.commit()
@@ -167,7 +169,7 @@ class Attack:
         if not sql_list:
             return
         with sqlite3.connect(self.database) as conn:
-            conn.execute('PRAGMA foreign_keys = ON')
+            conn.execute(ENABLE_FOREIGN_KEYS)
             cursor = conn.cursor()
             # Else, execute each item in the list where the first part must be an SQL statement
             # followed by optional parameters

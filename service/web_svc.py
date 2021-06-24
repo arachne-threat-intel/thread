@@ -189,8 +189,6 @@ class WebService:
         final_element['text'] = element['text']
         final_element['tag'] = element['tag']
         final_element['found_status'] = element['found_status']
-        final_element['hits'] = None
-        final_element['confirmed'] = 'false'
         return final_element
 
 
@@ -201,8 +199,6 @@ class WebService:
         final_element['text'] = single_sentence
         final_element['tag'] = tag
         final_element['found_status'] = sentence['found_status']
-        final_element['hits'] = sentence['hits']
-        final_element['confirmed'] = sentence['confirmed']
         return final_element
 
     @staticmethod

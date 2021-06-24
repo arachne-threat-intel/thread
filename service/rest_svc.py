@@ -98,7 +98,7 @@ class RestService:
                 self.resources.append(task)
 
     async def start_analysis(self, criteria=None):
-        tech_data = await self.dao.get('attack_uids')
+        tech_data = await self.data_svc.get_techniques()
         attack_dict_loc = 'models/attack_dict.json'
         attack_dict_loc = os.path.join('tram', attack_dict_loc) if self.externally_called else attack_dict_loc
         with open(attack_dict_loc, 'r', encoding='utf_8') as attack_dict_f:

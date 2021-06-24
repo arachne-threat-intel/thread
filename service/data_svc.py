@@ -98,7 +98,8 @@ class DataService:
         attack_data = references
         logging.info("Finished...now creating the database.")
 
-        cur_uids = await self.dao.get('attack_uids') if await self.dao.get('attack_uids') else []
+        cur_uids = await self.get_techniques()
+        cur_uids = cur_uids if cur_uids else []
         cur_items = [i['uid'] for i in cur_uids]
         for k, v in attack_data.items():
             if k not in cur_items:
@@ -136,7 +137,7 @@ class DataService:
         :param buildfile: Enterprise attack json file to build from
         :return: nil
         """
-        cur_items = [x['uid'] for x in await self.dao.get('attack_uids')]
+        cur_items = [x['uid'] for x in await self.get_techniques()]
         logging.debug('[#] {} Existing items in the DB'.format(len(cur_items)))
         with open(buildfile, 'r') as infile:
             attack_dict = json.load(infile)
@@ -193,19 +194,21 @@ class DataService:
             report.update(dict(link="/edit/{}".format(report['title'])))
         return reports
 
-    async def build_sentences(self, report_id):
-        sentences = await self.dao.get('report_sentences', dict(report_uid=report_id))
-        for sentence in sentences:
-            sentence['hits'] = await self.get_active_sentence_hits(sentence_id=sentence['uid'])
-            if await self.dao.get('report_sentence_hits', dict(sentence_id=sentence['uid'], confirmed=1)):
-                sentence['confirmed'] = 'true'
-            else:
-                sentence['confirmed'] = 'false'
-        return sentences
+    async def get_report_sentences(self, report_id):
+        return await self.dao.get('report_sentences', dict(report_uid=report_id))
+
+    async def get_report_sentences_with_attacks(self, report_id=''):
+        """Function to retrieve all report sentences and any attacks they may have given a report ID."""
+        select_join_query = (
+            "SELECT report_sentences.*, report_sentence_hits.attack_tid, report_sentence_hits.attack_technique_name, "
+            "report_sentence_hits.active_hit "
+            "FROM (report_sentences LEFT OUTER JOIN report_sentence_hits "
+            "ON report_sentences.uid = report_sentence_hits.sentence_id) "
+            "WHERE report_sentences.report_uid = ?")
+        return await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
 
     async def get_techniques(self):
-        techniques = await self.dao.get('attack_uids')
-        return techniques
+        return await self.dao.get('attack_uids')
 
     async def get_confirmed_techniques(self, report_id):
         # The SQL select join query to retrieve the confirmed techniques for the report from the database
@@ -249,7 +252,7 @@ class DataService:
             # For each confirmed technique returned,
             # create a technique object and add it to the list of techniques.
             technique = {'model_score': hit['initial_model_match'], 'techniqueID': hit['attack_tid'],
-                         'comment': self.web_svc.remove_html_markup_and_found(hit['text'])}
+                         'comment': await self.web_svc.remove_html_markup_and_found(hit['text'])}
             techniques.append(technique)
         # Return the list of confirmed techniques
         return techniques

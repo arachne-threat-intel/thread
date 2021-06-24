@@ -57,8 +57,8 @@ class WebAPI:
         :return: dictionary of report data
         """
         report = await self.dao.get('reports', dict(title=request.match_info.get('file')))
-        sentences = await self.data_svc.build_sentences(report[0]['uid'])
-        attack_uids = await self.dao.get('attack_uids')
+        sentences = await self.data_svc.get_report_sentences(report[0]['uid'])
+        attack_uids = await self.data_svc.get_techniques()
         original_html = await self.dao.get('original_html', dict(report_uid=report[0]['uid']))
         final_html = await self.web_svc.build_final_html(original_html, sentences)
         return dict(file=request.match_info.get('file'), title=report[0]['title'], sentences=sentences,
@@ -115,37 +115,41 @@ class WebAPI:
         """
         # Get the report
         report = await self.dao.get('reports', dict(title=request.match_info.get('file')))
-        sentences = await self.data_svc.build_sentences(report[0]['uid'])
-        attack_uids = await self.dao.get('attack_uids')
+        sentences = await self.data_svc.get_report_sentences_with_attacks(report_id=report[0]['uid'])
+        title = report[0]['title']
 
         dd = dict()
         dd['content'] = []
-        dd['styles'] = dict()
-
+        dd['styles'] = dict(header=dict(fontSize=25, bold=True, alignment='center'),
+                            sub_header=dict(fontSize=15, bold=True))
         # Document MetaData Info
         # See https://pdfmake.github.io/docs/document-definition-object/document-medatadata/
         dd['info'] = dict()
-        dd['info']['title'] = report[0]['title']
+        dd['info']['title'] = title
         dd['info']['creator'] = report[0]['url']
 
-        table = {"body": []}
-        table["body"].append(["ID", "Name", "Identified Sentence"])
+        # Extra content if this report hasn't been completed: highlight it's a draft
+        if report[0]['current_status'] != 'completed':
+            dd['content'].append(dict(text='DRAFT: Please note this report is still being analysed. '
+                                           'Techniques listed here may change later on.', style='sub_header'))
+            dd['watermark'] = dict(text='DRAFT', opacity=0.3, bold=True, angle=70)
 
+        # Table for found attacks
+        table = {'body': []}
+        table['body'].append(['ID', 'Name', 'Identified Sentence'])
         # Add the text to the document
+        dd['content'].append(dict(text=title, style='header'))  # begin with title of document
+        seen_sentences = set()  # set to prevent duplicate sentences being exported
         for sentence in sentences:
-            dd['content'].append(sentence['text'])
-            if sentence['hits']:
-                for hit in sentence['hits']:
-                    # 'hits' object doesn't provide all the information we need, so we
-                    # do a makeshift join here to get that information from the attack_uid
-                    # list. This is ineffecient, and a way to improve this would be to perform
-                    # a join on the database side
-                    matching_attacks = [i for i in attack_uids if hit['attack_uid'] == i['uid']]
-                    for match in matching_attacks:
-                        table["body"].append([match["tid"], match["name"], sentence['text']])
+            sen_id, sen_text = sentence['uid'], sentence['text']
+            if sen_id not in seen_sentences:
+                dd['content'].append(sen_text)
+                seen_sentences.add(sen_id)
+            if sentence['attack_tid'] and sentence['active_hit']:
+                table['body'].append([sentence['attack_tid'], sentence['attack_technique_name'], sen_text])
 
         # Append table to the end
-        dd['content'].append({"table": table})
+        dd['content'].append({'table': table})
         return web.json_response(dd)
 
     async def rebuild_ml(self, request):
@@ -155,7 +159,7 @@ class WebAPI:
         :return: status of rebuild
         """
         # get techniques from database
-        tech_data = await self.dao.get('attack_uids')
+        tech_data = await self.data_svc.get_techniques()
         techniques = {}
         for row in tech_data:
             # skip software for now
