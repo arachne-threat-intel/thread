@@ -36,17 +36,15 @@ class WebAPI:
         index = data.pop('index')
         options = dict(
             POST=dict(
-                false_positive=lambda d: self.rest_svc.false_positive(criteria=d),
-                true_positive=lambda d: self.rest_svc.true_positive(criteria=d),
-                false_negative=lambda d: self.rest_svc.false_negative(criteria=d),
+                add_attack=lambda d: self.rest_svc.add_attack(criteria=d),
+                reject_attack=lambda d: self.rest_svc.reject_attack(criteria=d),
                 set_status=lambda d: self.rest_svc.set_status(criteria=d),
                 insert_report=lambda d: self.rest_svc.insert_report(criteria=d),
                 insert_csv=lambda d: self.rest_svc.insert_csv(criteria=d),
-                remove_sentences=lambda d: self.rest_svc.remove_sentences(criteria=d),
+                remove_sentence=lambda d: self.rest_svc.remove_sentence(criteria=d),
                 delete_report=lambda d: self.rest_svc.delete_report(criteria=d),
                 sentence_context=lambda d: self.rest_svc.sentence_context(criteria=d),
-                confirmed_sentences=lambda d: self.rest_svc.confirmed_sentences(criteria=d),
-                missing_technique=lambda d: self.rest_svc.missing_technique(criteria=d)
+                confirmed_attacks=lambda d: self.rest_svc.confirmed_attacks(criteria=d)
             ))
         output = await options[request.method][index](data)
         return web.json_response(output)
@@ -59,11 +57,13 @@ class WebAPI:
         :return: dictionary of report data
         """
         report = await self.dao.get('reports', dict(title=request.match_info.get('file')))
-        sentences = await self.data_svc.build_sentences(report[0]['uid'])
-        attack_uids = await self.dao.get('attack_uids')
+        sentences = await self.data_svc.get_report_sentences(report[0]['uid'])
+        attack_uids = await self.data_svc.get_techniques()
         original_html = await self.dao.get('original_html', dict(report_uid=report[0]['uid']))
         final_html = await self.web_svc.build_final_html(original_html, sentences)
-        return dict(file=request.match_info.get('file'), title=report[0]['title'], sentences=sentences, attack_uids=attack_uids, original_html=original_html, final_html=final_html)
+        return dict(file=request.match_info.get('file'), title=report[0]['title'], sentences=sentences,
+                    attack_uids=attack_uids, original_html=original_html, final_html=final_html,
+                    report_id=report[0]['uid'], completed=int(report[0]['current_status'] == 'completed'))
 
     async def nav_export(self, request):
         """
@@ -79,7 +79,7 @@ class WebAPI:
         layer_name = f"{report_title}"
         enterprise_layer_description = f"Enterprise techniques used by {report_title}, ATT&CK"
         version = '1.0'
-        if (version): # add version number if it exists
+        if (version):  # add version number if it exists
             enterprise_layer_description += f" v{version}"
 
         # Enterprise navigator layer
@@ -89,18 +89,15 @@ class WebAPI:
         enterprise_layer['domain'] = "mitre-enterprise"
         enterprise_layer['version'] = "2.2"
         enterprise_layer['techniques'] = []
-        enterprise_layer["gradient"] = { # white for nonused, blue for used
-		    "colors": ["#ffffff", "#66b1ff"],
-		    "minValue": 0,
-    		"maxValue": 1
-	    }
+        # white for non-used, blue for used
+        enterprise_layer["gradient"] = {"colors": ["#ffffff", "#66b1ff"], "minValue": 0, "maxValue": 1}
         enterprise_layer['legendItems'] = [{
             'label': f'used by {report_title}',
             'color': "#66b1ff"
         }]
 
         # Get confirmed techniques for the report from the database
-        techniques = await self.data_svc.get_confirmed_techniques(report[0]['uid'])
+        techniques = await self.data_svc.get_confirmed_techniques_for_report(report[0]['uid'])
 
         # Append techniques to enterprise layer
         for technique in techniques:
@@ -118,37 +115,41 @@ class WebAPI:
         """
         # Get the report
         report = await self.dao.get('reports', dict(title=request.match_info.get('file')))
-        sentences = await self.data_svc.build_sentences(report[0]['uid'])
-        attack_uids = await self.dao.get('attack_uids')
+        sentences = await self.data_svc.get_report_sentences_with_attacks(report_id=report[0]['uid'])
+        title = report[0]['title']
 
         dd = dict()
         dd['content'] = []
-        dd['styles'] = dict()
-
+        dd['styles'] = dict(header=dict(fontSize=25, bold=True, alignment='center'),
+                            sub_header=dict(fontSize=15, bold=True))
         # Document MetaData Info
         # See https://pdfmake.github.io/docs/document-definition-object/document-medatadata/
         dd['info'] = dict()
-        dd['info']['title'] = report[0]['title']
+        dd['info']['title'] = title
         dd['info']['creator'] = report[0]['url']
 
-        table = {"body": []}
-        table["body"].append(["ID", "Name", "Identified Sentence"])
+        # Extra content if this report hasn't been completed: highlight it's a draft
+        if report[0]['current_status'] != 'completed':
+            dd['content'].append(dict(text='DRAFT: Please note this report is still being analysed. '
+                                           'Techniques listed here may change later on.', style='sub_header'))
+            dd['watermark'] = dict(text='DRAFT', opacity=0.3, bold=True, angle=70)
 
+        # Table for found attacks
+        table = {'body': []}
+        table['body'].append(['ID', 'Name', 'Identified Sentence'])
         # Add the text to the document
+        dd['content'].append(dict(text=title, style='header'))  # begin with title of document
+        seen_sentences = set()  # set to prevent duplicate sentences being exported
         for sentence in sentences:
-            dd['content'].append(sentence['text'])
-            if sentence['hits']:
-                for hit in sentence['hits']:
-                    # 'hits' object doesn't provide all the information we need, so we
-                    # do a makeshift join here to get that information from the attack_uid
-                    # list. This is ineffecient, and a way to improve this would be to perform
-                    # a join on the database side
-                    matching_attacks = [i for i in attack_uids if hit['attack_uid'] == i['uid']]
-                    for match in matching_attacks:
-                        table["body"].append([match["tid"], match["name"], sentence['text']])
+            sen_id, sen_text = sentence['uid'], sentence['text']
+            if sen_id not in seen_sentences:
+                dd['content'].append(sen_text)
+                seen_sentences.add(sen_id)
+            if sentence['attack_tid'] and sentence['active_hit']:
+                table['body'].append([sentence['attack_tid'], sentence['attack_technique_name'], sen_text])
 
         # Append table to the end
-        dd['content'].append({"table": table})
+        dd['content'].append({'table': table})
         return web.json_response(dd)
 
     async def rebuild_ml(self, request):
@@ -158,7 +159,7 @@ class WebAPI:
         :return: status of rebuild
         """
         # get techniques from database
-        tech_data = await self.dao.get('attack_uids')
+        tech_data = await self.data_svc.get_techniques()
         techniques = {}
         for row in tech_data:
             # skip software for now
@@ -166,13 +167,13 @@ class WebAPI:
                 continue
             else:
                 # query for true positives
-                true_pos = await self.dao.get('true_positives', dict(uid=row['uid']))
+                true_pos = await self.dao.get('true_positives', dict(attack_uid=row['uid']))
                 tp = []
                 for t in true_pos:
                     tp.append(t['true_positive'])
                 # query for false negatives and false positives
-                false_neg = await self.dao.get('false_negatives', dict(uid=row['uid']))
-                false_positives = await self.dao.get('false_positives', dict(uid=row['uid']))
+                false_neg = await self.dao.get('false_negatives', dict(attack_uid=row['uid']))
+                false_positives = await self.dao.get('false_positives', dict(attack_uid=row['uid']))
                 for f in false_neg:
                     tp.append(f['false_negative'])
                 fp = []

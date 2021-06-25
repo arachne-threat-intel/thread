@@ -23,13 +23,23 @@
         width: 75%;
     }
 
+    .imgHighlight {
+        border: 25px solid #ffc107;
+    }
+
 	a:hover {
-  	background-color: #ffffbd;
+  	    background-color: #ffffbd;
+	}
+
+	.btn:disabled {
+	    cursor: not-allowed;
 	}
 </style>
 
 <br>
-
+{% if completed == 0 %}
+    <meta id="reportinfo" data-reportid="{{report_id}}">
+{% endif %}
 <h3 class="display-4 text-center">{{ file }}</h3>
 
 <div class="row justify-content-center pb-3">
@@ -51,60 +61,53 @@
     <div class="col reportSentencesDiv">
         {% for elmt in final_html %}
             {% if elmt.tag == 'img' %}
-                <img src="{{elmt.text}}" class="normalImage" onclick="sentenceContext({{elmt.uid}}, 'img')"> <br><br>
+                <img src="{{elmt.text}}" id="img{{elmt.uid}}" class="normalImage" onclick="sentenceContext('{{elmt.uid}}')"> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
             {% elif elmt.tag == 'header' %}
                 <h3>{{elmt.text}}</h3> 
-            {% elif elmt.tag == 'li' and elmt.found_status == 'true' %}
-                <li><a class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext({{elmt.uid}}, 'p')">{{elmt.text}}</a></li> <br>
+            {% elif elmt.tag == 'li' and elmt.found_status == 1 %}
+                <li class="elmtRelated{{elmt.uid}}"><a class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a></li> <br class="elmtRelated{{elmt.uid}}">
             {% elif elmt.tag == 'li' %}
-                <li><a id="elmt{{elmt.uid}}" onclick="sentenceContext({{elmt.uid}}, 'p')">{{elmt.text}}</a></li> <br>
-            {% elif elmt.found_status == 'true' %}
-                <a class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext({{elmt.uid}}, 'p')">{{elmt.text}}</a> <br><br>
+                <li class="elmtRelated{{elmt.uid}}"><a id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a></li> <br class="elmtRelated{{elmt.uid}}">
+            {% elif elmt.found_status == 1 %}
+                <a class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
             {% else %}
-                <a id="elmt{{elmt.uid}}" onclick="sentenceContext({{elmt.uid}}, 'p')">{{elmt.text}}</a> <br><br>
+                <a id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
             {% endif %}
         {% endfor %}
     </div>
     <div class="col col-sm-4 ">
         <div class='missingTechniquesView' id='sentenceContextSection'>
-                <span class='spanMissingTechniqueView'>
-                    Techniques Found
-                </span>
-            <br><br>
-            <div id="sentenceInformation">
-                <table id="tableSentenceInfo" class="table">
-                    <tbody>
-
-                    </tbody>
-                </table>
-            </div>
-            <br><br>
-            <span class='spanMissingTechniqueView'>
-                    Confirmed Techniques
-                </span>
+            {% if completed == 0 %}
+                <span class='spanMissingTechniqueView'>Techniques Found</span>
+                <br><br>
+                <div id="sentenceInformation">
+                    <table id="tableSentenceInfo" class="table"><tbody></tbody></table>
+                </div>
+                <br><br>
+            {% endif %}
+            <span class='spanMissingTechniqueView'>Confirmed Techniques</span>
             <br><br>
             <div id="confirmedsentenceInformation">
-                <table id="confirmedSentenceInfo" class="table">
-                    <tbody>
-
-                    </tbody>
-                </table>
+                <table id="confirmedSentenceInfo" class="table"><tbody></tbody></table>
             </div>
             <hr><br><br>
-             <span class='spanAddMissingTechnique'>
-                    Add A Missing Technique
-                </span> <br><br>
-            <div class="container">
-                <div class="row">
-                  <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true" data-live-search="true">
-                      {% for tech in attack_uids %}
-                    <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}">{{tech.name}}</option>
-                      {% endfor %}
-                  </select>
+            {% if completed == 0 %}
+                <span class='spanAddMissingTechnique'>Add A Missing Technique</span>
+                <br><br>
+                <div class="container">
+                    <div class="row">
+                      <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true" data-live-search="true">
+                          {% for tech in attack_uids %}
+                        <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}">{{tech.name}}</option>
+                          {% endfor %}
+                      </select>
+                    </div>
                 </div>
-            </div>
-            <br>
-            &nbsp;&nbsp;&nbsp;<button onclick="addMissingTechnique()" class="btn btn-md btn-outline-primary">Add Technique</button> <br><br>
+                <br>
+                <button disabled id="missingTechBtn" onclick="addMissingTechnique()" class="btn btn-md btn-outline-primary">Add Technique</button> <br><br>
+                <button disabled id="delSenBtn" onclick="remove_sentence()" class="btn btn-md btn-danger">Remove Selected</button> <br><br>
+                <button onclick="finish_analysis()" class="btn btn-md btn-success">Finish Analysis</button> <br><br>
+            {% endif %}
         </div>
 
 

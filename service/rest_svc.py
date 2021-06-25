@@ -18,79 +18,43 @@ class RestService:
         self.queue = asyncio.Queue()  # task queue
         self.resources = []  # resource array
         self.externally_called = externally_called
-
-    async def false_negative(self, criteria=None):
-        sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
-        sentence_to_strip = sentence_dict[0]['text']
-        sentence_to_insert = self.web_svc.remove_html_markup_and_found(sentence_to_strip)
-        await self.dao.insert('false_negatives', dict(sentence_id=sentence_dict[0]['uid'], uid=criteria['attack_uid'],
-                                                      false_negative=sentence_to_insert))
-        return dict(status='inserted')
+        # A dictionary to keep track of report statuses we have seen
+        self.seen_report_status = dict()
 
     async def set_status(self, criteria=None):
-        report_dict = await self.dao.get('reports', dict(title=criteria['file_name']))
-        await self.dao.update('reports', 'uid', report_dict[0]['uid'], dict(current_status=criteria['set_status']))
-        return dict(status="Report status updated to " + criteria['set_status'])
+        new_status, report_id = criteria['set_status'], criteria['report_id']
+        if new_status == 'completed':
+            unchecked = await self.data_svc.get_unconfirmed_attack_count(report_id=report_id)
+            if unchecked:
+                return dict(error='There are ' + str(unchecked) + ' attacks unconfirmed for this report.')
+        await self.dao.update('reports', where=dict(uid=report_id), data=dict(current_status=new_status))
+        self.seen_report_status[report_id] = new_status
+        return dict(status='Report status updated to ' + new_status)
 
     async def delete_report(self, criteria=None):
-        await self.dao.delete('reports', dict(uid=criteria['report_id']))
-        await self.dao.delete('report_sentences', dict(report_uid=criteria['report_id']))
-        await self.dao.delete('report_sentence_hits', dict(report_uid=criteria['report_id']))
+        report_id = criteria['report_id']
+        await self.dao.delete('reports', dict(uid=report_id))
+        return dict(status='Successfully deleted report ' + report_id)
 
-    async def remove_sentences(self, criteria=None):
-        if not criteria['sentence_id']:
-            return dict(status="Please enter a number.")
-        else:
-            true_positives = await self.dao.get('true_positives', dict(sentence_id=criteria['sentence_id']))
-            false_positives = await self.dao.get('false_positives', dict(sentence_id=criteria['sentence_id']))
-            false_negatives = await self.dao.get('false_negatives', dict(sentence_id=criteria['sentence_id']))
-        if not true_positives and not false_positives and not false_negatives:
-            return dict(status="There is no entry for sentence id " + criteria['sentence_id'])
-        else:
-            await self.dao.delete('true_positives', dict(sentence_id=criteria['sentence_id']))
-            await self.dao.delete('false_positives', dict(sentence_id=criteria['sentence_id']))
-            await self.dao.delete('false_negatives', dict(sentence_id=criteria['sentence_id']))
-            return dict(status='Successfully moved sentence ' + criteria['sentence_id'])
+    async def remove_sentence(self, criteria=None):
+        sen_id = criteria['sentence_id']
+        # This is most likely a sentence ID sent through, so delete as expected
+        await self.dao.delete('report_sentences', dict(uid=sen_id))
+        # This could also be an image, so delete from original_html table too
+        await self.dao.delete('original_html', dict(uid=sen_id))
+        return dict(status='Successfully deleted item ' + sen_id)
 
     async def sentence_context(self, criteria=None):
-        if criteria['element_tag']=='img':
-            return []
-        sentence_hits = await self.dao.get('report_sentence_hits', dict(uid=criteria['uid']))
-        for hit in sentence_hits:
-            hit['element_tag'] = criteria['element_tag']
-        return sentence_hits
+        return await self.data_svc.get_active_sentence_hits(sentence_id=criteria['uid'])
 
-    async def confirmed_sentences(self, criteria=None):
-        tmp = []
-        techniques = await self.dao.get('true_positives',
-                                        dict(sentence_id=criteria['sentence_id'], element_tag=criteria['element_tag']))
-        for tech in techniques:
-            name = await self.dao.get('attack_uids', dict(uid=tech['uid']))
-            tmp.append(name[0])
-        return tmp
-
-    async def true_positive(self, criteria=None):
-        sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
-        sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
-        await self.dao.insert('true_positives', dict(sentence_id=sentence_dict[0]['uid'], uid=criteria['attack_uid'],
-                                                    true_positive=sentence_to_insert, element_tag=criteria['element_tag']))
-        return dict(status='inserted')
-
-    async def false_positive(self, criteria=None):
-        sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
-        sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
-        last = await self.data_svc.last_technique_check(criteria)
-        await self.dao.insert('false_positives', dict(sentence_id=sentence_dict[0]['uid'], uid=criteria['attack_uid'],
-                                                      false_positive=sentence_to_insert))
-        return dict(status='inserted', last=last)
+    async def confirmed_attacks(self, criteria=None):
+        return await self.data_svc.get_confirmed_attacks(sentence_id=criteria['sentence_id'])
 
     async def insert_report(self, criteria=None):
-        # criteria['id'] = await self.dao.insert('reports', dict(title=criteria['title'], url=criteria['url'],
-        #                                                       current_status="needs_review"))
         for i in range(len(criteria['title'])):
             criteria['title'][i] = await self.data_svc.get_unique_title(criteria['title'][i])
-            temp_dict = dict(title=criteria['title'][i], url=criteria['url'][i], current_status="queue")
-            temp_dict['id'] = await self.dao.insert('reports', temp_dict)
+            temp_dict = dict(title=criteria['title'][i], url=criteria['url'][i], current_status='queue')
+            temp_dict['id'] = await self.dao.insert_generate_uid('reports', temp_dict)
             await self.queue.put(temp_dict)
         asyncio.create_task(self.check_queue())  # check queue background task
         await asyncio.sleep(0.01)
@@ -99,8 +63,8 @@ class RestService:
         file = StringIO(criteria['file'])
         df = pd.read_csv(file)
         for row in range(df.shape[0]):
-            temp_dict = dict(title=df['title'][row], url=df['url'][row], current_status="queue")
-            temp_dict['id'] = await self.dao.insert('reports', temp_dict)
+            temp_dict = dict(title=df['title'][row], url=df['url'][row], current_status='queue')
+            temp_dict['id'] = await self.dao.insert_generate_uid('reports', temp_dict)
             await self.queue.put(temp_dict)
         asyncio.create_task(self.check_queue())
         await asyncio.sleep(0.01)
@@ -134,7 +98,7 @@ class RestService:
                 self.resources.append(task)
 
     async def start_analysis(self, criteria=None):
-        tech_data = await self.dao.get('attack_uids')
+        tech_data = await self.data_svc.get_techniques()
         attack_dict_loc = 'models/attack_dict.json'
         attack_dict_loc = os.path.join('tram', attack_dict_loc) if self.externally_called else attack_dict_loc
         with open(attack_dict_loc, 'r', encoding='utf_8') as attack_dict_f:
@@ -147,16 +111,16 @@ class RestService:
                 continue
             else:
                 # query for true positives
-                true_pos = await self.dao.get('true_positives', dict(uid=row['uid']))
+                true_pos = await self.dao.get('true_positives', dict(attack_uid=row['uid']))
                 tp, fp = [], []
                 for t in true_pos:
                     tp.append(t['true_positive'])
                 # query for false negatives
-                false_neg = await self.dao.get('false_negatives', dict(uid=row['uid']))
+                false_neg = await self.dao.get('false_negatives', dict(attack_uid=row['uid']))
                 for f in false_neg:
                     tp.append(f['false_negative'])
                 # query for false positives for this technique
-                false_positives = await self.dao.get('false_positives', dict(uid=row['uid']))
+                false_positives = await self.dao.get('false_positives', dict(attack_uid=row['uid']))
                 for fps in false_positives:
                     fp.append(fps['false_positive'])
 
@@ -181,11 +145,8 @@ class RestService:
         # Merge ML and Reg hits
         analyzed_html = await self.ml_svc.combine_ml_reg(ml_analyzed_html, reg_analyzed_html)
 
-        # update card to reflect the end of queue
-        await self.dao.update('reports', 'title', criteria['title'], dict(current_status='needs_review'))
         temp = await self.dao.get('reports', dict(title=criteria['title']))
         criteria['id'] = temp[0]['uid']
-        # criteria['id'] = await self.dao.update('reports', dict(title=criteria['title'], url=criteria['url'],current_status="needs_review"))
         report_id = criteria['id']
         for sentence in analyzed_html:
             if sentence['ml_techniques_found']:
@@ -193,43 +154,135 @@ class RestService:
             elif sentence['reg_techniques_found']:
                 await self.reg_svc.reg_techniques_found(report_id, sentence)
             else:
-                data = dict(report_uid=report_id, text=sentence['text'], html=sentence['html'], found_status="false")
-                await self.dao.insert('report_sentences', data)
+                data = dict(report_uid=report_id, text=sentence['text'], html=sentence['html'], found_status=0)
+                await self.dao.insert_generate_uid('report_sentences', data)
 
         for element in original_html:
-            html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'], found_status="false")
-            await self.dao.insert('original_html', html_element)
+            html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'], found_status=0)
+            await self.dao.insert_generate_uid('original_html', html_element)
+
+        # Update card to reflect the end of queue
+        await self.dao.update('reports', where=dict(title=criteria['title']), data=dict(current_status='needs_review'))
         logging.info('Finished analysing report ' + str(report_id))
 
-    async def missing_technique(self, criteria=None):
+    async def add_attack(self, criteria=None):
+        # The sentence and attack IDs
+        sen_id, attack_id = criteria['sentence_id'], criteria['attack_uid']
         # Get the attack information for this attack id
-        attack_dict = await self.dao.get('attack_uids', dict(uid=criteria['attack_uid']))
-
+        attack_dict = await self.dao.get('attack_uids', dict(uid=attack_id))
         # Get the report sentence information for the sentence id
-        sentence_dict = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
-        
+        sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
         # Get the sentence to insert by removing html markup
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
-        
-        # Insert new row in the true_positives database table to indicate a new confirmed technique
-        await self.dao.insert('true_positives', dict(sentence_id=sentence_dict[0]['uid'],
-                                                     uid=criteria['attack_uid'],
-                                                     true_positive=sentence_to_insert,
-                                                     element_tag=criteria['element_tag']))
-        
-        # Insert new row in the report_sentence_hits database table to indicate a new confirmed technique
-        # This is needed to ensure that requests to get all confirmed techniques works correctly
-        await self.dao.insert('report_sentence_hits', dict(uid=criteria['sentence_id'],
-                                                           attack_uid=criteria['attack_uid'],
-                                                           attack_technique_name=attack_dict[0]['name'],
-                                                           report_uid=sentence_dict[0]['report_uid'],
-                                                           attack_tid=attack_dict[0]['tid']))
-        
+        # A flag to determine if the model initially predicted this attack for this sentence
+        model_initially_predicted = False
+        # The list of SQL commands to run in a single transaction
+        sql_commands = []
+        # Check this sentence + attack combination isn't already in report_sentence_hits
+        historic_hits = await self.dao.get('report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id))
+        if historic_hits:
+            returned_hit = historic_hits[0]
+            # If this attack is already confirmed for this sentence, we are not going to do anything further
+            if returned_hit['confirmed']:
+                return dict(status='ignored; attack already confirmed')
+            # Else update the hit as active and confirmed
+            sql_commands.append(await self.dao.update(
+                'report_sentence_hits', where=dict(sentence_id=sen_id, attack_uid=attack_id),
+                data=dict(active_hit=1, confirmed=1), return_sql=True))
+            # Update model_initially_predicted flag using returned historic_hits
+            model_initially_predicted = returned_hit['initial_model_match']
+        else:
+            # Insert new row in the report_sentence_hits database table to indicate a new confirmed technique
+            # This is needed to ensure that requests to get all confirmed techniques works correctly
+            sql_commands.append(await self.dao.insert_generate_uid(
+                'report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id,
+                                             attack_technique_name=attack_dict[0]['name'],
+                                             report_uid=sentence_dict[0]['report_uid'],
+                                             attack_tid=attack_dict[0]['tid'], confirmed=1), return_sql=True))
+        # As this will now be either a true positive or false negative, ensure it is not a false positive too
+        sql_commands.append(await self.dao.delete('false_positives', dict(sentence_id=sen_id, attack_uid=attack_id),
+                                                  return_sql=True))
+        # If the ML model correctly predicted this attack, then it is a true positive
+        if model_initially_predicted:
+            # Insert new row in the true_positives database table
+            sql_commands.append(await self.dao.insert_generate_uid(
+                'true_positives', dict(sentence_id=sen_id, attack_uid=attack_id, true_positive=sentence_to_insert),
+                return_sql=True))
+        else:
+            # Insert new row in the false_negatives database table as model incorrectly flagged as not an attack
+            sql_commands.append(await self.dao.insert_generate_uid(
+                'false_negatives', dict(sentence_id=sen_id, attack_uid=attack_id, false_negative=sentence_to_insert),
+                return_sql=True))
         # If the found_status for the sentence id is set to false when adding a missing technique
         # then update the found_status value to true for the sentence id in the report_sentence table 
-        if sentence_dict[0]['found_status'] == 'false':
-            await self.dao.update('report_sentences', 'uid', criteria['sentence_id'], dict(found_status='true'))
-        
+        if sentence_dict[0]['found_status'] == 0:
+            sql_commands.append(await self.dao.update(
+                'report_sentences', where=dict(uid=sen_id), data=dict(found_status=1), return_sql=True))
+        # Run the updates, deletions and insertions for this method altogether
+        await self.dao.run_sql_list(sql_list=sql_commands)
+        # As a technique has been added, ensure the report's status reflects analysis has started
+        await self.check_report_status(report_id=sentence_dict[0]['report_uid'])
         # Return status message
         return dict(status='inserted')
 
+    async def reject_attack(self, criteria=None):
+        # The sentence and attack IDs
+        sen_id, attack_id = criteria['sentence_id'], criteria['attack_uid']
+        # Get the report sentence information for the sentence id
+        sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
+        # Get the sentence to insert by removing html markup
+        sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
+        # The list of SQL commands to run in a single transaction
+        sql_commands = []
+        # Delete any sentence-hits where the model didn't initially guess the attack
+        sql_commands.append(await self.dao.delete(
+            'report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=0),
+            return_sql=True))
+        # For sentence-hits where the model did guess the attack, flag as inactive and unconfirmed
+        sql_commands.append(await self.dao.update(
+            'report_sentence_hits', where=dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=1),
+            data=dict(active_hit=0, confirmed=0), return_sql=True))
+        # This previously-highlighted sentence may have been added as a true positive or false negative; delete these
+        sql_commands.append(await self.dao.delete('true_positives',
+                                                  dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True))
+        sql_commands.append(await self.dao.delete('false_negatives',
+                                                  dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True))
+        # Check if the ML model initially predicted this attack
+        model_initially_predicted = \
+            len(await self.dao.get('report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id,
+                                                                initial_model_match=1)))
+        # If it did, then this is a false positive
+        if model_initially_predicted:
+            sql_commands.append(await self.dao.insert_generate_uid(
+                'false_positives', dict(sentence_id=sen_id, attack_uid=attack_id, false_positive=sentence_to_insert),
+                return_sql=True))
+        # Check if this sentence has other attacks mapped to it
+        number_of_techniques = await self.dao.get('report_sentence_hits', equal=dict(sentence_id=sen_id, active_hit=1),
+                                                  not_equal=dict(attack_uid=attack_id))
+        # If it doesn't, update the sentence found-status to 0 (false)
+        if len(number_of_techniques) == 0:
+            sql_commands.append(await self.dao.update(
+                'report_sentences', where=dict(uid=sen_id), data=dict(found_status=0), return_sql=True))
+            last = dict(status='true')
+        else:
+            last = dict(status='false', id=sen_id)
+        # Run the updates, deletions and insertions for this method altogether
+        await self.dao.run_sql_list(sql_list=sql_commands)
+        # As a technique has been rejected, ensure the report's status reflects analysis has started
+        await self.check_report_status(report_id=sentence_dict[0]['report_uid'])
+        return dict(status='inserted', last=last)
+
+    async def check_report_status(self, report_id='', status='in_review'):
+        """Function to check a report is of the given status and updates it if not."""
+        # A quick check without a db call; if the status is right, exit method
+        if self.seen_report_status.get(report_id) == status:
+            return
+        # Check the db
+        report_dict = await self.dao.get('reports', dict(uid=report_id))
+        if report_dict[0]['current_status'] == status:
+            # Before exiting method as status matches, update dictionary for future checks
+            self.seen_report_status[report_id] = status
+            return
+        # Update the report status in the db and the dictionary variable for future checks
+        await self.dao.update('reports', where=dict(uid=report_id), data=dict(current_status=status))
+        self.seen_report_status[report_id] = status

@@ -2,83 +2,135 @@ PRAGMA foreign_keys = ON;
 
 CREATE TABLE if not exists attack_uids (
     uid VARCHAR(60) PRIMARY KEY,
+    -- Attack description
     description TEXT,
+    -- Attack ID in the form of T<Number>
     tid TEXT,
+    -- The name of the attack
     name TEXT
-    );
+);
 
 CREATE TABLE if not exists true_positives (
-    uid VARCHAR(60),
-    sentence_id integer,
-    true_positive TEXT,
-    element_tag TEXT,
-    FOREIGN KEY(uid) REFERENCES attack_uids(uid)
-    );
-
-CREATE TABLE if not exists false_positives (
-    uid VARCHAR(60),
-    sentence_id integer,
-    false_positive TEXT,
-    FOREIGN KEY(uid) REFERENCES attack_uids(uid)
-    );
-
-CREATE TABLE if not exists false_negatives (
-    uid VARCHAR(60),
-    sentence_id INTEGER,
-    false_negative TEXT,
-    FOREIGN KEY(uid) REFERENCES attack_uids(uid)
-    );
-
-CREATE TABLE if not exists regex_patterns (
-    uid integer PRIMARY KEY AUTOINCREMENT,
+    uid VARCHAR(60) PRIMARY KEY,
+    -- Attack ID
     attack_uid VARCHAR(60),
-    regex_pattern TEXT,
-    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid)
-    );
-
-CREATE TABLE if not exists similar_words (
-    uid VARCHAR(60),
-    attack_uid TEXT,
-    similar_word TEXT,
-    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid)
-    );
-
-CREATE TABLE if not exists reports (
-    uid integer PRIMARY KEY AUTOINCREMENT,
-    title TEXT,
-    url TEXT,
-    attack_key TEXT,
-    current_status TEXT
-    );
-
-CREATE TABLE if not exists report_sentences (
-    uid integer PRIMARY KEY AUTOINCREMENT,
-    report_uid INTEGER,
-    text TEXT,
-    html TEXT,
-    found_status TEXT
-    );
-
-CREATE TABLE if not exists report_sentence_hits (
-    uid INTEGER,
-    attack_uid TEXT,
-    attack_technique_name TEXT,
-    report_uid INTEGER,
-    attack_tid TEXT
-    );
+    -- Sentence ID
+    sentence_id VARCHAR(60),
+    -- The sentence itself
+    true_positive TEXT,
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
+);
 
 CREATE TABLE if not exists true_negatives (
-    uid VARCHAR(60),
+    uid VARCHAR(60) PRIMARY KEY,
+    -- Attack ID
+    attack_uid VARCHAR(60),
+    -- Sentence ID
+    sentence_id VARCHAR(60),
+    -- The sentence itself
     sentence TEXT,
-    FOREIGN KEY(uid) REFERENCES attack_uids(uid)
-    );
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
+);
+
+CREATE TABLE if not exists false_positives (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- Attack ID
+    attack_uid VARCHAR(60),
+    -- Sentence ID
+    sentence_id VARCHAR(60),
+    -- The sentence itself
+    false_positive TEXT,
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
+);
+
+CREATE TABLE if not exists false_negatives (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- Attack ID
+    attack_uid VARCHAR(60),
+    -- Sentence ID
+    sentence_id VARCHAR(60),
+    -- The sentence itself
+    false_negative TEXT,
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
+);
+
+CREATE TABLE if not exists regex_patterns (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- Attack ID
+    attack_uid VARCHAR(60),
+    -- The regex pattern
+    regex_pattern TEXT,
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid)
+);
+
+CREATE TABLE if not exists similar_words (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- Attack ID
+    attack_uid TEXT,
+    -- The similar word (to the attack of attack_uid)
+    similar_word TEXT,
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid)
+);
+
+CREATE TABLE if not exists reports (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- The title of the report as submitted by the user
+    title TEXT,
+    -- If applicable, the URL the user submitted for this report
+    url TEXT,
+    -- Its stage in the analysis process: queue, needs review, etc.
+    current_status TEXT
+);
+
+CREATE TABLE if not exists report_sentences (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- The report which this sentence belongs to
+    report_uid VARCHAR(60),
+    -- The sentence itself
+    text TEXT,
+    -- Its html representation
+    html TEXT,
+    -- Whether any attacks for this sentence have been found
+    found_status BOOLEAN DEFAULT 0,
+    FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
+);
+
+CREATE TABLE if not exists report_sentence_hits (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- Attack ID
+    attack_uid VARCHAR(60),
+    -- The name of the attack
+    attack_technique_name TEXT,
+    -- The report ID for this sentence-hit
+    report_uid VARCHAR(60),
+    -- The sentence ID of the sentence itself
+    sentence_id VARCHAR(60),
+    -- The attack T-ID
+    attack_tid TEXT,
+    -- Whether the tram-analysis (not user-analysis) detected this attack for this sentence
+    initial_model_match BOOLEAN DEFAULT 0,
+    -- Whether an attack is currently associated with this sentence
+    active_hit BOOLEAN DEFAULT 1,
+    -- Whether a user has confirmed this attack on the sentence
+    confirmed BOOLEAN DEFAULT 0,
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE,
+    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
+);
 
 CREATE TABLE if not exists original_html (
-    uid INTEGER PRIMARY KEY AUTOINCREMENT,
-    report_uid INTEGER,
+    uid VARCHAR(60) PRIMARY KEY,
+    -- The report ID for this html element
+    report_uid VARCHAR(60),
+    -- The text of this element
     text TEXT,
+    -- The element's tag
     tag TEXT,
-    found_status TEXT
-    );
-
---INSERT INTO regex_patterns (attack_uid, regex_pattern) values ("attack-pattern--01df3350-ce05-4bdf-bdf8-0a919a66d4a8", "sometext.*moretext")
+    -- Whether the tram-analysis (not user-analysis) detected any attack for this element
+    found_status BOOLEAN DEFAULT 0,
+    FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
+);

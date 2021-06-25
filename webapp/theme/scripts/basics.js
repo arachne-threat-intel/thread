@@ -1,11 +1,10 @@
 // The current sentence that's selected
 var sentence_id = 0;
-// The html tag of the selected sentence
-var element_clicked_tag = "";
 // A temporarily highlighted sentence
 var tempHighlighted = undefined;
-// The class used for highlighting a sentence
+// The classes used for highlighting a sentence or image
 var highlightClass = "bg-warning";
+var highlightClassImg = "imgHighlight";
 
 function restRequest(type, data, callback) {
     $.ajax({
@@ -18,44 +17,79 @@ function restRequest(type, data, callback) {
     });
 }
 
-function remove_sentences(){
-    var sentence_id =  document.getElementById("sentence_id").value;
-    restRequest('POST', {'index':'remove_sentences', 'sentence_id':sentence_id}, show_info);
-}
-
-function true_positive(type, id, attack_uid, element_tag){
-    $("#sentence" + id).addClass(highlightClass);
-    restRequest('POST', {'index':'true_positive', 'sentence_type':type, 'sentence_id':id, 'attack_uid':attack_uid, 'element_tag':element_tag}, show_info);
-    sentenceContext(id, element_tag, attack_uid)
-}
-
-function false_positive(type, id, attack_uid){
-    document.getElementById("sentence-tid" + attack_uid.substr(attack_uid.length - 4)).remove();
-    //$(`#sentence${id}`).removeClass('bg-warning');
-    restRequest('POST', {'index':'false_positive', 'sentence_type':type, 'sentence_id':id, 'attack_uid':attack_uid}, show_info);
-}
-
-function false_negative_update(data){
-    if (data.last == 'true') {
-            $(`#sentence${data.id}`).removeClass(highlightClass);
+function remove_sentence() {
+    // The selected image or sentence
+    var selectedSentence = document.getElementById(`elmt${sentence_id}`);
+    var selectedImage = document.getElementById(`img${sentence_id}`);
+    // The final selected element to be removed
+    var selected = undefined;
+    // Data which informs user of what is being removed
+    var messageInfo = "";
+    // If it is a sentence that is selected
+    if (selectedSentence) {
+        // Prepare the first three words of the sentence as a reminder to the user of the sentence that is selected
+        sen_text = selectedSentence.text;
+        truncated = sen_text.split(' ').slice(0,3).join(' ');
+        // Add trailing ellipsis if the sentence has more than three words
+        truncated += (truncated == sen_text) ? "" : "...";
+        messageInfo = `sentence ("${truncated.trim()}")`;
+        // Flag selected to be this sentence to be removed
+        selected = selectedSentence;
+    } else if (selectedImage) {  // Else if an image is selected
+        messageInfo = "image";
+        // Flag selected to be this image to be removed
+        selected = selectedImage;
+    } else {  // Else we do not have an item selected for removal
+        alert("Unable to determine selected item in report. Please try refreshing page.");
+        return;
+    }
+    // Confirm with the user that this is being removed
+    if (confirm("Are you sure you want to remove the currently selected " + messageInfo
+        + "? This can only be retrieved by re-submitting this report.")) {
+        // Remove the element itself and any related elements (e.g. buffering <br>s)
+        selected.remove();
+        $(`.elmtRelated${sentence_id}`).remove();
+        // Nothing is currently selected after this removal
+        tempHighlighted = undefined;
+        // Disable further actions until another item is selected
+        $("#missingTechBtn").prop("disabled", true);
+        $("#delSenBtn").prop("disabled", true);
+        // Send off request to delete from the db
+        restRequest('POST', {'index':'remove_sentence', 'sentence_id': sentence_id}, show_info);
     }
 }
 
-function deleteReport(report_id){
+function acceptAttack(id, attack_uid) {
+    restRequest('POST', {'index':'add_attack', 'sentence_id': id, 'attack_uid': attack_uid}, show_info);
+    sentenceContext(id, attack_uid);
+}
+
+function rejectAttack(id, attack_uid) {
+    restRequest('POST', {'index':'reject_attack', 'sentence_id': id, 'attack_uid': attack_uid}, show_info);
+    sentenceContext(id, attack_uid);
+}
+
+function deleteReport(report_id) {
   if (confirm('Are you sure you want to delete this report?')) {
     restRequest('POST', {'index':'delete_report', 'report_id':report_id}, show_info)
     window.location.reload(true);
-  } else {}
-
+  }
 }
 
-function false_negative(type, attack_uid){
-    restRequest('POST', {'index':'false_negative', 'sentence_type':type, 'sentence_id':sentence_id, 'attack_uid':attack_uid}, show_info);
-    alert(sentence_id)
+function finish_analysis() {
+    var report_id = $('meta#reportinfo').data('reportid');
+    if (confirm('Are you sure you are finished with this report?')) {
+        restRequest('POST', {'index':'set_status', 'set_status': 'completed', 'report_id': report_id}, post_analysis);
+    }
 }
 
-function set_status(set_status, file_name){
-    restRequest('POST', {'index':'set_status', 'set_status':set_status, 'file_name':file_name}, show_info);
+function post_analysis(data) {
+    if (data.status) {
+        show_info(data);
+        window.location.reload(true);
+    } else if (data.error) {
+        alert(data.error);
+    }
 }
 
 function submit_report() {
@@ -73,19 +107,19 @@ function submit_report() {
     }
 }
 
-function upload_file(){
+function upload_file() {
   //var fileName = this.val().split("\\").pop();
 
   console.log(document.getElementById("csv_file"))
   var file = document.getElementById("csv_file").files[0];
-  if(file){
+  if(file) {
     var reader = new FileReader();
     reader.readAsText(file, "UTF-8");
-    reader.onload = function(evt){
+    reader.onload = function(evt) {
       console.log(evt.target.result)
       restRequest('POST', {'index':'insert_csv','file':evt.target.result},show_info);
     }
-    reader.onerror = function(evt){
+    reader.onerror = function(evt) {
       alert("Error reading file");
     }
   }
@@ -111,11 +145,11 @@ function filterFunction(input1, id1) {
   }
 }
 
-function show_info(data){
+function show_info(data) {
     console.log(data.status);
 }
 
-function savedAlert(){
+function savedAlert() {
     console.log("saved");
 }
 
@@ -125,46 +159,56 @@ function savedAlert(){
     } else {
       $("footer").removeClass('sticky-footer');
     }
- }
+}
 
-function sentenceContext(data, element_tag, attack_uid) {
-    // Update selected sentence global variables
-    element_clicked_tag = element_tag;
+function sentenceContext(data, attack_uid) {
+    // Update selected sentence global variable
     sentence_id = data;
     // Fire off requests to get info on this sentence
-    restRequest('POST', {'index':'sentence_context', 'uid': data, 'attack_uid':attack_uid, 'element_tag':element_tag}, updateSentenceContext);
-    restRequest('POST', {'index':'confirmed_sentences', 'sentence_id': data, 'element_tag':element_tag}, updateConfirmedContext);
+    restRequest('POST', {'index':'sentence_context', 'uid': data, 'attack_uid': attack_uid}, updateSentenceContext);
+    restRequest('POST', {'index':'confirmed_attacks', 'sentence_id': data}, updateConfirmedContext);
 }
 
 function updateSentenceContext(data) {
     // If we previously highlighted a sentence before and this is a new sentence, remove the previous highlighting
     if (tempHighlighted !== undefined && tempHighlighted !== sentence_id) {
         $("#elmt" + tempHighlighted).removeClass(highlightClass);
+        $("#img" + tempHighlighted).removeClass(highlightClassImg);
         tempHighlighted = undefined;
     }
     // Reset any 'Techniques Found' list
     $("#tableSentenceInfo tr").remove();
+    // Flag we will enable any disabled sentence buttons
+    enableSenButtons = true;
     // If this sentence has attacks, display the attacks as normal
     if (data && data.length > 0) {
         $.each(data, function(index, op) {
             td1 = "<td><a href=https://attack.mitre.org/techniques/" + op.attack_tid + " target=_blank>" + op.attack_technique_name + "</a></td>";
-            td2 = `<td><button class='btn btn-success' onclick='true_positive(true_positive, ${op.uid}, \"${op.attack_uid}\", "${op.element_tag}")'>Accept</button></td>`;
-            td3 = `<td><button class='btn btn-danger' onclick='false_positive(true_positive, ${op.uid}, \"${op.attack_uid}\")'>Reject</button></td>`;
+            td2 = `<td><button class='btn btn-success' onclick='acceptAttack("${op.sentence_id}", "${op.attack_uid}")'>Accept</button></td>`;
+            td3 = `<td><button class='btn btn-danger' onclick='rejectAttack("${op.sentence_id}", "${op.attack_uid}")'>Reject</button></td>`;
             tmp = `<tr id="sentence-tid${op.attack_uid.substr(op.attack_uid.length - 4)}">${td1}${td2}${td3}</tr>`;
             $("#tableSentenceInfo").find('tbody').append(tmp);
         });
     // Else this sentence doesn't have attack data
     } else {
         // If the user is clicking on a sentence that's already highlighted, remove the highlighting
-        if ($("#elmt" + sentence_id).hasClass(highlightClass)) {
+        if ($("#elmt" + sentence_id).hasClass(highlightClass) || $("#img" + sentence_id).hasClass(highlightClassImg)) {
             $("#elmt" + sentence_id).removeClass(highlightClass);
+            $("#img" + sentence_id).removeClass(highlightClassImg);
             tempHighlighted = undefined;
+            // Indicate to the user no actions can be taken as they have unselected something
+            enableSenButtons = false;
         // else this sentence wasn't highlighted before; add the highlighting
         } else {
             $("#elmt" + sentence_id).addClass(highlightClass);
+            $("#img" + sentence_id).addClass(highlightClassImg);
             tempHighlighted = sentence_id;
         }
     }
+    // Permit clicking missing techniques button depending if an image is currently highlighted
+    $("#missingTechBtn").prop("disabled", $(`.${highlightClassImg}`).length > 0 || !enableSenButtons);
+    // Allow 'remove selected' button
+    $("#delSenBtn").prop("disabled", !enableSenButtons);
 }
 
 function updateConfirmedContext(data) {
@@ -176,7 +220,7 @@ function updateConfirmedContext(data) {
     });
 }
 
-function downloadLayer(data){
+function downloadLayer(data) {
   // Create the name of the JSON download file from the name of the report
   var json = JSON.parse(data) 
   var title = json['name'] //document.getElementById("title").value;
@@ -197,11 +241,11 @@ function downloadLayer(data){
   a.remove();
 }
 
-function viewLayer(data){
+function viewLayer(data) {
   console.info("viewLayer: " + data)
 }
 
-function divSentenceReload(){
+function divSentenceReload() {
     $('#sentenceContextSection').load(document.URL +  ' #sentenceContextSection');
 }
 
@@ -215,8 +259,8 @@ function autoHeight() {
 
  // onDocumentReady function bind
 $(document).ready(function() {
-  $("header").css("height", $(".navbar").outerHeight());
-  autoHeight();
+    $("header").css("height", $(".navbar").outerHeight());
+    autoHeight();
 });
 
 // onResize bind of the function
@@ -224,11 +268,12 @@ $(window).resize(function() {
   autoHeight();
 });
 
-function addMissingTechnique(){
-    uid = $("#missingTechniqueSelect :selected").val();
-    restRequest('POST', {'index':'missing_technique', 'sentence_id': sentence_id, 'attack_uid':uid, 'element_tag':element_clicked_tag}, show_info);
-    restRequest('POST', {'index':'confirmed_sentences', 'sentence_id': sentence_id, 'element_tag':element_clicked_tag}, updateConfirmedContext);
-    // If an attack has been added to a temporarily highlighted sentence, the highlighting isn't temporary anymore
-    tempHighlighted = undefined
+function addMissingTechnique() {
+    // If an image is currently not highlighted (don't imply images can be mapped to attacks)
+    if($(`.${highlightClassImg}`).length == 0) {
+        uid = $("#missingTechniqueSelect :selected").val();
+        acceptAttack(sentence_id, uid);
+        // If an attack has been added to a temporarily highlighted sentence, the highlighting isn't temporary anymore
+        tempHighlighted = undefined
+    }
 }
-

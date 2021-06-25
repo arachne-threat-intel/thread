@@ -170,7 +170,7 @@ class WebService:
                 out = out + c
         sep = '!FOUND:'
         out = out.split(sep, 1)[0]
-        return out
+        return out.strip().replace('\n', ' ')
 
     @staticmethod
     async def get_url(url, returned_format=None):
@@ -189,8 +189,6 @@ class WebService:
         final_element['text'] = element['text']
         final_element['tag'] = element['tag']
         final_element['found_status'] = element['found_status']
-        final_element['hits'] = None
-        final_element['confirmed'] = 'false'
         return final_element
 
 
@@ -201,8 +199,6 @@ class WebService:
         final_element['text'] = single_sentence
         final_element['tag'] = tag
         final_element['found_status'] = sentence['found_status']
-        final_element['hits'] = sentence['hits']
-        final_element['confirmed'] = sentence['confirmed']
         return final_element
 
     @staticmethod
@@ -260,7 +256,7 @@ class WebService:
         img_dict = dict()
         img_dict['text'] = source
         img_dict['tag'] = 'img'
-        img_dict['found_status'] = False
+        img_dict['found_status'] = 0
         img_dict['ml_techniques_found'] = []
         img_dict['res_techniques_found'] = []
         return img_dict
@@ -270,7 +266,7 @@ class WebService:
         res_dict = dict()
         res_dict['text'] = plaintext
         res_dict['tag'] = tag
-        res_dict['found_status'] = False
+        res_dict['found_status'] = 0
         res_dict['ml_techniques_found'] = []
         res_dict['res_techniques_found'] = []
         return res_dict

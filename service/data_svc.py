@@ -2,7 +2,6 @@ import os
 import re
 import json
 import logging
-import uuid
 
 from stix2 import TAXIICollectionSource, Filter
 
@@ -99,32 +98,37 @@ class DataService:
         attack_data = references
         logging.info("Finished...now creating the database.")
 
-        cur_uids = await self.dao.get('attack_uids') if await self.dao.get('attack_uids') else []
+        cur_uids = await self.get_techniques()
+        cur_uids = cur_uids if cur_uids else []
         cur_items = [i['uid'] for i in cur_uids]
         for k, v in attack_data.items():
             if k not in cur_items:
                 await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v['description']), tid=v['id'],
                                                           name=v['name']))
                 if 'regex_patterns' in v:
-                    [await self.dao.insert('regex_patterns', dict(uid=str(uuid.uuid4()), attack_uid=k,
-                                                                  regex_pattern=defang_text(x)))
+                    [await self.dao.insert_generate_uid('regex_patterns',
+                                                        dict(attack_uid=k, regex_pattern=defang_text(x)))
                      for x in v['regex_patterns']]
                 if 'similar_words' in v:
-                    [await self.dao.insert('similar_words', dict(uid=str(uuid.uuid4()), attack_uid=k,
-                                                                 similar_word=defang_text(x)))
+                    [await self.dao.insert_generate_uid('similar_words',
+                                                        dict(attack_uid=k, similar_word=defang_text(x)))
                      for x in v['similar_words']]
                 if 'false_negatives' in v:
-                    [await self.dao.insert('false_negatives', dict(uid=k, false_negative=defang_text(x))) for x in
-                     v['false_negatives']]
+                    [await self.dao.insert_generate_uid('false_negatives',
+                                                        dict(attack_uid=k, false_negative=defang_text(x)))
+                     for x in v['false_negatives']]
                 if 'false_positives' in v:
-                    [await self.dao.insert('false_positives', dict(uid=k, false_positive=defang_text(x))) for x in
-                     v['false_positives']]
+                    [await self.dao.insert_generate_uid('false_positives',
+                                                        dict(attack_uid=k, false_positive=defang_text(x)))
+                     for x in v['false_positives']]
                 if 'true_positives' in v:
-                    [await self.dao.insert('true_positives', dict(uid=k, true_positive=defang_text(x))) for x in
-                     v['true_positives']]
+                    [await self.dao.insert_generate_uid('true_positives',
+                                                        dict(attack_uid=k, true_positive=defang_text(x)))
+                     for x in v['true_positives']]
                 if 'example_uses' in v:
-                    [await self.dao.insert('true_positives', dict(uid=k, true_positive=defang_text(x))) for x in
-                     v['example_uses']]
+                    [await self.dao.insert_generate_uid('true_positives',
+                                                        dict(attack_uid=k, true_positive=defang_text(x)))
+                     for x in v['example_uses']]
         logging.info('[!] DB Item Count: {}'.format(len(await self.dao.get('attack_uids'))))
 
     async def insert_attack_json_data(self, buildfile):
@@ -133,7 +137,7 @@ class DataService:
         :param buildfile: Enterprise attack json file to build from
         :return: nil
         """
-        cur_items = [x['uid'] for x in await self.dao.get('attack_uids')]
+        cur_items = [x['uid'] for x in await self.get_techniques()]
         logging.debug('[#] {} Existing items in the DB'.format(len(cur_items)))
         with open(buildfile, 'r') as infile:
             attack_dict = json.load(infile)
@@ -181,8 +185,8 @@ class DataService:
             await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v['description']), tid=v['id'],
                                                       name=v['name']))
             if 'example_uses' in v:
-                [await self.dao.insert('true_positives', dict(uid=k, true_positive=defang_text(x))) for x in
-                 v['example_uses']]
+                [await self.dao.insert_generate_uid('true_positives', dict(attack_uid=k, true_positive=defang_text(x)))
+                 for x in v['example_uses']]
 
     async def status_grouper(self, status):
         reports = await self.dao.get('reports', dict(current_status=status))
@@ -190,54 +194,72 @@ class DataService:
             report.update(dict(link="/edit/{}".format(report['title'])))
         return reports
 
-    async def last_technique_check(self, criteria):
-        await self.dao.delete('report_sentence_hits', dict(uid=criteria['sentence_id'], attack_uid=criteria['attack_uid']))
-        number_of_techniques = await self.dao.get('report_sentence_hits', dict(uid=criteria['sentence_id']))
-        if len(number_of_techniques) == 0:
-            await self.dao.update('report_sentences', 'uid', criteria['sentence_id'], dict(found_status='false'))
-            return dict(status='true')
-        else:
-            return dict(status='false', id=criteria['sentence_id'])
+    async def get_report_sentences(self, report_id):
+        return await self.dao.get('report_sentences', dict(report_uid=report_id))
 
-    async def build_sentences(self, report_id):
-        sentences = await self.dao.get('report_sentences', dict(report_uid=report_id))
-        for sentence in sentences:
-            sentence['hits'] = await self.dao.get('report_sentence_hits', dict(uid=sentence['uid']))
-            if await self.dao.get('true_positives', dict(sentence_id=sentence['uid'])):
-                sentence['confirmed'] = 'true'
-            else:
-                sentence['confirmed'] = 'false'
-        return sentences
+    async def get_report_sentences_with_attacks(self, report_id=''):
+        """Function to retrieve all report sentences and any attacks they may have given a report ID."""
+        select_join_query = (
+            "SELECT report_sentences.*, report_sentence_hits.attack_tid, report_sentence_hits.attack_technique_name, "
+            "report_sentence_hits.active_hit "
+            "FROM (report_sentences LEFT OUTER JOIN report_sentence_hits "
+            "ON report_sentences.uid = report_sentence_hits.sentence_id) "
+            "WHERE report_sentences.report_uid = ?")
+        return await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
 
     async def get_techniques(self):
-        techniques = await self.dao.get('attack_uids')
-        return techniques
+        return await self.dao.get('attack_uids')
 
     async def get_confirmed_techniques(self, report_id):
         # The SQL select join query to retrieve the confirmed techniques for the report from the database
         select_join_query = (
-            f"SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, report_sentence_hits.attack_tid, true_positives.true_positive " 
-            f"FROM ((report_sentences INNER JOIN report_sentence_hits ON report_sentences.uid = report_sentence_hits.uid) " 
-            f"INNER JOIN true_positives ON report_sentence_hits.uid = true_positives.sentence_id AND report_sentence_hits.attack_uid = true_positives.uid) " 
-            f"WHERE report_sentence_hits.report_uid = {report_id} "
-            f"UNION "
-            f"SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, report_sentence_hits.attack_tid, false_negatives.false_negative " 
-            f"FROM ((report_sentences INNER JOIN report_sentence_hits ON report_sentences.uid = report_sentence_hits.uid) " 
-            f"INNER JOIN false_negatives ON report_sentence_hits.uid = false_negatives.sentence_id AND report_sentence_hits.attack_uid = false_negatives.uid) " 
-            f"WHERE report_sentence_hits.report_uid = {report_id}")
+            "SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, "
+            "report_sentence_hits.attack_tid, report_sentences.text, report_sentence_hits.initial_model_match "
+            "FROM (report_sentences INNER JOIN report_sentence_hits "
+            "ON report_sentences.uid = report_sentence_hits.sentence_id) "
+            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = 1")
         # Run the SQL select join query
-        hits = await self.dao.raw_select(select_join_query)
+        return await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
+
+    async def get_confirmed_attacks(self, sentence_id=''):
+        """Function to retrieve confirmed-attack data for a sentence."""
+        select_join_query = (
+            "SELECT attack_uids.* "
+            "FROM (attack_uids INNER JOIN report_sentence_hits ON attack_uids.uid = report_sentence_hits.attack_uid) "
+            "WHERE report_sentence_hits.sentence_id = ? AND report_sentence_hits.confirmed = 1")
+        return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
+
+    async def get_unconfirmed_attack_count(self, report_id=''):
+        """Function to retrieve the number of unconfirmed attacks for a report."""
+        # Retrieve all unconfirmed attacks
+        all_unconfirmed = await self.dao.get('report_sentence_hits', dict(report_uid=report_id, confirmed=0))
+        # Ignore entries in the database where the model was incorrect (i.e. is unconfirmed because it was rejected and
+        # we are storing in report_sentence_hits that initial_model_match=1 so confirmed=0): these are false positives
+        select_join_query = (
+            "SELECT * FROM (report_sentence_hits INNER JOIN false_positives "
+            "ON report_sentence_hits.attack_uid = false_positives.attack_uid "
+            "AND report_sentence_hits.sentence_id = false_positives.sentence_id) "
+            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = 0")
+        ignore = await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
+        # Ideally would use an SQL MINUS query but this caused errors
+        return len(all_unconfirmed) - len(ignore)
+
+    async def get_confirmed_techniques_for_report(self, report_id):
+        # Get the confirmed hits
+        hits = await self.get_confirmed_techniques(report_id)
         techniques = []
         for hit in hits:
             # For each confirmed technique returned,
             # create a technique object and add it to the list of techniques.
-            technique = {}
-            technique['score'] = 1
-            technique['techniqueID'] = hit['attack_tid'] 
-            technique['comment'] = hit['true_positive']
+            technique = {'model_score': hit['initial_model_match'], 'techniqueID': hit['attack_tid'],
+                         'comment': await self.web_svc.remove_html_markup_and_found(hit['text'])}
             techniques.append(technique)
         # Return the list of confirmed techniques
         return techniques
+
+    async def get_active_sentence_hits(self, sentence_id=''):
+        """Function to retrieve active sentence hits (and ignoring historic ones, e.g. a model's initial prediction)."""
+        return await self.dao.get('report_sentence_hits', dict(sentence_id=sentence_id, active_hit=1))
 
     async def get_unique_title(self, title):
         """
