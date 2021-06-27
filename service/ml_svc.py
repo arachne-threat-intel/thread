@@ -214,5 +214,4 @@ class MLService:
         except LookupError:
             logging.warning('Could not find the stopwords pack, downloading now')
             nltk.download('stopwords')
-
-
+        self.web_svc.initialise_tokenizer()
