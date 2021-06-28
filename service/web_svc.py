@@ -15,6 +15,8 @@ ABBREVIATIONS = {'dr', 'vs', 'mr', 'mrs', 'ms', 'prof', 'inc', 'fig', 'e.g', 'i.
 
 
 class WebService:
+    def __init__(self):
+        self.tokenizer_sen = None
 
     def initialise_tokenizer(self):
         self.tokenizer_sen = nltk.data.load('tokenizers/punkt/english.pickle')
