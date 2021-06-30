@@ -182,12 +182,15 @@ class WebService:
             logging.info('[!] HTML support is being refactored. Currently data is being returned plaintext')
         r = requests.get(url)
         if not r.ok:
+            # If the request response is not good, close the current connection and replace with a prepared request
+            r.close()
             sess = requests.Session()
             r = requests.Request('GET', url)
             prep = r.prepare()
             r = sess.send(prep)
         if not r.ok:
             logging.error('URL retrieval failed with code ' + str(r.status_code))
+        # Close the open connection and use the response text to get contents for this url
         r.close()
         b = newspaper.fulltext(r.text)
         return str(b).replace('\n', '<br>') if b else None
