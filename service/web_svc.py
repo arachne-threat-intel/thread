@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import newspaper
 import nltk
 import re
@@ -178,10 +179,16 @@ class WebService:
     @staticmethod
     async def get_url(url, returned_format=None):
         if returned_format == 'html':
-            print('[!] HTML support is being refactored. Currently data is being returned plaintext')
+            logging.info('[!] HTML support is being refactored. Currently data is being returned plaintext')
         r = requests.get(url)
-        await asyncio.sleep(0.01)
-
+        if not r.ok:
+            sess = requests.Session()
+            r = requests.Request('GET', url)
+            prep = r.prepare()
+            r = sess.send(prep)
+        if not r.ok:
+            logging.error('URL retrieval failed with code ' + str(r.status_code))
+        r.close()
         b = newspaper.fulltext(r.text)
         return str(b).replace('\n', '<br>') if b else None
 
