@@ -6,9 +6,10 @@ import pandas as pd
 
 from io import StringIO
 
+UID = 'uid'
+
 
 class RestService:
-
     def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, externally_called=False):
         self.dao = dao
         self.data_svc = data_svc
@@ -20,6 +21,18 @@ class RestService:
         self.externally_called = externally_called
         # A dictionary to keep track of report statuses we have seen
         self.seen_report_status = dict()
+
+    async def prepare_queue(self):
+        """Function to add to the queue any reports left from a previous session."""
+        reports = await self.dao.get('reports', dict(current_status='queue'))
+        for report in reports:
+            # Sentences from this report may have previously populated other db tables
+            # Being selected from the queue will begin analysis again so delete previous progress
+            await self.dao.delete('report_sentences', dict(report_uid=report[UID]))
+            await self.dao.delete('report_sentence_hits', dict(report_uid=report[UID]))
+            await self.dao.delete('original_html', dict(report_uid=report[UID]))
+            # Add to the queue
+            await self.queue.put(report)
 
     async def set_status(self, criteria=None):
         new_status, report_id = criteria['set_status'], criteria['report_id']
@@ -45,7 +58,7 @@ class RestService:
         return dict(status='Successfully deleted item ' + sen_id)
 
     async def sentence_context(self, criteria=None):
-        return await self.data_svc.get_active_sentence_hits(sentence_id=criteria['uid'])
+        return await self.data_svc.get_active_sentence_hits(sentence_id=criteria[UID])
 
     async def confirmed_attacks(self, criteria=None):
         return await self.data_svc.get_confirmed_attacks(sentence_id=criteria['sentence_id'])
@@ -54,7 +67,7 @@ class RestService:
         for i in range(len(criteria['title'])):
             criteria['title'][i] = await self.data_svc.get_unique_title(criteria['title'][i])
             temp_dict = dict(title=criteria['title'][i], url=criteria['url'][i], current_status='queue')
-            temp_dict['id'] = await self.dao.insert_generate_uid('reports', temp_dict)
+            temp_dict[UID] = await self.dao.insert_generate_uid('reports', temp_dict)
             await self.queue.put(temp_dict)
         asyncio.create_task(self.check_queue())  # check queue background task
         await asyncio.sleep(0.01)
@@ -64,7 +77,7 @@ class RestService:
         df = pd.read_csv(file)
         for row in range(df.shape[0]):
             temp_dict = dict(title=df['title'][row], url=df['url'][row], current_status='queue')
-            temp_dict['id'] = await self.dao.insert_generate_uid('reports', temp_dict)
+            temp_dict[UID] = await self.dao.insert_generate_uid('reports', temp_dict)
             await self.queue.put(temp_dict)
         asyncio.create_task(self.check_queue())
         await asyncio.sleep(0.01)
@@ -98,6 +111,8 @@ class RestService:
                 self.resources.append(task)
 
     async def start_analysis(self, criteria=None):
+        report_id = criteria[UID]
+        logging.info('Beginning analysis for ' + report_id)
         tech_data = await self.data_svc.get_techniques()
         attack_dict_loc = 'models/attack_dict.json'
         attack_dict_loc = os.path.join('tram', attack_dict_loc) if self.externally_called else attack_dict_loc
@@ -111,20 +126,20 @@ class RestService:
                 continue
             else:
                 # query for true positives
-                true_pos = await self.dao.get('true_positives', dict(attack_uid=row['uid']))
+                true_pos = await self.dao.get('true_positives', dict(attack_uid=row[UID]))
                 tp, fp = [], []
                 for t in true_pos:
                     tp.append(t['true_positive'])
                 # query for false negatives
-                false_neg = await self.dao.get('false_negatives', dict(attack_uid=row['uid']))
+                false_neg = await self.dao.get('false_negatives', dict(attack_uid=row[UID]))
                 for f in false_neg:
                     tp.append(f['false_negative'])
                 # query for false positives for this technique
-                false_positives = await self.dao.get('false_positives', dict(attack_uid=row['uid']))
+                false_positives = await self.dao.get('false_positives', dict(attack_uid=row[UID]))
                 for fps in false_positives:
                     fp.append(fps['false_positive'])
 
-                techniques[row['uid']] = {'id': row['tid'], 'name': row['name'], 'similar_words': [],
+                techniques[row[UID]] = {'id': row['tid'], 'name': row['name'], 'similar_words': [],
                                           'example_uses': tp, 'false_positives': fp}
 
         html_data = await self.web_svc.get_url(criteria['url'])
@@ -145,9 +160,6 @@ class RestService:
         # Merge ML and Reg hits
         analyzed_html = await self.ml_svc.combine_ml_reg(ml_analyzed_html, reg_analyzed_html)
 
-        temp = await self.dao.get('reports', dict(title=criteria['title']))
-        criteria['id'] = temp[0]['uid']
-        report_id = criteria['id']
         for sentence in analyzed_html:
             if sentence['ml_techniques_found']:
                 await self.ml_svc.ml_techniques_found(report_id, sentence)

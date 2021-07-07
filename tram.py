@@ -57,6 +57,8 @@ async def init(host, port):
     """
     # We want nltk packs downloaded before startup; not run concurrently with startup
     await ml_svc.check_nltk_packs()
+    # Before the app starts up, prepare the queue of reports
+    await rest_svc.prepare_queue()
 
     logging.info('server starting: %s:%s' % (host, port))
     webapp_dir = os.path.join('tram', 'webapp') if externally_called else 'webapp'
@@ -75,6 +77,8 @@ async def init(host, port):
     runner = web.AppRunner(app)
     await runner.setup()
     await web.TCPSite(runner, host, port).start()
+    # First action after app-initialisation is to resume any reports left in the queue from a previous session
+    await rest_svc.check_queue()
 
 
 def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=None):
@@ -97,7 +101,7 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
 
 
 def main(external_caller=False):
-    global data_svc, externally_called, ml_svc, website_handler
+    global data_svc, externally_called, ml_svc, rest_svc, website_handler
 
     logging.getLogger().setLevel('DEBUG')
     logging.info('Welcome to TRAM')
