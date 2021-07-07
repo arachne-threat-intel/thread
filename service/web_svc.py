@@ -37,8 +37,6 @@ class WebService:
 
         # Loop through pt one by one, matching its line with a forward-advancing pointer on the html
         counter = 0
-        # Any plaintext which we haven't mapped
-        missing_pt = set()
         for pt in plaintext:
             text_match_found = False
             image_found = False
@@ -69,12 +67,8 @@ class WebService:
                     seen_images = seen_images[:-1]
                     results = results[:-1]
                 else:
-                    # Make a note of this missing text to map later
-                    results.append({})
-                    missing_pt.add(len(results)-1)
-        # Before returning final results, add any missing text with default <p> tags
-        for pt_idx in missing_pt:
-            results[pt_idx] = self._construct_text_dict(plaintext[pt_idx], 'p')
+                    # Add this missing text with default <p> tag
+                    results.append(self._construct_text_dict(pt, 'p'))
         return results
 
     async def build_final_html(self, original_html, sentences):
