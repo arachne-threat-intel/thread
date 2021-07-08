@@ -24,7 +24,7 @@ class RestService:
 
     async def prepare_queue(self):
         """Function to add to the queue any reports left from a previous session."""
-        reports = await self.dao.get('reports', dict(current_status='queue'))
+        reports = await self.dao.get('reports', dict(error=0, current_status='queue'))
         for report in reports:
             # Sentences from this report may have previously populated other db tables
             # Being selected from the queue will begin analysis again so delete previous progress
@@ -139,11 +139,14 @@ class RestService:
                 for fps in false_positives:
                     fp.append(fps['false_positive'])
 
-                techniques[row[UID]] = {'id': row['tid'], 'name': row['name'], 'similar_words': [],
-                                          'example_uses': tp, 'false_positives': fp}
+                techniques[row[UID]] = {'id': row['tid'], 'name': row['name'], 'similar_words': [], 'example_uses': tp,
+                                        'false_positives': fp}
 
-        html_data = await self.web_svc.get_url(criteria['url'])
-        original_html = await self.web_svc.map_all_html(criteria['url'])
+        original_html, html_data = await self.web_svc.map_all_html(criteria['url'])
+        if html_data is None:
+            logging.error('Skipping report; could not download url ' + criteria['url'])
+            await self.dao.update('reports', where=dict(uid=report_id), data=dict(error=1))
+            return
 
         article = dict(title=criteria['title'], html_text=html_data)
         list_of_legacy, list_of_techs = await self.data_svc.ml_reg_split(json_tech)
@@ -174,8 +177,8 @@ class RestService:
             await self.dao.insert_generate_uid('original_html', html_element)
 
         # Update card to reflect the end of queue
-        await self.dao.update('reports', where=dict(title=criteria['title']), data=dict(current_status='needs_review'))
-        logging.info('Finished analysing report ' + str(report_id))
+        await self.dao.update('reports', where=dict(uid=report_id), data=dict(current_status='needs_review'))
+        logging.info('Finished analysing report ' + report_id)
 
     async def add_attack(self, criteria=None):
         # The sentence and attack IDs

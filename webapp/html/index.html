@@ -3,6 +3,7 @@
 <meta http-equiv="refresh" content="30"/>
 <style>
     .footer { position: fixed; }
+    .error-icon { color: red; cursor: help; }
 </style>
     <div class="container-fluid">
       <div class="row">
@@ -48,10 +49,15 @@
                                 {% for report in queue %}
                                 <div class="card shadow-sm" id="queue-{{report.uid}}">
                                 <div class="card-body">
-                                    <!--<a onclick="deleteReport({{report.uid}})"
-                                       class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>-->
+                                    {% if report.error == 1 %}
+                                        <a data-toggle="tooltip" data-placement="top" title="Sorry, the contents of this report could not be retrieved.">
+                                            <span class="glyphicon glyphicon-exclamation-sign error-icon"></span>
+                                        </a>
+                                        <a onclick="deleteReport('{{report.uid}}')" class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
+                                    {% endif %}
                                     <p>
                                     <p class="card-text">{{report.title}}</p>
+                                    <a href="{{report.url}}" class="btn btn-sm btn-outline-secondary">Source</a>
                                 </div>
                                 </div>
                                 {% endfor %}

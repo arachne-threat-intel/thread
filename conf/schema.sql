@@ -83,7 +83,9 @@ CREATE TABLE if not exists reports (
     -- If applicable, the URL the user submitted for this report
     url TEXT,
     -- Its stage in the analysis process: queue, needs review, etc.
-    current_status TEXT
+    current_status TEXT,
+    -- Whether there is an error with this report
+    error BOOLEAN DEFAULT 0
 );
 
 CREATE TABLE if not exists report_sentences (

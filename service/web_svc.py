@@ -8,6 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 from html2text import html2text
 from lxml import etree, html
+from newspaper.article import ArticleDownloadState
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 
@@ -29,6 +30,8 @@ class WebService:
     async def map_all_html(self, url_input):
         a = newspaper.Article(url_input, keep_article_html=True)
         a.download()
+        if a.download_state == ArticleDownloadState.FAILED_RESPONSE:
+            return None, None
         a.parse()
         results, plaintext, images, seen_images = [], [], [], []
         images = await self._collect_all_images(a.images)
@@ -69,7 +72,7 @@ class WebService:
                 else:
                     # Add this missing text with default <p> tag
                     results.append(self._construct_text_dict(pt, 'p'))
-        return results
+        return results, a.html
 
     async def build_final_html(self, original_html, sentences):
         final_html = []
