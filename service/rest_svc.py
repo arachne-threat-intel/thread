@@ -21,6 +21,11 @@ class RestService:
         self.externally_called = externally_called
         # A dictionary to keep track of report statuses we have seen
         self.seen_report_status = dict()
+        # The offline attack dictionary TODO check and update differences from db (different attack names)
+        attack_dict_loc = 'models/attack_dict.json'
+        attack_dict_loc = os.path.join('tram', attack_dict_loc) if self.externally_called else attack_dict_loc
+        with open(attack_dict_loc, 'r', encoding='utf_8') as attack_dict_f:
+            self.json_tech = json.load(attack_dict_f)
 
     async def prepare_queue(self):
         """Function to add to the queue any reports left from a previous session."""
@@ -114,10 +119,6 @@ class RestService:
         report_id = criteria[UID]
         logging.info('Beginning analysis for ' + report_id)
         tech_data = await self.data_svc.get_techniques()
-        attack_dict_loc = 'models/attack_dict.json'
-        attack_dict_loc = os.path.join('tram', attack_dict_loc) if self.externally_called else attack_dict_loc
-        with open(attack_dict_loc, 'r', encoding='utf_8') as attack_dict_f:
-            json_tech = json.load(attack_dict_f)
         techniques = {}
         for row in tech_data:
             await asyncio.sleep(0.01)
@@ -150,12 +151,12 @@ class RestService:
 
         html_data = newspaper_article.text.replace('\n', '<br>')
         article = dict(title=criteria['title'], html_text=html_data)
-        list_of_legacy, list_of_techs = await self.data_svc.ml_reg_split(json_tech)
+        list_of_legacy, list_of_techs = await self.data_svc.ml_reg_split(self.json_tech)
 
         true_negatives = await self.ml_svc.get_true_negs()
         # Here we build the sentence dictionary
         html_sentences = self.web_svc.tokenize_sentence(article['html_text'])
-        model_dict = await self.ml_svc.build_pickle_file(list_of_techs, json_tech, true_negatives)
+        model_dict = await self.ml_svc.build_pickle_file(list_of_techs, self.json_tech, true_negatives)
 
         ml_analyzed_html = await self.ml_svc.analyze_html(list_of_techs, model_dict, html_sentences)
         regex_patterns = await self.dao.get('regex_patterns')
