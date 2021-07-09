@@ -142,12 +142,13 @@ class RestService:
                 techniques[row[UID]] = {'id': row['tid'], 'name': row['name'], 'similar_words': [], 'example_uses': tp,
                                         'false_positives': fp}
 
-        original_html, html_data = await self.web_svc.map_all_html(criteria['url'])
-        if html_data is None:
+        original_html, newspaper_article = await self.web_svc.map_all_html(criteria['url'])
+        if original_html is None and newspaper_article is None:
             logging.error('Skipping report; could not download url ' + criteria['url'])
             await self.dao.update('reports', where=dict(uid=report_id), data=dict(error=1))
             return
 
+        html_data = newspaper_article.text.replace('\n', '<br>')
         article = dict(title=criteria['title'], html_text=html_data)
         list_of_legacy, list_of_techs = await self.data_svc.ml_reg_split(json_tech)
 

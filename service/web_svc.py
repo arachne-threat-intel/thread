@@ -29,6 +29,7 @@ class WebService:
 
     async def map_all_html(self, url_input):
         a = newspaper.Article(url_input, keep_article_html=True)
+        a.config.MAX_TEXT = None
         a.download()
         if a.download_state == ArticleDownloadState.FAILED_RESPONSE:
             return None, None
@@ -72,7 +73,7 @@ class WebService:
                 else:
                     # Add this missing text with default <p> tag
                     results.append(self._construct_text_dict(pt, 'p'))
-        return results, a.html
+        return results, a
 
     async def build_final_html(self, original_html, sentences):
         final_html = []
