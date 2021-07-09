@@ -106,7 +106,7 @@ class RestService:
                 task = asyncio.create_task(self.start_analysis(criteria))
                 self.resources.append(task)
             else:
-                criteria = await self.queue.get() # get next task off queue and run it
+                criteria = await self.queue.get()  # get next task off queue and run it
                 task = asyncio.create_task(self.start_analysis(criteria))
                 self.resources.append(task)
 
@@ -242,7 +242,7 @@ class RestService:
         # As a technique has been added, ensure the report's status reflects analysis has started
         await self.check_report_status(report_id=sentence_dict[0]['report_uid'])
         # Return status message
-        return dict(status='inserted')
+        return dict(status='attack accepted')
 
     async def reject_attack(self, criteria=None):
         # The sentence and attack IDs
@@ -252,24 +252,22 @@ class RestService:
         # Get the sentence to insert by removing html markup
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
         # The list of SQL commands to run in a single transaction
-        sql_commands = []
-        # Delete any sentence-hits where the model didn't initially guess the attack
-        sql_commands.append(await self.dao.delete(
-            'report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=0),
-            return_sql=True))
-        # For sentence-hits where the model did guess the attack, flag as inactive and unconfirmed
-        sql_commands.append(await self.dao.update(
-            'report_sentence_hits', where=dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=1),
-            data=dict(active_hit=0, confirmed=0), return_sql=True))
-        # This previously-highlighted sentence may have been added as a true positive or false negative; delete these
-        sql_commands.append(await self.dao.delete('true_positives',
-                                                  dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True))
-        sql_commands.append(await self.dao.delete('false_negatives',
-                                                  dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True))
+        sql_commands = [
+            # Delete any sentence-hits where the model didn't initially guess the attack
+            await self.dao.delete(
+                'report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=0),
+                return_sql=True),
+            # For sentence-hits where the model did guess the attack, flag as inactive and unconfirmed
+            await self.dao.update(
+                'report_sentence_hits', where=dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=1),
+                data=dict(active_hit=0, confirmed=0), return_sql=True),
+            # This sentence may have previously been added as a true positive or false negative; delete these
+            await self.dao.delete('true_positives', dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True),
+            await self.dao.delete('false_negatives', dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True)
+        ]
         # Check if the ML model initially predicted this attack
-        model_initially_predicted = \
-            len(await self.dao.get('report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id,
-                                                                initial_model_match=1)))
+        model_initially_predicted = len(await self.dao.get(
+            'report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=1)))
         # If it did, then this is a false positive
         if model_initially_predicted:
             existing = len(await self.dao.get('false_positives', dict(sentence_id=sen_id, attack_uid=attack_id)))
@@ -291,7 +289,7 @@ class RestService:
         await self.dao.run_sql_list(sql_list=sql_commands)
         # As a technique has been rejected, ensure the report's status reflects analysis has started
         await self.check_report_status(report_id=sentence_dict[0]['report_uid'])
-        return dict(status='inserted', last=last)
+        return dict(status='attack rejected', last=last)
 
     async def check_report_status(self, report_id='', status='in_review'):
         """Function to check a report is of the given status and updates it if not."""
