@@ -1344,7 +1344,7 @@
       "can use the Windows API function CreateProcess to execute another process."
     ],
     "id": "T1106",
-    "name": "Execution through API",
+    "name": "Native API",
     "similar_words": [
       "Execution through API"
     ]
@@ -2698,7 +2698,7 @@
       "used other victims as proxies to relay command traffic, for instance using a compromised Georgian military email server as a hop point to NATO victims. The group has also used a tool that acts as a proxy to allow C2 even if the victim is behind a router.  has also used a machine to relay and obscure communications between  and their server."
     ],
     "id": "T1090",
-    "name": "Connection Proxy",
+    "name": "Proxy",
     "similar_words": [
       "Connection Proxy"
     ]
@@ -4290,7 +4290,7 @@
       "An  downloader establishes SOCKS5 connections for its initial C2."
     ],
     "id": "T1095",
-    "name": "Standard Non-Application Layer Protocol",
+    "name": "Non-Application Layer Protocol",
     "similar_words": [
       "Standard Non-Application Layer Protocol"
     ]
