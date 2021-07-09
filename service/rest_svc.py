@@ -220,15 +220,18 @@ class RestService:
                                                   return_sql=True))
         # If the ML model correctly predicted this attack, then it is a true positive
         if model_initially_predicted:
-            # Insert new row in the true_positives database table
-            sql_commands.append(await self.dao.insert_generate_uid(
-                'true_positives', dict(sentence_id=sen_id, attack_uid=attack_id, true_positive=sentence_to_insert),
-                return_sql=True))
+            existing = len(await self.dao.get('true_positives', dict(sentence_id=sen_id, attack_uid=attack_id)))
+            if not existing:  # Only add to the true positives table if it's not already there
+                sql_commands.append(await self.dao.insert_generate_uid(
+                    'true_positives', dict(sentence_id=sen_id, attack_uid=attack_id, true_positive=sentence_to_insert),
+                    return_sql=True))
         else:
             # Insert new row in the false_negatives database table as model incorrectly flagged as not an attack
-            sql_commands.append(await self.dao.insert_generate_uid(
-                'false_negatives', dict(sentence_id=sen_id, attack_uid=attack_id, false_negative=sentence_to_insert),
-                return_sql=True))
+            existing = len(await self.dao.get('false_negatives', dict(sentence_id=sen_id, attack_uid=attack_id)))
+            if not existing:  # Only add to the false negatives table if it's not already there
+                sql_commands.append(await self.dao.insert_generate_uid(
+                    'false_negatives', dict(sentence_id=sen_id, attack_uid=attack_id,
+                                            false_negative=sentence_to_insert), return_sql=True))
         # If the found_status for the sentence id is set to false when adding a missing technique
         # then update the found_status value to true for the sentence id in the report_sentence table 
         if sentence_dict[0]['found_status'] == 0:
@@ -269,9 +272,11 @@ class RestService:
                                                                 initial_model_match=1)))
         # If it did, then this is a false positive
         if model_initially_predicted:
-            sql_commands.append(await self.dao.insert_generate_uid(
-                'false_positives', dict(sentence_id=sen_id, attack_uid=attack_id, false_positive=sentence_to_insert),
-                return_sql=True))
+            existing = len(await self.dao.get('false_positives', dict(sentence_id=sen_id, attack_uid=attack_id)))
+            if not existing:  # Only add to the false positives table if it's not already there
+                sql_commands.append(await self.dao.insert_generate_uid(
+                    'false_positives', dict(sentence_id=sen_id, attack_uid=attack_id,
+                                            false_positive=sentence_to_insert), return_sql=True))
         # Check if this sentence has other attacks mapped to it
         number_of_techniques = await self.dao.get('report_sentence_hits', equal=dict(sentence_id=sen_id, active_hit=1),
                                                   not_equal=dict(attack_uid=attack_id))
