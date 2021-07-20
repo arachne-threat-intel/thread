@@ -118,30 +118,6 @@ class RestService:
     async def start_analysis(self, criteria=None):
         report_id = criteria[UID]
         logging.info('Beginning analysis for ' + report_id)
-        tech_data = await self.data_svc.get_techniques()
-        techniques = {}
-        for row in tech_data:
-            await asyncio.sleep(0.01)
-            # skip software
-            if 'tool' in row['tid'] or 'malware' in row['tid']:
-                continue
-            else:
-                # query for true positives
-                true_pos = await self.dao.get('true_positives', dict(attack_uid=row[UID]))
-                tp, fp = [], []
-                for t in true_pos:
-                    tp.append(t['true_positive'])
-                # query for false negatives
-                false_neg = await self.dao.get('false_negatives', dict(attack_uid=row[UID]))
-                for f in false_neg:
-                    tp.append(f['false_negative'])
-                # query for false positives for this technique
-                false_positives = await self.dao.get('false_positives', dict(attack_uid=row[UID]))
-                for fps in false_positives:
-                    fp.append(fps['false_positive'])
-
-                techniques[row[UID]] = {'id': row['tid'], 'name': row['name'], 'similar_words': [], 'example_uses': tp,
-                                        'false_positives': fp}
 
         original_html, newspaper_article = await self.web_svc.map_all_html(criteria['url'])
         if original_html is None and newspaper_article is None:
