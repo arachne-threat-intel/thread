@@ -46,15 +46,21 @@ class WebService:
             image_found = False
             # Loop through the html elements to process images and text (if we didn't find the plaintext)
             for forward_advancer in range(counter, len(html_elements)):
-                if 'src=' in html_elements[forward_advancer] and html_elements[forward_advancer] not in seen_images and image_found is False:
+                if 'src=' in html_elements[forward_advancer] and image_found is False:
                     # Found an image, put it in data but don't advance in case there's text.
                     soup = BeautifulSoup(html_elements[forward_advancer], 'html.parser')
-                    source = soup.img['src']
-                    img_dict = await self._match_and_construct_img(images, source)
-                    if img_dict['text'] not in seen_images:
-                        results.append(img_dict)
-                        seen_images.append(source)
-                        image_found = True
+                    current_images = soup.findAll('img')
+                    for cur_img in current_images:
+                        try:
+                            source = cur_img['src']
+                        # All img tags should have a src attribute. In case this one doesn't, there is no image to save
+                        except KeyError:
+                            continue
+                        img_dict = await self._match_and_construct_img(images, source)
+                        if source not in seen_images:
+                            results.append(img_dict)
+                            seen_images.append(source)
+                            image_found = True
                 for temp in [pt, pt.strip()]:
                     if temp == htmltext[forward_advancer]:
                         # Found the matching word, put the text into the data.
