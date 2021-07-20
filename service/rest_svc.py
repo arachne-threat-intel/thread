@@ -78,14 +78,49 @@ class RestService:
         await asyncio.sleep(0.01)
 
     async def insert_csv(self, criteria=None):
-        file = StringIO(criteria['file'])
-        df = pd.read_csv(file)
+        try:
+            df = self.verify_csv(criteria['file'])
+        except (TypeError, ValueError) as e:
+            return dict(error=str(e))
         for row in range(df.shape[0]):
+            df['title'][row] = await self.data_svc.get_unique_title(df['title'][row])
             temp_dict = dict(title=df['title'][row], url=df['url'][row], current_status='queue')
             temp_dict[UID] = await self.dao.insert_generate_uid('reports', temp_dict)
             await self.queue.put(temp_dict)
         asyncio.create_task(self.check_queue())
         await asyncio.sleep(0.01)
+
+    @staticmethod
+    def verify_csv(file_param):
+        """Function to return a dataframe from csv-like text."""
+        # Check if the text can be converted into a file and then converted into a dataframe (df)
+        try:
+            file = StringIO(file_param)
+            df = pd.read_csv(file)
+        except Exception:
+            raise TypeError('Could not parse file')
+        # Next, check if only the columns 'title' and 'url' exist in the df
+        title, url = 'title', 'url'
+        columns = list(df.columns)
+        columns_error = 'Two columns have not been specified (\'Title\',\'URL\')'
+        # Check if exactly 2 columns have been specified
+        if len(columns) != 2:
+            raise ValueError(columns_error)
+        # Rename the columns to ensure the column names have the same case (lower case)
+        new_columns = dict()
+        # Check that both 'title' and 'url' appear in the columns; raise error for anything different
+        for col in columns:
+            if col.strip().lower() == title:
+                new_columns[col] = title
+            elif col.strip().lower() == url:
+                new_columns[col] = url
+            else:
+                raise ValueError(columns_error)
+        # Check that the new columns' length is exactly 2
+        if len(new_columns) != 2:
+            raise ValueError(columns_error)
+        # Return new df with renamed columns
+        return df.rename(columns=new_columns)
 
     async def check_queue(self):
         """
