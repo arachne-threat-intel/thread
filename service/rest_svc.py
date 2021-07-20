@@ -69,26 +69,22 @@ class RestService:
         return await self.data_svc.get_confirmed_attacks(sentence_id=criteria['sentence_id'])
 
     async def insert_report(self, criteria=None):
-        for i in range(len(criteria['title'])):
-            criteria['title'][i] = await self.data_svc.get_unique_title(criteria['title'][i])
-            temp_dict = dict(title=criteria['title'][i], url=criteria['url'][i], current_status='queue')
-            temp_dict[UID] = await self.dao.insert_generate_uid('reports', temp_dict)
-            await self.queue.put(temp_dict)
-        asyncio.create_task(self.check_queue())  # check queue background task
-        await asyncio.sleep(0.01)
+        return await self._insert_batch_reports(criteria, len(criteria['title']))
 
     async def insert_csv(self, criteria=None):
         try:
             df = self.verify_csv(criteria['file'])
         except (TypeError, ValueError) as e:
             return dict(error=str(e))
-        for row in range(df.shape[0]):
-            df['title'][row] = await self.data_svc.get_unique_title(df['title'][row])
-            temp_dict = dict(title=df['title'][row], url=df['url'][row], current_status='queue')
+        return await self._insert_batch_reports(df, df.shape[0])
+
+    async def _insert_batch_reports(self, batch, row_count):
+        for row in range(row_count):
+            batch['title'][row] = await self.data_svc.get_unique_title(batch['title'][row])
+            temp_dict = dict(title=batch['title'][row], url=batch['url'][row], current_status='queue')
             temp_dict[UID] = await self.dao.insert_generate_uid('reports', temp_dict)
             await self.queue.put(temp_dict)
         asyncio.create_task(self.check_queue())
-        await asyncio.sleep(0.01)
 
     @staticmethod
     def verify_csv(file_param):
