@@ -19,10 +19,10 @@ class WebAPI:
 
     @template('index.html')
     async def index(self, request):
-        index = dict(needs_review=await self.data_svc.status_grouper("needs_review"))
-        index['queue'] = await self.data_svc.status_grouper("queue")
-        index['in_review'] = await self.data_svc.status_grouper("in_review")
-        index['completed'] = await self.data_svc.status_grouper("completed")
+        index = dict(needs_review=await self.data_svc.status_grouper('needs_review'))
+        index['queue'] = await self.data_svc.status_grouper('queue')
+        index['in_review'] = await self.data_svc.status_grouper('in_review')
+        index['completed'] = await self.data_svc.status_grouper('completed')
         return index
 
     async def rest_api(self, request):
@@ -32,21 +32,34 @@ class WebAPI:
         :return: json response
         """
         data = dict(await request.json())
-        index = data.pop('index')
-        options = dict(
-            POST=dict(
-                add_attack=lambda d: self.rest_svc.add_attack(criteria=d),
-                reject_attack=lambda d: self.rest_svc.reject_attack(criteria=d),
-                set_status=lambda d: self.rest_svc.set_status(criteria=d),
-                insert_report=lambda d: self.rest_svc.insert_report(criteria=d),
-                insert_csv=lambda d: self.rest_svc.insert_csv(criteria=d),
-                remove_sentence=lambda d: self.rest_svc.remove_sentence(criteria=d),
-                delete_report=lambda d: self.rest_svc.delete_report(criteria=d),
-                sentence_context=lambda d: self.rest_svc.sentence_context(criteria=d),
-                confirmed_attacks=lambda d: self.rest_svc.confirmed_attacks(criteria=d)
-            ))
-        output = await options[request.method][index](data)
-        return web.json_response(output)
+        try:
+            index = data.pop('index')
+            options = dict(
+                POST=dict(
+                    add_attack=lambda d: self.rest_svc.add_attack(criteria=d),
+                    reject_attack=lambda d: self.rest_svc.reject_attack(criteria=d),
+                    set_status=lambda d: self.rest_svc.set_status(criteria=d),
+                    insert_report=lambda d: self.rest_svc.insert_report(criteria=d),
+                    insert_csv=lambda d: self.rest_svc.insert_csv(criteria=d),
+                    remove_sentence=lambda d: self.rest_svc.remove_sentence(criteria=d),
+                    delete_report=lambda d: self.rest_svc.delete_report(criteria=d),
+                    sentence_context=lambda d: self.rest_svc.sentence_context(criteria=d),
+                    confirmed_attacks=lambda d: self.rest_svc.confirmed_attacks(criteria=d)
+                ))
+            method = options[request.method][index]
+        except KeyError:
+            return web.json_response(None, status=500)
+        output = await method(data)
+        status = 200
+        if output is not None and type(output) != dict:
+            pass
+        elif output is None or output.get('success'):
+            status = 204
+        elif output.get('ignored'):
+            status = 202
+        elif output.get('error'):
+            status = 500
+        return web.json_response(output, status=status)
 
     @template('columns.html')
     async def edit(self, request):
