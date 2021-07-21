@@ -84,7 +84,7 @@ class WebAPI:
         :return: the layer json
         """        
         # Get the report from the database
-        report = await self.dao.get('reports', dict(title=request.match_info.get('file')))
+        report = await self.dao.get('reports', dict(uid=request.match_info.get('report_id')))
 
         # Create the layer name and description
         report_title = report[0]['title']
@@ -126,7 +126,7 @@ class WebAPI:
         :return: response status of function
         """
         # Get the report
-        report = await self.dao.get('reports', dict(title=request.match_info.get('file')))
+        report = await self.dao.get('reports', dict(uid=request.match_info.get('report_id')))
         sentences = await self.data_svc.get_report_sentences_with_attacks(report_id=report[0]['uid'])
         title = report[0]['title']
 
@@ -204,5 +204,3 @@ class WebAPI:
         self.ml_svc.build_pickle_file(list_of_techs, techniques, true_negatives, force=True)
 
         return {'text': 'ML Rebuilt!'}
-
-
