@@ -39,6 +39,10 @@ class RestService:
         with open(attack_dict_loc, 'r', encoding='utf_8') as attack_dict_f:
             self.json_tech = json.load(attack_dict_f)
 
+    @staticmethod
+    def get_status_enum():
+        return ReportStatus
+
     async def prepare_queue(self):
         """Function to add to the queue any reports left from a previous session."""
         reports = await self.dao.get('reports', dict(error=0, current_status=ReportStatus.QUEUE.value))

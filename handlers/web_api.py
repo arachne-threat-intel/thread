@@ -7,13 +7,13 @@ from urllib.parse import unquote
 class WebAPI:
 
     def __init__(self, services):
-
         self.dao = services.get('dao')
         self.data_svc = services['data_svc']
         self.web_svc = services['web_svc']
         self.ml_svc = services['ml_svc']
         self.reg_svc = services['reg_svc']
         self.rest_svc = services['rest_svc']
+        self.report_statuses = self.rest_svc.get_status_enum()
 
     @template('about.html')
     async def about(self, request):
@@ -21,10 +21,9 @@ class WebAPI:
 
     @template('index.html')
     async def index(self, request):
-        index = dict(needs_review=await self.data_svc.status_grouper('needs_review'))
-        index['queue'] = await self.data_svc.status_grouper('queue')
-        index['in_review'] = await self.data_svc.status_grouper('in_review')
-        index['completed'] = await self.data_svc.status_grouper('completed')
+        index = dict()
+        for status in self.report_statuses:
+            index[status.value] = await self.data_svc.status_grouper(status.value)
         return index
 
     async def rest_api(self, request):
@@ -70,15 +69,24 @@ class WebAPI:
         :param request: The title of the report information
         :return: dictionary of report data
         """
-        report_id = unquote(request.match_info.get('file'))
-        report = await self.dao.get('reports', dict(title=report_id))
-        sentences = await self.data_svc.get_report_sentences(report[0]['uid'])
+        report_title = unquote(request.match_info.get('file'))
+        report = await self.dao.get('reports', dict(title=report_title))
+        try:
+            # Ensure a valid report title has been passed in the request
+            report_id = report[0]['uid']
+        except (KeyError, IndexError):
+            return web.json_response(text='Invalid URL', status=500)
+        # A queued report would pass the above check but be blank; raise an error instead
+        if report[0]['current_status'] == self.report_statuses.QUEUE.value:
+            return web.json_response(text='Invalid URL', status=500)
+        # Proceed to gather the data for the template
+        sentences = await self.data_svc.get_report_sentences(report_id)
         attack_uids = await self.data_svc.get_techniques()
-        original_html = await self.dao.get('original_html', dict(report_uid=report[0]['uid']))
+        original_html = await self.dao.get('original_html', dict(report_uid=report_id))
         final_html = await self.web_svc.build_final_html(original_html, sentences)
         return dict(file=request.match_info.get('file'), title=report[0]['title'], sentences=sentences,
-                    attack_uids=attack_uids, original_html=original_html, final_html=final_html,
-                    report_id=report[0]['uid'], completed=int(report[0]['current_status'] == 'completed'))
+                    attack_uids=attack_uids, original_html=original_html, final_html=final_html, report_id=report_id,
+                    completed=int(report[0]['current_status'] == self.report_statuses.COMPLETED.value))
 
     async def nav_export(self, request):
         """
@@ -87,14 +95,22 @@ class WebAPI:
         :return: the layer json
         """        
         # Get the report from the database
-        report = await self.dao.get('reports', dict(uid=request.match_info.get('report_id')))
+        report_id = request.match_info.get('report_id')
+        report = await self.dao.get('reports', dict(uid=report_id))
+        try:
+            # Ensure a valid report ID has been passed in the request
+            report_title = report[0]['title']
+        except (KeyError, IndexError):
+            return web.json_response(None, status=500)
+        # A queued report would pass the above check but be blank; raise an error instead
+        if report[0]['current_status'] == self.report_statuses.QUEUE.value:
+            return web.json_response(None, status=500)
 
         # Create the layer name and description
-        report_title = report[0]['title']
         layer_name = f"{report_title}"
         enterprise_layer_description = f"Enterprise techniques used by {report_title}, ATT&CK"
         version = '1.0'
-        if (version):  # add version number if it exists
+        if version:  # add version number if it exists
             enterprise_layer_description += f" v{version}"
 
         # Enterprise navigator layer
@@ -128,10 +144,19 @@ class WebAPI:
         :param request: The title of the report information
         :return: response status of function
         """
-        # Get the report
-        report = await self.dao.get('reports', dict(uid=request.match_info.get('report_id')))
-        sentences = await self.data_svc.get_report_sentences_with_attacks(report_id=report[0]['uid'])
-        title = report[0]['title']
+        # Get the report and its sentences
+        report_id = request.match_info.get('report_id')
+        report = await self.dao.get('reports', dict(uid=report_id))
+        try:
+            # Ensure a valid report ID has been passed in the request
+            title = report[0]['title']
+        except (KeyError, IndexError):
+            return web.json_response(None, status=500)
+        # A queued report would pass the above check but be blank; raise an error instead
+        if report[0]['current_status'] == self.report_statuses.QUEUE.value:
+            return web.json_response(None, status=500)
+        # Continue with the method and retrieve the report's sentences
+        sentences = await self.data_svc.get_report_sentences_with_attacks(report_id=report_id)
 
         dd = dict()
         dd['content'] = []
@@ -144,7 +169,7 @@ class WebAPI:
         dd['info']['creator'] = report[0]['url']
 
         # Extra content if this report hasn't been completed: highlight it's a draft
-        if report[0]['current_status'] != 'completed':
+        if report[0]['current_status'] != self.report_statuses.COMPLETED.value:
             dd['content'].append(dict(text='DRAFT: Please note this report is still being analysed. '
                                            'Techniques listed here may change later on.', style='sub_header'))
             dd['watermark'] = dict(text='DRAFT', opacity=0.3, bold=True, angle=70)
