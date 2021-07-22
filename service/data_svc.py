@@ -4,6 +4,7 @@ import json
 import logging
 
 from stix2 import TAXIICollectionSource, Filter
+from urllib.parse import quote
 
 try:
     # This is the appropriate import for taxii-client v2.x; this might fail in older taxii-client versions
@@ -191,7 +192,7 @@ class DataService:
     async def status_grouper(self, status):
         reports = await self.dao.get('reports', dict(current_status=status))
         for report in reports:
-            report.update(dict(link="/edit/{}".format(report['title'])))
+            report.update(dict(link="/edit/{}".format(quote(report['title']))))
         return reports
 
     async def get_report_sentences(self, report_id):

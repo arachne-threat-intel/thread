@@ -1,5 +1,7 @@
-from aiohttp_jinja2 import template, web
 import json
+
+from aiohttp_jinja2 import template, web
+from urllib.parse import unquote
 
 
 class WebAPI:
@@ -68,7 +70,8 @@ class WebAPI:
         :param request: The title of the report information
         :return: dictionary of report data
         """
-        report = await self.dao.get('reports', dict(title=request.match_info.get('file')))
+        report_id = unquote(request.match_info.get('file'))
+        report = await self.dao.get('reports', dict(title=report_id))
         sentences = await self.data_svc.get_report_sentences(report[0]['uid'])
         attack_uids = await self.data_svc.get_techniques()
         original_html = await self.dao.get('original_html', dict(report_uid=report[0]['uid']))
