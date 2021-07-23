@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import newspaper
 import nltk
 import re
@@ -7,6 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 from html2text import html2text
 from lxml import etree, html
+from newspaper.article import ArticleDownloadState
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 
@@ -16,6 +18,9 @@ ABBREVIATIONS = {'dr', 'vs', 'mr', 'mrs', 'ms', 'prof', 'inc', 'fig', 'e.g', 'i.
 
 class WebService:
     def __init__(self):
+        self.tokenizer_sen = None
+
+    def initialise_tokenizer(self):
         self.tokenizer_sen = nltk.data.load('tokenizers/punkt/english.pickle')
         try:
             self.tokenizer_sen._params.abbrev_types.update(ABBREVIATIONS)
@@ -24,7 +29,10 @@ class WebService:
 
     async def map_all_html(self, url_input):
         a = newspaper.Article(url_input, keep_article_html=True)
+        a.config.MAX_TEXT = None
         a.download()
+        if a.download_state == ArticleDownloadState.FAILED_RESPONSE:
+            return None, None
         a.parse()
         results, plaintext, images, seen_images = [], [], [], []
         images = await self._collect_all_images(a.images)
@@ -33,22 +41,26 @@ class WebService:
 
         # Loop through pt one by one, matching its line with a forward-advancing pointer on the html
         counter = 0
-        # Any plaintext which we haven't mapped
-        missing_pt = set()
         for pt in plaintext:
             text_match_found = False
             image_found = False
             # Loop through the html elements to process images and text (if we didn't find the plaintext)
             for forward_advancer in range(counter, len(html_elements)):
-                if 'src=' in html_elements[forward_advancer] and html_elements[forward_advancer] not in seen_images and image_found is False:
+                if 'src=' in html_elements[forward_advancer] and image_found is False:
                     # Found an image, put it in data but don't advance in case there's text.
                     soup = BeautifulSoup(html_elements[forward_advancer], 'html.parser')
-                    source = soup.img['src']
-                    img_dict = await self._match_and_construct_img(images, source)
-                    if img_dict['text'] not in seen_images:
-                        results.append(img_dict)
-                        seen_images.append(source)
-                        image_found = True
+                    current_images = soup.findAll('img')
+                    for cur_img in current_images:
+                        try:
+                            source = cur_img['src']
+                        # All img tags should have a src attribute. In case this one doesn't, there is no image to save
+                        except KeyError:
+                            continue
+                        img_dict = await self._match_and_construct_img(images, source)
+                        if source not in seen_images:
+                            results.append(img_dict)
+                            seen_images.append(source)
+                            image_found = True
                 for temp in [pt, pt.strip()]:
                     if temp == htmltext[forward_advancer]:
                         # Found the matching word, put the text into the data.
@@ -65,13 +77,9 @@ class WebService:
                     seen_images = seen_images[:-1]
                     results = results[:-1]
                 else:
-                    # Make a note of this missing text to map later
-                    results.append({})
-                    missing_pt.add(len(results)-1)
-        # Before returning final results, add any missing text with default <p> tags
-        for pt_idx in missing_pt:
-            results[pt_idx] = self._construct_text_dict(plaintext[pt_idx], 'p')
-        return results
+                    # Add this missing text with default <p> tag
+                    results.append(self._construct_text_dict(pt, 'p'))
+        return results, a
 
     async def build_final_html(self, original_html, sentences):
         final_html = []
@@ -175,10 +183,19 @@ class WebService:
     @staticmethod
     async def get_url(url, returned_format=None):
         if returned_format == 'html':
-            print('[!] HTML support is being refactored. Currently data is being returned plaintext')
+            logging.info('[!] HTML support is being refactored. Currently data is being returned plaintext')
         r = requests.get(url)
-        await asyncio.sleep(0.01)
-
+        if not r.ok:
+            # If the request response is not good, close the current connection and replace with a prepared request
+            r.close()
+            sess = requests.Session()
+            r = requests.Request('GET', url)
+            prep = r.prepare()
+            r = sess.send(prep)
+        if not r.ok:
+            logging.error('URL retrieval failed with code ' + str(r.status_code))
+        # Close the open connection and use the response text to get contents for this url
+        r.close()
         b = newspaper.fulltext(r.text)
         return str(b).replace('\n', '<br>') if b else None
 

@@ -172,7 +172,7 @@ class MLService:
                     attack_uid = await self.dao.get('attack_uids', dict(uid=similar_word[0]['attack_uid']))
             # If the attack has still not been retrieved, report to user that this cannot be saved against the sentence
             if not attack_uid:
-                logging.warning(' '.join(('Sentence ID:', str(sentence_id), 'ML Technique:', technique, '- Technique'
+                logging.warning(' '.join(('Sentence ID:', str(sentence_id), 'ML Technique:', technique, '- Technique '
                                           + 'could not be retrieved from the database; cannot save this technique\'s '
                                             'association with the sentence.')))
                 # Skip this technique and continue with the next one
@@ -214,5 +214,4 @@ class MLService:
         except LookupError:
             logging.warning('Could not find the stopwords pack, downloading now')
             nltk.download('stopwords')
-
-
+        self.web_svc.initialise_tokenizer()

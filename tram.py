@@ -55,24 +55,30 @@ async def init(host, port):
     :param port: Port to listen on
     :return: nil
     """
-    logging.info('server starting: %s:%s' % (host, port))
-    app = web.Application()
+    # We want nltk packs downloaded before startup; not run concurrently with startup
+    await ml_svc.check_nltk_packs()
+    # Before the app starts up, prepare the queue of reports
+    await rest_svc.prepare_queue()
 
+    logging.info('server starting: %s:%s' % (host, port))
+    webapp_dir = os.path.join('tram', 'webapp') if externally_called else 'webapp'
+    logging.info('webapp dir is %s' % webapp_dir)
+
+    app = web.Application()
     app.router.add_route('GET', '/', website_handler.index)
     app.router.add_route('GET', '/edit/{file}', website_handler.edit)
     app.router.add_route('GET', '/about', website_handler.about)
     app.router.add_route('*', '/rest', website_handler.rest_api)
-    app.router.add_route('GET', '/export/pdf/{file}', website_handler.pdf_export)
-    app.router.add_route('GET', '/export/nav/{file}', website_handler.nav_export)
-    webapp_dir = os.path.join('tram', 'webapp') if externally_called else 'webapp'
-    logging.info('webapp dir is %s' % (webapp_dir))
+    app.router.add_route('GET', '/export/pdf/{report_id}', website_handler.pdf_export)
+    app.router.add_route('GET', '/export/nav/{report_id}', website_handler.nav_export)
     app.router.add_static('/theme/', os.path.join(webapp_dir, 'theme'))
 
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(os.path.join(webapp_dir, 'html')))
-
     runner = web.AppRunner(app)
     await runner.setup()
     await web.TCPSite(runner, host, port).start()
+    # First action after app-initialisation is to resume any reports left in the queue from a previous session
+    await rest_svc.check_queue()
 
 
 def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=None):
@@ -80,13 +86,13 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
     Main function to start app
     :param host: Address to reach webserver on
     :param port: Port to listen on
-    :param on_off: Expects 'online' or 'offline' to specify the build type.
-    :param json_file: Expects a path to the enterprise attack json if the 'offline' build method is called.
+    :param taxii_local: Expects online or offline build_source to specify the build type
+    :param build: Defines whether or not a new database will be rebuilt
+    :param json_file: Expects a path to the enterprise attack json if the 'offline' build method is called
     :return: nil
     """
     loop = asyncio.get_event_loop()
     loop.create_task(background_tasks(taxii_local=taxii_local, build=build, json_file=json_file))
-    loop.create_task(ml_svc.check_nltk_packs())
     loop.run_until_complete(init(host, port))
     try:
         loop.run_forever()
@@ -95,7 +101,7 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
 
 
 def main(external_caller=False):
-    global website_handler, data_svc, ml_svc, externally_called
+    global data_svc, externally_called, ml_svc, rest_svc, website_handler
 
     logging.getLogger().setLevel('DEBUG')
     logging.info('Welcome to TRAM')

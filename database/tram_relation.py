@@ -32,7 +32,7 @@ class Attack:
         for eq, criteria in all_params.items():
             where = next(iter(criteria))
             value = criteria.pop(where)
-            if value:
+            if value is not None:
                 # If this is our first criteria we are adding, we need the WHERE keyword, else adding AND
                 sql += ' AND' if len(qparams) > 0 else ' WHERE'
                 # Add the ! for != if this is a not-equals check
