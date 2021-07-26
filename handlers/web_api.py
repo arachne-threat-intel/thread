@@ -1,7 +1,7 @@
 import json
 
 from aiohttp_jinja2 import template, web
-from urllib.parse import unquote
+from urllib.parse import quote
 
 
 class WebAPI:
@@ -69,7 +69,9 @@ class WebAPI:
         :param request: The title of the report information
         :return: dictionary of report data
         """
-        report_title = unquote(request.match_info.get('file'))
+        # The 'file' property is already unquoted despite a quoted string used in the URL
+        report_title = request.match_info.get('file')
+        title_quoted = quote(report_title)
         report = await self.dao.get('reports', dict(title=report_title))
         try:
             # Ensure a valid report title has been passed in the request
@@ -84,8 +86,8 @@ class WebAPI:
         attack_uids = await self.data_svc.get_techniques()
         original_html = await self.dao.get('original_html', dict(report_uid=report_id))
         final_html = await self.web_svc.build_final_html(original_html, sentences)
-        return dict(file=request.match_info.get('file'), title=report[0]['title'], sentences=sentences,
-                    attack_uids=attack_uids, original_html=original_html, final_html=final_html, report_id=report_id,
+        return dict(file=request.match_info.get('file'), title=report[0]['title'], title_quoted=title_quoted,
+                    sentences=sentences, attack_uids=attack_uids, original_html=original_html, final_html=final_html,
                     completed=int(report[0]['current_status'] == self.report_statuses.COMPLETED.value))
 
     async def nav_export(self, request):
@@ -95,15 +97,15 @@ class WebAPI:
         :return: the layer json
         """        
         # Get the report from the database
-        report_id = request.match_info.get('report_id')
-        report = await self.dao.get('reports', dict(uid=report_id))
+        report_title = request.match_info.get('file')
+        report = await self.dao.get('reports', dict(title=report_title))
         try:
-            # Ensure a valid report ID has been passed in the request
-            report_title = report[0]['title']
+            # Ensure a valid report title has been passed in the request
+            report_id, report_status = report[0]['uid'], report[0]['current_status']
         except (KeyError, IndexError):
             return web.json_response(None, status=500)
         # A queued report would pass the above check but be blank; raise an error instead
-        if report[0]['current_status'] == self.report_statuses.QUEUE.value:
+        if report_status == self.report_statuses.QUEUE.value:
             return web.json_response(None, status=500)
 
         # Create the layer name and description
@@ -128,7 +130,7 @@ class WebAPI:
         }]
 
         # Get confirmed techniques for the report from the database
-        techniques = await self.data_svc.get_confirmed_techniques_for_report(report[0]['uid'])
+        techniques = await self.data_svc.get_confirmed_techniques_for_report(report_id)
 
         # Append techniques to enterprise layer
         for technique in techniques:
@@ -145,15 +147,15 @@ class WebAPI:
         :return: response status of function
         """
         # Get the report and its sentences
-        report_id = request.match_info.get('report_id')
-        report = await self.dao.get('reports', dict(uid=report_id))
+        title = request.match_info.get('file')
+        report = await self.dao.get('reports', dict(title=title))
         try:
-            # Ensure a valid report ID has been passed in the request
-            title = report[0]['title']
+            # Ensure a valid report title has been passed in the request
+            report_id, report_status, report_url = report[0]['uid'], report[0]['current_status'], report[0]['url']
         except (KeyError, IndexError):
             return web.json_response(None, status=500)
         # A queued report would pass the above check but be blank; raise an error instead
-        if report[0]['current_status'] == self.report_statuses.QUEUE.value:
+        if report_status == self.report_statuses.QUEUE.value:
             return web.json_response(None, status=500)
         # Continue with the method and retrieve the report's sentences
         sentences = await self.data_svc.get_report_sentences_with_attacks(report_id=report_id)
@@ -166,10 +168,10 @@ class WebAPI:
         # See https://pdfmake.github.io/docs/document-definition-object/document-medatadata/
         dd['info'] = dict()
         dd['info']['title'] = title
-        dd['info']['creator'] = report[0]['url']
+        dd['info']['creator'] = report_url
 
         # Extra content if this report hasn't been completed: highlight it's a draft
-        if report[0]['current_status'] != self.report_statuses.COMPLETED.value:
+        if report_status != self.report_statuses.COMPLETED.value:
             dd['content'].append(dict(text='DRAFT: Please note this report is still being analysed. '
                                            'Techniques listed here may change later on.', style='sub_header'))
             dd['watermark'] = dict(text='DRAFT', opacity=0.3, bold=True, angle=70)

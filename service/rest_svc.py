@@ -7,6 +7,7 @@ import pandas as pd
 from contextlib import suppress
 from enum import Enum, unique
 from io import StringIO
+from urllib.parse import unquote
 
 UID = 'uid'
 REST_IGNORED = dict(ignored=1)
@@ -59,8 +60,17 @@ class RestService:
         default_error = dict(error='Error setting status.')
         try:
             # Check for malformed request parameters
-            new_status, report_id = criteria['set_status'], criteria['report_id']
+            new_status, report_title = criteria['set_status'], criteria['report_title']
         except KeyError:
+            return default_error
+        # Get the report data from the provided report title
+        try:
+            report_dict = await self.dao.get('reports', dict(title=unquote(report_title)))
+        except TypeError:  # Thrown when unquote() receives a non-string type
+            return default_error
+        try:
+            report_id = report_dict[0][UID]
+        except (KeyError, IndexError):  # Thrown if the report title did not match any report in the db
             return default_error
         # May be refined to allow reverting statuses in future - should use enum to check valid status
         if new_status == ReportStatus.COMPLETED.value:

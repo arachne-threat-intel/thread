@@ -87,10 +87,9 @@ function deleteReport(report_id) {
   }
 }
 
-function finish_analysis() {
-    var report_id = $('meta#reportinfo').data('reportid');
+function finish_analysis(reportTitle) {
     if (confirm('Are you sure you are finished with this report?')) {
-        restRequest('POST', {'index':'set_status', 'set_status': 'completed', 'report_id': report_id}, page_refresh);
+        restRequest('POST', {'index':'set_status', 'set_status': 'completed', 'report_title': reportTitle}, page_refresh);
     }
 }
 
@@ -157,7 +156,7 @@ function savedAlert() {
     }
 }
 
-function sentenceContext(data, attack_uid) {
+function sentenceContext(data) {
     // Update selected sentence global variable
     sentence_id = data;
     // Fire off requests to get info on this sentence
