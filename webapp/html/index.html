@@ -47,13 +47,13 @@
                             <h6 class="card-title text-uppercase text-truncate py-2">In queue</h6>
                             <div class="items border border-light">
                                 {% for report in queue %}
-                                <div class="card shadow-sm" id="queue-{{report.uid}}">
+                                <div class="card shadow-sm" id="queue-{{report.title_quoted}}">
                                 <div class="card-body">
                                     {% if report.error == 1 %}
                                         <a data-toggle="tooltip" data-placement="top" title="Sorry, the contents of this report could not be retrieved.">
                                             <span class="glyphicon glyphicon-exclamation-sign error-icon"></span>
                                         </a>
-                                        <a onclick="deleteReport('{{report.uid}}')" class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
+                                        <a onclick="deleteReport('{{report.title_quoted}}')" class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
                                     {% endif %}
                                     <p>
                                     <p class="card-text">{{report.title}}</p>
@@ -75,9 +75,9 @@
                             <h6 class="card-title text-uppercase text-truncate py-2">Needs Review</h6>
                             <div class="items border border-light">
                                 {% for report in needs_review %}
-                                <div class="card draggable shadow-sm" id="needs_review-{{report.uid}}" draggable="true" ondragstart="drag(event)">
+                                <div class="card draggable shadow-sm" id="needs_review-{{report.title_quoted}}" draggable="true" ondragstart="drag(event)">
                                 <div class="card-body">
-                                    <a onclick="deleteReport('{{report.uid}}')"
+                                    <a onclick="deleteReport('{{report.title_quoted}}')"
                                        class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
                                     <p>
                                     <p class="card-text">{{report.title}}</p>
@@ -101,9 +101,9 @@
                             <h6 class="card-title text-uppercase text-truncate py-2">Analyst Reviewing</h6>
                             <div class="items border border-light">
                                 {% for report in in_review %}
-                                <div class="card draggable shadow-sm" id="review-{{report.uid}}" draggable="true" ondragstart="drag(event)">
+                                <div class="card draggable shadow-sm" id="review-{{report.title_quoted}}" draggable="true" ondragstart="drag(event)">
                                 <div class="card-body">
-                                    <a onclick="deleteReport('{{report.uid}}')"
+                                    <a onclick="deleteReport('{{report.title_quoted}}')"
                                        class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
                                     <p>
                                     <p class="card-text">{{report.title}}</p>
@@ -127,9 +127,9 @@
                             <h6 class="card-title text-uppercase text-truncate py-2">Complete</h6>
                             <div id="completed" class="items border border-light">
                                 {% for report in completed %}
-                                <div class="card draggable shadow-sm" id="completed-{{report.uid}}" draggable="true" ondragstart="drag(event)">
+                                <div class="card draggable shadow-sm" id="completed-{{report.title_quoted}}" draggable="true" ondragstart="drag(event)">
                                 <div class="card-body">
-                                    <a onclick="deleteReport('{{report.uid}}')"
+                                    <a onclick="deleteReport('{{report.title_quoted}}')"
                                        class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
                                     <p>
                                     <p class="card-text">{{report.title}}</p>

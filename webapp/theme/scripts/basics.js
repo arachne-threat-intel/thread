@@ -81,9 +81,9 @@ function rejectAttack(id, attack_uid) {
     sentenceContext(id, attack_uid);
 }
 
-function deleteReport(report_id) {
+function deleteReport(reportTitle) {
   if (confirm('Are you sure you want to delete this report?')) {
-    restRequest('POST', {'index':'delete_report', 'report_id':report_id}, page_refresh);
+    restRequest('POST', {'index': 'delete_report', 'report_title': reportTitle}, page_refresh);
   }
 }
 

@@ -92,11 +92,20 @@ class RestService:
         default_error = dict(error='Error deleting report.')
         try:
             # Check for malformed request parameters
-            report_id = criteria['report_id']
+            report_title = criteria['report_title']
         except KeyError:
             return default_error
+        # Get the report data from the provided report title
+        try:
+            report = await self.dao.get('reports', dict(title=unquote(report_title)))
+        except TypeError:  # Thrown when unquote() receives a non-string type
+            return default_error
+        try:
+            report_id, r_status, r_error = report[0][UID], report[0]['current_status'], report[0]['error']
+        except (KeyError, IndexError):  # Thrown if the report title is not in the db or db record is malformed
+            return default_error
         # Check a queued, error-free report ID hasn't been provided -> this may be mid-analysis
-        if await self.dao.get('reports', dict(uid=report_id, current_status=ReportStatus.QUEUE.value, error=0)):
+        if r_status == ReportStatus.QUEUE.value and r_error == 0:
             return default_error
         # Proceed with delete
         await self.dao.delete('reports', dict(uid=report_id))
