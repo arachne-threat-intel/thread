@@ -13,6 +13,8 @@ except ModuleNotFoundError:
     # The original import statement used in case of error
     from taxii2client import Collection
 
+NO_DESC = 'No description provided'
+
 
 def defang_text(text):
     """
@@ -62,15 +64,14 @@ class DataService:
         for i in attack["techniques"]:
             references[i["id"]] = {"name": i["name"], "id": i["external_references"][0]["external_id"],
                                    "example_uses": [],
-                                   "description": i['description'].replace('<code>', '').replace('</code>', '').replace(
-                                       '\n', '').encode('ascii', 'ignore').decode('ascii') if hasattr(i, "description")
-                                   else 'No description provided',
+                                   "description": i.get('description', NO_DESC).replace('<code>', '').replace(
+                                       '</code>', '').replace('\n', '').encode('ascii', 'ignore').decode('ascii'),
                                    "similar_words": [i["name"]]}
 
         for i in attack["relationships"]:
             if i["relationship_type"] == 'uses':
                 if 'attack-pattern' in i["target_ref"]:
-                    use = i["description"]
+                    use = i.get('description', NO_DESC)
                     # remove unnecessary strings, fix unicode errors
                     use = use.replace('<code>', '').replace('</code>', '').replace('"', "").replace(',', '').replace(
                         '\t', '').replace('  ', ' ').replace('\n', '').encode('ascii', 'ignore').decode('ascii')
@@ -93,8 +94,8 @@ class DataService:
                 references[i["id"]] = {"id": i['id'], "name": i["name"], "description": i["description"],
                                        "examples": [], "example_uses": [], "similar_words": [i["name"]]}
         for i in attack["tools"]:
-            references[i["id"]] = {"id": i['id'], "name": i["name"], "description": i["description"], "examples": [],
-                                   "example_uses": [], "similar_words": [i["name"]]}
+            references[i["id"]] = {"id": i['id'], "name": i["name"], "description": i.get('description', NO_DESC),
+                                   "examples": [], "example_uses": [], "similar_words": [i["name"]]}
 
         attack_data = references
         logging.info("Finished...now creating the database.")
@@ -104,8 +105,8 @@ class DataService:
         cur_items = [i['uid'] for i in cur_uids]
         for k, v in attack_data.items():
             if k not in cur_items:
-                await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v['description']), tid=v['id'],
-                                                          name=v['name']))
+                await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v.get('description', NO_DESC)),
+                                                          tid=v['id'], name=v['name']))
                 if 'regex_patterns' in v:
                     [await self.dao.insert_generate_uid('regex_patterns',
                                                         dict(attack_uid=k, regex_pattern=defang_text(x)))
@@ -158,9 +159,7 @@ class DataService:
                                     loaded_items[item['id']] = {'id': tid, 'name': item['name'],
                                                                 'examples': [],
                                                                 'similar_words': [],
-                                                                'description': item['description']
-                                                                if hasattr(item, 'description')
-                                                                else 'No description provided',
+                                                                'description': item.get('description', NO_DESC),
                                                                 'example_uses': []}
                         else:
                             logging.critical('[!] Error: multiple MITRE sources: {} {}'.format(item['id'], items))
@@ -183,8 +182,8 @@ class DataService:
         to_add = {x: y for x, y in loaded_items.items() if x not in cur_items}
         logging.debug('[#] {} Techniques found that are not in the existing database'.format(len(to_add)))
         for k, v in to_add.items():
-            await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v['description']), tid=v['id'],
-                                                      name=v['name']))
+            await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v.get('description', NO_DESC)),
+                                                      tid=v['id'], name=v['name']))
             if 'example_uses' in v:
                 [await self.dao.insert_generate_uid('true_positives', dict(attack_uid=k, true_positive=defang_text(x)))
                  for x in v['example_uses']]
