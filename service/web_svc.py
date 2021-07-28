@@ -34,6 +34,8 @@ class WebService:
         if a.download_state == ArticleDownloadState.FAILED_RESPONSE:
             return None, None
         a.parse()
+        if not a.text:  # HTML may have been retrieved but if there is no text, ignore this url
+            return None, None
         results, plaintext, images, seen_images = [], [], [], []
         images = await self._collect_all_images(a.images)
         plaintext = await self._extract_text_as_list(a.text)

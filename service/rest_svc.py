@@ -3,11 +3,13 @@ import json
 import logging
 import os
 import pandas as pd
+import re
 
 from contextlib import suppress
 from enum import Enum, unique
 from io import StringIO
-from urllib.parse import unquote
+from ipaddress import ip_address
+from urllib.parse import unquote, urlparse
 
 UID = 'uid'
 REST_IGNORED = dict(ignored=1)
@@ -167,19 +169,33 @@ class RestService:
             df = self.verify_csv(criteria['file'])
         except (TypeError, ValueError) as e:  # Any errors occurring from the csv-checks
             return dict(error=str(e), alert_user=1)
-        except KeyError:   # Check for malformed request parameters
+        except KeyError:  # Check for malformed request parameters
             return dict(error='Error inserting report(s).')
         return await self._insert_batch_reports(df, df.shape[0])
 
     async def _insert_batch_reports(self, batch, row_count):
+        default_error = dict(error='Error inserting report(s).')
         for row in range(row_count):
             try:
-                batch['title'][row] = await self.data_svc.get_unique_title(batch['title'][row])
-                temp_dict = dict(title=batch['title'][row], url=batch['url'][row],
-                                 current_status=ReportStatus.QUEUE.value)
-            except KeyError:   # Check for malformed request parameters
-                return dict(error='Error inserting report(s).')
+                title, url = batch['title'][row].strip(), batch['url'][row].strip()
+            # Check for malformed request parameters; AttributeError thrown if not strings
+            except (AttributeError, KeyError):
+                return default_error
+            try:
+                # Enforce http on urls that do not begin with http(s)
+                prefix_check = re.match('^https?://', url, re.IGNORECASE)
+                url = 'http://' + url if prefix_check is None else url
+                self.verify_url(url=url)
+            # Raised if verify_url() fails
+            except ValueError:
+                return default_error
+            # Ensure the report has a unique title
+            title = await self.data_svc.get_unique_title(title)
+            # Set up a temporary dictionary to represent db object
+            temp_dict = dict(title=title, url=url, current_status=ReportStatus.QUEUE.value)
+            # Insert report into db and update temp_dict with inserted ID from db
             temp_dict[UID] = await self.dao.insert_generate_uid('reports', temp_dict)
+            # Finally, update queue and check queue when batch is finished
             await self.queue.put(temp_dict)
         asyncio.create_task(self.check_queue())
         return REST_SUCCESS
@@ -215,6 +231,27 @@ class RestService:
             raise ValueError(columns_error)
         # Return new df with renamed columns
         return df.rename(columns=new_columns)
+
+    @staticmethod
+    def verify_url(url=''):
+        """Function to check a URL can be parsed. Returns None if successful."""
+        url_error = 'The following URL is unsuitable for parsing: %s' % url
+        # Check the url can be parsed by the urllib module
+        try:
+            parsed_url = urlparse(url)
+            # Allow the url if it has a scheme and hostname
+            allow_url = all([parsed_url.scheme, parsed_url.netloc, parsed_url.hostname])
+        except ValueError:  # Raise an error if the url could not be parsed
+            raise ValueError(url_error)
+        if not allow_url:  # Raise an error if the url could be parsed but does not have sufficient components
+            raise ValueError(url_error)
+        # Check the url does not contain an IP address
+        # TODO later expand to include our domain name isn't parsed_url.hostname
+        created_ip = None
+        with suppress(ValueError):
+            created_ip = ip_address(parsed_url.hostname)
+        if created_ip:  # Raise an error if an IP address object was successfully created from the url's hostname
+            raise ValueError(url_error)
 
     async def check_queue(self):
         """

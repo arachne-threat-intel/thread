@@ -29,6 +29,27 @@ function page_refresh() {
     window.location.reload(true);
 }
 
+function prefixHttp(urlInput) {
+    // Obtain the current urls for this input box and loop through them
+    var urls = urlInput.value.split(",");
+    for (let i = 0; i < urls.length; i++) {
+        let url = urls[i];
+        // Skip if there is no url
+        if (!url) {
+            continue;
+        }
+        // Trim url and prefix with http if http(s) has not been specified
+        url = url.trim();
+        if(!(/^https?:\/\//i.test(url))){
+            url = "http://" + url;
+        }
+        // Update urls list with current url
+        urls[i] = url;
+    }
+    // If a comma was entered (and split() yielded a list of more than one element), rejoin elements and update input
+    urlInput.value = urls.join(", ");
+}
+
 function remove_sentence() {
     // The selected image or sentence
     var selectedSentence = document.getElementById(`elmt${sentence_id}`);
