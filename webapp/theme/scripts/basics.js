@@ -248,10 +248,11 @@ function updateConfirmedContext(data) {
 function downloadLayer(data) {
     // Create the name of the JSON download file from the name of the report
     var json = JSON.parse(data)
-    var title = json['name'] //document.getElementById("title").value;
-    var filename = title + ".json";
-    // Encode data as a uri component
-    var dataStr = "text/json;charset=utf-8," + encodeURIComponent(data);
+    var filename = json["filename"] + ".json";
+    // We don't need to include the filename property within the file
+    delete json["filename"];
+    // Encode updated json as a uri component
+    var dataStr = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(json));
     // Create temporary DOM element with attribute values needed to perform the download
     var a = document.createElement('a');
     a.href = 'data:' + dataStr;

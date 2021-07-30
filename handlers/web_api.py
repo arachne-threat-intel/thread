@@ -4,6 +4,14 @@ from aiohttp_jinja2 import template, web
 from urllib.parse import quote
 
 
+def sanitise_filename(filename=''):
+    """Function to produce a string which is filename-friendly."""
+    # Preserve any quotes by replacing all with ' (which is accepted by Windows OS unlike " which is not)
+    temp_fn = filename.replace('"', '\'').replace('’', '\'').replace('“', '\'').replace('”', '\'')
+    # Join all characters (replacing invalid ones with _) to produce final filename
+    return ''.join([x if (x.isalnum() or x in '-\'') else '_' for x in temp_fn])
+
+
 class WebAPI:
 
     def __init__(self, services):
@@ -109,25 +117,19 @@ class WebAPI:
             return web.json_response(None, status=500)
 
         # Create the layer name and description
-        layer_name = f"{report_title}"
-        enterprise_layer_description = f"Enterprise techniques used by {report_title}, ATT&CK"
+        enterprise_layer_description = f"Enterprise techniques used by '{report_title}', ATT&CK"
         version = '1.0'
         if version:  # add version number if it exists
             enterprise_layer_description += f" v{version}"
 
         # Enterprise navigator layer
-        enterprise_layer = {}
-        enterprise_layer['name'] = layer_name
-        enterprise_layer['description'] = enterprise_layer_description
-        enterprise_layer['domain'] = "mitre-enterprise"
-        enterprise_layer['version'] = "2.2"
-        enterprise_layer['techniques'] = []
-        # white for non-used, blue for used
-        enterprise_layer["gradient"] = {"colors": ["#ffffff", "#66b1ff"], "minValue": 0, "maxValue": 1}
-        enterprise_layer['legendItems'] = [{
-            'label': f'used by {report_title}',
-            'color': "#66b1ff"
-        }]
+        enterprise_layer = {
+            'filename': sanitise_filename(report_title), 'name': report_title, 'domain': 'mitre-enterprise',
+            'description': enterprise_layer_description, 'version': '2.2', 'techniques': [],
+            # white for non-used, blue for used
+            'gradient': {'colors': ['#ffffff', '#66b1ff'], 'minValue': 0, 'maxValue': 1},
+            'legendItems': [{'label': f'used by {report_title}', 'color': '#66b1ff'}]
+        }
 
         # Get confirmed techniques for the report from the database
         techniques = await self.data_svc.get_confirmed_techniques_for_report(report_id)
@@ -167,7 +169,7 @@ class WebAPI:
         # Document MetaData Info
         # See https://pdfmake.github.io/docs/document-definition-object/document-medatadata/
         dd['info'] = dict()
-        dd['info']['title'] = title
+        dd['info']['title'] = sanitise_filename(title)
         dd['info']['creator'] = report_url
 
         # Extra content if this report hasn't been completed: highlight it's a draft
