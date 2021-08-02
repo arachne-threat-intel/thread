@@ -6,11 +6,14 @@ import re
 import requests
 
 from bs4 import BeautifulSoup
+from contextlib import suppress
 from html2text import html2text
+from ipaddress import ip_address
 from lxml import etree, html
 from newspaper.article import ArticleDownloadState
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
+from urllib.parse import urlparse
 
 # Abbreviated words for sentence-splitting
 ABBREVIATIONS = {'dr', 'vs', 'mr', 'mrs', 'ms', 'prof', 'inc', 'fig', 'e.g', 'i.e', 'u.s'}
@@ -186,6 +189,15 @@ class WebService:
     async def get_url(url, returned_format=None):
         if returned_format == 'html':
             logging.info('[!] HTML support is being refactored. Currently data is being returned plaintext')
+        r = WebService.get_response_from_url(url)
+        # Close the open connection and use the response text to get contents for this url
+        r.close()
+        b = newspaper.fulltext(r.text)
+        return str(b).replace('\n', '<br>') if b else None
+
+    @staticmethod
+    def get_response_from_url(url, log_errors=True):
+        """Function to return a request Response object from a given URL."""
         r = requests.get(url)
         if not r.ok:
             # If the request response is not good, close the current connection and replace with a prepared request
@@ -194,12 +206,47 @@ class WebService:
             r = requests.Request('GET', url)
             prep = r.prepare()
             r = sess.send(prep)
-        if not r.ok:
+        if not r.ok and log_errors:
             logging.error('URL retrieval failed with code ' + str(r.status_code))
-        # Close the open connection and use the response text to get contents for this url
-        r.close()
-        b = newspaper.fulltext(r.text)
-        return str(b).replace('\n', '<br>') if b else None
+        return r
+
+    @staticmethod
+    def urls_match(url1='', url2=''):
+        """Function to check if two URLs are the same."""
+        # Quick initial check that both strings are identical
+        if url1 == url2:
+            return True
+        # Handle any redirects (e.g. https redirects; added '/'s at the end of a url)
+        req1 = WebService.get_response_from_url(url1, log_errors=False)
+        req2 = WebService.get_response_from_url(url2, log_errors=False)
+        req1.close()
+        req2.close()
+        if req1.url == req2.url:
+            return True
+        # There can be many further things to check here (e.g. https://stackoverflow.com/questions/5371992)
+        # but leaving as this for now
+        return False
+
+    @staticmethod
+    def verify_url(url=''):
+        """Function to check a URL can be parsed. Returns None if successful."""
+        url_error = 'The following URL is unsuitable for parsing: %s' % url
+        # Check the url can be parsed by the urllib module
+        try:
+            parsed_url = urlparse(url)
+            # Allow the url if it has a scheme and hostname
+            allow_url = all([parsed_url.scheme, parsed_url.netloc, parsed_url.hostname])
+        except ValueError:  # Raise an error if the url could not be parsed
+            raise ValueError(url_error)
+        if not allow_url:  # Raise an error if the url could be parsed but does not have sufficient components
+            raise ValueError(url_error)
+        # Check the url does not contain an IP address
+        # TODO later expand to include our domain name isn't parsed_url.hostname
+        created_ip = None
+        with suppress(ValueError):
+            created_ip = ip_address(parsed_url.hostname)
+        if created_ip:  # Raise an error if an IP address object was successfully created from the url's hostname
+            raise ValueError(url_error)
 
     @staticmethod
     async def _build_final_image_dict(element):

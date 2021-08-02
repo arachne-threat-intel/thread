@@ -8,8 +8,7 @@ import re
 from contextlib import suppress
 from enum import Enum, unique
 from io import StringIO
-from ipaddress import ip_address
-from urllib.parse import unquote, urlparse
+from urllib.parse import unquote
 
 UID = 'uid'
 REST_IGNORED = dict(ignored=1)
@@ -131,9 +130,8 @@ class RestService:
         with suppress(KeyError, IndexError):
             report_id = img_dict[0]['report_uid']
         # Use this report ID to determine its status and if we can continue
-        if not await self.check_report_status_multiple(report_id=report_id,
-                                                       statuses=[ReportStatus.IN_REVIEW.value,
-                                                                 ReportStatus.NEEDS_REVIEW.value]):
+        if not await self.check_report_status_multiple(
+                report_id=report_id, statuses=[ReportStatus.IN_REVIEW.value, ReportStatus.NEEDS_REVIEW.value]):
             return default_error
         # This is most likely a sentence ID sent through, so delete as expected
         await self.dao.delete('report_sentences', dict(uid=sen_id))
@@ -186,7 +184,7 @@ class RestService:
                 # Enforce http on urls that do not begin with http(s)
                 prefix_check = re.match('^https?://', url, re.IGNORECASE)
                 url = 'http://' + url if prefix_check is None else url
-                self.verify_url(url=url)
+                self.web_svc.verify_url(url=url)
             # Raised if verify_url() fails
             except ValueError:
                 return default_error
@@ -233,27 +231,6 @@ class RestService:
         # Return new df with renamed columns
         return df.rename(columns=new_columns)
 
-    @staticmethod
-    def verify_url(url=''):
-        """Function to check a URL can be parsed. Returns None if successful."""
-        url_error = 'The following URL is unsuitable for parsing: %s' % url
-        # Check the url can be parsed by the urllib module
-        try:
-            parsed_url = urlparse(url)
-            # Allow the url if it has a scheme and hostname
-            allow_url = all([parsed_url.scheme, parsed_url.netloc, parsed_url.hostname])
-        except ValueError:  # Raise an error if the url could not be parsed
-            raise ValueError(url_error)
-        if not allow_url:  # Raise an error if the url could be parsed but does not have sufficient components
-            raise ValueError(url_error)
-        # Check the url does not contain an IP address
-        # TODO later expand to include our domain name isn't parsed_url.hostname
-        created_ip = None
-        with suppress(ValueError):
-            created_ip = ip_address(parsed_url.hostname)
-        if created_ip:  # Raise an error if an IP address object was successfully created from the url's hostname
-            raise ValueError(url_error)
-
     async def check_queue(self):
         """
         description: executes as concurrent job, manages taking jobs off the queue and executing them.
@@ -274,13 +251,9 @@ class RestService:
                         if self.resources[task].done():
                             del self.resources[task]  # when task is finished, remove from resource pool
                     await asyncio.sleep(1)  # allow other tasks to run while waiting
-                criteria = await self.queue.get()  # get next task off queue, and run it
-                task = asyncio.create_task(self.start_analysis(criteria))
-                self.resources.append(task)
-            else:
-                criteria = await self.queue.get()  # get next task off queue and run it
-                task = asyncio.create_task(self.start_analysis(criteria))
-                self.resources.append(task)
+            criteria = await self.queue.get()  # get next task off queue and run it
+            task = asyncio.create_task(self.start_analysis(criteria))
+            self.resources.append(task)
 
     async def start_analysis(self, criteria=None):
         report_id = criteria[UID]
