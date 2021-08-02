@@ -29,7 +29,7 @@ class WebAPI:
 
     @template('index.html')
     async def index(self, request):
-        index = dict()
+        index = dict(queue_limit=self.rest_svc.QUEUE_LIMIT)
         for status in self.report_statuses:
             index[status.value] = await self.data_svc.status_grouper(status.value)
         return index

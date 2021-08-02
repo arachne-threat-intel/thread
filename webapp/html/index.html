@@ -4,6 +4,7 @@
 <style>
     .footer { position: fixed; }
     .error-icon { color: red; cursor: help; }
+    .status-column { margin-bottom: 50%; }
 </style>
     <div class="container-fluid">
       <div class="row">
@@ -37,30 +38,32 @@
                           <div class="file-path-wrapper">
                             <button type="submit" onclick="upload_file()" class="btn btn-primary">Upload csv file</button>
                           </div>
+                          <small>Any reports which exceed the Queue limit will be dropped</small>
                         </div>
                       </form>
                     </div>
                     <br>
                     <hr>
-                    <div class="card bg-light">
+                    <div class="card bg-light status-column">
                         <div id="queue" class="card-body">
-                            <h6 class="card-title text-uppercase text-truncate py-2">In queue</h6>
+                            <h6 class="card-title text-uppercase text-truncate py-2">In Queue ({{queue|length}}/{{queue_limit}})</h6>
                             <div class="items border border-light">
                                 {% for report in queue %}
-                                <div class="card shadow-sm" id="queue-{{report.title_quoted}}">
-                                <div class="card-body">
-                                    {% if report.error == 1 %}
-                                        <a data-toggle="tooltip" data-placement="top" title="Sorry, the contents of this report could not be retrieved.">
-                                            <span class="glyphicon glyphicon-exclamation-sign error-icon"></span>
-                                        </a>
-                                        <a onclick="deleteReport('{{report.title_quoted}}')" class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
-                                    {% endif %}
-                                    <p>
-                                    <p class="card-text">{{report.title}}</p>
-                                    <a href="{{report.url}}" class="btn btn-sm btn-outline-secondary">Source</a>
-                                </div>
-                                </div>
+                                    <div class="card shadow-sm" id="queue-{{report.title_quoted}}">
+                                        <div class="card-body">
+                                            {% if report.error == 1 %}
+                                                <a data-toggle="tooltip" data-placement="top" title="Sorry, the contents of this report could not be retrieved.">
+                                                    <span class="glyphicon glyphicon-exclamation-sign error-icon"></span>
+                                                </a>
+                                                <a onclick="deleteReport('{{report.title_quoted}}')" class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
+                                            {% endif %}
+                                            <p>
+                                            <p class="card-text">{{report.title}}</p>
+                                            <a href="{{report.url}}" class="btn btn-sm btn-outline-secondary">Source</a>
+                                        </div>
+                                    </div>
                                 {% endfor %}
+                                <small>{{queue|length}} report(s) in Queue out of MAX {{queue_limit}}</small>
                                 <div id="testing" class="dropzone rounded" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="clearDrop(event)"> &nbsp </div>
                             </div>
                         </div>
@@ -70,7 +73,7 @@
         <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
             <div class="row flex-row flex-sm-nowrap py-3">
                 <div class="col-sm-6 col-md-4 col-xl-3">
-                    <div class="card bg-light">
+                    <div class="card bg-light status-column">
                         <div id="needs_review" class="card-body">
                             <h6 class="card-title text-uppercase text-truncate py-2">Needs Review</h6>
                             <div class="items border border-light">
@@ -96,7 +99,7 @@
                     </div>
                 </div>
                 <div class="col-sm-6 col-md-4 col-xl-3">
-                    <div class="card bg-light">
+                    <div class="card bg-light status-column">
                         <div id="review" class="card-body">
                             <h6 class="card-title text-uppercase text-truncate py-2">Analyst Reviewing</h6>
                             <div class="items border border-light">
@@ -122,7 +125,7 @@
                     </div>
                 </div>
                 <div class="col-sm-6 col-md-4 col-xl-3">
-                    <div id="hello" class="card">
+                    <div id="hello" class="card status-column">
                         <div id="hellothere" class="card-body">
                             <h6 class="card-title text-uppercase text-truncate py-2">Complete</h6>
                             <div id="completed" class="items border border-light">

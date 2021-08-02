@@ -26,6 +26,7 @@ class ReportStatus(Enum):
 
 class RestService:
     def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, externally_called=False):
+        self.QUEUE_LIMIT = 20
         self.dao = dao
         self.data_svc = data_svc
         self.web_svc = web_svc
