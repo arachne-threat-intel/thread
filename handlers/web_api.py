@@ -29,10 +29,19 @@ class WebAPI:
 
     @template('index.html')
     async def index(self, request):
-        index = dict(queue_limit=self.rest_svc.QUEUE_LIMIT)
+        page_data = dict(queue_limit=self.rest_svc.QUEUE_LIMIT)
+        # For each report status, get the reports for the index page
         for status in self.report_statuses:
-            index[status.value] = await self.data_svc.status_grouper(status.value)
-        return index
+            # If the status is 'queue', obtain errored reports separately so we can provide info without these
+            if status.value == self.report_statuses.QUEUE.value:
+                pending = await self.data_svc.status_grouper(status.value, criteria=dict(error=0))
+                errored = await self.data_svc.status_grouper(status.value, criteria=dict(error=1))
+                page_data[status.value] = pending + errored
+                page_data['queue_count'] = len(pending)
+            # Else proceed to obtain the reports for this status as normal
+            else:
+                page_data[status.value] = await self.data_svc.status_grouper(status.value)
+        return page_data
 
     async def rest_api(self, request):
         """

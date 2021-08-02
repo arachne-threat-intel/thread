@@ -188,8 +188,14 @@ class DataService:
                 [await self.dao.insert_generate_uid('true_positives', dict(attack_uid=k, true_positive=defang_text(x)))
                  for x in v['example_uses']]
 
-    async def status_grouper(self, status):
-        reports = await self.dao.get('reports', dict(current_status=status))
+    async def status_grouper(self, status, criteria=None):
+        # The search based on the given status
+        search = dict(current_status=status)
+        # If extra search criteria has been passed, update the current search dictionary
+        if type(criteria) is dict:
+            search.update(criteria)
+        # Execute the search on the reports table
+        reports = await self.dao.get('reports', search)
         for report in reports:
             del report['uid']  # Prevent ID reaching request-response
             title_quoted = quote(report['title'])

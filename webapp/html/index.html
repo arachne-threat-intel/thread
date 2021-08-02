@@ -46,7 +46,7 @@
                     <hr>
                     <div class="card bg-light status-column">
                         <div id="queue" class="card-body">
-                            <h6 class="card-title text-uppercase text-truncate py-2">In Queue ({{queue|length}}/{{queue_limit}})</h6>
+                            <h6 class="card-title text-uppercase text-truncate py-2">In Queue ({{queue_count}}/{{queue_limit}})</h6>
                             <div class="items border border-light">
                                 {% for report in queue %}
                                     <div class="card shadow-sm" id="queue-{{report.title_quoted}}">
@@ -63,7 +63,7 @@
                                         </div>
                                     </div>
                                 {% endfor %}
-                                <small>{{queue|length}} report(s) in Queue out of MAX {{queue_limit}}</small>
+                                <small>{{queue_count}} report(s) in Queue out of MAX {{queue_limit}}</small>
                                 <div id="testing" class="dropzone rounded" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="clearDrop(event)"> &nbsp </div>
                             </div>
                         </div>
