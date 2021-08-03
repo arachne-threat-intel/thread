@@ -33,6 +33,7 @@ class RestService:
         self.ml_svc = ml_svc
         self.reg_svc = reg_svc
         self.queue = asyncio.Queue()  # task queue
+        self.queue_as_list = []  # task queue as list
         self.resources = []  # resource array
         self.externally_called = externally_called
         # A dictionary to keep track of report statuses we have seen
@@ -58,6 +59,7 @@ class RestService:
             await self.dao.delete('original_html', dict(report_uid=report[UID]))
             # Add to the queue
             await self.queue.put(report)
+            self.queue_as_list.append(report[URL])
 
     async def set_status(self, criteria=None):
         default_error = dict(error='Error setting status.')
@@ -174,8 +176,15 @@ class RestService:
         return await self._insert_batch_reports(df, df.shape[0])
 
     async def _insert_batch_reports(self, batch, row_count):
-        default_error = dict(error='Error inserting report(s).')
+        # Possible responses to the request
+        default_error, success = dict(error='Error inserting report(s).'), REST_SUCCESS.copy()
+        # Flag if queue limit is exceeded
+        limit_exceeded = False
         for row in range(row_count):
+            # If a new report will exceed the queue limit, stop iterating through further reports
+            if self.queue.qsize() + 1 > self.QUEUE_LIMIT:
+                limit_exceeded = True
+                break
             try:
                 title, url = batch['title'][row].strip(), batch[URL][row].strip()
             # Check for malformed request parameters; AttributeError thrown if not strings
@@ -193,12 +202,27 @@ class RestService:
             title = await self.data_svc.get_unique_title(title)
             # Set up a temporary dictionary to represent db object
             temp_dict = dict(title=title, url=url, current_status=ReportStatus.QUEUE.value)
-            # Insert report into db and update temp_dict with inserted ID from db
-            temp_dict[UID] = await self.dao.insert_generate_uid('reports', temp_dict)
-            # Finally, update queue and check queue when batch is finished
-            await self.queue.put(temp_dict)
+            # Before adding to the db, check that this submitted URL isn't already in the queue; if so, skip it
+            url_found = False
+            for queued_url in self.queue_as_list:
+                try:
+                    if self.web_svc.urls_match(testing_url=url, matches_with=queued_url):
+                        url_found = True
+                        break
+                except ValueError:
+                    return default_error
+            # Proceed to add to queue if URL was not found
+            if not url_found:
+                # Insert report into db and update temp_dict with inserted ID from db
+                temp_dict[UID] = await self.dao.insert_generate_uid('reports', temp_dict)
+                # Finally, update queue and check queue when batch is finished
+                await self.queue.put(temp_dict)
+                self.queue_as_list.append(url)
+        if limit_exceeded:
+            success.update(
+                dict(info='Request contained URL(s) which exceeded queue limit. These were not added to the queue'))
         asyncio.create_task(self.check_queue())
-        return REST_SUCCESS
+        return success
 
     @staticmethod
     def verify_csv(file_param):
@@ -254,6 +278,7 @@ class RestService:
                     await asyncio.sleep(1)  # allow other tasks to run while waiting
             criteria = await self.queue.get()  # get next task off queue and run it
             task = asyncio.create_task(self.start_analysis(criteria))
+            self.queue_as_list.remove(criteria[URL])
             self.resources.append(task)
 
     async def start_analysis(self, criteria=None):
