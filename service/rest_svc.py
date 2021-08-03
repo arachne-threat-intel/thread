@@ -11,6 +11,7 @@ from io import StringIO
 from urllib.parse import unquote
 
 UID = 'uid'
+URL = 'url'
 REST_IGNORED = dict(ignored=1)
 REST_SUCCESS = dict(success=1)
 
@@ -176,7 +177,7 @@ class RestService:
         default_error = dict(error='Error inserting report(s).')
         for row in range(row_count):
             try:
-                title, url = batch['title'][row].strip(), batch['url'][row].strip()
+                title, url = batch['title'][row].strip(), batch[URL][row].strip()
             # Check for malformed request parameters; AttributeError thrown if not strings
             except (AttributeError, KeyError):
                 return default_error
@@ -209,7 +210,7 @@ class RestService:
         except Exception:
             raise TypeError('Could not parse file')
         # Next, check if only the columns 'title' and 'url' exist in the df
-        title, url = 'title', 'url'
+        title = 'title'
         columns = list(df.columns)
         columns_error = 'Two columns have not been specified (\'Title\',\'URL\')'
         # Check if exactly 2 columns have been specified
@@ -221,8 +222,8 @@ class RestService:
         for col in columns:
             if col.strip().lower() == title:
                 new_columns[col] = title
-            elif col.strip().lower() == url:
-                new_columns[col] = url
+            elif col.strip().lower() == URL:
+                new_columns[col] = URL
             else:
                 raise ValueError(columns_error)
         # Check that the new columns' length is exactly 2
@@ -259,9 +260,9 @@ class RestService:
         report_id = criteria[UID]
         logging.info('Beginning analysis for ' + report_id)
 
-        original_html, newspaper_article = await self.web_svc.map_all_html(criteria['url'])
+        original_html, newspaper_article = await self.web_svc.map_all_html(criteria[URL])
         if original_html is None and newspaper_article is None:
-            logging.error('Skipping report; could not download url ' + criteria['url'])
+            logging.error('Skipping report; could not download url ' + criteria[URL])
             await self.dao.update('reports', where=dict(uid=report_id), data=dict(error=1))
             return
 
