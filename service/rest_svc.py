@@ -18,10 +18,17 @@ REST_SUCCESS = dict(success=1)
 
 @unique
 class ReportStatus(Enum):
-    QUEUE = 'queue'
-    NEEDS_REVIEW = 'needs_review'
-    IN_REVIEW = 'in_review'
-    COMPLETED = 'completed'
+    QUEUE = ('queue', 'In Queue')
+    NEEDS_REVIEW = ('needs_review', 'Needs Review')
+    IN_REVIEW = ('in_review', 'Analyst Reviewing')
+    COMPLETED = ('completed', 'Completed')
+
+    # For each tuple above, set the value and display name as two separate properties
+    def __new__(cls, val: str, display: str):
+        obj = object.__new__(cls)
+        obj._value_ = val
+        obj.display_name = display
+        return obj
 
 
 class RestService:

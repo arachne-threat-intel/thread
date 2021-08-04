@@ -29,19 +29,32 @@ class WebAPI:
 
     @template('index.html')
     async def index(self, request):
-        page_data = dict(queue_limit=self.rest_svc.QUEUE_LIMIT)
+        page_data = dict()
         # For each report status, get the reports for the index page
         for status in self.report_statuses:
+            is_complete_status = status.value == self.report_statuses.COMPLETED.value
+            # Properties for all statuses when displayed on the index page
+            page_data[status.value] = dict(display_name=status.display_name, allow_delete=True,
+                                           analysis_button='View Analysis' if is_complete_status else 'Analyse')
             # If the status is 'queue', obtain errored reports separately so we can provide info without these
             if status.value == self.report_statuses.QUEUE.value:
                 pending = await self.data_svc.status_grouper(status.value, criteria=dict(error=0))
                 errored = await self.data_svc.status_grouper(status.value, criteria=dict(error=1))
-                page_data[status.value] = pending + errored
-                page_data['queue_count'] = len(pending)
+                page_data[status.value]['reports'] = pending + errored
+                # Extra info for queued reports
+                queue_ratio = (len(pending), self.rest_svc.QUEUE_LIMIT)
+                # Add to the display name the fraction of the queue limit used
+                page_data[status.value]['display_name'] += ' (%s/%s)' % queue_ratio
+                # Also add a fuller sentence describing the fraction
+                page_data[status.value]['column_info'] = '%s report(s) pending in Queue out of MAX %s' % queue_ratio
+                # Queued reports can't be deleted (unless errored)
+                page_data[status.value]['allow_delete'] = False
+                # There is no analysis button for queued reports
+                del page_data[status.value]['analysis_button']
             # Else proceed to obtain the reports for this status as normal
             else:
-                page_data[status.value] = await self.data_svc.status_grouper(status.value)
-        return page_data
+                page_data[status.value]['reports'] = await self.data_svc.status_grouper(status.value)
+        return dict(reports_by_status=page_data)
 
     async def rest_api(self, request):
         """
