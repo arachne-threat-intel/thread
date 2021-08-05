@@ -1,14 +1,9 @@
 import json
+import logging
 
-from aiohttp_jinja2 import render_template, web
+from aiohttp.web_exceptions import HTTPException
+from aiohttp_jinja2 import template, web
 from urllib.parse import quote
-
-# The different types of templates Tram is using
-ABOUT, INDEX, EDIT = 'about', 'index', 'edit'
-TEMPLATES = {ABOUT: 'about.html', INDEX: 'index.html', EDIT: 'columns.html'}
-# Obfuscate server in response headers
-SERVER = 'Server'
-SERVER_VAL = 'Squeak, squeakin\', squeakity'
 
 
 def sanitise_filename(filename=''):
@@ -17,15 +12,6 @@ def sanitise_filename(filename=''):
     temp_fn = filename.replace('"', '\'').replace('’', '\'').replace('“', '\'').replace('”', '\'')
     # Join all characters (replacing invalid ones with _) to produce final filename
     return ''.join([x if (x.isalnum() or x in '-\'') else '_' for x in temp_fn])
-
-
-class WebReqHandler(web.View):
-    async def get(self, html: str, data=None):
-        """Function to render a given template (html) optionally with data."""
-        response = render_template(html, self.request, data)
-        # Can't delete the Server header so leave as blank or junk
-        response.headers[SERVER] = SERVER_VAL
-        return response
 
 
 class WebAPI:
@@ -42,18 +28,38 @@ class WebAPI:
     def respond_error(message=None):
         """Function to produce an error JSON response."""
         if message is None:
-            return web.json_response(None, status=500, headers={SERVER: SERVER_VAL})
+            return web.json_response(None, status=500)
         else:
-            return web.json_response(text=message, status=500, headers={SERVER: SERVER_VAL})
+            return web.json_response(text=message, status=500)
 
     @staticmethod
-    def respond_data(data=None, status=200):
-        """Function to produce a JSON response with data."""
-        return web.json_response(data, status=status, headers={SERVER: SERVER_VAL})
+    @web.middleware
+    async def req_handler(request: web.Request, handler):
+        """Function to intercept an application's requests and tweak the responses."""
+        # Can't delete the Server header so leave as blank or junk
+        server, server_msg = 'Server', 'Squeak, squeakin\', squeakity'
+        try:
+            # Get the response from the request as normal
+            response: web.Response = await handler(request)
+        except HTTPException as error_resp:
+            # If an exception occurred, override the server response header
+            try:
+                error_resp.headers[server] = server_msg
+            # If this couldn't be done, log it so it can be re-tested to see how the header can be overridden
+            except (AttributeError, KeyError):
+                logging.warning('SERVER RESP HEADER exposed; %s | %s' % (str(request), str(error_resp)))
+            # Despite the exception, we want the error raised so the app can receive it
+            finally:
+                raise error_resp
+        # If a response was retrieved, override the server response header and finally return the response
+        response.headers[server] = server_msg
+        return response
 
+    @template('about.html')
     async def about(self, request):
-        return await WebReqHandler(request=request).get(html=TEMPLATES[ABOUT])
+        return
 
+    @template('index.html')
     async def index(self, request):
         page_data = dict()
         # For each report status, get the reports for the index page
@@ -80,7 +86,7 @@ class WebAPI:
             # Else proceed to obtain the reports for this status as normal
             else:
                 page_data[status.value]['reports'] = await self.data_svc.status_grouper(status.value)
-        return await WebReqHandler(request=request).get(html=TEMPLATES[INDEX], data=dict(reports_by_status=page_data))
+        return dict(reports_by_status=page_data)
 
     async def rest_api(self, request):
         """
@@ -116,8 +122,9 @@ class WebAPI:
             status = 202
         elif output.get('error'):
             status = 500
-        return self.respond_data(data=output, status=status)
+        return web.json_response(output, status=status)
 
+    @template('columns.html')
     async def edit(self, request):
         """
         Function to edit report
@@ -141,10 +148,9 @@ class WebAPI:
         attack_uids = await self.data_svc.get_techniques()
         original_html = await self.dao.get('original_html', dict(report_uid=report_id))
         final_html = await self.web_svc.build_final_html(original_html, sentences)
-        page_data = dict(file=report_title, title=report[0]['title'], title_quoted=title_quoted, final_html=final_html,
-                         sentences=sentences, attack_uids=attack_uids, original_html=original_html,
-                         completed=int(report[0]['current_status'] == self.report_statuses.COMPLETED.value))
-        return await WebReqHandler(request=request).get(html=TEMPLATES[EDIT], data=page_data)
+        return dict(file=report_title, title=report[0]['title'], title_quoted=title_quoted, final_html=final_html,
+                    sentences=sentences, attack_uids=attack_uids, original_html=original_html,
+                    completed=int(report[0]['current_status'] == self.report_statuses.COMPLETED.value))
 
     async def nav_export(self, request):
         """
@@ -188,7 +194,7 @@ class WebAPI:
             
         # Return the layer JSON in the response
         layer = json.dumps(enterprise_layer)
-        return self.respond_data(data=layer)
+        return web.json_response(layer)
 
     async def pdf_export(self, request):
         """
@@ -242,7 +248,7 @@ class WebAPI:
 
         # Append table to the end
         dd['content'].append({'table': table})
-        return self.respond_data(data=dd)
+        return web.json_response(dd)
 
     async def rebuild_ml(self, request):
         """

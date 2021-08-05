@@ -64,7 +64,7 @@ async def init(host, port):
     webapp_dir = os.path.join('tram', 'webapp') if externally_called else 'webapp'
     logging.info('webapp dir is %s' % webapp_dir)
 
-    app = web.Application()
+    app = web.Application(middlewares=[WebAPI.req_handler])
     app.router.add_route('GET', '/', website_handler.index)
     app.router.add_route('GET', '/edit/{file}', website_handler.edit)
     app.router.add_route('GET', '/about', website_handler.about)
