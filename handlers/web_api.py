@@ -218,8 +218,9 @@ class WebAPI:
 
         dd = dict()
         dd['content'] = []
-        dd['styles'] = dict(header=dict(fontSize=25, bold=True, alignment='center'),
-                            sub_header=dict(fontSize=15, bold=True))
+        # The styles for this pdf - hyperlink styling needed to be added manually
+        dd['styles'] = dict(header=dict(fontSize=25, bold=True, alignment='center'), bold=dict(bold=True),
+                            sub_header=dict(fontSize=15, bold=True), url=dict(color='blue', decoration='underline'))
         # Document MetaData Info
         # See https://pdfmake.github.io/docs/document-definition-object/document-medatadata/
         dd['info'] = dict()
@@ -230,6 +231,7 @@ class WebAPI:
         if report_status != self.report_statuses.COMPLETED.value:
             dd['content'].append(dict(text='DRAFT: Please note this report is still being analysed. '
                                            'Techniques listed here may change later on.', style='sub_header'))
+            dd['content'].append(dict(text='\n'))  # Blank line before report's title
             dd['watermark'] = dict(text='DRAFT', opacity=0.3, bold=True, angle=70)
 
         # Table for found attacks
@@ -237,6 +239,10 @@ class WebAPI:
         table['body'].append(['ID', 'Name', 'Identified Sentence'])
         # Add the text to the document
         dd['content'].append(dict(text=title, style='header'))  # begin with title of document
+        dd['content'].append(dict(text='\n'))  # Blank line after title
+        dd['content'].append(dict(text='URL:', style='bold'))  # State report's source
+        dd['content'].append(dict(text=report_url, style='url'))
+        dd['content'].append(dict(text='\n'))  # Blank line after URL
         seen_sentences = set()  # set to prevent duplicate sentences being exported
         for sentence in sentences:
             sen_id, sen_text = sentence['uid'], sentence['text']
