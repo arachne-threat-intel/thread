@@ -81,7 +81,7 @@ class RestService:
         except TypeError:  # Thrown when unquote() receives a non-string type
             return default_error
         try:
-            report_id = report_dict[0][UID]
+            report_id, r_status = report_dict[0][UID], report_dict[0]['current_status']
         except (KeyError, IndexError):  # Thrown if the report title did not match any report in the db
             return default_error
         # May be refined to allow reverting statuses in future - should use enum to check valid status
@@ -91,7 +91,7 @@ class RestService:
             if unchecked:
                 return dict(error='There are ' + str(unchecked) + ' attacks unconfirmed for this report.', alert_user=1)
             # Check the report status is not queued (because queued reports will have 0 unchecked attacks)
-            if await self.check_report_status(report_id=report_id, status=ReportStatus.QUEUE.value):
+            if r_status == ReportStatus.QUEUE.value:
                 return default_error
             # Finally, update the status
             await self.dao.update('reports', where=dict(uid=report_id), data=dict(current_status=new_status))
@@ -203,8 +203,8 @@ class RestService:
                 url = 'http://' + url if prefix_check is None else url
                 self.web_svc.verify_url(url=url)
             # Raised if verify_url() fails
-            except ValueError:
-                return default_error
+            except ValueError as ve:
+                return dict(error=str(ve), alert_user=1)
             # Ensure the report has a unique title
             title = await self.data_svc.get_unique_title(title)
             # Set up a temporary dictionary to represent db object
@@ -463,14 +463,14 @@ class RestService:
         try:
             a, b = sentence_dict[0]['text'], sentence_dict[0]['found_status']
             report_id = sentence_dict[0]['report_uid']
-        except (KeyError, IndexError):
+        except (KeyError, IndexError):  # sentence error (SE) occurred
             return dict(error='Error. Please quote SE%s when contacting admin.' % sen_id, alert_user=1)
         # Check there is attack data to access
         try:
             attack_dict[0]['name'], attack_dict[0]['tid']
-        except (KeyError, IndexError):
+        except (KeyError, IndexError):  # attack-info error (AE) occurred
             return dict(error='Error. Please quote AE%s when contacting admin.' % attack_id, alert_user=1)
-        # Check the report status is acceptable
+        # Check the report status is acceptable (return a report status error (RSE) if not)
         if not await self.check_report_status_multiple(report_id=report_id,
                                                        statuses=[ReportStatus.IN_REVIEW.value,
                                                                  ReportStatus.NEEDS_REVIEW.value]):
@@ -490,11 +490,13 @@ class RestService:
         try:
             db_status = report_dict[0]['current_status']
         except (KeyError, IndexError):
+            # No report exists or db record malformed: return neither True or False
             return None
+        # Else a status for this report was retrieved, continue with the method
+        # Before returning result, update dictionary for future checks
+        self.seen_report_status[report_id] = db_status
         if db_status == status:
-            # Before exiting method as status matches, update dictionary for future checks
-            self.seen_report_status[report_id] = db_status
-            return True
+            return True  # Report status matches
         # Report status is not a match; finally update db (if requested) and return boolean
         if update_if_false:
             # Update the report status in the db and the dictionary variable for future checks
@@ -502,13 +504,12 @@ class RestService:
             self.seen_report_status[report_id] = status
             return True
         else:
-            self.seen_report_status[report_id] = db_status
-            return False
+            return False  # Report status does not match and we are not updating the db
 
-    async def check_report_status_multiple(self, report_id='', statuses=[]):
+    async def check_report_status_multiple(self, report_id='', statuses=None):
         """Function to check a report is one of the given statuses."""
-        # No report ID, no result
-        if report_id is None:
+        # No report ID or statuses, no result
+        if report_id is None or statuses is None:
             return None
         # A quick check without a db call; if the status is right, exit method
         if self.seen_report_status.get(report_id) in statuses:
@@ -518,10 +519,12 @@ class RestService:
         try:
             db_status = report_dict[0]['current_status']
         except (KeyError, IndexError):
+            # No report exists or db record malformed: return neither True or False
             return None
+        # Else a status for this report was retrieved, continue with the method
+        # Before returning result, update dictionary for future checks
+        self.seen_report_status[report_id] = db_status
         if db_status in statuses:
-            # Before exiting method as status matches, update dictionary for future checks
-            self.seen_report_status[report_id] = db_status
-            return True
+            return True  # Report status matches
         # Report status is not a match
         return False

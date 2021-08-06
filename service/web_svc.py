@@ -197,7 +197,7 @@ class WebService:
         b = newspaper.fulltext(r.text)
         return str(b).replace('\n', '<br>') if b else None
 
-    def get_response_from_url(self, url, log_errors=True):
+    def get_response_from_url(self, url, log_errors=True, allow_error=True):
         """Function to return a request Response object from a given URL."""
         # Retrieve a cached response for this URL
         cached = self.cached_responses.get(url)
@@ -209,7 +209,13 @@ class WebService:
         close_conn = True
         try:
             r = requests.get(url)
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.ConnectionError as conn_error:
+            # Log error if requested
+            if log_errors:
+                logging.error('URL connection failure: ' + str(conn_error))
+            # Raise the error if requested
+            if not allow_error:
+                raise conn_error
             # If the URL could not be retrieved due to a raised Error, build a new Response object and skip retrying
             r = requests.models.Response()
             r.status_code = 418
@@ -246,10 +252,9 @@ class WebService:
         # but leaving as this for now
         return False
 
-    @staticmethod
-    def verify_url(url=''):
+    def verify_url(self, url=''):
         """Function to check a URL can be parsed. Returns None if successful."""
-        url_error = 'The following URL is unsuitable for parsing: %s' % url
+        url_error = 'Unable to parse URL %s' % url
         # Check the url can be parsed by the urllib module
         try:
             parsed_url = urlparse(url)
@@ -258,6 +263,11 @@ class WebService:
         except ValueError:  # Raise an error if the url could not be parsed
             raise ValueError(url_error)
         if not allow_url:  # Raise an error if the url could be parsed but does not have sufficient components
+            raise ValueError(url_error)
+        # Check a request-response can be retrieved from this url
+        try:
+            self.get_response_from_url(url, log_errors=False, allow_error=False)
+        except requests.exceptions.ConnectionError:
             raise ValueError(url_error)
         # Check the url does not contain an IP address
         # TODO later expand to include our domain name isn't parsed_url.hostname
