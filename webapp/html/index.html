@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 {% block content %}
-<meta http-equiv="refresh" content="30"/>
 <style>
     .footer { position: fixed; }
     .error-icon { color: red; cursor: help; }
+    .status-column { margin-bottom: 50%; }
 </style>
     <div class="container-fluid">
       <div class="row">
@@ -12,141 +12,74 @@
             <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1">
               <span>Enter New Report</span>
             </h6>
-                <div class="tab-content">
-                    <div id="home" class="tab-pane fade in active show">
-                        <div class="card-body divOperationalFlow-tacticsummary">
-                          <form>
-                                <div class="form-group">
-                                    <label for="url">Insert URL</label>
-                                    <input type="url" class="form-control" id="url" placeholder="Enter URL(s) (comma separated)" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="title">Insert Title</label>
-                                    <input type="text" class="form-control" id="title" placeholder="Enter the article title(s) (comma separated)" required>
-                                </div>
-                                <button type="submit" onclick='submit_report()' class="btn btn-primary">Submit</button>
-                            </form>
-                      </div>
-                        <hr>
-                      <form class="md-form">
-                        <div class="file-field">
-                          <a class="btn-floating peach-gradient mt-0 float-left">
-                            <i class="fas fa-paperclip" aria-hidden="true"></i>
-                            <input style="margin-bottom: 15px" type="file" id="csv_file">
-                          </a>
-                          <div class="file-path-wrapper">
-                            <button type="submit" onclick="upload_file()" class="btn btn-primary">Upload csv file</button>
-                          </div>
-                        </div>
-                      </form>
-                    </div>
-                    <br>
-                    <hr>
-                    <div class="card bg-light">
-                        <div id="queue" class="card-body">
-                            <h6 class="card-title text-uppercase text-truncate py-2">In queue</h6>
-                            <div class="items border border-light">
-                                {% for report in queue %}
-                                <div class="card shadow-sm" id="queue-{{report.uid}}">
-                                <div class="card-body">
-                                    {% if report.error == 1 %}
-                                        <a data-toggle="tooltip" data-placement="top" title="Sorry, the contents of this report could not be retrieved.">
-                                            <span class="glyphicon glyphicon-exclamation-sign error-icon"></span>
-                                        </a>
-                                        <a onclick="deleteReport('{{report.uid}}')" class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
-                                    {% endif %}
-                                    <p>
-                                    <p class="card-text">{{report.title}}</p>
-                                    <a href="{{report.url}}" class="btn btn-sm btn-outline-secondary">Source</a>
-                                </div>
-                                </div>
-                                {% endfor %}
-                                <div id="testing" class="dropzone rounded" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="clearDrop(event)"> &nbsp </div>
+            <div class="tab-content">
+                <div id="home" class="tab-pane fade in active show">
+                    <div class="card-body divOperationalFlow-tacticsummary">
+                      <form>
+                            <div class="form-group">
+                                <label for="url">Insert URL</label>
+                                <input type="url" class="form-control" id="url" onblur="prefixHttp(this)" placeholder="Enter URL(s) (comma separated)" required>
                             </div>
-                        </div>
+                            <div class="form-group">
+                                <label for="title">Insert Title</label>
+                                <input type="text" class="form-control" id="title" placeholder="Enter the article title(s) (comma separated)" required>
+                            </div>
+                            <button type="submit" onclick='submit_report()' class="btn btn-primary">Submit</button>
+                        </form>
+                  </div>
+                    <hr>
+                  <form class="md-form">
+                    <div class="file-field">
+                      <a class="btn-floating peach-gradient mt-0 float-left">
+                        <i class="fas fa-paperclip" aria-hidden="true"></i>
+                        <input style="margin-bottom: 15px" type="file" id="csv_file" accept=".csv">
+                      </a>
+                      <div class="file-path-wrapper">
+                        <button type="submit" onclick="upload_file()" class="btn btn-primary">Upload csv file</button>
+                      </div>
+                      <hr>
+                      <small>Any reports which exceed the Queue limit will be dropped</small>
+                    </div>
+                  </form>
                 </div>
-          </div>
+            </div>
         </nav>
         <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
             <div class="row flex-row flex-sm-nowrap py-3">
-                <div class="col-sm-6 col-md-4 col-xl-3">
-                    <div class="card bg-light">
-                        <div id="needs_review" class="card-body">
-                            <h6 class="card-title text-uppercase text-truncate py-2">Needs Review</h6>
-                            <div class="items border border-light">
-                                {% for report in needs_review %}
-                                <div class="card draggable shadow-sm" id="needs_review-{{report.uid}}" draggable="true" ondragstart="drag(event)">
-                                <div class="card-body">
-                                    <a onclick="deleteReport('{{report.uid}}')"
-                                       class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
-                                    <p>
-                                    <p class="card-text">{{report.title}}</p>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="btn-group">
+                {% for key, value in reports_by_status.items() %}
+                    <div class="col">
+                        <div class="card bg-light status-column">
+                            <div id={{key}} class="card-body">
+                                <h6 class="card-title text-uppercase text-truncate py-2">{{value.display_name}}</h6>
+                                <div class="items border border-light">
+                                    {% for report in value.reports %}
+                                        <div class="card shadow-sm" id="{{key}}-{{report.title_quoted}}">
+                                            <div class="card-body">
+                                                {% if report.error == 1 %}
+                                                    <a data-toggle="tooltip" data-placement="top" title="Sorry, the contents of this report could not be retrieved.">
+                                                        <span class="glyphicon glyphicon-exclamation-sign error-icon"></span>
+                                                    </a>
+                                                {% endif %}
+                                                {% if value.allow_delete or report.error == 1 %}
+                                                    <a onclick="deleteReport('{{report.title_quoted}}')" class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
+                                                {% endif %}
+                                                <p>
+                                                <p class="card-text">{{report.title}}</p>
                                                 <a href="{{report.url}}" class="btn btn-sm btn-outline-secondary">Source</a>
-                                                <a href="{{report.link}}" class="btn btn-sm btn-outline-secondary">Analyze</a>
+                                                {% if value.analysis_button %}
+                                                    <a href="{{report.link}}" class="btn btn-sm btn-outline-secondary">{{value.analysis_button}}</a>
+                                                {% endif %}
                                             </div>
                                         </div>
+                                    {% endfor %}
+                                    {% if value.column_info %}
+                                        <small>{{value.column_info}}</small>
+                                    {% endif %}
                                 </div>
-                                </div>
-                                {% endfor %}
-                                <div id="testing" class="dropzone rounded" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="clearDrop(event)"> &nbsp </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-sm-6 col-md-4 col-xl-3">
-                    <div class="card bg-light">
-                        <div id="review" class="card-body">
-                            <h6 class="card-title text-uppercase text-truncate py-2">Analyst Reviewing</h6>
-                            <div class="items border border-light">
-                                {% for report in in_review %}
-                                <div class="card draggable shadow-sm" id="review-{{report.uid}}" draggable="true" ondragstart="drag(event)">
-                                <div class="card-body">
-                                    <a onclick="deleteReport('{{report.uid}}')"
-                                       class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
-                                    <p>
-                                    <p class="card-text">{{report.title}}</p>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="btn-group">
-                                                <a href="{{report.url}}" class="btn btn-sm btn-outline-secondary">Source</a>
-                                                <a href="{{report.link}}" class="btn btn-sm btn-outline-secondary">Analyze</a>
-                                            </div>
-                                        </div>
-                                </div>
-                                </div>
-                                {% endfor %}
-                                <div id="connor" class="dropzone rounded" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="clearDrop(event)"> &nbsp </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-md-4 col-xl-3">
-                    <div id="hello" class="card">
-                        <div id="hellothere" class="card-body">
-                            <h6 class="card-title text-uppercase text-truncate py-2">Complete</h6>
-                            <div id="completed" class="items border border-light">
-                                {% for report in completed %}
-                                <div class="card draggable shadow-sm" id="completed-{{report.uid}}" draggable="true" ondragstart="drag(event)">
-                                <div class="card-body">
-                                    <a onclick="deleteReport('{{report.uid}}')"
-                                       class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
-                                    <p>
-                                    <p class="card-text">{{report.title}}</p>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="btn-group">
-                                                <a href="{{report.url}}" class="btn btn-sm btn-outline-secondary">Source</a>
-                                                <a href="{{report.link}}" class="btn btn-sm btn-outline-secondary">View Analysis</a>
-                                            </div>
-                                        </div>
-                                </div>
-                                </div>
-                                {% endfor %}
-                                <div class="dropzone rounded" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="clearDrop(event)"> &nbsp </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+               {% endfor %}
             </div>
         </main>
       </div>

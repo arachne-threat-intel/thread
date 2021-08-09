@@ -6,11 +6,14 @@ import re
 import requests
 
 from bs4 import BeautifulSoup
+from contextlib import suppress
 from html2text import html2text
+from ipaddress import ip_address
 from lxml import etree, html
 from newspaper.article import ArticleDownloadState
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
+from urllib.parse import urlparse
 
 # Abbreviated words for sentence-splitting
 ABBREVIATIONS = {'dr', 'vs', 'mr', 'mrs', 'ms', 'prof', 'inc', 'fig', 'e.g', 'i.e', 'u.s'}
@@ -19,6 +22,7 @@ ABBREVIATIONS = {'dr', 'vs', 'mr', 'mrs', 'ms', 'prof', 'inc', 'fig', 'e.g', 'i.
 class WebService:
     def __init__(self):
         self.tokenizer_sen = None
+        self.cached_responses = dict()
 
     def initialise_tokenizer(self):
         self.tokenizer_sen = nltk.data.load('tokenizers/punkt/english.pickle')
@@ -27,6 +31,9 @@ class WebService:
         except AttributeError:
             pass
 
+    def clear_cached_responses(self):  # TODO consider how often to call this
+        self.cached_responses = dict()
+
     async def map_all_html(self, url_input):
         a = newspaper.Article(url_input, keep_article_html=True)
         a.config.MAX_TEXT = None
@@ -34,6 +41,8 @@ class WebService:
         if a.download_state == ArticleDownloadState.FAILED_RESPONSE:
             return None, None
         a.parse()
+        if not a.text:  # HTML may have been retrieved but if there is no text, ignore this url
+            return None, None
         results, plaintext, images, seen_images = [], [], [], []
         images = await self._collect_all_images(a.images)
         plaintext = await self._extract_text_as_list(a.text)
@@ -180,24 +189,93 @@ class WebService:
         out = out.split(sep, 1)[0]
         return out.strip().replace('\n', ' ')
 
-    @staticmethod
-    async def get_url(url, returned_format=None):
+    async def get_url(self, url, returned_format=None):
         if returned_format == 'html':
             logging.info('[!] HTML support is being refactored. Currently data is being returned plaintext')
-        r = requests.get(url)
-        if not r.ok:
+        r = self.get_response_from_url(url)
+        # Use the response text to get contents for this url
+        b = newspaper.fulltext(r.text)
+        return str(b).replace('\n', '<br>') if b else None
+
+    def get_response_from_url(self, url, log_errors=True, allow_error=True):
+        """Function to return a request Response object from a given URL."""
+        # Retrieve a cached response for this URL
+        cached = self.cached_responses.get(url)
+        if cached is not None:
+            return cached
+        # Specify if we retry retrieving a response on failure
+        retry_on_fail = True
+        # Flag if we can close the connection once we are finished
+        close_conn = True
+        try:
+            r = requests.get(url)
+        except requests.exceptions.ConnectionError as conn_error:
+            # Log error if requested
+            if log_errors:
+                logging.error('URL connection failure: ' + str(conn_error))
+            # Raise the error if requested
+            if not allow_error:
+                raise conn_error
+            # If the URL could not be retrieved due to a raised Error, build a new Response object and skip retrying
+            r = requests.models.Response()
+            r.status_code = 418
+            retry_on_fail = False
+            close_conn = False
+        if retry_on_fail and not r.ok:
             # If the request response is not good, close the current connection and replace with a prepared request
             r.close()
             sess = requests.Session()
             r = requests.Request('GET', url)
             prep = r.prepare()
             r = sess.send(prep)
-        if not r.ok:
+        if not r.ok and log_errors:
             logging.error('URL retrieval failed with code ' + str(r.status_code))
-        # Close the open connection and use the response text to get contents for this url
-        r.close()
-        b = newspaper.fulltext(r.text)
-        return str(b).replace('\n', '<br>') if b else None
+        if close_conn:
+            r.close()
+        # Cache the response object for this URL
+        self.cached_responses[url] = r
+        return r
+
+    def urls_match(self, testing_url='', matches_with=''):
+        """Function to check if two URLs are the same."""
+        # Quick initial check that both strings are identical
+        if testing_url == matches_with:
+            return True
+        # Handle any redirects (e.g. https redirects; added '/'s at the end of a url)
+        req1 = self.get_response_from_url(testing_url, log_errors=False)
+        req2 = self.get_response_from_url(matches_with, log_errors=False)
+        if not req1.url:
+            raise ValueError('A URL has not been specified')
+        if req1.url == req2.url:
+            return True
+        # There can be many further things to check here (e.g. https://stackoverflow.com/questions/5371992)
+        # but leaving as this for now
+        return False
+
+    def verify_url(self, url=''):
+        """Function to check a URL can be parsed. Returns None if successful."""
+        url_error = 'Unable to parse URL %s' % url
+        # Check the url can be parsed by the urllib module
+        try:
+            parsed_url = urlparse(url)
+            # Allow the url if it has a scheme and hostname
+            allow_url = all([parsed_url.scheme, parsed_url.netloc, parsed_url.hostname])
+        except ValueError:  # Raise an error if the url could not be parsed
+            raise ValueError(url_error)
+        if not allow_url:  # Raise an error if the url could be parsed but does not have sufficient components
+            raise ValueError(url_error)
+        # Check a request-response can be retrieved from this url
+        try:
+            self.get_response_from_url(url, log_errors=False, allow_error=False)
+        except requests.exceptions.ConnectionError:
+            raise ValueError(url_error)
+        # Check the url does not contain an IP address
+        # TODO later expand to include our domain name isn't parsed_url.hostname
+        created_ip = None
+        with suppress(ValueError):
+            created_ip = ip_address(parsed_url.hostname)
+        if created_ip:  # Raise an error if an IP address object was successfully created from the url's hostname
+            raise ValueError(url_error)
 
     @staticmethod
     async def _build_final_image_dict(element):

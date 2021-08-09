@@ -8,13 +8,55 @@ var highlightClassImg = "imgHighlight";
 
 function restRequest(type, data, callback) {
     $.ajax({
-       url: '/rest',
-       type: type,
-       contentType: 'application/json',
-       data: JSON.stringify(data),
-       success:function(data) { callback(data); },
-       error: function (xhr, ajaxOptions, thrownError) { console.log(thrownError); }
+        url: '/rest',
+        type: type,
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(data) {
+            if (callback instanceof Function) {
+                callback(data);
+            }
+        },
+        error: function (xhr, ajaxOptions, thrownError) {
+            if (xhr?.responseJSON?.alert_user && xhr?.responseJSON?.error) {
+                alert(xhr.responseJSON.error);
+            }
+       }
     });
+}
+
+function page_refresh() {
+    window.location.reload(true);
+}
+
+function prefixHttp(urlInput) {
+    // Obtain the current urls for this input box and loop through them
+    var initialInput = urlInput.value;
+    var urls = initialInput?.split(",") || [];
+    var updateUrl = false;
+    for (let i = 0; i < urls.length; i++) {
+        // Trim url and check if not empty
+        let url = urls[i]?.trim();
+        // Skip if there is no url
+        if (!url) {
+            continue;
+        }
+        // Proceed to prefix with http if http(s) has not been specified
+        if(!(/^https?:\/\//i.test(url))){
+            url = "http://" + url;
+            updateUrl = true;
+        }
+        // Update urls list with current url
+        urls[i] = url;
+    }
+    if (updateUrl) {
+        // Rejoin elements and update input
+        urlInput.value = urls.join(", ");
+        // Revert to initial value if invalid
+        if (!urlInput.checkValidity()) {
+            urlInput.value = initialInput;
+        }
+    }
 }
 
 function remove_sentence() {
@@ -55,40 +97,29 @@ function remove_sentence() {
         $("#missingTechBtn").prop("disabled", true);
         $("#delSenBtn").prop("disabled", true);
         // Send off request to delete from the db
-        restRequest('POST', {'index':'remove_sentence', 'sentence_id': sentence_id}, show_info);
+        restRequest('POST', {'index':'remove_sentence', 'sentence_id': sentence_id});
     }
 }
 
 function acceptAttack(id, attack_uid) {
-    restRequest('POST', {'index':'add_attack', 'sentence_id': id, 'attack_uid': attack_uid}, show_info);
+    restRequest('POST', {'index':'add_attack', 'sentence_id': id, 'attack_uid': attack_uid});
     sentenceContext(id, attack_uid);
 }
 
 function rejectAttack(id, attack_uid) {
-    restRequest('POST', {'index':'reject_attack', 'sentence_id': id, 'attack_uid': attack_uid}, show_info);
+    restRequest('POST', {'index':'reject_attack', 'sentence_id': id, 'attack_uid': attack_uid});
     sentenceContext(id, attack_uid);
 }
 
-function deleteReport(report_id) {
+function deleteReport(reportTitle) {
   if (confirm('Are you sure you want to delete this report?')) {
-    restRequest('POST', {'index':'delete_report', 'report_id':report_id}, show_info)
-    window.location.reload(true);
+    restRequest('POST', {'index': 'delete_report', 'report_title': reportTitle}, page_refresh);
   }
 }
 
-function finish_analysis() {
-    var report_id = $('meta#reportinfo').data('reportid');
+function finish_analysis(reportTitle) {
     if (confirm('Are you sure you are finished with this report?')) {
-        restRequest('POST', {'index':'set_status', 'set_status': 'completed', 'report_id': report_id}, post_analysis);
-    }
-}
-
-function post_analysis(data) {
-    if (data.status) {
-        show_info(data);
-        window.location.reload(true);
-    } else if (data.error) {
-        alert(data.error);
+        restRequest('POST', {'index':'set_status', 'set_status': 'completed', 'report_title': reportTitle}, page_refresh);
     }
 }
 
@@ -103,50 +134,44 @@ function submit_report() {
       alert("Number of URLs and titles do not match, please insert same number of comma separated items.");
     // Proceed with submitting if both fields are valid
     } else if (title.checkValidity() && url.checkValidity()) {
-      restRequest('POST', {'index':'insert_report', 'url':urls, 'title':titles}, show_info);
+      restRequest('POST', {'index':'insert_report', 'url':urls, 'title':titles});
     }
 }
 
 function upload_file() {
-  //var fileName = this.val().split("\\").pop();
-
-  console.log(document.getElementById("csv_file"))
-  var file = document.getElementById("csv_file").files[0];
-  if(file) {
-    var reader = new FileReader();
-    reader.readAsText(file, "UTF-8");
-    reader.onload = function(evt) {
-      console.log(evt.target.result)
-      restRequest('POST', {'index':'insert_csv','file':evt.target.result},show_info);
+    // console.log(document.getElementById("csv_file"))
+    var file = document.getElementById("csv_file").files[0];
+    if(file) {
+        var reader = new FileReader();
+        reader.readAsText(file, "UTF-8");
+        reader.onload = function(evt) {
+            // console.log(evt.target.result)
+            restRequest('POST', {'index': 'insert_csv', 'file': evt.target.result});
+        }
+        reader.onerror = function(evt) {
+            alert("Error reading file");
+        }
     }
-    reader.onerror = function(evt) {
-      alert("Error reading file");
-    }
-  }
 }
 
 function show_dropdown() {
-  document.getElementById("myDropdown").classList.toggle("show");
+    document.getElementById("myDropdown").classList.toggle("show");
 }
 
 function filterFunction(input1, id1) {
-  var input, filter, ul, li, a, i;
-  input = document.getElementById(input1);
-  filter = input.value.toUpperCase();
-  div = document.getElementById(id1);
-  a = div.getElementsByTagName("button");
-  for (i = 0; i < a.length; i++) {
-    txtValue = a[i].textContent || a[i].innerText;
-    if (txtValue.toUpperCase().indexOf(filter) > -1) {
-      a[i].style.display = "";
-    } else {
-      a[i].style.display = "none";
+    var input, filter, ul, li, a, i;
+    input = document.getElementById(input1);
+    filter = input.value.toUpperCase();
+    div = document.getElementById(id1);
+    a = div.getElementsByTagName("button");
+    for (i = 0; i < a.length; i++) {
+        txtValue = a[i].textContent || a[i].innerText;
+        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+            a[i].style.display = "";
+        } else {
+            a[i].style.display = "none";
+        }
     }
-  }
-}
-
-function show_info(data) {
-    console.log(data.status);
 }
 
 function savedAlert() {
@@ -161,11 +186,11 @@ function savedAlert() {
     }
 }
 
-function sentenceContext(data, attack_uid) {
+function sentenceContext(data) {
     // Update selected sentence global variable
     sentence_id = data;
     // Fire off requests to get info on this sentence
-    restRequest('POST', {'index':'sentence_context', 'uid': data, 'attack_uid': attack_uid}, updateSentenceContext);
+    restRequest('POST', {'index':'sentence_context', 'sentence_id': data}, updateSentenceContext);
     restRequest('POST', {'index':'confirmed_attacks', 'sentence_id': data}, updateConfirmedContext);
 }
 
@@ -221,28 +246,29 @@ function updateConfirmedContext(data) {
 }
 
 function downloadLayer(data) {
-  // Create the name of the JSON download file from the name of the report
-  var json = JSON.parse(data) 
-  var title = json['name'] //document.getElementById("title").value;
-  var filename = title + ".json";
-  // Encode data as a uri component
-  var dataStr = "text/json;charset=utf-8," + encodeURIComponent(data);
-  // Create temporary DOM element with attribute values needed to perform the download
-  var a = document.createElement('a');
-  a.href = 'data:' + dataStr;
-  a.download = filename;
-  a.innerHTML = 'download JSON';
-  // Add the temporary element to the DOM
-  var container = document.getElementById('dropdownMenu');
-  container.appendChild(a);
-  // Download the JSON document
-  a.click();
-  // Remove the temporary element from the DOM
-  a.remove();
+    // Create the name of the JSON download file from the name of the report
+    var json = JSON.parse(data)
+    var filename = json["filename"] + ".json";
+    // We don't need to include the filename property within the file
+    delete json["filename"];
+    // Encode updated json as a uri component
+    var dataStr = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(json));
+    // Create temporary DOM element with attribute values needed to perform the download
+    var a = document.createElement('a');
+    a.href = 'data:' + dataStr;
+    a.download = filename;
+    a.innerHTML = 'download JSON';
+    // Add the temporary element to the DOM
+    var container = document.getElementById('dropdownMenu');
+    container.appendChild(a);
+    // Download the JSON document
+    a.click();
+    // Remove the temporary element from the DOM
+    a.remove();
 }
 
 function viewLayer(data) {
-  console.info("viewLayer: " + data)
+    console.info("viewLayer: " + data)
 }
 
 function divSentenceReload() {
@@ -265,7 +291,7 @@ $(document).ready(function() {
 
 // onResize bind of the function
 $(window).resize(function() {
-  autoHeight();
+    autoHeight();
 });
 
 function addMissingTechnique() {
