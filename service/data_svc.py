@@ -199,7 +199,8 @@ class DataService:
         for report in reports:
             del report['uid']  # Prevent ID reaching request-response
             title_quoted = quote(report['title'])
-            report.update(dict(link='/edit/{}'.format(title_quoted), title_quoted=title_quoted))
+            edit_link = self.web_svc.get_route_with_param(self.web_svc.EDIT_KEY, title_quoted)
+            report.update(dict(link=edit_link, title_quoted=title_quoted))
         return reports
 
     async def get_report_sentences(self, report_id):
