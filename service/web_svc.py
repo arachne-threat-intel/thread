@@ -30,24 +30,27 @@ class WebService:
         self.cached_responses = dict()
         self.externally_called = externally_called
         # Initialise app route info
-        self.app_routes = dict()
-        self.initialise_route_values()
+        self.__app_routes = self._initialise_route_values()
 
-    def initialise_route_values(self):
-        """Function to initialise the web app's route values."""
+    def _initialise_route_values(self):
+        """Function to initialise the web app's route values and return them as a dictionary."""
         route_prefix = '/tram' if self.externally_called else ''
-        self.app_routes[self.HOME_KEY] = route_prefix + '/'
-        self.app_routes[self.EDIT_KEY] = route_prefix + '/edit/{%s}' % self.REPORT_PARAM
-        self.app_routes[self.ABOUT_KEY] = route_prefix + '/about'
-        self.app_routes[self.REST_KEY] = route_prefix + '/rest'
-        self.app_routes[self.EXPORT_PDF_KEY] = route_prefix + '/export/pdf/{%s}' % self.REPORT_PARAM
-        self.app_routes[self.EXPORT_NAV_KEY] = route_prefix + '/export/nav/{%s}' % self.REPORT_PARAM
-        self.app_routes[self.STATIC_KEY] = route_prefix + '/theme/'
+        return {
+            self.HOME_KEY: '/tram' if self.externally_called else '/',  # if-else to prevent '/tram/' suffix
+            self.EDIT_KEY: route_prefix + '/edit/{%s}' % self.REPORT_PARAM,
+            self.ABOUT_KEY: route_prefix + '/about', self.REST_KEY: route_prefix + '/rest',
+            self.EXPORT_PDF_KEY: route_prefix + '/export/pdf/{%s}' % self.REPORT_PARAM,
+            self.EXPORT_NAV_KEY: route_prefix + '/export/nav/{%s}' % self.REPORT_PARAM,
+            self.STATIC_KEY: route_prefix + '/theme/'
+        }
 
-    def get_route_with_param(self, route_key, value):
-        """Function to get one of the web app's routes with a parameter placed in the link."""
+    def get_route(self, route_key, param=None):
+        """Function to get one of the web app's routes with the option of a parameter to be placed in the link."""
         try:
-            return self.app_routes[route_key].replace('{%s}' % self.REPORT_PARAM, str(value))
+            route = self.__app_routes[route_key]
+            if param is None:
+                return route
+            return route.replace('{%s}' % self.REPORT_PARAM, str(param))
         # If the method doesn't receive a valid key, return None
         except KeyError:
             return None

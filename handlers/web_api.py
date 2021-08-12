@@ -23,6 +23,9 @@ class WebAPI:
         self.reg_svc = services['reg_svc']
         self.rest_svc = services['rest_svc']
         self.report_statuses = self.rest_svc.get_status_enum()
+        self.BASE_PAGE_DATA = dict(static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY),
+                                   home_url=self.web_svc.get_route(self.web_svc.HOME_KEY),
+                                   about_url=self.web_svc.get_route(self.web_svc.ABOUT_KEY))
 
     @staticmethod
     def respond_error(message=None):
@@ -57,11 +60,12 @@ class WebAPI:
 
     @template('about.html')
     async def about(self, request):
-        return
+        return self.BASE_PAGE_DATA  # No additional data needed for the template
 
     @template('index.html')
     async def index(self, request):
-        page_data = dict()
+        # Dictionaries for the template data
+        page_data, template_data = dict(), self.BASE_PAGE_DATA.copy()
         # For each report status, get the reports for the index page
         for status in self.report_statuses:
             is_complete_status = status.value == self.report_statuses.COMPLETED.value
@@ -86,7 +90,9 @@ class WebAPI:
             # Else proceed to obtain the reports for this status as normal
             else:
                 page_data[status.value]['reports'] = await self.data_svc.status_grouper(status.value)
-        return dict(reports_by_status=page_data)
+        # Update overall template data and return
+        template_data.update(reports_by_status=page_data)
+        return template_data
 
     async def rest_api(self, request):
         """
@@ -131,6 +137,7 @@ class WebAPI:
         :param request: The title of the report information
         :return: dictionary of report data
         """
+        template_data = self.BASE_PAGE_DATA.copy()  # dictionary for the template data
         # The 'file' property is already unquoted despite a quoted string used in the URL
         report_title = request.match_info.get(self.web_svc.REPORT_PARAM)
         title_quoted = quote(report_title)
@@ -148,13 +155,15 @@ class WebAPI:
         attack_uids = await self.data_svc.get_techniques()
         original_html = await self.dao.get('original_html', dict(report_uid=report_id))
         final_html = await self.web_svc.build_final_html(original_html, sentences)
-        pdf_link = self.web_svc.get_route_with_param(self.web_svc.EXPORT_PDF_KEY, title_quoted)
-        nav_link = self.web_svc.get_route_with_param(self.web_svc.EXPORT_NAV_KEY, title_quoted)
-        return dict(
+        pdf_link = self.web_svc.get_route(self.web_svc.EXPORT_PDF_KEY, param=title_quoted)
+        nav_link = self.web_svc.get_route(self.web_svc.EXPORT_NAV_KEY, param=title_quoted)
+        # Update overall template data and return
+        template_data.update(
             file=report_title, title=report[0]['title'], title_quoted=title_quoted, final_html=final_html,
             sentences=sentences, attack_uids=attack_uids, original_html=original_html, pdf_link=pdf_link,
             nav_link=nav_link, completed=int(report[0]['current_status'] == self.report_statuses.COMPLETED.value)
         )
+        return template_data
 
     async def nav_export(self, request):
         """
