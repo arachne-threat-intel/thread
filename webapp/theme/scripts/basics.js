@@ -5,10 +5,12 @@ var tempHighlighted = undefined;
 // The classes used for highlighting a sentence or image
 var highlightClass = "bg-warning";
 var highlightClassImg = "imgHighlight";
+// The URL for the rest requests
+var restUrl = $('script#basicsScript').data('rest-url');
 
 function restRequest(type, data, callback) {
     $.ajax({
-        url: '/rest',
+        url: restUrl,
         type: type,
         contentType: 'application/json',
         data: JSON.stringify(data),

@@ -23,9 +23,10 @@ class WebAPI:
         self.reg_svc = services['reg_svc']
         self.rest_svc = services['rest_svc']
         self.report_statuses = self.rest_svc.get_status_enum()
-        self.BASE_PAGE_DATA = dict(static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY),
+        self.BASE_PAGE_DATA = dict(about_url=self.web_svc.get_route(self.web_svc.ABOUT_KEY),
                                    home_url=self.web_svc.get_route(self.web_svc.HOME_KEY),
-                                   about_url=self.web_svc.get_route(self.web_svc.ABOUT_KEY))
+                                   rest_url=self.web_svc.get_route(self.web_svc.REST_KEY),
+                                   static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY))
 
     @staticmethod
     def respond_error(message=None):
