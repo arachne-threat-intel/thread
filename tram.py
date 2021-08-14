@@ -65,13 +65,13 @@ async def init(host, port):
     logging.info('webapp dir is %s' % webapp_dir)
 
     app = web.Application(middlewares=[WebAPI.req_handler])
-    app.router.add_route('GET', '/', website_handler.index)
-    app.router.add_route('GET', '/edit/{file}', website_handler.edit)
-    app.router.add_route('GET', '/about', website_handler.about)
-    app.router.add_route('*', '/rest', website_handler.rest_api)
-    app.router.add_route('GET', '/export/pdf/{file}', website_handler.pdf_export)
-    app.router.add_route('GET', '/export/nav/{file}', website_handler.nav_export)
-    app.router.add_static('/theme/', os.path.join(webapp_dir, 'theme'))
+    app.router.add_route('GET', web_svc.get_route(WebService.HOME_KEY), website_handler.index)
+    app.router.add_route('GET', web_svc.get_route(WebService.EDIT_KEY), website_handler.edit)
+    app.router.add_route('GET', web_svc.get_route(WebService.ABOUT_KEY), website_handler.about)
+    app.router.add_route('*', web_svc.get_route(WebService.REST_KEY), website_handler.rest_api)
+    app.router.add_route('GET', web_svc.get_route(WebService.EXPORT_PDF_KEY), website_handler.pdf_export)
+    app.router.add_route('GET', web_svc.get_route(WebService.EXPORT_NAV_KEY), website_handler.nav_export)
+    app.router.add_static(web_svc.get_route(WebService.STATIC_KEY), os.path.join(webapp_dir, 'theme'))
 
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(os.path.join(webapp_dir, 'html')))
     runner = web.AppRunner(app)
@@ -101,7 +101,7 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
 
 
 def main(external_caller=False):
-    global data_svc, externally_called, ml_svc, rest_svc, website_handler
+    global data_svc, externally_called, ml_svc, rest_svc, web_svc, website_handler
 
     logging.getLogger().setLevel('DEBUG')
     logging.info('Welcome to TRAM')
@@ -127,7 +127,7 @@ def main(external_caller=False):
                 attack_dict = os.path.abspath(json_file)
 
     # Start services and initiate main function
-    web_svc = WebService()
+    web_svc = WebService(externally_called=external_caller)
     reg_svc = RegService(dao=dao)
     data_svc = DataService(dao=dao, web_svc=web_svc, externally_called=external_caller)
     ml_svc = MLService(web_svc=web_svc, dao=dao, externally_called=external_caller)

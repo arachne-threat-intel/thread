@@ -20,9 +20,40 @@ ABBREVIATIONS = {'dr', 'vs', 'mr', 'mrs', 'ms', 'prof', 'inc', 'fig', 'e.g', 'i.
 
 
 class WebService:
-    def __init__(self):
+    # Static class variables for the keys in app_routes
+    HOME_KEY, EDIT_KEY, ABOUT_KEY, REST_KEY = 'home', 'edit', 'about', 'rest'
+    EXPORT_PDF_KEY, EXPORT_NAV_KEY, STATIC_KEY = 'export_pdf', 'export_nav', 'static'
+    REPORT_PARAM = 'file'
+
+    def __init__(self, externally_called=False):
         self.tokenizer_sen = None
         self.cached_responses = dict()
+        self.externally_called = externally_called
+        # Initialise app route info
+        self.__app_routes = self._initialise_route_values()
+
+    def _initialise_route_values(self):
+        """Function to initialise the web app's route values and return them as a dictionary."""
+        route_prefix = '/tram' if self.externally_called else ''
+        return {
+            self.HOME_KEY: '/tram' if self.externally_called else '/',  # if-else to prevent '/tram/' suffix
+            self.EDIT_KEY: route_prefix + '/edit/{%s}' % self.REPORT_PARAM,
+            self.ABOUT_KEY: route_prefix + '/about', self.REST_KEY: route_prefix + '/rest',
+            self.EXPORT_PDF_KEY: route_prefix + '/export/pdf/{%s}' % self.REPORT_PARAM,
+            self.EXPORT_NAV_KEY: route_prefix + '/export/nav/{%s}' % self.REPORT_PARAM,
+            self.STATIC_KEY: route_prefix + '/theme/'
+        }
+
+    def get_route(self, route_key, param=None):
+        """Function to get one of the web app's routes with the option of a parameter to be placed in the link."""
+        try:
+            route = self.__app_routes[route_key]
+            if param is None:
+                return route
+            return route.replace('{%s}' % self.REPORT_PARAM, str(param))
+        # If the method doesn't receive a valid key, return None
+        except KeyError:
+            return None
 
     def initialise_tokenizer(self):
         self.tokenizer_sen = nltk.data.load('tokenizers/punkt/english.pickle')
