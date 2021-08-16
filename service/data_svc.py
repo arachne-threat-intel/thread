@@ -198,7 +198,7 @@ class DataService:
         reports = await self.dao.get('reports', search)
         for report in reports:
             del report['uid']  # Prevent ID reaching request-response
-            title_quoted = quote(report['title'])
+            title_quoted = quote(report['title'], safe='')
             edit_link = self.web_svc.get_route(self.web_svc.EDIT_KEY, param=title_quoted)
             report.update(dict(link=edit_link, title_quoted=title_quoted))
         return reports

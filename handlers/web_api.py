@@ -147,7 +147,7 @@ class WebAPI:
         template_data = self.BASE_PAGE_DATA.copy()  # dictionary for the template data
         # The 'file' property is already unquoted despite a quoted string used in the URL
         report_title = request.match_info.get(self.web_svc.REPORT_PARAM)
-        title_quoted = quote(report_title)
+        title_quoted = quote(report_title, safe='')
         report = await self.dao.get('reports', dict(title=report_title))
         try:
             # Ensure a valid report title has been passed in the request
