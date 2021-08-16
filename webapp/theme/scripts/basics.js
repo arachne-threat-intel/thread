@@ -210,7 +210,7 @@ function updateSentenceContext(data) {
     // If this sentence has attacks, display the attacks as normal
     if (data && data.length > 0) {
         $.each(data, function(index, op) {
-            td1 = "<td><a href=https://attack.mitre.org/techniques/" + op.attack_tid + " target=_blank>" + op.attack_technique_name + "</a></td>";
+            td1 = "<td><a href=https://attack.mitre.org/techniques/" + op.attack_tid.replace(".", "/") + " target=_blank>" + op.attack_technique_name + "</a></td>";
             td2 = `<td><button class='btn btn-success' onclick='acceptAttack("${op.sentence_id}", "${op.attack_uid}")'>Accept</button></td>`;
             td3 = `<td><button class='btn btn-danger' onclick='rejectAttack("${op.sentence_id}", "${op.attack_uid}")'>Reject</button></td>`;
             tmp = `<tr id="sentence-tid${op.attack_uid.substr(op.attack_uid.length - 4)}">${td1}${td2}${td3}</tr>`;
