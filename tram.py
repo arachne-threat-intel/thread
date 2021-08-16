@@ -118,6 +118,7 @@ def main(external_caller=False):
         host = config['host']
         port = config['port']
         taxii_local = config['taxii-local']
+        js_src = config['js-libraries']
         json_file = os.path.join('models', config['json_file'])
         attack_dict = None
 
@@ -133,7 +134,7 @@ def main(external_caller=False):
     ml_svc = MLService(web_svc=web_svc, dao=dao, externally_called=external_caller)
     rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao, externally_called=external_caller)
     services = dict(dao=dao, data_svc=data_svc, ml_svc=ml_svc, reg_svc=reg_svc, web_svc=web_svc, rest_svc=rest_svc)
-    website_handler = WebAPI(services=services)
+    website_handler = WebAPI(services=services, js_src=js_src)
     start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict)
 
 

@@ -57,11 +57,11 @@
                                             <div class="card-body">
                                                 {% if report.error == 1 %}
                                                     <a data-toggle="tooltip" data-placement="top" title="Sorry, the contents of this report could not be retrieved.">
-                                                        <span class="glyphicon glyphicon-exclamation-sign error-icon"></span>
+                                                        <span class="fas fa-exclamation glyphicon glyphicon-exclamation-sign error-icon"></span>
                                                     </a>
                                                 {% endif %}
                                                 {% if value.allow_delete or report.error == 1 %}
-                                                    <a onclick="deleteReport('{{report.title_quoted}}')" class="glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
+                                                    <a onclick="deleteReport('{{report.title_quoted}}')" class="fas fa-trash-alt glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
                                                 {% endif %}
                                                 <p>
                                                 <p class="card-text">{{report.title}}</p>

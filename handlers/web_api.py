@@ -5,6 +5,10 @@ from aiohttp.web_exceptions import HTTPException
 from aiohttp_jinja2 import template, web
 from urllib.parse import quote
 
+# The config options to load JS dependencies
+ONLINE_JS_SRC = 'js-online-src'
+OFFLINE_JS_SRC = 'js-local-src'
+
 
 def sanitise_filename(filename=''):
     """Function to produce a string which is filename-friendly."""
@@ -15,7 +19,7 @@ def sanitise_filename(filename=''):
 
 
 class WebAPI:
-    def __init__(self, services):
+    def __init__(self, services, js_src):
         self.dao = services.get('dao')
         self.data_svc = services['data_svc']
         self.web_svc = services['web_svc']
@@ -23,10 +27,12 @@ class WebAPI:
         self.reg_svc = services['reg_svc']
         self.rest_svc = services['rest_svc']
         self.report_statuses = self.rest_svc.get_status_enum()
+        js_src_config = js_src if js_src in [ONLINE_JS_SRC, OFFLINE_JS_SRC] else ONLINE_JS_SRC
         self.BASE_PAGE_DATA = dict(about_url=self.web_svc.get_route(self.web_svc.ABOUT_KEY),
                                    home_url=self.web_svc.get_route(self.web_svc.HOME_KEY),
                                    rest_url=self.web_svc.get_route(self.web_svc.REST_KEY),
-                                   static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY))
+                                   static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY),
+                                   js_src_online=js_src_config == ONLINE_JS_SRC)
 
     @staticmethod
     def respond_error(message=None):
