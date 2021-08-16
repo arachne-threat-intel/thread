@@ -61,13 +61,13 @@
             {% elif elmt.tag == 'header' %}
                 <h3>{{elmt.text}}</h3> 
             {% elif elmt.tag == 'li' and elmt.found_status == 1 %}
-                <li class="elmtRelated{{elmt.uid}}"><a class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a></li> <br class="elmtRelated{{elmt.uid}}">
+                <li class="elmtRelated{{elmt.uid}}"><span class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
             {% elif elmt.tag == 'li' %}
-                <li class="elmtRelated{{elmt.uid}}"><a id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a></li> <br class="elmtRelated{{elmt.uid}}">
+                <li class="elmtRelated{{elmt.uid}}"><span id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
             {% elif elmt.found_status == 1 %}
-                <a class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
+                <span class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
             {% else %}
-                <a id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
+                <span id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
             {% endif %}
         {% endfor %}
     </div>

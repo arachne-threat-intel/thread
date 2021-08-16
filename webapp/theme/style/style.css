@@ -18,10 +18,14 @@ h2{
   font-family: 'Roboto-Light', sans-serif;
 }
 
+label, input { margin-bottom: .5rem; }
+
 footer .footer-link 
 {
   color: #ffffff;
 }
+
+footer .twitter-btn { float: right; }
 
 /*Override some bootstrap defaults*/
 .jumbotron{
