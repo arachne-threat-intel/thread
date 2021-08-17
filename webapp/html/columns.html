@@ -92,9 +92,11 @@
                 <br><br>
                 <div class="container">
                     <div class="row">
-                        <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true" data-live-search="true" title="Select a technique">
+                        <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true"
+                                data-live-search="true" title="Select a technique">
                             {% for tech in attack_uids %}
-                                <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}">{{tech.name}}</option>
+                                <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}"
+                                        {% if tech.parent_name %} data-subtext="{{tech.parent_name}}" {% endif %}>{{tech.name}}</option>
                             {% endfor %}
                         </select>
                     </div>

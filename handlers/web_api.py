@@ -33,6 +33,16 @@ class WebAPI:
                                    rest_url=self.web_svc.get_route(self.web_svc.REST_KEY),
                                    static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY),
                                    js_src_online=js_src_config == ONLINE_JS_SRC)
+        self.attack_dropdown_list = []
+
+    async def pre_launch_init(self):
+        """Function to call any required methods before the app is initialised and launched."""
+        # We want nltk packs downloaded before startup; not run concurrently with startup
+        await self.ml_svc.check_nltk_packs()
+        # Before the app starts up, prepare the queue of reports
+        await self.rest_svc.prepare_queue()
+        # We want the list of attacks ready before the app starts
+        self.attack_dropdown_list = await self.data_svc.get_techniques(get_parent_info=True)
 
     @staticmethod
     def respond_error(message=None):
@@ -159,7 +169,6 @@ class WebAPI:
             return self.respond_error(message='Invalid URL')
         # Proceed to gather the data for the template
         sentences = await self.data_svc.get_report_sentences(report_id)
-        attack_uids = await self.data_svc.get_techniques()
         original_html = await self.dao.get('original_html', dict(report_uid=report_id))
         final_html = await self.web_svc.build_final_html(original_html, sentences)
         pdf_link = self.web_svc.get_route(self.web_svc.EXPORT_PDF_KEY, param=title_quoted)
@@ -167,7 +176,7 @@ class WebAPI:
         # Update overall template data and return
         template_data.update(
             file=report_title, title=report[0]['title'], title_quoted=title_quoted, final_html=final_html,
-            sentences=sentences, attack_uids=attack_uids, original_html=original_html, pdf_link=pdf_link,
+            sentences=sentences, attack_uids=self.attack_dropdown_list, original_html=original_html, pdf_link=pdf_link,
             nav_link=nav_link, completed=int(report[0]['current_status'] == self.report_statuses.COMPLETED.value)
         )
         return template_data

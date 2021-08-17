@@ -55,10 +55,8 @@ async def init(host, port):
     :param port: Port to listen on
     :return: nil
     """
-    # We want nltk packs downloaded before startup; not run concurrently with startup
-    await ml_svc.check_nltk_packs()
-    # Before the app starts up, prepare the queue of reports
-    await rest_svc.prepare_queue()
+    # Run any required functions before the app is launched
+    await website_handler.pre_launch_init()
 
     logging.info('server starting: %s:%s' % (host, port))
     webapp_dir = os.path.join('tram', 'webapp') if externally_called else 'webapp'

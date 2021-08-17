@@ -216,8 +216,26 @@ class DataService:
             "WHERE report_sentences.report_uid = ?")
         return await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
 
-    async def get_techniques(self):
-        return await self.dao.get('attack_uids')
+    async def get_techniques(self, get_parent_info=False):
+        # If we are not getting the parent-attack info (for sub-techniques), then return all results as normal
+        if not get_parent_info:
+            return await self.dao.get('attack_uids')
+        # Else separate a query into finding attacks which are sub-techniques and those which aren't
+        sub_techs_query = (
+            # Use a temporary table 'parent_tids' to return attacks which are sub-techniques (i.e. tid is Txxx.xx)
+            # Use the substring method to save in the parent_tid column the Txxx part of the tid (without the .xx)
+            "WITH parent_tids(uid, name, tid, parent_tid) AS "
+            "(SELECT uid, name, tid, SUBSTR(tid, 0, INSTR(tid, '.')) FROM attack_uids WHERE tid LIKE '%.%') "
+            # With parent_tids, select all fields from it and the name of the parent_tid from the attack_uids table
+            # Need to use `AS parent_name` to not confuse it with parent_tids.name
+            "SELECT parent_tids.*, attack_uids.name AS parent_name FROM "
+            "(attack_uids INNER JOIN parent_tids ON attack_uids.tid = parent_tids.parent_tid)")
+        # The query for all other techniques is where the tid does not contain a '.'
+        # Need to pass in two NULLs so the number of columns for the UNION is the same
+        # (and parent_name & parent_tid doesn't exist for these techniques which are not sub-techniques)
+        other_techs_query = 'SELECT uid, name, tid, NULL, NULL FROM attack_uids WHERE tid NOT LIKE \'%.%\''
+        # Return the results as a UNION query of the two above
+        return await self.dao.raw_select('%s UNION %s' % (sub_techs_query, other_techs_query))
 
     async def get_confirmed_techniques(self, report_id):
         # The SQL select join query to retrieve the confirmed techniques for the report from the database
