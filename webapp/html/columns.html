@@ -95,8 +95,12 @@
                         <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true"
                                 data-live-search="true" title="Select a technique">
                             {% for tech in attack_uids %}
-                                <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}"
-                                        {% if tech.parent_name %} data-subtext="{{tech.parent_name}}" {% endif %}>{{tech.name}}</option>
+                                {% if tech.parent_name %}
+                                    <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}"
+                                             data-subtext="{{tech.name}}">{{tech.parent_name}}</option>
+                                {% else %}
+                                    <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}">{{tech.name}}</option>
+                                {% endif %}
                             {% endfor %}
                         </select>
                     </div>
