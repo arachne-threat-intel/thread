@@ -215,7 +215,7 @@ class WebAPI:
         }
 
         # Get confirmed techniques for the report from the database
-        techniques = await self.data_svc.get_confirmed_techniques_for_report(report_id)
+        techniques = await self.data_svc.get_confirmed_techniques_for_nav_export(report_id)
 
         # Append techniques to enterprise layer
         for technique in techniques:
@@ -279,7 +279,10 @@ class WebAPI:
                 dd['content'].append(sen_text)
                 seen_sentences.add(sen_id)
             if sentence['attack_tid'] and sentence['active_hit']:
-                table['body'].append([sentence['attack_tid'], sentence['attack_technique_name'], sen_text])
+                # Append any attack for this sentence to the table; prefix parent-tech for any sub-technique
+                tech_name, parent_tech = sentence['attack_technique_name'], sentence.get('attack_parent_name')
+                tech_name = "%s: %s" % (parent_tech, tech_name) if parent_tech else tech_name
+                table['body'].append([sentence['attack_tid'], tech_name, sen_text])
 
         # Append table to the end
         dd['content'].append({'table': table})

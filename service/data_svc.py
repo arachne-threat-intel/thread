@@ -231,10 +231,18 @@ class DataService:
     async def get_report_sentences_with_attacks(self, report_id=''):
         """Function to retrieve all report sentences and any attacks they may have given a report ID."""
         select_join_query = (
+            # Using the temporary table with parent-technique info
+            SQL_ATTACK_WITH_PARENT_TABLE_PREFIX +
+            # The relevant report-sentence fields we want
             "SELECT report_sentences.*, report_sentence_hits.attack_tid, report_sentence_hits.attack_technique_name, "
-            "report_sentence_hits.active_hit "
-            "FROM (report_sentences LEFT OUTER JOIN report_sentence_hits "
+            # We want to add any sub-technique's parent-technique name
+            "report_sentence_hits.active_hit, " + FULL_ATTACK_INFO + ".parent_name AS attack_parent_name "
+            # The first join for the report data; LEFT OUTER JOIN because we want all report sentences
+            "FROM ((report_sentences LEFT OUTER JOIN report_sentence_hits "
             "ON report_sentences.uid = report_sentence_hits.sentence_id) "
+            # A second join for the full attack table; still using a LEFT JOIN
+            "LEFT JOIN " + FULL_ATTACK_INFO + " ON " + FULL_ATTACK_INFO + ".uid = report_sentence_hits.attack_uid)"
+            # Finish with the WHERE clause stating which report this is for
             "WHERE report_sentences.report_uid = ?")
         return await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
 
@@ -244,17 +252,6 @@ class DataService:
             return await self.dao.get('attack_uids')
         # Else run the SQL query which returns the parent info
         return await self.dao.raw_select(SQL_ATTACK_WITH_PARENT_INFO)
-
-    async def get_confirmed_techniques(self, report_id):
-        # The SQL select join query to retrieve the confirmed techniques for the report from the database
-        select_join_query = (
-            "SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, "
-            "report_sentence_hits.attack_tid, report_sentences.text, report_sentence_hits.initial_model_match "
-            "FROM (report_sentences INNER JOIN report_sentence_hits "
-            "ON report_sentences.uid = report_sentence_hits.sentence_id) "
-            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = 1")
-        # Run the SQL select join query
-        return await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
 
     async def get_confirmed_attacks_for_sentence(self, sentence_id=''):
         """Function to retrieve confirmed-attack data for a sentence."""
@@ -284,9 +281,16 @@ class DataService:
         # Ideally would use an SQL MINUS query but this caused errors
         return len(all_unconfirmed) - len(ignore)
 
-    async def get_confirmed_techniques_for_report(self, report_id):
-        # Get the confirmed hits
-        hits = await self.get_confirmed_techniques(report_id)
+    async def get_confirmed_techniques_for_nav_export(self, report_id):
+        # The SQL select join query to retrieve the confirmed techniques for the nav export
+        select_join_query = (
+            "SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, "
+            "report_sentence_hits.attack_tid, report_sentences.text, report_sentence_hits.initial_model_match "
+            "FROM (report_sentences INNER JOIN report_sentence_hits "
+            "ON report_sentences.uid = report_sentence_hits.sentence_id) "
+            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = 1")
+        # Get the confirmed hits as the above SQL query
+        hits = await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
         techniques = []
         for hit in hits:
             # For each confirmed technique returned,
