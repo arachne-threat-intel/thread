@@ -254,20 +254,15 @@ min-height: calc(0vh - 149px) !important;
 
 .missingTechniquesView
 {
-/*background-color: #00334f;*/
-background-color: #FFFFFF;
-border: 2px solid gray;
-
-position: sticky;
-right: 20px;
-/*top: 100px;*/
-top: 90px;
-
-max-width: 400px;
-height: 90vh;
-
-overflow: auto;
-padding: 10px;
+    background-color: #FFFFFF;
+    border: 2px solid gray;
+    position: sticky;
+    right: 20px;
+    top: 90px;
+    margin-right: 3rem;
+    height: 90vh;
+    overflow: auto;
+    padding: 10px;
 }
 
 .report_view {

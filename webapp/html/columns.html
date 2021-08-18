@@ -5,7 +5,7 @@
 <style>
     .reportSentencesDiv {
         border-style: groove;
-        margin-left: 80px;
+        margin-left: 3rem;
         padding-top: 10px;
         word-break: break-word;
     }
@@ -90,22 +90,18 @@
             {% if completed == 0 %}
                 <span class='spanAddMissingTechnique'>Add A Missing Technique</span>
                 <br><br>
-                <div class="container">
-                    <div class="row">
-                        <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true"
-                                data-live-search="true" title="Select a technique">
-                            {% for tech in attack_uids %}
-                                {% if tech.parent_name %}
-                                    <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}"
-                                             data-subtext="{{tech.name}}">{{tech.parent_name}}</option>
-                                {% else %}
-                                    <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}">{{tech.name}}</option>
-                                {% endif %}
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                <br>
+                <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true" data-size="5"
+                        data-live-search="true" title="Select a technique">
+                    {% for tech in attack_uids %}
+                        {% if tech.parent_name %}
+                            <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}"
+                                     data-subtext="{{tech.name}}">{{tech.parent_name}}</option>
+                        {% else %}
+                            <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}">{{tech.name}}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                <br><br>
                 <button disabled id="missingTechBtn" onclick="addMissingTechnique()" class="btn btn-md btn-outline-primary">Add Technique</button> <br><br>
                 <button disabled id="delSenBtn" onclick="remove_sentence()" class="btn btn-md btn-danger">Remove Selected</button> <br><br>
                 <button onclick="finish_analysis('{{title_quoted}}')" class="btn btn-md btn-success">Finish Analysis</button> <br><br>
