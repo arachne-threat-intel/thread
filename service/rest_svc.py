@@ -163,7 +163,7 @@ class RestService:
             sen_id = criteria['sentence_id']
         except KeyError:
             return dict(error='Error retrieving sentence info.')
-        return await self.data_svc.get_confirmed_attacks(sentence_id=sen_id)
+        return await self.data_svc.get_confirmed_attacks_for_sentence(sentence_id=sen_id)
 
     async def insert_report(self, criteria=None):
         try:
