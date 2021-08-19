@@ -5,7 +5,7 @@
 <style>
     .reportSentencesDiv {
         border-style: groove;
-        margin-left: 80px;
+        margin-left: 3rem;
         padding-top: 10px;
         word-break: break-word;
     }
@@ -44,7 +44,7 @@
         <button onclick="$.getJSON('{{pdf_link}}', (x) => {pdfMake.createPdf(x).download(x['info']['title']);})" class="btn btn-md btn-outline-secondary">Export PDF</button>
     </div>
     <div class="col-md-auto">
-        <button class="btn btn-md btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Export Navigator JSON</button>
+        <button class="btn btn-md btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Export Navigator JSON</button>
         <div class="dropdown-menu" id="dropdownMenu" aria-labelledby="dropdownMenuButton">
             <h6 class="dropdown-header">Enterprise Layer</h6>
             <a class="dropdown-item" onclick="$.getJSON('{{nav_link}}', (x) => {downloadLayer(x);})">download</a>
@@ -61,13 +61,13 @@
             {% elif elmt.tag == 'header' %}
                 <h3>{{elmt.text}}</h3> 
             {% elif elmt.tag == 'li' and elmt.found_status == 1 %}
-                <li class="elmtRelated{{elmt.uid}}"><a class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a></li> <br class="elmtRelated{{elmt.uid}}">
+                <li class="elmtRelated{{elmt.uid}}"><span class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
             {% elif elmt.tag == 'li' %}
-                <li class="elmtRelated{{elmt.uid}}"><a id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a></li> <br class="elmtRelated{{elmt.uid}}">
+                <li class="elmtRelated{{elmt.uid}}"><span id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
             {% elif elmt.found_status == 1 %}
-                <a class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
+                <span class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
             {% else %}
-                <a id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</a> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
+                <span id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
             {% endif %}
         {% endfor %}
     </div>
@@ -90,30 +90,24 @@
             {% if completed == 0 %}
                 <span class='spanAddMissingTechnique'>Add A Missing Technique</span>
                 <br><br>
-                <div class="container">
-                    <div class="row">
-                      <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true" data-live-search="true">
-                          {% for tech in attack_uids %}
-                        <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}">{{tech.name}}</option>
-                          {% endfor %}
-                      </select>
-                    </div>
-                </div>
-                <br>
+                <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true" data-size="5"
+                        data-live-search="true" title="Select a technique">
+                    {% for tech in attack_uids %}
+                        {% if tech.parent_name %}
+                            <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}"
+                                     data-subtext="{{tech.name}}">{{tech.parent_name}}</option>
+                        {% else %}
+                            <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}">{{tech.name}}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                <br><br>
                 <button disabled id="missingTechBtn" onclick="addMissingTechnique()" class="btn btn-md btn-outline-primary">Add Technique</button> <br><br>
                 <button disabled id="delSenBtn" onclick="remove_sentence()" class="btn btn-md btn-danger">Remove Selected</button> <br><br>
                 <button onclick="finish_analysis('{{title_quoted}}')" class="btn btn-md btn-success">Finish Analysis</button> <br><br>
             {% endif %}
         </div>
-
-
-
         <br><br>
         <br><br>
-
-
     </div>
-
-
-
 {% endblock %}

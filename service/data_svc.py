@@ -13,7 +13,29 @@ except ModuleNotFoundError:
     # The original import statement used in case of error
     from taxii2client import Collection
 
+# Text to set on attack descriptions where this originally was not set
 NO_DESC = 'No description provided'
+# SQL query to obtain attack records where sub-techniques are returned with their parent-technique info
+# Currently omits 'description' field as this is large and is not used in the front-end (this can be added here though)
+SQL_ATTACK_WITH_PARENT_INFO = (
+    # Use a temporary table 'parent_tids' to return attacks which are sub-techniques (i.e. tid is Txxx.xx)
+    # Use the substring method to save in the parent_tid column as the Txxx part of the tid (without the .xx)
+    "WITH parent_tids(uid, name, tid, parent_tid) AS "
+    "(SELECT uid, name, tid, SUBSTR(tid, 0, INSTR(tid, '.')) FROM attack_uids WHERE tid LIKE '%.%') "
+    # With parent_tids, select all fields from it and the name of the parent_tid from the attack_uids table
+    # Need to use `AS parent_name` to not confuse it with parent_tids.name
+    # Using an INNER JOIN because we only care about returning sub-techniques here
+    "SELECT parent_tids.*, attack_uids.name AS parent_name FROM "
+    "(attack_uids INNER JOIN parent_tids ON attack_uids.tid = parent_tids.parent_tid) "
+    # Union the sub-tech query with one for all other techniques (where the tid does not contain a '.')
+    # Need to pass in two NULLs so the number of columns for the UNION is the same
+    # (and parent_name & parent_tid doesn't exist for these techniques which are not sub-techniques)
+    "UNION SELECT uid, name, tid, NULL, NULL FROM attack_uids WHERE tid NOT LIKE '%.%'")
+# A name for a temporary table representing the output of SQL_ATTACK_WITH_PARENT_INFO
+FULL_ATTACK_INFO = 'full_attack_info'
+# A prefix SQL statement to use with queries that want the full attack info
+SQL_ATTACK_WITH_PARENT_TABLE_PREFIX =\
+    'WITH %s(uid, name, tid, parent_tid, parent_name) AS (%s) ' % (FULL_ATTACK_INFO, SQL_ATTACK_WITH_PARENT_INFO)
 
 
 def defang_text(text):
@@ -198,7 +220,7 @@ class DataService:
         reports = await self.dao.get('reports', search)
         for report in reports:
             del report['uid']  # Prevent ID reaching request-response
-            title_quoted = quote(report['title'])
+            title_quoted = quote(report['title'], safe='')
             edit_link = self.web_svc.get_route(self.web_svc.EDIT_KEY, param=title_quoted)
             report.update(dict(link=edit_link, title_quoted=title_quoted))
         return reports
@@ -209,33 +231,39 @@ class DataService:
     async def get_report_sentences_with_attacks(self, report_id=''):
         """Function to retrieve all report sentences and any attacks they may have given a report ID."""
         select_join_query = (
+            # Using the temporary table with parent-technique info
+            SQL_ATTACK_WITH_PARENT_TABLE_PREFIX +
+            # The relevant report-sentence fields we want
             "SELECT report_sentences.*, report_sentence_hits.attack_tid, report_sentence_hits.attack_technique_name, "
-            "report_sentence_hits.active_hit "
-            "FROM (report_sentences LEFT OUTER JOIN report_sentence_hits "
+            # We want to add any sub-technique's parent-technique name
+            "report_sentence_hits.active_hit, " + FULL_ATTACK_INFO + ".parent_name AS attack_parent_name "
+            # The first join for the report data; LEFT OUTER JOIN because we want all report sentences
+            "FROM ((report_sentences LEFT OUTER JOIN report_sentence_hits "
             "ON report_sentences.uid = report_sentence_hits.sentence_id) "
+            # A second join for the full attack table; still using a LEFT JOIN
+            "LEFT JOIN " + FULL_ATTACK_INFO + " ON " + FULL_ATTACK_INFO + ".uid = report_sentence_hits.attack_uid)"
+            # Finish with the WHERE clause stating which report this is for
             "WHERE report_sentences.report_uid = ?")
         return await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
 
-    async def get_techniques(self):
-        return await self.dao.get('attack_uids')
+    async def get_techniques(self, get_parent_info=False):
+        # If we are not getting the parent-attack info (for sub-techniques), then return all results as normal
+        if not get_parent_info:
+            return await self.dao.get('attack_uids')
+        # Else run the SQL query which returns the parent info
+        return await self.dao.raw_select(SQL_ATTACK_WITH_PARENT_INFO)
 
-    async def get_confirmed_techniques(self, report_id):
-        # The SQL select join query to retrieve the confirmed techniques for the report from the database
-        select_join_query = (
-            "SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, "
-            "report_sentence_hits.attack_tid, report_sentences.text, report_sentence_hits.initial_model_match "
-            "FROM (report_sentences INNER JOIN report_sentence_hits "
-            "ON report_sentences.uid = report_sentence_hits.sentence_id) "
-            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = 1")
-        # Run the SQL select join query
-        return await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
-
-    async def get_confirmed_attacks(self, sentence_id=''):
+    async def get_confirmed_attacks_for_sentence(self, sentence_id=''):
         """Function to retrieve confirmed-attack data for a sentence."""
         select_join_query = (
-            "SELECT attack_uids.* "
-            "FROM (attack_uids INNER JOIN report_sentence_hits ON attack_uids.uid = report_sentence_hits.attack_uid) "
+            # Select all columns from the full attack info table
+            SQL_ATTACK_WITH_PARENT_TABLE_PREFIX + "SELECT " + FULL_ATTACK_INFO + ".* "
+            # Use an INNER JOIN on full_attack_info and report_sentence_hits (to get the intersection of attacks)
+            "FROM (" + FULL_ATTACK_INFO + " INNER JOIN report_sentence_hits ON " + FULL_ATTACK_INFO +
+            ".uid = report_sentence_hits.attack_uid) "
+            # Finish with the WHERE clause stating which sentence we are searching for and that the attack is confirmed
             "WHERE report_sentence_hits.sentence_id = ? AND report_sentence_hits.confirmed = 1")
+        # Run the above query and return its results
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
 
     async def get_unconfirmed_attack_count(self, report_id=''):
@@ -253,9 +281,16 @@ class DataService:
         # Ideally would use an SQL MINUS query but this caused errors
         return len(all_unconfirmed) - len(ignore)
 
-    async def get_confirmed_techniques_for_report(self, report_id):
-        # Get the confirmed hits
-        hits = await self.get_confirmed_techniques(report_id)
+    async def get_confirmed_techniques_for_nav_export(self, report_id):
+        # The SQL select join query to retrieve the confirmed techniques for the nav export
+        select_join_query = (
+            "SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, "
+            "report_sentence_hits.attack_tid, report_sentences.text, report_sentence_hits.initial_model_match "
+            "FROM (report_sentences INNER JOIN report_sentence_hits "
+            "ON report_sentences.uid = report_sentence_hits.sentence_id) "
+            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = 1")
+        # Get the confirmed hits as the above SQL query
+        hits = await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
         techniques = []
         for hit in hits:
             # For each confirmed technique returned,
@@ -268,7 +303,21 @@ class DataService:
 
     async def get_active_sentence_hits(self, sentence_id=''):
         """Function to retrieve active sentence hits (and ignoring historic ones, e.g. a model's initial prediction)."""
-        return await self.dao.get('report_sentence_hits', dict(sentence_id=sentence_id, active_hit=1))
+        select_join_query = (
+            # Using the temporary table with parent-technique info
+            SQL_ATTACK_WITH_PARENT_TABLE_PREFIX +
+            # The relevant fields we want from report_sentence_hits
+            "SELECT report_sentence_hits.sentence_id, report_sentence_hits.attack_uid, "
+            "report_sentence_hits.attack_tid, report_sentence_hits.attack_technique_name, "
+            # We want to add any sub-technique's parent-technique name
+            + FULL_ATTACK_INFO + ".parent_name AS attack_parent_name "
+            # As we are querying two tables, state the FROM clause is an INNER JOIN on the two
+            "FROM (" + FULL_ATTACK_INFO + " INNER JOIN report_sentence_hits ON " + FULL_ATTACK_INFO +
+            ".uid = report_sentence_hits.attack_uid) "
+            # Finish with the WHERE clause stating which sentence we are searching for and that the hit is active
+            "WHERE report_sentence_hits.sentence_id = ? AND report_sentence_hits.active_hit = 1")
+        # Run the above query and return its results
+        return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
 
     async def get_unique_title(self, title):
         """

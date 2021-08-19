@@ -5,6 +5,10 @@ from aiohttp.web_exceptions import HTTPException
 from aiohttp_jinja2 import template, web
 from urllib.parse import quote
 
+# The config options to load JS dependencies
+ONLINE_JS_SRC = 'js-online-src'
+OFFLINE_JS_SRC = 'js-local-src'
+
 
 def sanitise_filename(filename=''):
     """Function to produce a string which is filename-friendly."""
@@ -15,7 +19,7 @@ def sanitise_filename(filename=''):
 
 
 class WebAPI:
-    def __init__(self, services):
+    def __init__(self, services, js_src):
         self.dao = services.get('dao')
         self.data_svc = services['data_svc']
         self.web_svc = services['web_svc']
@@ -23,10 +27,22 @@ class WebAPI:
         self.reg_svc = services['reg_svc']
         self.rest_svc = services['rest_svc']
         self.report_statuses = self.rest_svc.get_status_enum()
+        js_src_config = js_src if js_src in [ONLINE_JS_SRC, OFFLINE_JS_SRC] else ONLINE_JS_SRC
         self.BASE_PAGE_DATA = dict(about_url=self.web_svc.get_route(self.web_svc.ABOUT_KEY),
                                    home_url=self.web_svc.get_route(self.web_svc.HOME_KEY),
                                    rest_url=self.web_svc.get_route(self.web_svc.REST_KEY),
-                                   static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY))
+                                   static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY),
+                                   js_src_online=js_src_config == ONLINE_JS_SRC)
+        self.attack_dropdown_list = []
+
+    async def pre_launch_init(self):
+        """Function to call any required methods before the app is initialised and launched."""
+        # We want nltk packs downloaded before startup; not run concurrently with startup
+        await self.ml_svc.check_nltk_packs()
+        # Before the app starts up, prepare the queue of reports
+        await self.rest_svc.prepare_queue()
+        # We want the list of attacks ready before the app starts
+        self.attack_dropdown_list = await self.data_svc.get_techniques(get_parent_info=True)
 
     @staticmethod
     def respond_error(message=None):
@@ -141,7 +157,7 @@ class WebAPI:
         template_data = self.BASE_PAGE_DATA.copy()  # dictionary for the template data
         # The 'file' property is already unquoted despite a quoted string used in the URL
         report_title = request.match_info.get(self.web_svc.REPORT_PARAM)
-        title_quoted = quote(report_title)
+        title_quoted = quote(report_title, safe='')
         report = await self.dao.get('reports', dict(title=report_title))
         try:
             # Ensure a valid report title has been passed in the request
@@ -153,7 +169,6 @@ class WebAPI:
             return self.respond_error(message='Invalid URL')
         # Proceed to gather the data for the template
         sentences = await self.data_svc.get_report_sentences(report_id)
-        attack_uids = await self.data_svc.get_techniques()
         original_html = await self.dao.get('original_html', dict(report_uid=report_id))
         final_html = await self.web_svc.build_final_html(original_html, sentences)
         pdf_link = self.web_svc.get_route(self.web_svc.EXPORT_PDF_KEY, param=title_quoted)
@@ -161,7 +176,7 @@ class WebAPI:
         # Update overall template data and return
         template_data.update(
             file=report_title, title=report[0]['title'], title_quoted=title_quoted, final_html=final_html,
-            sentences=sentences, attack_uids=attack_uids, original_html=original_html, pdf_link=pdf_link,
+            sentences=sentences, attack_uids=self.attack_dropdown_list, original_html=original_html, pdf_link=pdf_link,
             nav_link=nav_link, completed=int(report[0]['current_status'] == self.report_statuses.COMPLETED.value)
         )
         return template_data
@@ -200,7 +215,7 @@ class WebAPI:
         }
 
         # Get confirmed techniques for the report from the database
-        techniques = await self.data_svc.get_confirmed_techniques_for_report(report_id)
+        techniques = await self.data_svc.get_confirmed_techniques_for_nav_export(report_id)
 
         # Append techniques to enterprise layer
         for technique in techniques:
@@ -264,7 +279,10 @@ class WebAPI:
                 dd['content'].append(sen_text)
                 seen_sentences.add(sen_id)
             if sentence['attack_tid'] and sentence['active_hit']:
-                table['body'].append([sentence['attack_tid'], sentence['attack_technique_name'], sen_text])
+                # Append any attack for this sentence to the table; prefix parent-tech for any sub-technique
+                tech_name, parent_tech = sentence['attack_technique_name'], sentence.get('attack_parent_name')
+                tech_name = "%s: %s" % (parent_tech, tech_name) if parent_tech else tech_name
+                table['body'].append([sentence['attack_tid'], tech_name, sen_text])
 
         # Append table to the end
         dd['content'].append({'table': table})
