@@ -14,7 +14,7 @@ class Dao:
     async def get(self, table, equal=None, not_equal=None):
         return await self.db.get(table, equal=equal, not_equal=not_equal)
 
-    async def update(self, table, where={}, data={}, return_sql=False):
+    async def update(self, table, where=None, data=None, return_sql=False):
         return await self.db.update(table, where=where, data=data, return_sql=return_sql)
 
     async def insert(self, table, data, return_sql=False):
