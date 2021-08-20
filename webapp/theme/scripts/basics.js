@@ -1,3 +1,5 @@
+// NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital
+
 // The current sentence that's selected
 var sentence_id = 0;
 // A temporarily highlighted sentence

@@ -1,5 +1,8 @@
-from .tram_relation import Attack
+# NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital
+
 import logging
+
+from .tram_relation import Attack
 
 
 class Dao:
@@ -14,7 +17,7 @@ class Dao:
     async def get(self, table, equal=None, not_equal=None):
         return await self.db.get(table, equal=equal, not_equal=not_equal)
 
-    async def update(self, table, where={}, data={}, return_sql=False):
+    async def update(self, table, where=None, data=None, return_sql=False):
         return await self.db.update(table, where=where, data=data, return_sql=return_sql)
 
     async def insert(self, table, data, return_sql=False):

@@ -1,3 +1,5 @@
+# NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital
+
 import sqlite3
 import uuid
 
@@ -80,7 +82,13 @@ class Attack:
         # Finally, return the ID value used for insertion
         return result if return_sql else data[id_field]
 
-    async def update(self, table, where={}, data={}, return_sql=False):
+    async def update(self, table, where=None, data=None, return_sql=False):
+        # If there is no data to update the table with, exit method
+        if data is None:
+            return None
+        # If no WHERE data is specified, default to an empty dictionary
+        if where is None:
+            where = {}
         # The list of query parameters
         qparams = []
         # Our SQL statement and optional WHERE clause
@@ -106,7 +114,7 @@ class Attack:
             qparams.append(wv)
             count += 1
         # Finalise WHERE clause if we had items added to it
-        where_suffix = '' if '' else ' WHERE' + where_suffix
+        where_suffix = '' if where_suffix == '' else ' WHERE' + where_suffix
         # Add the WHERE clause to the SQL statement
         sql += where_suffix
         if return_sql:

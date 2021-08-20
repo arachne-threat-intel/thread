@@ -1,3 +1,4 @@
+# NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital
 aiohttp==3.7.4.post0
 aiohttp-jinja2==1.4.2
 antlr4-python3-runtime==4.9.2
