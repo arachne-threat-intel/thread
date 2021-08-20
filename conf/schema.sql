@@ -1,3 +1,5 @@
+--NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital
+
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE if not exists attack_uids (

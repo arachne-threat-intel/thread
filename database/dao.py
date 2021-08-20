@@ -1,5 +1,8 @@
-from .tram_relation import Attack
+# NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital
+
 import logging
+
+from .tram_relation import Attack
 
 
 class Dao:
