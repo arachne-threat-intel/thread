@@ -5,111 +5,110 @@
 {% block content %}
 
 <style>
-    .reportSentencesDiv {
-        border-style: groove;
-        margin-left: 3rem;
-        padding-top: 10px;
-        word-break: break-word;
-    }
+  .reportSentencesDiv {
+    border-style: groove;
+    margin-left: 3rem;
+    padding-top: 10px;
+    word-break: break-word;
+  }
 
-    .selectDropdownWidth {
-        width: 100%;
-        max-width: 350px;
-    }
+  .selectDropdownWidth {
+    width: 100%;
+    max-width: 350px;
+  }
 
-    .normalImage {
-        display: block;
-        max-height: 700px;
-        margin-left: auto;
-        margin-right: auto;
-        width: 75%;
-    }
+  .normalImage {
+    display: block;
+    max-height: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 75%;
+  }
 
-    .imgHighlight {
-        border: 25px solid #ffc107;
-    }
+  .imgHighlight {
+    border: 25px solid #ffc107;
+  }
 
-	a:hover {
-  	    background-color: #ffffbd;
-	}
+  a:hover {
+    background-color: #ffffbd;
+  }
 
-	.btn:disabled {
-	    cursor: not-allowed;
-	}
+  .btn:disabled {
+    cursor: not-allowed;
+  }
 </style>
 
 <br>
 <h3 class="display-4 text-center">{{ file }}</h3>
 
 <div class="row justify-content-center pb-3">
-    <div class="col-md-auto">
-        <button onclick="$.getJSON('{{pdf_link}}', (x) => {pdfMake.createPdf(x).download(x['info']['title']);})" class="btn btn-md btn-outline-secondary">Export PDF</button>
+  <div class="col-md-auto">
+    <button onclick="$.getJSON('{{pdf_link}}', (x) => {pdfMake.createPdf(x).download(x['info']['title']);})" class="btn btn-md btn-outline-secondary">Export PDF</button>
+  </div>
+  <div class="col-md-auto">
+    <button class="btn btn-md btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Export Navigator JSON</button>
+    <div class="dropdown-menu" id="dropdownMenu" aria-labelledby="dropdownMenuButton">
+      <h6 class="dropdown-header">Enterprise Layer</h6>
+      <a class="dropdown-item" onclick="$.getJSON('{{nav_link}}', (x) => {downloadLayer(x);})">download</a>
     </div>
-    <div class="col-md-auto">
-        <button class="btn btn-md btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Export Navigator JSON</button>
-        <div class="dropdown-menu" id="dropdownMenu" aria-labelledby="dropdownMenuButton">
-            <h6 class="dropdown-header">Enterprise Layer</h6>
-            <a class="dropdown-item" onclick="$.getJSON('{{nav_link}}', (x) => {downloadLayer(x);})">download</a>
-        </div>
-    </div>
-    </div>
+  </div>
 </div>
 
 <div class="row">
-    <div class="col reportSentencesDiv">
-        {% for elmt in final_html %}
-            {% if elmt.tag == 'img' %}
-                <img src="{{elmt.text}}" id="img{{elmt.uid}}" class="normalImage" onclick="sentenceContext('{{elmt.uid}}')"> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
-            {% elif elmt.tag == 'header' %}
-                <h3>{{elmt.text}}</h3> 
-            {% elif elmt.tag == 'li' and elmt.found_status == 1 %}
-                <li class="elmtRelated{{elmt.uid}}"><span class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
-            {% elif elmt.tag == 'li' %}
-                <li class="elmtRelated{{elmt.uid}}"><span id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
-            {% elif elmt.found_status == 1 %}
-                <span class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
-            {% else %}
-                <span id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
-            {% endif %}
-        {% endfor %}
-    </div>
-    <div class="col col-sm-4 ">
-        <div class='missingTechniquesView' id='sentenceContextSection'>
-            {% if completed == 0 %}
-                <span class='spanMissingTechniqueView'>Techniques Found</span>
-                <br><br>
-                <div id="sentenceInformation">
-                    <table id="tableSentenceInfo" class="table"><tbody></tbody></table>
-                </div>
-                <br><br>
-            {% endif %}
-            <span class='spanMissingTechniqueView'>Confirmed Techniques</span>
-            <br><br>
-            <div id="confirmedsentenceInformation">
-                <table id="confirmedSentenceInfo" class="table"><tbody></tbody></table>
-            </div>
-            <hr><br><br>
-            {% if completed == 0 %}
-                <span class='spanAddMissingTechnique'>Add A Missing Technique</span>
-                <br><br>
-                <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true" data-size="5"
-                        data-live-search="true" title="Select a technique">
-                    {% for tech in attack_uids %}
-                        {% if tech.parent_name %}
-                            <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}"
-                                     data-subtext="{{tech.name}}">{{tech.parent_name}}</option>
-                        {% else %}
-                            <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}">{{tech.name}}</option>
-                        {% endif %}
-                    {% endfor %}
-                </select>
-                <br><br>
-                <button disabled id="missingTechBtn" onclick="addMissingTechnique()" class="btn btn-md btn-outline-primary">Add Technique</button> <br><br>
-                <button disabled id="delSenBtn" onclick="remove_sentence()" class="btn btn-md btn-danger">Remove Selected</button> <br><br>
-                <button onclick="finish_analysis('{{title_quoted}}')" class="btn btn-md btn-success">Finish Analysis</button> <br><br>
-            {% endif %}
+  <div class="col reportSentencesDiv">
+    {% for elmt in final_html %}
+      {% if elmt.tag == 'img' %}
+        <img src="{{elmt.text}}" id="img{{elmt.uid}}" class="normalImage" onclick="sentenceContext('{{elmt.uid}}')"> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
+      {% elif elmt.tag == 'header' %}
+        <h3>{{elmt.text}}</h3>
+      {% elif elmt.tag == 'li' and elmt.found_status == 1 %}
+        <li class="elmtRelated{{elmt.uid}}"><span class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
+      {% elif elmt.tag == 'li' %}
+        <li class="elmtRelated{{elmt.uid}}"><span id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
+      {% elif elmt.found_status == 1 %}
+        <span class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
+      {% else %}
+        <span id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
+      {% endif %}
+    {% endfor %}
+  </div>
+  <div class="col col-sm-4 ">
+    <div class='missingTechniquesView' id='sentenceContextSection'>
+      {% if completed == 0 %}
+        <span class='spanMissingTechniqueView'>Techniques Found</span>
+        <br><br>
+        <div id="sentenceInformation">
+          <table id="tableSentenceInfo" class="table"><tbody></tbody></table>
         </div>
         <br><br>
+      {% endif %}
+      <span class='spanMissingTechniqueView'>Confirmed Techniques</span>
+      <br><br>
+      <div id="confirmedsentenceInformation">
+        <table id="confirmedSentenceInfo" class="table"><tbody></tbody></table>
+      </div>
+      <hr><br><br>
+      {% if completed == 0 %}
+        <span class='spanAddMissingTechnique'>Add A Missing Technique</span>
         <br><br>
+        <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true" data-size="5"
+                data-live-search="true" title="Select a technique">
+          {% for tech in attack_uids %}
+            {% if tech.parent_name %}
+              <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}"
+                      data-subtext="{{tech.name}}">{{tech.parent_name}}</option>
+            {% else %}
+              <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}">{{tech.name}}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+        <br><br>
+        <button disabled id="missingTechBtn" onclick="addMissingTechnique()" class="btn btn-md btn-outline-primary">Add Technique</button> <br><br>
+        <button disabled id="delSenBtn" onclick="remove_sentence()" class="btn btn-md btn-danger">Remove Selected</button> <br><br>
+        <button onclick="finish_analysis('{{title_quoted}}')" class="btn btn-md btn-success">Finish Analysis</button> <br><br>
+      {% endif %}
     </div>
+    <br><br>
+    <br><br>
+  </div>
 {% endblock %}

@@ -1,9 +1,8 @@
 /* NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital */
 
 /*Overall styling*/
-html
-{
-    font-size: 100%;
+html {
+  font-size: 100%;
 }
 
 body {
@@ -12,30 +11,28 @@ body {
   color:#000000;
   font-family: 'Roboto-Regular', sans-serif;
 }
-h1{
+h1 {
   font-family: 'Roboto-Regular', sans-serif;
 }
-h2{
+h2 {
   font-family: 'Roboto-Light', sans-serif;
 }
 
 label, input { margin-bottom: .5rem; }
 
-footer .footer-link 
-{
+footer .footer-link {
   color: #ffffff;
 }
 
 footer .twitter-btn { float: right; }
 
 /*Override some bootstrap defaults*/
-.jumbotron{
+.jumbotron {
   padding: 0;
 }
-.faq{
+.faq {
   line-height: 2rem;
 }
-
 
 .right {
   transform: rotate(-45deg);
@@ -48,13 +45,13 @@ footer .twitter-btn { float: right; }
 } 
 
 /*Navigation and links*/
-.navbar-orange{
+.navbar-orange {
   background-color: #c63f1d;
 }
-.navbar-orange > a > .nav-link{
+.navbar-orange > a > .nav-link {
   color: white;
 }
-.nav-tabs{
+.nav-tabs {
   border-bottom: none;
 }
 .nav-tabs .nav-link {
@@ -62,25 +59,25 @@ footer .twitter-btn { float: right; }
   font-family: 'Roboto-Light', sans-serif;
 }
 .nav-tabs .nav-link:focus, .nav-tabs .nav-link.active {
-    color: white;
-    border: none;
-    border-top-left-radius: 0rem;
-    border-top-right-radius: 0rem;
-    text-decoration: underline;
+  color: white;
+  border: none;
+  border-top-left-radius: 0rem;
+  border-top-right-radius: 0rem;
+  text-decoration: underline;
 }
 
- .nav-tabs .nav-link:hover:not(.active){
+.nav-tabs .nav-link:hover:not(.active) {
   text-decoration: underline;
   border: 1px solid transparent;
   border-top-left-radius: .25rem;
   border-top-right-radius: .25rem;
- }
-.nav-link{
+}
+.nav-link {
   font-size: 1rem;
   padding: .3rem 1rem;
   color: #596877;
 }
-.nav-link.expand-title{
+.nav-link.expand-title {
   font-size: 1.1rem;
   color: black;
 }
@@ -92,34 +89,32 @@ footer .twitter-btn { float: right; }
   background-color: #c63f1d;
   color: white;
 }
-.nav-link.side.active{
+.nav-link.side.active {
   background-color:#f3f3f3;
   color: #c63f1e;
   border-right: 3px solid #c63f1e;
 }
 
-
-
-.breadcrumb{
+.breadcrumb {
   background-color: white;
 }
-.heading{
+.heading {
   font-size: 1.6rem;
   color: #596877;
   letter-spacing: 3px;
 }
-.heading-dropdown{
+.heading-dropdown {
   font-size: 1.2rem;
   color: #062f4f;
   letter-spacing: 3px;
 }
-.expand-all{
+.expand-all {
   background-image: url('../images/search.png');
   height: 30px;
   width: 30px;
   background-size: contain;
 }
-a{
+a {
   color: #4F7CAC;
 }
 
@@ -145,33 +140,33 @@ a{
 }
 
 /*colors*/
-.gray-text{
+.gray-text {
   color: #99958F;
 }
-.bg-orange{
+.bg-orange {
   /*ATT&CK Evals Green*/
   background-color: #317b22;
   background-color: #c63f1e;
   
   color: white;
 }
-.bg-light{
+.bg-light {
   background-color: #ffffff !important;
 }
-.bg-navy{
+.bg-navy {
   background-color: #062f4f;
 }
 
-.bg-accord-light{
+.bg-accord-light {
   background-color: #f8f9fa;
 }
 
-.bg-accord-dark{
+.bg-accord-dark {
   background-color: #e9ecef;
 }
 
 /*buttons*/
-.btn-default{
+.btn-default {
   border-color: gray;
 }
 .btn-navy {
@@ -179,7 +174,7 @@ a{
   background-color: #062f4f;
   border-color: 1px solid #062f4f;
 }
-.btn-navy:hover{
+.btn-navy:hover {
   color: #fff;
   background-color: #1C415F;
   background-image: none;
@@ -188,44 +183,44 @@ a{
 }
 
 /*tables*/
-table  {
+table {
   empty-cells: hide;
 }
-.table-light{
+.table-light {
   background-color: #f3f3f3;
 }
 
 /*Footer styling*/
 .footer {
-    background-color: #062f4f;
-    color: white;
-    font-family: 'Roboto-Thin', sans-serif;
-    bottom: 0;
-    left: 0;
-    right: 0;
+  background-color: #062f4f;
+  color: white;
+  font-family: 'Roboto-Thin', sans-serif;
+  bottom: 0;
+  left: 0;
+  right: 0;
 
-    > .container-fluid {
-        padding-right: 0 !important;
-        padding-left: 0 !important;
+  > .container-fluid {
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+  }
+
+  .footer-link {
+    color: on-color(secondary);
+    &:hover {
+      /* add some link color to this so that it resembles a link,
+      but is still visible if normal link color is not visible on footer color */
+      color: mix(on-color(secondary), color(link));
     }
-
-    .footer-link {
-        color: on-color(secondary);
-
-        &:hover {
-            //add some link color to this so that it resembles a link, but is still visible if normal link color is not visible on footer color
-            color: mix(on-color(secondary), color(link));
-        }
-    }
+  }
 }
 
 @media only screen and (max-width: 1450px) {
-  .heading-dropdown{
+  .heading-dropdown {
     font-size: 1rem;
     color: #062f4f;
     letter-spacing: 1px;
   }
-  .heading{
+  .heading {
     font-size: 1.2rem;
     color: #596877;
     letter-spacing: 3px;
@@ -233,46 +228,45 @@ table  {
 }
 
 /*base.html*/
-#content{
-margin-top: 20px;
-margin-bottom: 20px;
-width: 100%;
-min-height: calc(92vh - 149px) !important;
+#content {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  width: 100%;
+  min-height: calc(92vh - 149px) !important;
 }
 
-.spanBreadcrumbs-results{
-font-size: 90%;
+.spanBreadcrumbs-results {
+  font-size: 90%;
 }
 
 /*review_doc.html*/
 
-#content{
-margin-top: 20px;
-margin-bottom: 20px;
-width: 100%;
-min-height: calc(0vh - 149px) !important;
+#content {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  width: 100%;
+  min-height: calc(0vh - 149px) !important;
 }
 
-.missingTechniquesView
-{
-    background-color: #FFFFFF;
-    border: 2px solid gray;
-    position: sticky;
-    right: 20px;
-    top: 90px;
-    margin-right: 3rem;
-    height: 90vh;
-    overflow: auto;
-    padding: 10px;
+.missingTechniquesView {
+  background-color: #FFFFFF;
+  border: 2px solid gray;
+  position: sticky;
+  right: 20px;
+  top: 90px;
+  margin-right: 3rem;
+  height: 90vh;
+  overflow: auto;
+  padding: 10px;
 }
 
 .report_view {
-margin-right:100px;
-margin-left:100px;
+  margin-right:100px;
+  margin-left:100px;
 }
 
 #reportSentencesDiv {
-    background-color: green;
+  background-color: green;
 }
 
 .sticky {
@@ -282,13 +276,12 @@ margin-left:100px;
 }
 
 .card.draggable {
-    margin-bottom: 2rem;
-    cursor: grab;
+  margin-bottom: 2rem;
+  cursor: grab;
 }
 
 .droppable {
-    background-color: var(--success);
-    min-height: 150px;
-    margin-bottom: 5rem;
+  background-color: var(--success);
+  min-height: 150px;
+  margin-bottom: 5rem;
 }
-
