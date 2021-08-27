@@ -2,7 +2,7 @@
 
 import logging
 
-from .tram_relation import Attack
+from .thread_db import Attack
 
 
 class Dao:

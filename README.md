@@ -17,7 +17,7 @@ pip install -r requirements.txt
 ```
 Then start the server.
 ```
-python tram.py
+python main.py
 ```
 Once the server has started, point your browser to localhost:9999, and you can then enter a URL on the home page.
 It currently takes several minutes to analyze a report, so please do not leave the page while it processes.
