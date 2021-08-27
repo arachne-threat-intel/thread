@@ -1,4 +1,6 @@
 # NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital
+# This file has been renamed from `tram_relation.py`
+# To see its full history, please use `git log --follow <filename>` to view previous commits and additional contributors
 
 import sqlite3
 import uuid
