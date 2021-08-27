@@ -95,10 +95,10 @@
                 data-live-search="true" title="Select a technique">
           {% for tech in attack_uids %}
             {% if tech.parent_name %}
-              <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}"
+              <option class="selectDropdownWidth" style="overflow: auto" value="{{tech.uid}}"
                       data-subtext="{{tech.name}}">{{tech.parent_name}}</option>
             {% else %}
-              <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}">{{tech.name}}</option>
+              <option class="selectDropdownWidth" style="overflow: auto" value="{{tech.uid}}">{{tech.name}}</option>
             {% endif %}
           {% endfor %}
         </select>
