@@ -59,7 +59,8 @@
                       <div class="card shadow-sm" id="{{key}}-{{report.title_quoted}}">
                         <div class="card-body">
                           {% if report.error == 1 %}
-                            <a data-toggle="tooltip" data-placement="top" title="Sorry, the contents of this report could not be retrieved.">
+                            <a data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top"
+                               title="Sorry, the contents of this report could not be retrieved.">
                               <span class="fas fa-exclamation glyphicon glyphicon-exclamation-sign error-icon"></span>
                             </a>
                           {% endif %}
