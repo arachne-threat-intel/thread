@@ -100,7 +100,7 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
         pass
 
 
-def main(external_caller=False):
+def main(external_caller=False, route_prefix=None):
     global data_svc, externally_called, ml_svc, rest_svc, web_svc, website_handler
 
     logging.getLogger().setLevel('DEBUG')
@@ -128,7 +128,7 @@ def main(external_caller=False):
                 attack_dict = os.path.abspath(json_file)
 
     # Start services and initiate main function
-    web_svc = WebService(externally_called=external_caller)
+    web_svc = WebService(route_prefix=route_prefix)
     reg_svc = RegService(dao=dao)
     data_svc = DataService(dao=dao, web_svc=web_svc, externally_called=external_caller)
     ml_svc = MLService(web_svc=web_svc, dao=dao, externally_called=external_caller)

@@ -27,18 +27,22 @@ class WebService:
     EXPORT_PDF_KEY, EXPORT_NAV_KEY, STATIC_KEY = 'export_pdf', 'export_nav', 'static'
     REPORT_PARAM = 'file'
 
-    def __init__(self, externally_called=False):
+    def __init__(self, route_prefix=None):
         self.tokenizer_sen = None
         self.cached_responses = dict()
-        self.externally_called = externally_called
         # Initialise app route info
-        self.__app_routes = self._initialise_route_values()
+        self.__app_routes = self._initialise_route_values(route_prefix_param=route_prefix)
 
-    def _initialise_route_values(self):
+    def _initialise_route_values(self, route_prefix_param=None):
         """Function to initialise the web app's route values and return them as a dictionary."""
-        route_prefix = '/tram' if self.externally_called else ''
+        # No route prefix by default, specify a home route here separately to prevent '/<route_prefix_param>/' suffix
+        route_prefix, home_route = '', '/'
+        if route_prefix_param is not None:
+            # If we have a route prefix, update the prefix and home_route variables
+            route_prefix = '/' + route_prefix_param
+            home_route = route_prefix
         return {
-            self.HOME_KEY: '/tram' if self.externally_called else '/',  # if-else to prevent '/tram/' suffix
+            self.HOME_KEY: home_route,
             self.EDIT_KEY: route_prefix + '/edit/{%s}' % self.REPORT_PARAM,
             self.ABOUT_KEY: route_prefix + '/about', self.REST_KEY: route_prefix + '/rest',
             self.EXPORT_PDF_KEY: route_prefix + '/export/pdf/{%s}' % self.REPORT_PARAM,
