@@ -53,18 +53,18 @@ def defang_text(text):
 
 class DataService:
 
-    def __init__(self, dao, web_svc, externally_called=False):
+    def __init__(self, dao, web_svc, dir_prefix=''):
         self.dao = dao
         self.web_svc = web_svc
-        self.externally_called = externally_called
+        self.dir_prefix = dir_prefix
 
-    async def reload_database(self, schema='conf/schema.sql'):
+    async def reload_database(self, schema=os.path.join('conf', 'schema.sql')):
         """
         Function to reinitialize the database with the packaged schema
         :param schema: SQL schema file to build database from
         :return: nil
         """
-        schema = os.path.join('tram', schema) if self.externally_called else schema
+        schema = os.path.join(self.dir_prefix, schema)  # prefix directory path if there is one
         with open(schema) as schema:
             await self.dao.build((schema.read()))
 

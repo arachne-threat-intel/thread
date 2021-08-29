@@ -34,7 +34,7 @@ class ReportStatus(Enum):
 
 
 class RestService:
-    def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, externally_called=False):
+    def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix=''):
         self.QUEUE_LIMIT = 20
         self.dao = dao
         self.data_svc = data_svc
@@ -44,12 +44,10 @@ class RestService:
         self.queue = asyncio.Queue()  # task queue
         self.queue_as_list = []  # task queue as list
         self.resources = []  # resource array
-        self.externally_called = externally_called
         # A dictionary to keep track of report statuses we have seen
         self.seen_report_status = dict()
         # The offline attack dictionary TODO check and update differences from db (different attack names)
-        attack_dict_loc = 'models/attack_dict.json'
-        attack_dict_loc = os.path.join('tram', attack_dict_loc) if self.externally_called else attack_dict_loc
+        attack_dict_loc = os.path.join(dir_prefix, 'models', 'attack_dict.json')
         with open(attack_dict_loc, 'r', encoding='utf_8') as attack_dict_f:
             self.json_tech = json.load(attack_dict_f)
 
