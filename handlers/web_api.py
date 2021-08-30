@@ -79,7 +79,9 @@ class WebAPI:
 
     @template('about.html')
     async def about(self, request):
-        return self.BASE_PAGE_DATA  # No additional data needed for the template
+        page_data = dict(title='About')
+        page_data.update(self.BASE_PAGE_DATA)
+        return page_data
 
     @template('index.html')
     async def index(self, request):
