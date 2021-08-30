@@ -6,8 +6,7 @@ html {
 }
 
 body {
-  min-height: 400px;
-  margin-bottom: 100px;
+  min-height: 100%;
   color:#000000;
   font-family: 'Roboto-Regular', sans-serif;
 }
@@ -242,8 +241,7 @@ table {
 /*review_doc.html*/
 
 #content {
-  margin-top: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 5rem;
   width: 100%;
   min-height: calc(0vh - 149px) !important;
 }
