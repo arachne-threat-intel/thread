@@ -8,8 +8,8 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <link rel='shortcut icon' href='{{static_url}}images/favicon-blue-m.ico' type='image/x-icon'>
 
-    <title>{% block title %}MITRE ATT&CK&copy; - TRAM{% endblock %}</title>
-    <!-- JS dependencies finishing with the TRAM-specific script (basics.js) and stylesheet -->
+    <title>{% block title %}Arachne | THREAD{% endblock %}</title>
+    <!-- JS dependencies finishing with the THREAD-specific script (basics.js) and stylesheet -->
     {% if js_src_online %}
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.0/css/bootstrap.min.css" integrity="sha512-F7WyTLiiiPqvu2pGumDR15med0MDkUIo5VTVyyfECR5DZmCnDhti9q5VID02ItWjq6fvDfMaBaDl2J3WdL1uxA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.18/css/bootstrap-select.min.css" integrity="sha512-ARJR74swou2y0Q2V9k0GbzQ/5vJ2RBSoCWokg4zkfM29Fb3vZEQyv0iWBMW/yvKgyHSR/7D64pFMmU8nYmbRkg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -37,8 +37,8 @@
   </head>
 
   <header class='pb-5'>
-    <nav class='navbar navbar-expand-lg navbar-dark fixed-top bg-info border-bottom'>
-      <a class='navbar-brand' href='{{home_url}}'><img src='{{static_url}}images/tram.png' height='60px' alt=''></a>
+    <nav class='navbar navbar-expand-lg navbar-dark fixed-top border-bottom thread-navbar'>
+      <a class='navbar-brand' href='{{home_url}}'><h1 class="thread-header lead text-white">THREAD</h1></a>
       <button class='navbar-toggler' type='button' data-toggle='collapse' data-target='#navbarCollapse'
               data-bs-toggle='collapse' data-bs-target='#navbarCollapse'
               aria-controls='navbarCollapse' aria-expanded='false' aria-label='Toggle navigation'>
