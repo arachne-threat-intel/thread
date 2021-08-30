@@ -1,12 +1,11 @@
-# Contribute
-You can help contribute to TRAM! We hope the community can help us improve our NLP models, by contributing to ATT&CK (https://attack.mitre.org/resources/contribute/). Additionally, we are looking for contributions to find techniques in reporting that currently do not have enough data to have NLP models built (ie. techniques with less than 10 Procedure Examples).
+<!-- NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital -->
 
+# Contribute
+You can help contribute to THREAD! Below are the contribution guidelines for the original repo THREAD is forked from, TRAM. We have no major differences for these guidelines, so they have remained the same:
 
 ## Submission Guidelines
 
 You are welcome to comment on issues, open new issues, and open pull requests.
-
-Pull requests should target the **develop** branch of the repository.
 
 Also, if you contribute any source code, we need you to agree to the following Developer's Certificate of Origin below.
 
