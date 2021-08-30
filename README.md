@@ -1,15 +1,22 @@
-# TRAM v0.5
+<!-- NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital -->
 
-Threat Report ATT&CK<sup>®</sup> Mapping (TRAM) is a tool to aid analyst in mapping finished reports to ATT&CK. TRAM is currently in its beta phase and is actively being developed.
-​
+# THREAD
+
+THREAD is a tool for analysts to map finished reports and articles to MITRE ATT&CK<sup>®</sup>.
+
+THREAD was originally forked from TRAM when it was in its beta phase, and we wanted to build upon it. Therefore, further changes to the original TRAM repo may not be incorporated into THREAD as the codebases have largely diverged. 
+
 ## Requirements
 - [python3](https://www.python.org/) (3.7+)
 - Google Chrome is our only supported/tested browser
 
 ## Installation
+
+Please note: if your environment has multiple Python interpreters (e.g. `python` is for Python 2.x and `python3` is for Python 3.x, please adjust some of the commands below accordingly. For example, `pip` may be `python3 -m pip install ...` and `python main.py` may be `python3 main.py`).
+
 Start by cloning this repository.
 ```
-git clone https://github.com/mitre-attack/tram.git
+git clone https://github.com/Chockity-Pok/tram.git
 ```
 From the root of this project, install the PIP requirements.
 ```
@@ -20,37 +27,23 @@ Then start the server.
 python main.py
 ```
 Once the server has started, point your browser to localhost:9999, and you can then enter a URL on the home page.
-It currently takes several minutes to analyze a report, so please do not leave the page while it processes.
+It currently takes several minutes to analyse a report, so please do not leave the page while it processes.
 
-Configuration defaults can be changed [here](https://github.com/mitre-attack/tram/wiki/TRAM-Configuration)
+Configuration defaults can be changed [here](https://github.com/Chockity-Pok/tram/wiki/THREAD-Configuration)
 
-## Intended Use
-Please note that TRAM is currently intended to be used as a local, single user application. We are aware of the benefit of using the application in a centralized location for multiple analysts to access at once, and will work in the future to add features to make this viable.
+## Shared vs. Local
+We are currently working on making THREAD a live application where you can view your reports and those of others. You can currently use THREAD as a local, single user application. 
 
 ## How do I contribute?
 
-We welcome all the help we can get in making TRAM a more useful tool for the community. We have made a working prototype and acknowledge that there will need to be increased efforts in the future to maintain and improve it.
+We welcome your help in improving THREAD.
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) to better understand what we're looking for. There's also a Developer Certificate of Origin that you'll need to sign off on.
-​
+Read our [contribution guidelines](CONTRIBUTING.md) for further information. There's also a Developer Certificate of Origin that you'll need to sign off on.
+
 ## Notice
 
-Copyright 2020 The MITRE Corporation
+Copyright 2021 Arachne Digital
 
-Approved for Public Release; Distribution Unlimited. Case Number 19-3429.
+Licensed under the Apache License, Version 2.0.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-   
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-This project makes use of ATT&CK®
-
-ATT&CK® Terms of Use - https://attack.mitre.org/resources/terms-of-use/
+Please see our [NOTICE](NOTICE.txt) and [LICENSE](LICENSE.txt) files for further information. 
