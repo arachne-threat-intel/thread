@@ -114,25 +114,37 @@ def main(directory_prefix='', route_prefix=None):
     dao = Dao(os.path.join(dir_prefix, 'database', 'thread.db'))
     with open(os.path.join(dir_prefix, 'conf', 'config.yml')) as c:
         config = yaml.safe_load(c)
-        conf_build = config['build']
-        host = config['host']
-        port = config['port']
-        taxii_local = config['taxii-local']
-        js_src = config['js-libraries']
-        json_file = os.path.join('models', config['json_file'])
+        conf_build = config.get('build', True)
+        host = config.get('host', '0.0.0.0')
+        port = config.get('port', 9999)
+        taxii_local = config.get('taxii-local', 'taxii-server')
+        js_src = config.get('js-libraries', 'js-online-src')
+        queue_limit = config.get('queue_limit', 0)
+        json_file = config.get('json_file', None)
+        json_file_path = os.path.join('models', json_file) if json_file else None
         attack_dict = None
-
-        if conf_build:
-            if taxii_local == OFFLINE_BUILD_SOURCE and bool(os.path.isfile(json_file)):
-                logging.debug('Will build model from static file')
-                attack_dict = os.path.abspath(json_file)
+    # Set the attack dictionary filepath if applicable
+    if conf_build and taxii_local == OFFLINE_BUILD_SOURCE and json_file_path and os.path.isfile(json_file_path):
+        logging.debug('Will build model from static file')
+        attack_dict = os.path.abspath(json_file_path)
+    # Check int parameters are ints
+    int_error = '%s config set incorrectly: expected a number'
+    try:
+        if queue_limit < 1:
+            queue_limit = None
+    except TypeError:
+        raise ValueError(int_error % 'queue_limit')
+    try:
+        int(port)
+    except ValueError:
+        raise ValueError(int_error % 'port')
 
     # Start services and initiate main function
     web_svc = WebService(route_prefix=route_prefix)
     reg_svc = RegService(dao=dao)
     data_svc = DataService(dao=dao, web_svc=web_svc, dir_prefix=dir_prefix)
     ml_svc = MLService(web_svc=web_svc, dao=dao, dir_prefix=dir_prefix)
-    rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix=dir_prefix)
+    rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix=dir_prefix, queue_limit=queue_limit)
     services = dict(dao=dao, data_svc=data_svc, ml_svc=ml_svc, reg_svc=reg_svc, web_svc=web_svc, rest_svc=rest_svc)
     website_handler = WebAPI(services=services, js_src=js_src)
     start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict)

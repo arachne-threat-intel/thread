@@ -1,6 +1,9 @@
 ---
 # NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital
 
+# The following fields must have a value.
+# If any of these fields are omitted at runtime, they will default to their original values.
+
 # Specified host and port where THREAD will run
 host: 0.0.0.0
 port: 9999
@@ -10,5 +13,11 @@ taxii-local: taxii-server
 js-libraries: js-online-src
 # If you would like the database to be re-built on launch of THREAD
 build: True
+
+# The following fields are optional - please check comments for behaviour when omitted.
+
 # The JSON file containing attack data; ensure file is in /models directory
+# MUST BE SET if taxii-local = 'local-json'
 json_file: enterprise-attack.json
+# The maximum number of reports allowed in the queue; for no limit, remove this field or set value x < 1
+queue_limit: 20

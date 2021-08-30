@@ -34,8 +34,8 @@ class ReportStatus(Enum):
 
 
 class RestService:
-    def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix=''):
-        self.QUEUE_LIMIT = 20
+    def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix='', queue_limit=None):
+        self.QUEUE_LIMIT = queue_limit
         self.dao = dao
         self.data_svc = data_svc
         self.web_svc = web_svc
@@ -189,7 +189,7 @@ class RestService:
         limit_exceeded = False
         for row in range(row_count):
             # If a new report will exceed the queue limit, stop iterating through further reports
-            if self.queue.qsize() + 1 > self.QUEUE_LIMIT:
+            if self.QUEUE_LIMIT and self.queue.qsize() + 1 > self.QUEUE_LIMIT:
                 limit_exceeded = True
                 break
             try:
