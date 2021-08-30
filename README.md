@@ -16,7 +16,7 @@ Please note: if your environment has multiple Python interpreters (e.g. `python`
 
 Start by cloning this repository.
 ```
-git clone https://github.com/Chockity-Pok/tram.git
+git clone https://github.com/arachne-threat-intel/thread.git
 ```
 From the root of this project, install the PIP requirements.
 ```
@@ -29,7 +29,7 @@ python main.py
 Once the server has started, point your browser to localhost:9999, and you can then enter a URL on the home page.
 It currently takes several minutes to analyse a report, so please do not leave the page while it processes.
 
-Configuration defaults can be changed [here](https://github.com/Chockity-Pok/tram/wiki/THREAD-Configuration)
+Configuration defaults can be changed [here](https://github.com/arachne-threat-intel/thread/wiki/THREAD-Configuration)
 
 ## Shared vs. Local
 We are currently working on making THREAD a live application where you can view your reports and those of others. You can currently use THREAD as a local, single user application. 
