@@ -103,7 +103,7 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
         pass
 
 
-def main(directory_prefix=None, route_prefix=None):
+def main(directory_prefix='', route_prefix=None):
     global data_svc, dir_prefix, ml_svc, rest_svc, web_svc, website_handler
 
     dir_prefix = directory_prefix
