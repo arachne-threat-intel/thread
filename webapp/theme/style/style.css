@@ -203,6 +203,7 @@ table {
 
 /*Footer styling*/
 .footer {
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
@@ -267,10 +268,6 @@ table {
   margin-left:100px;
 }
 
-#reportSentencesDiv {
-  background-color: green;
-}
-
 .sticky {
   height: 100%;
   position: sticky;
@@ -286,4 +283,53 @@ table {
   background-color: var(--success);
   min-height: 150px;
   margin-bottom: 5rem;
+}
+
+/* index.html */
+
+.error-icon {
+  color: red;
+  cursor: help;
+}
+
+/* about.html */
+
+#aboutInfo {
+  margin-left: 50px;
+  margin-right: 50px;
+  margin-top: 50px
+}
+
+/* columns.html */
+
+.reportSentencesDiv {
+  border-style: groove;
+  margin-left: 3rem;
+  padding-top: 10px;
+  word-break: break-word;
+}
+
+.missingTechOpt {
+  width: 100%;
+  max-width: 350px;
+}
+
+.reportImage {
+  display: block;
+  max-height: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 75%;
+}
+
+.report-sentence:hover {
+  background-color: #ffffbd;
+}
+
+.imgHighlight {
+  border: 25px solid #ffc107;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
 }
