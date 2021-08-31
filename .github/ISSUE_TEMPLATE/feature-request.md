@@ -3,7 +3,7 @@
 ---
 name: Submit A Feature Request
 
-about: Issue template for submitting a new feature request to THREAD.
+about: Issue template for submitting a new feature request to Thread.
 
 ---
 
@@ -13,4 +13,4 @@ Please describe a new feature, or improvement of an already existing feature, th
 
 # *Proposed Change*
 
-Please describe the general approach as to how this could be implemented within THREAD. No code is required here, however an understanding of which files / classes that might be affected would be helpful. Any code updates should be submitted in a Pull Request.
+Please describe the general approach as to how this could be implemented within Thread. No code is required here, however an understanding of which files / classes that might be affected would be helpful. Any code updates should be submitted in a Pull Request.

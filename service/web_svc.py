@@ -370,7 +370,7 @@ class WebService:
             html_elements.append(element_as_text)
             # element's text content (without tags)
             html_text_list.append(str(element.text_content()).strip())
-            # THREAD currently supports these types of tags, populate the tag list with one of these
+            # Thread currently supports these types of tags, populate the tag list with one of these
             if '<h' in element_as_text:
                 html_tags_list.append('header')
             elif '<li' in element_as_text:

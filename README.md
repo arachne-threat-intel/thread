@@ -1,10 +1,10 @@
 <!-- NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital -->
 
-# THREAD
+# Thread
 
-THREAD is a tool for analysts to map finished reports and articles to MITRE ATT&CK<sup>®</sup>.
+Thread is a tool for analysts to map finished reports and articles to MITRE ATT&CK<sup>®</sup>.
 
-THREAD was originally forked from TRAM when it was in its beta phase, and we wanted to build upon it. Therefore, further changes to the original TRAM repo may not be incorporated into THREAD as the codebases have largely diverged. 
+Thread was originally forked from TRAM when it was in its beta phase, and we wanted to build upon it. Therefore, further changes to the original TRAM repo may not be incorporated into THREAD as the codebases have largely diverged. 
 
 ## Requirements
 - [python3](https://www.python.org/) (3.7+)
@@ -29,14 +29,14 @@ python main.py
 Once the server has started, point your browser to localhost:9999, and you can then enter a URL on the home page.
 It currently takes several minutes to analyse a report, so please do not leave the page while it processes.
 
-Configuration defaults can be changed [here](https://github.com/arachne-threat-intel/thread/wiki/THREAD-Configuration)
+Configuration defaults can be changed [here](https://github.com/arachne-threat-intel/thread/wiki/Thread-Configuration)
 
 ## Shared vs. Local
-We are currently working on making THREAD a live application where you can view your reports and those of others. You can currently use THREAD as a local, single user application. 
+We are currently working on making Thread a live application where you can view your reports and those of others. You can currently use Thread as a local, single user application. 
 
 ## How do I contribute?
 
-We welcome your help in improving THREAD.
+We welcome your help in improving Thread.
 
 Read our [contribution guidelines](CONTRIBUTING.md) for further information. There's also a Developer Certificate of Origin that you'll need to sign off on.
 

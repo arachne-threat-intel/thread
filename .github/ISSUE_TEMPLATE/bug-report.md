@@ -3,7 +3,7 @@
 ---
 name: Bug Report
 
-about: Submit a bug to THREAD
+about: Submit a bug to Thread
 
 ---
 

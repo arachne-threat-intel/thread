@@ -1,7 +1,7 @@
 <!-- NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital -->
 
 # Contribute
-You can help contribute to THREAD! Below are the contribution guidelines for the original repo THREAD is forked from, TRAM. We have no major differences for these guidelines, so they have remained the same:
+You can help contribute to Thread! Below are the contribution guidelines for the original repo Thread is forked from, TRAM. We have no major differences for these guidelines, so they have remained the same:
 
 ## Submission Guidelines
 

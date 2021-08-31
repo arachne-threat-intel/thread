@@ -21,8 +21,8 @@ from service.rest_svc import RestService
 
 from database.dao import Dao
 
-# If calling THREAD from outside the project directory, then we need to specify
-# a directory prefix (e.g. when THREAD is a subdirectory)
+# If calling Thread from outside the project directory, then we need to specify
+# a directory prefix (e.g. when Thread is a subdirectory)
 dir_prefix = ''
 # The types of sources for building the database
 ONLINE_BUILD_SOURCE = 'taxii-server'
@@ -108,7 +108,7 @@ def main(directory_prefix='', route_prefix=None):
 
     dir_prefix = directory_prefix
     logging.getLogger().setLevel('DEBUG')
-    logging.info('Welcome to THREAD')
+    logging.info('Welcome to Thread')
 
     # Initialise db classes and read from config
     dao = Dao(os.path.join(dir_prefix, 'database', 'thread.db'))
