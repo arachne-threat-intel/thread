@@ -115,7 +115,7 @@ CREATE TABLE if not exists report_sentence_hits (
     sentence_id VARCHAR(60),
     -- The attack T-ID
     attack_tid TEXT,
-    -- Whether the tram-analysis (not user-analysis) detected this attack for this sentence
+    -- Whether the Thread-analysis (not user-analysis) detected this attack for this sentence
     initial_model_match BOOLEAN DEFAULT 0,
     -- Whether an attack is currently associated with this sentence
     active_hit BOOLEAN DEFAULT 1,
@@ -134,7 +134,7 @@ CREATE TABLE if not exists original_html (
     text TEXT,
     -- The element's tag
     tag TEXT,
-    -- Whether the tram-analysis (not user-analysis) detected any attack for this element
+    -- Whether the Thread-analysis (not user-analysis) detected any attack for this element
     found_status BOOLEAN DEFAULT 0,
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
 );

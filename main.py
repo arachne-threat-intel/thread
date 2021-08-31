@@ -1,4 +1,6 @@
 # NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital
+# This file has been renamed from `tram.py`
+# To see its full history, please use `git log --follow <filename>` to view previous commits and additional contributors
 
 import os
 import sys
@@ -19,8 +21,9 @@ from service.rest_svc import RestService
 
 from database.dao import Dao
 
-# If we are calling tram from an external source
-externally_called = False
+# If calling Thread from outside the project directory, then we need to specify
+# a directory prefix (e.g. when Thread is a subdirectory)
+dir_prefix = ''
 # The types of sources for building the database
 ONLINE_BUILD_SOURCE = 'taxii-server'
 OFFLINE_BUILD_SOURCE = 'local-json'
@@ -61,7 +64,7 @@ async def init(host, port):
     await website_handler.pre_launch_init()
 
     logging.info('server starting: %s:%s' % (host, port))
-    webapp_dir = os.path.join('tram', 'webapp') if externally_called else 'webapp'
+    webapp_dir = os.path.join(dir_prefix, 'webapp')
     logging.info('webapp dir is %s' % webapp_dir)
 
     app = web.Application(middlewares=[WebAPI.req_handler])
@@ -100,39 +103,48 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
         pass
 
 
-def main(external_caller=False):
-    global data_svc, externally_called, ml_svc, rest_svc, web_svc, website_handler
+def main(directory_prefix='', route_prefix=None):
+    global data_svc, dir_prefix, ml_svc, rest_svc, web_svc, website_handler
 
+    dir_prefix = directory_prefix
     logging.getLogger().setLevel('DEBUG')
-    logging.info('Welcome to TRAM')
+    logging.info('Welcome to Thread')
 
-    externally_called = external_caller
-    db_path = os.path.join('database', 'tram.db')
-    db_path = os.path.join('tram', db_path) if external_caller else db_path
-    config_dir = os.path.join('tram', 'conf') if external_caller else 'conf'
-    dao = Dao(db_path)
-
-    with open(os.path.join(config_dir, 'config.yml')) as c:
+    # Initialise db classes and read from config
+    dao = Dao(os.path.join(dir_prefix, 'database', 'thread.db'))
+    with open(os.path.join(dir_prefix, 'conf', 'config.yml')) as c:
         config = yaml.safe_load(c)
-        conf_build = config['build']
-        host = config['host']
-        port = config['port']
-        taxii_local = config['taxii-local']
-        js_src = config['js-libraries']
-        json_file = os.path.join('models', config['json_file'])
+        conf_build = config.get('build', True)
+        host = config.get('host', '0.0.0.0')
+        port = config.get('port', 9999)
+        taxii_local = config.get('taxii-local', 'taxii-server')
+        js_src = config.get('js-libraries', 'js-online-src')
+        queue_limit = config.get('queue_limit', 0)
+        json_file = config.get('json_file', None)
+        json_file_path = os.path.join('models', json_file) if json_file else None
         attack_dict = None
-
-        if conf_build:
-            if taxii_local == OFFLINE_BUILD_SOURCE and bool(os.path.isfile(json_file)):
-                logging.debug('Will build model from static file')
-                attack_dict = os.path.abspath(json_file)
+    # Set the attack dictionary filepath if applicable
+    if conf_build and taxii_local == OFFLINE_BUILD_SOURCE and json_file_path and os.path.isfile(json_file_path):
+        logging.debug('Will build model from static file')
+        attack_dict = os.path.abspath(json_file_path)
+    # Check int parameters are ints
+    int_error = '%s config set incorrectly: expected a number'
+    try:
+        if queue_limit < 1:
+            queue_limit = None
+    except TypeError:
+        raise ValueError(int_error % 'queue_limit')
+    try:
+        int(port)
+    except ValueError:
+        raise ValueError(int_error % 'port')
 
     # Start services and initiate main function
-    web_svc = WebService(externally_called=external_caller)
+    web_svc = WebService(route_prefix=route_prefix)
     reg_svc = RegService(dao=dao)
-    data_svc = DataService(dao=dao, web_svc=web_svc, externally_called=external_caller)
-    ml_svc = MLService(web_svc=web_svc, dao=dao, externally_called=external_caller)
-    rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao, externally_called=external_caller)
+    data_svc = DataService(dao=dao, web_svc=web_svc, dir_prefix=dir_prefix)
+    ml_svc = MLService(web_svc=web_svc, dao=dao, dir_prefix=dir_prefix)
+    rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix=dir_prefix, queue_limit=queue_limit)
     services = dict(dao=dao, data_svc=data_svc, ml_svc=ml_svc, reg_svc=reg_svc, web_svc=web_svc, rest_svc=rest_svc)
     website_handler = WebAPI(services=services, js_src=js_src)
     start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict)

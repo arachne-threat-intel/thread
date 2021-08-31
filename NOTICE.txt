@@ -1,16 +1,22 @@
 Copyright 2021 Arachne Digital
 
-This product has been MODIFIED by Arachne Digital; it was originally created
+Thread has been MODIFIED by Arachne Digital; it was originally created
 by The MITRE Corporation as TRAM.
 
-This modified product USES a MODIFIED version of the library Newspaper3k.
+Thread USES a MODIFIED version of the library Newspaper3k.
 
-We, Arachne Digital, release this modified product under the same license of
-the original version, that license being the APACHE LICENSE, VERSION 2.0.
+We, Arachne Digital, release Thread under the same license of the original
+version, that license being the APACHE LICENSE, VERSION 2.0.
 
 In compliance with the license of TRAM, its original NOTICE has been included
 below. This is followed by the original license of Newspaper3k to comply with
 its license terms.
+
+Thread also USES icons from Font Awesome. These are licensed under the Creative
+Commons license (CC BY 4.0). Font Awesome states they handle sufficient
+attribution within their files (a license condition of use). Nonetheless, we wish
+to link to the license and state we have not made any modifications to the files:
+https://fontawesome.com/license/free
 
 -----------------------------------------------------------------------------------------------------------------------
 

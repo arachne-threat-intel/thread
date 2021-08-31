@@ -1,12 +1,7 @@
-<!-- NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital -->
+{# NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital #}
 
 {% extends 'base.html' %}
 {% block content %}
-<style>
-  .footer { position: fixed; }
-  .error-icon { color: red; cursor: help; }
-  .status-column { margin-bottom: 50%; }
-</style>
   <div class="container-fluid">
     <div class="row">
       <nav class="col-md-2 d-none d-md-block bg-light sidebar">
@@ -40,8 +35,10 @@
                 <div class="file-path-wrapper">
                   <button type="submit" onclick="upload_file()" class="btn btn-primary">Upload csv file</button>
                 </div>
-                <hr>
-                <small>Any reports which exceed the Queue limit will be dropped</small>
+                {% if queue_set %}
+                  <hr>
+                  <small>Any reports which exceed the Queue limit will be dropped</small>
+                {% endif %}
               </div>
             </form>
           </div>
@@ -59,7 +56,8 @@
                       <div class="card shadow-sm" id="{{key}}-{{report.title_quoted}}">
                         <div class="card-body">
                           {% if report.error == 1 %}
-                            <a data-toggle="tooltip" data-placement="top" title="Sorry, the contents of this report could not be retrieved.">
+                            <a data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top"
+                               title="Sorry, the contents of this report could not be retrieved.">
                               <span class="fas fa-exclamation glyphicon glyphicon-exclamation-sign error-icon"></span>
                             </a>
                           {% endif %}
@@ -87,5 +85,4 @@
       </main>
     </div>
   </div>
-
 {% endblock %}

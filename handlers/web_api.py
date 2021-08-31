@@ -79,7 +79,9 @@ class WebAPI:
 
     @template('about.html')
     async def about(self, request):
-        return self.BASE_PAGE_DATA  # No additional data needed for the template
+        page_data = dict(title='About')
+        page_data.update(self.BASE_PAGE_DATA)
+        return page_data
 
     @template('index.html')
     async def index(self, request):
@@ -96,12 +98,14 @@ class WebAPI:
                 pending = await self.data_svc.status_grouper(status.value, criteria=dict(error=0))
                 errored = await self.data_svc.status_grouper(status.value, criteria=dict(error=1))
                 page_data[status.value]['reports'] = pending + errored
-                # Extra info for queued reports
-                queue_ratio = (len(pending), self.rest_svc.QUEUE_LIMIT)
-                # Add to the display name the fraction of the queue limit used
-                page_data[status.value]['display_name'] += ' (%s/%s)' % queue_ratio
-                # Also add a fuller sentence describing the fraction
-                page_data[status.value]['column_info'] = '%s report(s) pending in Queue out of MAX %s' % queue_ratio
+                if self.rest_svc.QUEUE_LIMIT:
+                    template_data['queue_set'] = 1
+                    # Extra info for queued reports if a queue limit was set
+                    queue_ratio = (len(pending), self.rest_svc.QUEUE_LIMIT)
+                    # Add to the display name the fraction of the queue limit used
+                    page_data[status.value]['display_name'] += ' (%s/%s)' % queue_ratio
+                    # Also add a fuller sentence describing the fraction
+                    page_data[status.value]['column_info'] = '%s report(s) pending in Queue out of MAX %s' % queue_ratio
                 # Queued reports can't be deleted (unless errored)
                 page_data[status.value]['allow_delete'] = False
                 # There is no analysis button for queued reports

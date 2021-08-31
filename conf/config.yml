@@ -1,14 +1,23 @@
 ---
 # NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital
 
-# Specified host and port where tram will run
+# The following fields must have a value.
+# If any of these fields are omitted at runtime, they will default to their original values.
+
+# Specified host and port where Thread will run
 host: 0.0.0.0
 port: 9999
 # Either 'taxii-server' for latest data or 'local-json' to use local data (data from json_file)
 taxii-local: taxii-server
 # Either 'js-online-src' for fetching JS libraries online or 'js-local-src' to use locally saved JS libraries
 js-libraries: js-online-src
-# If you would like the database to be re-built on launch of tram
+# If you would like the database to be re-built on launch of Thread
 build: True
+
+# The following fields are optional - please check comments for behaviour when omitted.
+
 # The JSON file containing attack data; ensure file is in /models directory
+# MUST BE SET if taxii-local = 'local-json'
 json_file: enterprise-attack.json
+# The maximum number of reports allowed in the queue; for no limit, remove this field or set value x < 1
+queue_limit: 20

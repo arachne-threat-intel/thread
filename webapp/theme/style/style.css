@@ -6,8 +6,7 @@ html {
 }
 
 body {
-  min-height: 400px;
-  margin-bottom: 100px;
+  min-height: 100%;
   color:#000000;
   font-family: 'Roboto-Regular', sans-serif;
 }
@@ -16,6 +15,18 @@ h1 {
 }
 h2 {
   font-family: 'Roboto-Light', sans-serif;
+}
+
+.thread-header {
+  margin-left: 2rem;
+  margin-top: .5rem;
+}
+
+.thread-navbar {
+  background-color: #495057;
+  text-shadow: 0 .05rem .1rem rgba(0, 0, 0, .5);
+  box-shadow: inset 0 0 5rem rgba(0, 0, 0, .5);
+  padding-right: 1rem;
 }
 
 label, input { margin-bottom: .5rem; }
@@ -192,9 +203,7 @@ table {
 
 /*Footer styling*/
 .footer {
-  background-color: #062f4f;
-  color: white;
-  font-family: 'Roboto-Thin', sans-serif;
+  position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
@@ -228,12 +237,6 @@ table {
 }
 
 /*base.html*/
-#content {
-  margin-top: 20px;
-  margin-bottom: 20px;
-  width: 100%;
-  min-height: calc(92vh - 149px) !important;
-}
 
 .spanBreadcrumbs-results {
   font-size: 90%;
@@ -242,8 +245,8 @@ table {
 /*review_doc.html*/
 
 #content {
-  margin-top: 20px;
-  margin-bottom: 20px;
+  margin-top: 2rem;
+  margin-bottom: 5rem;
   width: 100%;
   min-height: calc(0vh - 149px) !important;
 }
@@ -265,10 +268,6 @@ table {
   margin-left:100px;
 }
 
-#reportSentencesDiv {
-  background-color: green;
-}
-
 .sticky {
   height: 100%;
   position: sticky;
@@ -284,4 +283,53 @@ table {
   background-color: var(--success);
   min-height: 150px;
   margin-bottom: 5rem;
+}
+
+/* index.html */
+
+.error-icon {
+  color: red;
+  cursor: help;
+}
+
+/* about.html */
+
+#aboutInfo {
+  margin-left: 50px;
+  margin-right: 50px;
+  margin-top: 50px
+}
+
+/* columns.html */
+
+.reportSentencesDiv {
+  border-style: groove;
+  margin-left: 3rem;
+  padding-top: 10px;
+  word-break: break-word;
+}
+
+.missingTechOpt {
+  width: 100%;
+  max-width: 350px;
+}
+
+.reportImage {
+  display: block;
+  max-height: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 75%;
+}
+
+.report-sentence:hover {
+  background-color: #ffffbd;
+}
+
+.imgHighlight {
+  border: 25px solid #ffc107;
+}
+
+.btn:disabled {
+  cursor: not-allowed;
 }

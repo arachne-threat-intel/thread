@@ -16,10 +16,10 @@ from sklearn.model_selection import train_test_split
 class MLService:
 
     # Service to perform the machine learning against the pickle file
-    def __init__(self, web_svc, dao, externally_called=False):
+    def __init__(self, web_svc, dao, dir_prefix=''):
         self.web_svc = web_svc
         self.dao = dao
-        self.externally_called = externally_called
+        self.dir_prefix = dir_prefix
 
     async def build_models(self, tech_name, techniques, true_negatives):
         """Function to build Logistic Regression Classification models based off of the examples provided."""
@@ -89,8 +89,7 @@ class MLService:
     async def build_pickle_file(self, list_of_techs, techniques, true_negatives, force=False):
         """Returns the classification models for the data provided."""
         # Specify the location of the models file
-        dict_loc = 'models/model_dict.p'
-        dict_loc = os.path.join('tram', dict_loc) if self.externally_called else dict_loc
+        dict_loc = os.path.join(self.dir_prefix, 'models', 'model_dict.p')
         # If we are not forcing the models to be rebuilt, obtain the previously used models
         if not force:
             model_dict = self.get_pre_saved_models(dict_loc)

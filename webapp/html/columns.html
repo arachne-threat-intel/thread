@@ -1,42 +1,7 @@
-<!-- NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital -->
+{# NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital #}
 
 {% extends 'base.html' %}
-{% block title %}{{ title }}{% endblock %}
 {% block content %}
-
-<style>
-  .reportSentencesDiv {
-    border-style: groove;
-    margin-left: 3rem;
-    padding-top: 10px;
-    word-break: break-word;
-  }
-
-  .selectDropdownWidth {
-    width: 100%;
-    max-width: 350px;
-  }
-
-  .normalImage {
-    display: block;
-    max-height: 700px;
-    margin-left: auto;
-    margin-right: auto;
-    width: 75%;
-  }
-
-  .imgHighlight {
-    border: 25px solid #ffc107;
-  }
-
-  a:hover {
-    background-color: #ffffbd;
-  }
-
-  .btn:disabled {
-    cursor: not-allowed;
-  }
-</style>
 
 <br>
 <h3 class="display-4 text-center">{{ file }}</h3>
@@ -58,17 +23,17 @@
   <div class="col reportSentencesDiv">
     {% for elmt in final_html %}
       {% if elmt.tag == 'img' %}
-        <img src="{{elmt.text}}" id="img{{elmt.uid}}" class="normalImage" onclick="sentenceContext('{{elmt.uid}}')"> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
+        <img src="{{elmt.text}}" id="img{{elmt.uid}}" class="reportImage" onclick="sentenceContext('{{elmt.uid}}')"> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
       {% elif elmt.tag == 'header' %}
         <h3>{{elmt.text}}</h3>
       {% elif elmt.tag == 'li' and elmt.found_status == 1 %}
-        <li class="elmtRelated{{elmt.uid}}"><span class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
+        <li class="elmtRelated{{elmt.uid}}"><span class="bg-warning report-sentence" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
       {% elif elmt.tag == 'li' %}
-        <li class="elmtRelated{{elmt.uid}}"><span id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
+        <li class="elmtRelated{{elmt.uid}}"><span id="elmt{{elmt.uid}}" class="report-sentence" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
       {% elif elmt.found_status == 1 %}
-        <span class="bg-warning" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
+        <span class="bg-warning report-sentence" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
       {% else %}
-        <span id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
+        <span class="report-sentence" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
       {% endif %}
     {% endfor %}
   </div>
@@ -95,10 +60,10 @@
                 data-live-search="true" title="Select a technique">
           {% for tech in attack_uids %}
             {% if tech.parent_name %}
-              <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}"
+              <option class="missingTechOpt" style="overflow: auto" value="{{tech.uid}}"
                       data-subtext="{{tech.name}}">{{tech.parent_name}}</option>
             {% else %}
-              <option class="selectDropdownWidth" style="overflow: scroll" value="{{tech.uid}}">{{tech.name}}</option>
+              <option class="missingTechOpt" style="overflow: auto" value="{{tech.uid}}">{{tech.name}}</option>
             {% endif %}
           {% endfor %}
         </select>
@@ -111,4 +76,5 @@
     <br><br>
     <br><br>
   </div>
+</div>
 {% endblock %}
