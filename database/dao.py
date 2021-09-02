@@ -2,14 +2,19 @@
 
 import logging
 
-from .thread_db import Attack
+from .thread_sqlite3 import ThreadSQLite
+
+# The types of database engines supported
+DB_SQLITE, DB_POSTGRESQL = 'sqlite3', 'postgresql'
 
 
 class Dao:
-
-    def __init__(self, database):
+    def __init__(self, database, engine=DB_SQLITE):
         self.logger = logging.getLogger('DataService')
-        self.db = Attack(database)
+        if engine == DB_SQLITE:
+            self.db = ThreadSQLite(database)
+        else:
+            self.db = None
 
     async def build(self, schema):
         await self.db.build(schema)
