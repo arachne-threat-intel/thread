@@ -7,10 +7,15 @@
 # Specified host and port where Thread will run
 host: 0.0.0.0
 port: 9999
+# If you are running Thread locally (you may want to set as True to bypass user restrictions locally)
+run-local: True
 # Either 'taxii-server' for latest data or 'local-json' to use local data (data from json_file)
 taxii-local: taxii-server
 # Either 'js-online-src' for fetching JS libraries online or 'js-local-src' to use locally saved JS libraries
 js-libraries: js-online-src
+# The database backend to use: currently either 'sqlite3' or 'postgresql' (sqlite3 recommended for local-use)
+# If using postgresql, requires package psycopg2 (see pre-reqs: https://www.psycopg.org/docs/install.html#prerequisites)
+db-engine: sqlite3
 # If you would like the database to be re-built on launch of Thread
 build: True
 

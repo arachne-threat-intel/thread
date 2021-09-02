@@ -19,7 +19,7 @@ from service.reg_svc import RegService
 from service.ml_svc import MLService
 from service.rest_svc import RestService
 
-from database.dao import Dao
+from database.dao import Dao, DB_SQLITE
 
 # If calling Thread from outside the project directory, then we need to specify
 # a directory prefix (e.g. when Thread is a subdirectory)
@@ -110,10 +110,11 @@ def main(directory_prefix='', route_prefix=None):
     logging.getLogger().setLevel('DEBUG')
     logging.info('Welcome to Thread')
 
-    # Initialise db classes and read from config
-    dao = Dao(os.path.join(dir_prefix, 'database', 'thread.db'))
+    # Read from config
     with open(os.path.join(dir_prefix, 'conf', 'config.yml')) as c:
         config = yaml.safe_load(c)
+        is_local = config.get('run-local', True)
+        db_eng = config.get('db-engine', DB_SQLITE)
         conf_build = config.get('build', True)
         host = config.get('host', '0.0.0.0')
         port = config.get('port', 9999)
@@ -139,7 +140,8 @@ def main(directory_prefix='', route_prefix=None):
     except ValueError:
         raise ValueError(int_error % 'port')
 
-    # Start services and initiate main function
+    # Initialise DAO, start services and initiate main function
+    dao = Dao(os.path.join(dir_prefix, 'database', 'thread.db'), engine=db_eng)
     web_svc = WebService(route_prefix=route_prefix)
     reg_svc = RegService(dao=dao)
     data_svc = DataService(dao=dao, web_svc=web_svc, dir_prefix=dir_prefix)

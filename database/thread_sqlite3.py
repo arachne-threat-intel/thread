@@ -8,13 +8,9 @@ import uuid
 ENABLE_FOREIGN_KEYS = 'PRAGMA foreign_keys = ON'
 
 
-class Attack:
-
+class ThreadSQLite:
     def __init__(self, database):
         self.database = database
-
-    # TODO check any execute() calls have parameters where strings have been formatted
-    # e.g. sql += (' AND %s = "%s"' % (k, v)) in get()
 
     async def build(self, schema):
         try:
