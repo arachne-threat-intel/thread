@@ -1,3 +1,4 @@
+import os
 import psycopg2
 
 from .thread_db import ThreadDB
@@ -8,13 +9,18 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 DB_NAME = 'thread_db'
 
 
-def build_db():
+def build_db(schema=os.path.join('conf', 'schema.sql')):
     """The function to set up the Thread database (DB)."""
     username = input('Enter DB username: ')
     password = getpass('Enter DB password: ')
     host = input('Enter DB host (leave blank/skip for localhost): ') or '127.0.0.1'
-    connection = None
+    _create_db(username, password, host)
+    _create_tables(username, password, host, schema)
 
+
+def _create_db(username, password, host):
+    """The function to create the Thread DB on the server."""
+    connection = None
     try:
         # Set up a connection using inputted credentials
         connection = psycopg2.connect(database='postgres', user=username, password=password, host=host, port='5432')
@@ -29,6 +35,11 @@ def build_db():
     finally:
         if connection:
             connection.close()
+
+
+def _create_tables(username, password, host, schema):
+    """The function to create the tables in the Thread DB on the server."""
+    pass
 
 
 class ThreadPostgreSQL(ThreadDB):
