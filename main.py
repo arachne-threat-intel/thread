@@ -2,6 +2,7 @@
 # This file has been renamed from `tram.py`
 # To see its full history, please use `git log --follow <filename>` to view previous commits and additional contributors
 
+import argparse
 import os
 import sys
 import asyncio
@@ -154,7 +155,14 @@ def main(directory_prefix='', route_prefix=None):
 
 
 if __name__ == '__main__':
-    if '--build-db' in sys.argv:
-        build_postgresql()
+    # Help information for the program
+    parser = argparse.ArgumentParser(description='Launch the Thread webapp.')
+    parser.add_argument('--build-db', action='store_true', help='builds the (PostgreSQL) database')
+    parser.add_argument('--schema', help='the schema file to use if --build-db option is used')
+    args = vars(parser.parse_args())
+
+    if args.get('build_db'):
+        schema = args.get('schema')
+        build_postgresql() if schema is None else build_postgresql(schema)
     else:
         main()
