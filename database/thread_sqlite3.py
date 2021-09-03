@@ -5,10 +5,12 @@
 import sqlite3
 import uuid
 
+from .thread_db import ThreadDB
+
 ENABLE_FOREIGN_KEYS = 'PRAGMA foreign_keys = ON'
 
 
-class ThreadSQLite:
+class ThreadSQLite(ThreadDB):
     def __init__(self, database):
         self.database = database
 
