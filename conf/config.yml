@@ -17,6 +17,7 @@ js-libraries: js-online-src
 # If using postgresql, requires package psycopg2 (see pre-reqs: https://www.psycopg.org/docs/install.html#prerequisites)
 db-engine: sqlite3
 # If you would like the database to be re-built on launch of Thread
+# WILL ERROR if db-engine = 'postgresql'; if so, call `main.py --build-db` separately (before launching Thread)
 build: True
 
 # The following fields are optional - please check comments for behaviour when omitted.

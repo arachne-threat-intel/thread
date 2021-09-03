@@ -20,6 +20,7 @@ from service.ml_svc import MLService
 from service.rest_svc import RestService
 
 from database.dao import Dao, DB_SQLITE
+from database.thread_postgresql import build_db as build_postgresql
 
 # If calling Thread from outside the project directory, then we need to specify
 # a directory prefix (e.g. when Thread is a subdirectory)
@@ -153,4 +154,7 @@ def main(directory_prefix='', route_prefix=None):
 
 
 if __name__ == '__main__':
-    main()
+    if '--build-db' in sys.argv:
+        build_postgresql()
+    else:
+        main()
