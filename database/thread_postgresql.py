@@ -6,14 +6,22 @@ from contextlib import suppress
 from getpass import getpass
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
-DB_NAME = 'thread_db'
+DB_NAME = ''
+
+
+def get_db_info():
+    """Function to get database information from a user (launching Thread)."""
+    global DB_NAME
+    DB_NAME = input('Enter DB name:\n')
+    username = input('Enter DB username:\n')
+    password = getpass('Enter DB password:\n')
+    host = input('Enter DB host (leave blank/skip for localhost):\n') or '127.0.0.1'
+    return username, password, host
 
 
 def build_db(schema=os.path.join('conf', 'schema.sql')):
     """The function to set up the Thread database (DB)."""
-    username = input('Enter DB username: ')
-    password = getpass('Enter DB password: ')
-    host = input('Enter DB host (leave blank/skip for localhost): ') or '127.0.0.1'
+    username, password, host = get_db_info()
     _create_db(username, password, host)
     _create_tables(username, password, host, schema)
 
