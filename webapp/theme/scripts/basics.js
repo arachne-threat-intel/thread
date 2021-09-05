@@ -74,7 +74,7 @@ function remove_sentence() {
   // If it is a sentence that is selected
   if (selectedSentence) {
     // Prepare the first three words of the sentence as a reminder to the user of the sentence that is selected
-    sen_text = selectedSentence.text;
+    sen_text = selectedSentence.innerText;
     truncated = sen_text.split(' ').slice(0,3).join(' ');
     // Add trailing ellipsis if the sentence has more than three words
     truncated += (truncated == sen_text) ? "" : "...";
