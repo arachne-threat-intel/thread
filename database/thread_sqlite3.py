@@ -2,12 +2,13 @@
 # This file has been renamed from `tram_relation.py`
 # To see its full history, please use `git log --follow <filename>` to view previous commits and additional contributors
 
+import logging
 import sqlite3
 import uuid
 
 from .thread_db import ThreadDB
 
-ENABLE_FOREIGN_KEYS = 'PRAGMA foreign_keys = ON'
+ENABLE_FOREIGN_KEYS = 'PRAGMA foreign_keys = ON;'
 
 
 class ThreadSQLite(ThreadDB):
@@ -15,13 +16,14 @@ class ThreadSQLite(ThreadDB):
         self.database = database
 
     async def build(self, schema):
+        schema = ENABLE_FOREIGN_KEYS + '\n' + schema
         try:
             with sqlite3.connect(self.database) as conn:
                 cursor = conn.cursor()
                 cursor.executescript(schema)
                 conn.commit()
         except Exception as exc:
-            print('! error building db : {}'.format(exc))
+            logging.error('! error building db : {}'.format(exc))
 
     async def get(self, table, equal=None, not_equal=None):
         sql = 'SELECT * FROM %s' % table
