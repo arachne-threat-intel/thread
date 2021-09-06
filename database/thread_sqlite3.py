@@ -27,31 +27,15 @@ class ThreadSQLite(ThreadDB):
         except Exception as exc:
             logging.error('! error building db : {}'.format(exc))
 
-    async def get(self, table, equal=None, not_equal=None):
-        sql = 'SELECT * FROM %s' % table
-        # Define all_params dictionary (for equal and not_equal to be None-checked and combined) and qparams list
-        all_params, qparams = dict(), []
-        # Append to all_params equal and not_equal if not None
-        all_params.update(dict(equal=equal) if equal else {})
-        all_params.update(dict(not_equal=not_equal) if not_equal else {})
-        # For each of the equal and not_equal parameters, build SQL query
-        for eq, criteria in all_params.items():
-            where = next(iter(criteria))
-            value = criteria.pop(where)
-            if value is not None:
-                # If this is our first criteria we are adding, we need the WHERE keyword, else adding AND
-                sql += ' AND' if len(qparams) > 0 else ' WHERE'
-                # Add the ! for != if this is a not-equals check
-                sql += (' %s %s= ?' % (where, '!' if eq == 'not_equal' else ''))
-                qparams.append(value)
-                for k, v in criteria.items():
-                    sql += (' AND %s %s= ?' % (k, '!' if eq == 'not_equal' else ''))
-                    qparams.append(v)
+    async def _execute_select(self, sql, parameters=None):
         with sqlite3.connect(self.database) as conn:
             conn.execute(ENABLE_FOREIGN_KEYS)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute(sql, tuple(qparams))
+            if parameters is None:
+                cursor.execute(sql)
+            else:
+                cursor.execute(sql, parameters)
             rows = cursor.fetchall()
             return [dict(ix) for ix in rows]
 
@@ -156,18 +140,6 @@ class ThreadSQLite(ThreadDB):
             rv = cursor.fetchall()
             conn.commit()
             return rv[0] if rv else None if one else rv
-
-    async def raw_select(self, sql, parameters=None):
-        with sqlite3.connect(self.database) as conn:
-            conn.execute(ENABLE_FOREIGN_KEYS)
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            if parameters is None:
-                cursor.execute(sql)
-            else:
-                cursor.execute(sql, parameters)
-            rows = cursor.fetchall()
-            return [dict(ix) for ix in rows]
 
     async def raw_update(self, sql):
         with sqlite3.connect(self.database) as conn:

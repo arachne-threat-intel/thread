@@ -1,6 +1,7 @@
 import logging
 import os
 import psycopg2
+import psycopg2.extras
 
 from .thread_db import ThreadDB
 from getpass import getpass
@@ -80,3 +81,31 @@ class ThreadPostgreSQL(ThreadDB):
     async def build(self, schema):
         logging.warning('Re-building the database cannot be done when config \'db-engine\' is \'postgresql\'. '
                         'Please run `main.py --build-db` separately instead.')
+
+    def _connection_wrapper(self, method, cursor_factory=None):
+        """A function to execute a method that requires a db connection cursor."""
+        # Blank variables for the connection and the return value
+        connection, return_val = None, None
+        try:
+            # Set up the connection
+            connection = psycopg2.connect(database=DB_NAME, user=self.username, password=self.password,
+                                          host=self.host, port='5432')
+            with connection:
+                with connection.cursor(cursor_factory=cursor_factory) as cursor:
+                    # Call the method with the cursor
+                    return_val = method(cursor)
+        # Ensure the connection closes if anything went wrong
+        finally:
+            if connection:
+                connection.close()
+        return return_val
+
+    async def _execute_select(self, sql, parameters=None):
+        def cursor_select(cursor):
+            if parameters is None:
+                cursor.execute(sql)
+            else:
+                cursor.execute(sql, parameters)
+            rows = cursor.fetchall()
+            return [dict(ix) for ix in rows]
+        return self._connection_wrapper(cursor_select, cursor_factory=psycopg2.extras.DictCursor)
