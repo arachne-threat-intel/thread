@@ -66,7 +66,7 @@ class DataService:
         """
         schema = os.path.join(self.dir_prefix, schema)  # prefix directory path if there is one
         with open(schema) as schema:
-            await self.dao.build((schema.read()))
+            await self.dao.build(schema.read())
 
     async def insert_attack_stix_data(self):
         """
