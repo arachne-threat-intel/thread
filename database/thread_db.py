@@ -2,6 +2,13 @@
 
 
 class ThreadDB:
+    def __init__(self, query_param):
+        self.__query_param = query_param
+
+    @property
+    def query_param(self):
+        return self.__query_param
+
     async def build(self, schema):
         pass
 
