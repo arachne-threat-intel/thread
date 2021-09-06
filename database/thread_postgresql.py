@@ -77,6 +77,9 @@ class ThreadPostgreSQL(ThreadDB):
         # '%s' is the query parameter: https://www.psycopg.org/docs/usage.html#passing-parameters-to-sql-queries
         super().__init__(query_param='%s')
         self.username, self.password, self.host = get_db_info()
+        # PostgreSQL doesn't use integers for booleans: override the defaults
+        self._val_as_true = 'TRUE'
+        self._val_as_false = 'FALSE'
 
     async def build(self, schema):
         logging.warning('Re-building the database cannot be done when config \'db-engine\' is \'postgresql\'. '

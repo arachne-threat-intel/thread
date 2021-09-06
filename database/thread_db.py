@@ -4,10 +4,22 @@
 class ThreadDB:
     def __init__(self, query_param):
         self.__query_param = query_param
+        # Some DB engines interpret booleans differently, have mapped values ready
+        # Default as integers to be overridden
+        self._val_as_true = 1
+        self._val_as_false = 0
 
     @property
     def query_param(self):
         return self.__query_param
+
+    @property
+    def val_as_true(self):
+        return self._val_as_true
+
+    @property
+    def val_as_false(self):
+        return self._val_as_false
 
     async def build(self, schema):
         pass
