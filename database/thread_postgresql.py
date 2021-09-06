@@ -72,6 +72,10 @@ def _create_tables(username, password, host, schema_file):
 
 
 class ThreadPostgreSQL(ThreadDB):
+    def __init__(self):
+        # '%s' is the query parameter: https://www.psycopg.org/docs/usage.html#passing-parameters-to-sql-queries
+        super().__init__(query_param='%s')
+        self.username, self.password, self.host = get_db_info()
 
     async def build(self, schema):
         logging.warning('Re-building the database cannot be done when config \'db-engine\' is \'postgresql\'. '
