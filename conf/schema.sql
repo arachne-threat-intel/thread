@@ -1,6 +1,6 @@
 --NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital
 
-CREATE TABLE if not exists attack_uids (
+CREATE TABLE IF NOT EXISTS attack_uids (
     uid VARCHAR(60) PRIMARY KEY,
     -- Attack description
     description TEXT,
@@ -10,73 +10,7 @@ CREATE TABLE if not exists attack_uids (
     name TEXT
 );
 
-CREATE TABLE if not exists true_positives (
-    uid VARCHAR(60) PRIMARY KEY,
-    -- Attack ID
-    attack_uid VARCHAR(60),
-    -- Sentence ID
-    sentence_id VARCHAR(60),
-    -- The sentence itself
-    true_positive TEXT,
-    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
-    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
-);
-
-CREATE TABLE if not exists true_negatives (
-    uid VARCHAR(60) PRIMARY KEY,
-    -- Attack ID
-    attack_uid VARCHAR(60),
-    -- Sentence ID
-    sentence_id VARCHAR(60),
-    -- The sentence itself
-    sentence TEXT,
-    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
-    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
-);
-
-CREATE TABLE if not exists false_positives (
-    uid VARCHAR(60) PRIMARY KEY,
-    -- Attack ID
-    attack_uid VARCHAR(60),
-    -- Sentence ID
-    sentence_id VARCHAR(60),
-    -- The sentence itself
-    false_positive TEXT,
-    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
-    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
-);
-
-CREATE TABLE if not exists false_negatives (
-    uid VARCHAR(60) PRIMARY KEY,
-    -- Attack ID
-    attack_uid VARCHAR(60),
-    -- Sentence ID
-    sentence_id VARCHAR(60),
-    -- The sentence itself
-    false_negative TEXT,
-    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
-    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
-);
-
-CREATE TABLE if not exists regex_patterns (
-    uid VARCHAR(60) PRIMARY KEY,
-    -- Attack ID
-    attack_uid VARCHAR(60),
-    -- The regex pattern
-    regex_pattern TEXT,
-    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid)
-);
-
-CREATE TABLE if not exists similar_words (
-    uid VARCHAR(60) PRIMARY KEY,
-    -- Attack ID
-    attack_uid TEXT,
-    -- The similar word (to the attack of attack_uid)
-    similar_word TEXT,
-    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid)
-);
-
-CREATE TABLE if not exists reports (
+CREATE TABLE IF NOT EXISTS reports (
     uid VARCHAR(60) PRIMARY KEY,
     -- The title of the report as submitted by the user
     title TEXT,
@@ -88,7 +22,7 @@ CREATE TABLE if not exists reports (
     error BOOLEAN DEFAULT 0
 );
 
-CREATE TABLE if not exists report_sentences (
+CREATE TABLE IF NOT EXISTS report_sentences (
     uid VARCHAR(60) PRIMARY KEY,
     -- The report which this sentence belongs to
     report_uid VARCHAR(60),
@@ -101,7 +35,73 @@ CREATE TABLE if not exists report_sentences (
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
 );
 
-CREATE TABLE if not exists report_sentence_hits (
+CREATE TABLE IF NOT EXISTS true_positives (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- Attack ID
+    attack_uid VARCHAR(60),
+    -- Sentence ID
+    sentence_id VARCHAR(60),
+    -- The sentence itself
+    true_positive TEXT,
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS true_negatives (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- Attack ID
+    attack_uid VARCHAR(60),
+    -- Sentence ID
+    sentence_id VARCHAR(60),
+    -- The sentence itself
+    sentence TEXT,
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS false_positives (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- Attack ID
+    attack_uid VARCHAR(60),
+    -- Sentence ID
+    sentence_id VARCHAR(60),
+    -- The sentence itself
+    false_positive TEXT,
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS false_negatives (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- Attack ID
+    attack_uid VARCHAR(60),
+    -- Sentence ID
+    sentence_id VARCHAR(60),
+    -- The sentence itself
+    false_negative TEXT,
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
+    FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS regex_patterns (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- Attack ID
+    attack_uid VARCHAR(60),
+    -- The regex pattern
+    regex_pattern TEXT,
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid)
+);
+
+CREATE TABLE IF NOT EXISTS similar_words (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- Attack ID
+    attack_uid TEXT,
+    -- The similar word (to the attack of attack_uid)
+    similar_word TEXT,
+    FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid)
+);
+
+CREATE TABLE IF NOT EXISTS report_sentence_hits (
     uid VARCHAR(60) PRIMARY KEY,
     -- Attack ID
     attack_uid VARCHAR(60),
@@ -124,7 +124,7 @@ CREATE TABLE if not exists report_sentence_hits (
     FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
 );
 
-CREATE TABLE if not exists original_html (
+CREATE TABLE IF NOT EXISTS original_html (
     uid VARCHAR(60) PRIMARY KEY,
     -- The report ID for this html element
     report_uid VARCHAR(60),
