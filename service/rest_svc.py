@@ -57,7 +57,8 @@ class RestService:
 
     async def prepare_queue(self):
         """Function to add to the queue any reports left from a previous session."""
-        reports = await self.dao.get('reports', dict(error=0, current_status=ReportStatus.QUEUE.value))
+        reports = await self.dao.get('reports', dict(error=self.dao.db_false_val,
+                                                     current_status=ReportStatus.QUEUE.value))
         for report in reports:
             # Sentences from this report may have previously populated other db tables
             # Being selected from the queue will begin analysis again so delete previous progress
@@ -117,7 +118,7 @@ class RestService:
         except (KeyError, IndexError):  # Thrown if the report title is not in the db or db record is malformed
             return default_error
         # Check a queued, error-free report ID hasn't been provided -> this may be mid-analysis
-        if r_status == ReportStatus.QUEUE.value and r_error == 0:
+        if r_status == ReportStatus.QUEUE.value and not r_error:
             return default_error
         # Proceed with delete
         await self.dao.delete('reports', dict(uid=report_id))
@@ -295,7 +296,7 @@ class RestService:
         original_html, newspaper_article = await self.web_svc.map_all_html(criteria[URL])
         if original_html is None and newspaper_article is None:
             logging.error('Skipping report; could not download url ' + criteria[URL])
-            await self.dao.update('reports', where=dict(uid=report_id), data=dict(error=1))
+            await self.dao.update('reports', where=dict(uid=report_id), data=dict(error=self.dao.db_true_val))
             return
 
         html_data = newspaper_article.text.replace('\n', '<br>')
@@ -320,11 +321,13 @@ class RestService:
             elif sentence['reg_techniques_found']:
                 await self.reg_svc.reg_techniques_found(report_id, sentence)
             else:
-                data = dict(report_uid=report_id, text=sentence['text'], html=sentence['html'], found_status=0)
+                data = dict(report_uid=report_id, text=sentence['text'], html=sentence['html'],
+                            found_status=self.dao.db_false_val)
                 await self.dao.insert_generate_uid('report_sentences', data)
 
         for element in original_html:
-            html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'], found_status=0)
+            html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'],
+                                found_status=self.dao.db_false_val)
             await self.dao.insert_generate_uid('original_html', html_element)
 
         # Update card to reflect the end of queue
@@ -393,9 +396,10 @@ class RestService:
                                             false_negative=sentence_to_insert), return_sql=True))
         # If the found_status for the sentence id is set to false when adding a missing technique
         # then update the found_status value to true for the sentence id in the report_sentence table 
-        if sentence_dict[0]['found_status'] == 0:
+        if not sentence_dict[0]['found_status']:
             sql_commands.append(await self.dao.update(
-                'report_sentences', where=dict(uid=sen_id), data=dict(found_status=1), return_sql=True))
+                'report_sentences', where=dict(uid=sen_id),
+                data=dict(found_status=self.dao.db_true_val), return_sql=True))
         # Run the updates, deletions and insertions for this method altogether
         await self.dao.run_sql_list(sql_list=sql_commands)
         # As a technique has been added, ensure the report's status reflects analysis has started
@@ -450,7 +454,8 @@ class RestService:
         # If it doesn't, update the sentence found-status to 0 (false)
         if len(number_of_techniques) == 0:
             sql_commands.append(await self.dao.update(
-                'report_sentences', where=dict(uid=sen_id), data=dict(found_status=0), return_sql=True))
+                'report_sentences', where=dict(uid=sen_id),
+                data=dict(found_status=self.dao.db_false_val), return_sql=True))
         # Run the updates, deletions and insertions for this method altogether
         await self.dao.run_sql_list(sql_list=sql_commands)
         # As a technique has been rejected, ensure the report's status reflects analysis has started
