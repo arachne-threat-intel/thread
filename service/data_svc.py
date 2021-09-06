@@ -264,21 +264,22 @@ class DataService:
             "FROM (" + FULL_ATTACK_INFO + " INNER JOIN report_sentence_hits ON " + FULL_ATTACK_INFO +
             ".uid = report_sentence_hits.attack_uid) "
             # Finish with the WHERE clause stating which sentence we are searching for and that the attack is confirmed
-            "WHERE report_sentence_hits.sentence_id = ? AND report_sentence_hits.confirmed = 1")
+            "WHERE report_sentence_hits.sentence_id = ? AND report_sentence_hits.confirmed = %s" % self.dao.db_true_val)
         # Run the above query and return its results
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
 
     async def get_unconfirmed_attack_count(self, report_id=''):
         """Function to retrieve the number of unconfirmed attacks for a report."""
         # Retrieve all unconfirmed attacks
-        all_unconfirmed = await self.dao.get('report_sentence_hits', dict(report_uid=report_id, confirmed=0))
+        all_unconfirmed = await self.dao.get('report_sentence_hits', dict(report_uid=report_id,
+                                                                          confirmed=self.dao.db_false_val))
         # Ignore entries in the database where the model was incorrect (i.e. is unconfirmed because it was rejected and
         # we are storing in report_sentence_hits that initial_model_match=1 so confirmed=0): these are false positives
         select_join_query = (
             "SELECT * FROM (report_sentence_hits INNER JOIN false_positives "
             "ON report_sentence_hits.attack_uid = false_positives.attack_uid "
             "AND report_sentence_hits.sentence_id = false_positives.sentence_id) "
-            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = 0")
+            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = %s" % self.dao.db_false_val)
         ignore = await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
         # Ideally would use an SQL MINUS query but this caused errors
         return len(all_unconfirmed) - len(ignore)
@@ -290,7 +291,7 @@ class DataService:
             "report_sentence_hits.attack_tid, report_sentences.text, report_sentence_hits.initial_model_match "
             "FROM (report_sentences INNER JOIN report_sentence_hits "
             "ON report_sentences.uid = report_sentence_hits.sentence_id) "
-            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = 1")
+            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = %s" % self.dao.db_true_val)
         # Get the confirmed hits as the above SQL query
         hits = await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
         techniques = []
@@ -317,7 +318,7 @@ class DataService:
             "FROM (" + FULL_ATTACK_INFO + " INNER JOIN report_sentence_hits ON " + FULL_ATTACK_INFO +
             ".uid = report_sentence_hits.attack_uid) "
             # Finish with the WHERE clause stating which sentence we are searching for and that the hit is active
-            "WHERE report_sentence_hits.sentence_id = ? AND report_sentence_hits.active_hit = 1")
+            "WHERE report_sentence_hits.sentence_id = ? AND report_sentence_hits.active_hit = %s" % self.dao.db_true_val)
         # Run the above query and return its results
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
 
