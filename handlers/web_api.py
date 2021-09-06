@@ -95,8 +95,8 @@ class WebAPI:
                                            analysis_button='View Analysis' if is_complete_status else 'Analyse')
             # If the status is 'queue', obtain errored reports separately so we can provide info without these
             if status.value == self.report_statuses.QUEUE.value:
-                pending = await self.data_svc.status_grouper(status.value, criteria=dict(error=0))
-                errored = await self.data_svc.status_grouper(status.value, criteria=dict(error=1))
+                pending = await self.data_svc.status_grouper(status.value, criteria=dict(error=self.dao.db_false_val))
+                errored = await self.data_svc.status_grouper(status.value, criteria=dict(error=self.dao.db_true_val))
                 page_data[status.value]['reports'] = pending + errored
                 if self.rest_svc.QUEUE_LIMIT:
                     template_data['queue_set'] = 1
