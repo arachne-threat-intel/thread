@@ -55,13 +55,13 @@
                     {% for report in value.reports %}
                       <div class="card shadow-sm" id="{{key}}-{{report.title_quoted}}">
                         <div class="card-body">
-                          {% if report.error == 1 %}
+                          {% if report.error %}
                             <a data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top"
                                title="Sorry, the contents of this report could not be retrieved.">
                               <span class="fas fa-exclamation glyphicon glyphicon-exclamation-sign error-icon"></span>
                             </a>
                           {% endif %}
-                          {% if value.allow_delete or report.error == 1 %}
+                          {% if value.allow_delete or report.error %}
                             <a onclick="deleteReport('{{report.title_quoted}}')" class="fas fa-trash-alt glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
                           {% endif %}
                           <p>

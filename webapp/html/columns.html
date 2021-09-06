@@ -26,11 +26,11 @@
         <img src="{{elmt.text}}" id="img{{elmt.uid}}" class="reportImage" onclick="sentenceContext('{{elmt.uid}}')"> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
       {% elif elmt.tag == 'header' %}
         <h3>{{elmt.text}}</h3>
-      {% elif elmt.tag == 'li' and elmt.found_status == 1 %}
+      {% elif elmt.tag == 'li' and elmt.found_status %}
         <li class="elmtRelated{{elmt.uid}}"><span class="bg-warning report-sentence" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
       {% elif elmt.tag == 'li' %}
         <li class="elmtRelated{{elmt.uid}}"><span id="elmt{{elmt.uid}}" class="report-sentence" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
-      {% elif elmt.found_status == 1 %}
+      {% elif elmt.found_status %}
         <span class="bg-warning report-sentence" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
       {% else %}
         <span class="report-sentence" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
