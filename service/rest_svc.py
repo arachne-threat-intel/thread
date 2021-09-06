@@ -366,17 +366,17 @@ class RestService:
             # Else update the hit as active and confirmed
             sql_commands.append(await self.dao.update(
                 'report_sentence_hits', where=dict(sentence_id=sen_id, attack_uid=attack_id),
-                data=dict(active_hit=1, confirmed=1), return_sql=True))
+                data=dict(active_hit=self.dao.db_true_val, confirmed=self.dao.db_true_val), return_sql=True))
             # Update model_initially_predicted flag using returned historic_hits
             model_initially_predicted = returned_hit['initial_model_match']
         else:
             # Insert new row in the report_sentence_hits database table to indicate a new confirmed technique
             # This is needed to ensure that requests to get all confirmed techniques works correctly
             sql_commands.append(await self.dao.insert_generate_uid(
-                'report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id,
+                'report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id, attack_tid=attack_dict[0]['tid'],
                                              attack_technique_name=attack_dict[0]['name'],
                                              report_uid=sentence_dict[0]['report_uid'],
-                                             attack_tid=attack_dict[0]['tid'], confirmed=1), return_sql=True))
+                                             confirmed=self.dao.db_true_val), return_sql=True))
         # As this will now be either a true positive or false negative, ensure it is not a false positive too
         sql_commands.append(await self.dao.delete('false_positives', dict(sentence_id=sen_id, attack_uid=attack_id),
                                                   return_sql=True))
@@ -428,19 +428,21 @@ class RestService:
         sql_commands = [
             # Delete any sentence-hits where the model didn't initially guess the attack
             await self.dao.delete(
-                'report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=0),
-                return_sql=True),
+                'report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id,
+                                             initial_model_match=self.dao.db_false_val), return_sql=True),
             # For sentence-hits where the model did guess the attack, flag as inactive and unconfirmed
             await self.dao.update(
-                'report_sentence_hits', where=dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=1),
-                data=dict(active_hit=0, confirmed=0), return_sql=True),
+                'report_sentence_hits',
+                where=dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=self.dao.db_true_val),
+                data=dict(active_hit=self.dao.db_false_val, confirmed=self.dao.db_false_val), return_sql=True),
             # This sentence may have previously been added as a true positive or false negative; delete these
             await self.dao.delete('true_positives', dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True),
             await self.dao.delete('false_negatives', dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True)
         ]
         # Check if the ML model initially predicted this attack
         model_initially_predicted = len(await self.dao.get(
-            'report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=1)))
+            'report_sentence_hits',
+            dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=self.dao.db_true_val)))
         # If it did, then this is a false positive
         if model_initially_predicted:
             existing = len(await self.dao.get('false_positives', dict(sentence_id=sen_id, attack_uid=attack_id)))
@@ -449,9 +451,10 @@ class RestService:
                     'false_positives', dict(sentence_id=sen_id, attack_uid=attack_id,
                                             false_positive=sentence_to_insert), return_sql=True))
         # Check if this sentence has other attacks mapped to it
-        number_of_techniques = await self.dao.get('report_sentence_hits', equal=dict(sentence_id=sen_id, active_hit=1),
+        number_of_techniques = await self.dao.get('report_sentence_hits',
+                                                  equal=dict(sentence_id=sen_id, active_hit=self.dao.db_true_val),
                                                   not_equal=dict(attack_uid=attack_id))
-        # If it doesn't, update the sentence found-status to 0 (false)
+        # If it doesn't, update the sentence found-status to false
         if len(number_of_techniques) == 0:
             sql_commands.append(await self.dao.update(
                 'report_sentences', where=dict(uid=sen_id),
