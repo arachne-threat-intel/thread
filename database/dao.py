@@ -19,6 +19,14 @@ class Dao:
         else:
             raise ValueError('Incorrect config for \'db-engine\'')
 
+    @property
+    def db_true_val(self):
+        return self.db.val_as_true
+
+    @property
+    def db_false_val(self):
+        return self.db.val_as_false
+
     async def build(self, schema):
         await self.db.build(schema)
 
