@@ -74,5 +74,5 @@ def _create_tables(username, password, host, schema_file):
 class ThreadPostgreSQL(ThreadDB):
 
     async def build(self, schema):
-        logging.warning('build() cannot be called when config \'db-engine\' is \'postgresql\'. '
+        logging.warning('Re-building the database cannot be done when config \'db-engine\' is \'postgresql\'. '
                         'Please run `main.py --build-db` separately instead.')
