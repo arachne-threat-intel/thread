@@ -193,8 +193,8 @@ class DataService:
                 if item['type'] == 'relationship':
                     if item["relationship_type"] == 'uses':
                         if 'description' in item:
-                            normalized_example = item['description'].replace('<code>', '').replace('</code>',
-                                       '').replace('\n', '').encode('ascii', 'ignore').decode('ascii')
+                            normalized_example = item['description'].replace('<code>', '').replace('</code>', '')\
+                                .replace('\n', '').encode('ascii', 'ignore').decode('ascii')
                             # Remove att&ck reference (name)[link to site]
                             normalized_example = re.sub('\[.*?\]\(.*?\)', '', normalized_example)
                             if item['target_ref'].startswith('attack-pattern'):
