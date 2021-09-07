@@ -124,11 +124,9 @@ class DataService:
         attack_data = references
         logging.info("Finished...now creating the database.")
 
-        cur_uids = await self.get_techniques()
-        cur_uids = cur_uids if cur_uids else []
-        cur_items = [i['uid'] for i in cur_uids]
+        cur_uids = await self.get_technique_uids()
         for k, v in attack_data.items():
-            if k not in cur_items:
+            if k not in cur_uids:
                 await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v.get('description', NO_DESC)),
                                                           tid=v['id'], name=v['name']))
                 if 'regex_patterns' in v:
@@ -163,8 +161,8 @@ class DataService:
         :param buildfile: Enterprise attack json file to build from
         :return: nil
         """
-        cur_items = [x['uid'] for x in await self.get_techniques()]
-        logging.debug('[#] {} Existing items in the DB'.format(len(cur_items)))
+        cur_uids = await self.get_technique_uids()
+        logging.debug('[#] {} Existing items in the DB'.format(len(cur_uids)))
         with open(buildfile, 'r') as infile:
             attack_dict = json.load(infile)
             loaded_items = {}
@@ -203,7 +201,7 @@ class DataService:
                                     logging.critical('[!] Found target_ref not in loaded data: {}'.format(item['target_ref']))
         logging.debug("[#] {} Techniques found in input file".format(len(loaded_items)))
         # Deduplicate input data from existing items in the DB
-        to_add = {x: y for x, y in loaded_items.items() if x not in cur_items}
+        to_add = {x: y for x, y in loaded_items.items() if x not in cur_uids}
         logging.debug('[#] {} Techniques found that are not in the existing database'.format(len(to_add)))
         for k, v in to_add.items():
             await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v.get('description', NO_DESC)),
@@ -254,6 +252,10 @@ class DataService:
             return await self.dao.get('attack_uids')
         # Else run the SQL query which returns the parent info
         return await self.dao.raw_select(SQL_ATTACK_WITH_PARENT_INFO)
+
+    async def get_technique_uids(self):
+        """A function to obtain the list of attack IDs from the db."""
+        return await self.dao.get_column_as_list(table='attack_uids', column='uid')
 
     async def get_confirmed_attacks_for_sentence(self, sentence_id=''):
         """Function to retrieve confirmed-attack data for a sentence."""

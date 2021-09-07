@@ -24,7 +24,7 @@ class ThreadDB:
     async def build(self, schema):
         pass
 
-    async def _execute_select(self, sql, parameters=None):
+    async def _execute_select(self, sql, parameters=None, single_col=False):
         pass
 
     async def get(self, table, equal=None, not_equal=None):
@@ -49,6 +49,9 @@ class ThreadDB:
                     qparams.append(v)
         return await self._execute_select(sql, parameters=qparams)
 
+    async def get_column_as_list(self, table, column):
+        return await self.raw_select('SELECT %s FROM %s' % (column, table), single_col=True)
+
     async def insert(self, table, data, return_sql=False):
         pass
 
@@ -65,8 +68,8 @@ class ThreadDB:
     async def raw_query(self, query, one=False):
         pass
 
-    async def raw_select(self, sql, parameters=None):
-        return await self._execute_select(sql, parameters)
+    async def raw_select(self, sql, parameters=None, single_col=False):
+        return await self._execute_select(sql, parameters=parameters, single_col=single_col)
 
     async def raw_update(self, sql):
         pass
