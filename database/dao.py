@@ -27,6 +27,9 @@ class Dao:
     def db_false_val(self):
         return self.db.val_as_false
 
+    def db_func(self, func_key, *args):
+        return self.db.get_function_name(func_key, *args)
+
     async def build(self, schema):
         await self.db.build(schema)
 

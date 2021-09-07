@@ -2,12 +2,21 @@
 
 
 class ThreadDB:
-    def __init__(self, query_param):
+    # Constants to track which SQL functions have different names (between different DB engines)
+    FUNC_STR_POS = 'string_pos'
+
+    def __init__(self, query_param, mapped_functions=None):
         self.__query_param = query_param
-        # Some DB engines interpret booleans differently, have mapped values ready
-        # Default as integers to be overridden
+        # Some DB engines interpret booleans differently, have mapped values ready; default as integers to be overridden
         self._val_as_true = 1
         self._val_as_false = 0
+        # The map to keep track of SQL functions
+        self._mapped_functions = dict()
+        # The function to find a substring position in a string
+        self._mapped_functions[self.FUNC_STR_POS] = 'INSTR'
+        # Update mapped_functions if provided
+        if mapped_functions is not None:
+            self._mapped_functions.update(mapped_functions)
 
     @property
     def query_param(self):
@@ -20,6 +29,21 @@ class ThreadDB:
     @property
     def val_as_false(self):
         return self._val_as_false
+
+    def get_function_name(self, func_key, *args):
+        """Function to retrieve a function name for this ThreadDB instance.
+        Can take non-iterable args such that it returns the string `function(arg1, arg2, ...)`."""
+        # Get the function name according to the mapped_functions dictionary
+        func_name = self._mapped_functions.get(func_key)
+        # If there is nothing to retrieve, return None
+        if func_name is None:
+            return None
+        # If we have args, construct the string `function(arg1, arg2, ...)` (where str args are quoted)
+        if args:
+            return '%s(%s)' % (func_name, ', '.join(('\'%s\'' % x if type(x) is str else str(x)) for x in args))
+        # Else if no args are supplied, just return the function name
+        else:
+            return func_name
 
     async def build(self, schema):
         pass
