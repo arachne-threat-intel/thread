@@ -17,27 +17,8 @@ except ModuleNotFoundError:
 
 # Text to set on attack descriptions where this originally was not set
 NO_DESC = 'No description provided'
-# SQL query to obtain attack records where sub-techniques are returned with their parent-technique info
-# Currently omits 'description' field as this is large and is not used in the front-end (this can be added here though)
-SQL_ATTACK_WITH_PARENT_INFO = (
-    # Use a temporary table 'parent_tids' to return attacks which are sub-techniques (i.e. tid is Txxx.xx)
-    # Use the substring method to save in the parent_tid column as the Txxx part of the tid (without the .xx)
-    "WITH parent_tids(uid, name, tid, parent_tid) AS "
-    "(SELECT uid, name, tid, SUBSTR(tid, 0, INSTR(tid, '.')) FROM attack_uids WHERE tid LIKE '%.%') "
-    # With parent_tids, select all fields from it and the name of the parent_tid from the attack_uids table
-    # Need to use `AS parent_name` to not confuse it with parent_tids.name
-    # Using an INNER JOIN because we only care about returning sub-techniques here
-    "SELECT parent_tids.*, attack_uids.name AS parent_name FROM "
-    "(attack_uids INNER JOIN parent_tids ON attack_uids.tid = parent_tids.parent_tid) "
-    # Union the sub-tech query with one for all other techniques (where the tid does not contain a '.')
-    # Need to pass in two NULLs so the number of columns for the UNION is the same
-    # (and parent_name & parent_tid doesn't exist for these techniques which are not sub-techniques)
-    "UNION SELECT uid, name, tid, NULL, NULL FROM attack_uids WHERE tid NOT LIKE '%.%'")
-# A name for a temporary table representing the output of SQL_ATTACK_WITH_PARENT_INFO
+# A name for a temporary table representing the output of SQL_PAR_ATTACK
 FULL_ATTACK_INFO = 'full_attack_info'
-# A prefix SQL statement to use with queries that want the full attack info
-SQL_ATTACK_WITH_PARENT_TABLE_PREFIX =\
-    'WITH %s(uid, name, tid, parent_tid, parent_name) AS (%s) ' % (FULL_ATTACK_INFO, SQL_ATTACK_WITH_PARENT_INFO)
 
 
 def defang_text(text):
@@ -57,6 +38,28 @@ class DataService:
         self.dao = dao
         self.web_svc = web_svc
         self.dir_prefix = dir_prefix
+        # SQL queries below use a string-pos function which differs across DB engines; obtain the correct one
+        str_pos = self.dao.db_func(self.dao.db.FUNC_STR_POS)
+        # SQL query to obtain attack records where sub-techniques are returned with their parent-technique info
+        # Currently omits 'description' as it is large and is not used in the front-end (this can be added here though)
+        self.SQL_PAR_ATTACK = (
+            # Use a temporary table 'parent_tids' to return attacks which are sub-techniques (i.e. tid is Txxx.xx)
+            # Use the substring method to save in the parent_tid column as the Txxx part of the tid (without the .xx)
+            "WITH parent_tids(uid, name, tid, parent_tid) AS "
+            "(SELECT uid, name, tid, SUBSTR(tid, 0, %s(tid, '.'))" % str_pos + " "
+            "FROM attack_uids WHERE tid LIKE '%.%') "
+            # With parent_tids, select all fields from it and the name of the parent_tid from the attack_uids table
+            # Need to use `AS parent_name` to not confuse it with parent_tids.name
+            # Using an INNER JOIN because we only care about returning sub-techniques here
+            "SELECT parent_tids.*, attack_uids.name AS parent_name FROM "
+            "(attack_uids INNER JOIN parent_tids ON attack_uids.tid = parent_tids.parent_tid) "
+            # Union the sub-tech query with one for all other techniques (where the tid does not contain a '.')
+            # Need to pass in two NULLs so the number of columns for the UNION is the same
+            # (and parent_name & parent_tid doesn't exist for these techniques which are not sub-techniques)
+            "UNION SELECT uid, name, tid, NULL, NULL FROM attack_uids WHERE tid NOT LIKE '%.%'")
+        # A prefix SQL statement to use with queries that want the full attack info
+        self.SQL_WITH_PAR_ATTACK = \
+            'WITH %s(uid, name, tid, parent_tid, parent_name) AS (%s) ' % (FULL_ATTACK_INFO, self.SQL_PAR_ATTACK)
 
     async def reload_database(self, schema=os.path.join('conf', 'schema.sql')):
         """
@@ -232,7 +235,7 @@ class DataService:
         """Function to retrieve all report sentences and any attacks they may have given a report ID."""
         select_join_query = (
             # Using the temporary table with parent-technique info
-            SQL_ATTACK_WITH_PARENT_TABLE_PREFIX +
+            self.SQL_WITH_PAR_ATTACK +
             # The relevant report-sentence fields we want
             "SELECT report_sentences.*, report_sentence_hits.attack_tid, report_sentence_hits.attack_technique_name, "
             # We want to add any sub-technique's parent-technique name
@@ -251,7 +254,7 @@ class DataService:
         if not get_parent_info:
             return await self.dao.get('attack_uids')
         # Else run the SQL query which returns the parent info
-        return await self.dao.raw_select(SQL_ATTACK_WITH_PARENT_INFO)
+        return await self.dao.raw_select(self.SQL_PAR_ATTACK)
 
     async def get_technique_uids(self):
         """A function to obtain the list of attack IDs from the db."""
@@ -261,7 +264,7 @@ class DataService:
         """Function to retrieve confirmed-attack data for a sentence."""
         select_join_query = (
             # Select all columns from the full attack info table
-            SQL_ATTACK_WITH_PARENT_TABLE_PREFIX + "SELECT " + FULL_ATTACK_INFO + ".* "
+            self.SQL_WITH_PAR_ATTACK + "SELECT " + FULL_ATTACK_INFO + ".* "
             # Use an INNER JOIN on full_attack_info and report_sentence_hits (to get the intersection of attacks)
             "FROM (" + FULL_ATTACK_INFO + " INNER JOIN report_sentence_hits ON " + FULL_ATTACK_INFO +
             ".uid = report_sentence_hits.attack_uid) "
@@ -310,7 +313,7 @@ class DataService:
         """Function to retrieve active sentence hits (and ignoring historic ones, e.g. a model's initial prediction)."""
         select_join_query = (
             # Using the temporary table with parent-technique info
-            SQL_ATTACK_WITH_PARENT_TABLE_PREFIX +
+            self.SQL_WITH_PAR_ATTACK +
             # The relevant fields we want from report_sentence_hits
             "SELECT report_sentence_hits.sentence_id, report_sentence_hits.attack_uid, "
             "report_sentence_hits.attack_tid, report_sentence_hits.attack_technique_name, "
