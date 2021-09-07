@@ -27,17 +27,17 @@ class ThreadSQLite(ThreadDB):
         except Exception as exc:
             logging.error('! error building db : {}'.format(exc))
 
-    async def _execute_select(self, sql, parameters=None):
+    async def _execute_select(self, sql, parameters=None, single_col=False):
         with sqlite3.connect(self.database) as conn:
             conn.execute(ENABLE_FOREIGN_KEYS)
-            conn.row_factory = sqlite3.Row
+            conn.row_factory = (lambda cur, row: row[0]) if single_col else sqlite3.Row
             cursor = conn.cursor()
             if parameters is None:
                 cursor.execute(sql)
             else:
                 cursor.execute(sql, parameters)
             rows = cursor.fetchall()
-            return [dict(ix) for ix in rows]
+            return rows if single_col else [dict(ix) for ix in rows]
 
     async def insert(self, table, data, return_sql=False):
         columns = ', '.join(data.keys())
