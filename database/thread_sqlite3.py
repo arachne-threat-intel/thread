@@ -132,22 +132,6 @@ class ThreadSQLite(ThreadDB):
             cursor.execute(sql, tuple(qparams))
             conn.commit()
 
-    async def raw_query(self, query, one=False):
-        with sqlite3.connect(self.database) as conn:
-            conn.execute(ENABLE_FOREIGN_KEYS)
-            cursor = conn.cursor()
-            cursor.execute(query)
-            rv = cursor.fetchall()
-            conn.commit()
-            return rv[0] if rv else None if one else rv
-
-    async def raw_update(self, sql):
-        with sqlite3.connect(self.database) as conn:
-            conn.execute(ENABLE_FOREIGN_KEYS)
-            cursor = conn.cursor()
-            cursor.execute(sql)
-            conn.commit()
-
     async def run_sql_list(self, sql_list=None):
         # Don't do anything if we don't have a list
         if not sql_list:

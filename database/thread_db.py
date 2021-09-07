@@ -89,14 +89,8 @@ class ThreadDB:
     async def delete(self, table, data, return_sql=False):
         pass
 
-    async def raw_query(self, query, one=False):
-        pass
-
     async def raw_select(self, sql, parameters=None, single_col=False):
         return await self._execute_select(sql, parameters=parameters, single_col=single_col)
-
-    async def raw_update(self, sql):
-        pass
 
     async def run_sql_list(self, sql_list=None):
         pass
