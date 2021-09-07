@@ -38,9 +38,10 @@ class ThreadDB:
         # If there is nothing to retrieve, return None
         if func_name is None:
             return None
-        # If we have args, construct the string `function(arg1, arg2, ...)` (where str args are quoted)
+        # If we have args, construct the string `f(a, b, ...)` (where str args - except query params - are quoted)
         if args:
-            return '%s(%s)' % (func_name, ', '.join(('\'%s\'' % x if type(x) is str else str(x)) for x in args))
+            return '%s(%s)' % (func_name, ', '.join(
+                ('\'%s\'' % x if (type(x) is str and x != self.query_param) else str(x)) for x in args))
         # Else if no args are supplied, just return the function name
         else:
             return func_name
