@@ -246,7 +246,7 @@ class DataService:
             # A second join for the full attack table; still using a LEFT JOIN
             "LEFT JOIN " + FULL_ATTACK_INFO + " ON " + FULL_ATTACK_INFO + ".uid = report_sentence_hits.attack_uid)"
             # Finish with the WHERE clause stating which report this is for
-            "WHERE report_sentences.report_uid = ?")
+            "WHERE report_sentences.report_uid = %s" % self.dao.db_qparam)
         return await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
 
     async def get_techniques(self, get_parent_info=False):
@@ -269,7 +269,8 @@ class DataService:
             "FROM (" + FULL_ATTACK_INFO + " INNER JOIN report_sentence_hits ON " + FULL_ATTACK_INFO +
             ".uid = report_sentence_hits.attack_uid) "
             # Finish with the WHERE clause stating which sentence we are searching for and that the attack is confirmed
-            "WHERE report_sentence_hits.sentence_id = ? AND report_sentence_hits.confirmed = %s" % self.dao.db_true_val)
+            "WHERE report_sentence_hits.sentence_id = %s" % self.dao.db_qparam + " "
+            "AND report_sentence_hits.confirmed = %s" % self.dao.db_true_val)
         # Run the above query and return its results
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
 
@@ -284,7 +285,8 @@ class DataService:
             "SELECT * FROM (report_sentence_hits INNER JOIN false_positives "
             "ON report_sentence_hits.attack_uid = false_positives.attack_uid "
             "AND report_sentence_hits.sentence_id = false_positives.sentence_id) "
-            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = %s" % self.dao.db_false_val)
+            "WHERE report_sentence_hits.report_uid = %s" % self.dao.db_qparam + " "
+            "AND report_sentence_hits.confirmed = %s" % self.dao.db_false_val)
         ignore = await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
         # Ideally would use an SQL MINUS query but this caused errors
         return len(all_unconfirmed) - len(ignore)
@@ -296,7 +298,8 @@ class DataService:
             "report_sentence_hits.attack_tid, report_sentences.text, report_sentence_hits.initial_model_match "
             "FROM (report_sentences INNER JOIN report_sentence_hits "
             "ON report_sentences.uid = report_sentence_hits.sentence_id) "
-            "WHERE report_sentence_hits.report_uid = ? AND report_sentence_hits.confirmed = %s" % self.dao.db_true_val)
+            "WHERE report_sentence_hits.report_uid = %s" % self.dao.db_qparam + " "
+            "AND report_sentence_hits.confirmed = %s" % self.dao.db_true_val)
         # Get the confirmed hits as the above SQL query
         hits = await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
         techniques = []
@@ -323,7 +326,8 @@ class DataService:
             "FROM (" + FULL_ATTACK_INFO + " INNER JOIN report_sentence_hits ON " + FULL_ATTACK_INFO +
             ".uid = report_sentence_hits.attack_uid) "
             # Finish with the WHERE clause stating which sentence we are searching for and that the hit is active
-            "WHERE report_sentence_hits.sentence_id = ? AND report_sentence_hits.active_hit = %s" % self.dao.db_true_val)
+            "WHERE report_sentence_hits.sentence_id = %s" % self.dao.db_qparam + " "
+            "AND report_sentence_hits.active_hit = %s" % self.dao.db_true_val)
         # Run the above query and return its results
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
 
@@ -341,7 +345,7 @@ class DataService:
             # Using 'like' operator means any literal %s and _s need to be escaped
             title_escaped = title.replace('%', '\\%').replace('_', '\\_')
             # The query with a qmark placeholder for the title and stating an escape character is used
-            query = 'SELECT * FROM reports WHERE title LIKE ? ESCAPE \'\\\';'
+            query = 'SELECT * FROM reports WHERE title LIKE %s ESCAPE \'\\\';' % self.dao.db_qparam
             # Run the query with the escaped-title as a parameter plus a _X suffix
             underscore_hits = await self.dao.raw_select(query, parameters=(f'{title_escaped}\\_%',))
             # If we have matches...

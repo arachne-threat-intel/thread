@@ -77,12 +77,17 @@ class ThreadPostgreSQL(ThreadDB):
         # Define the PostgreSQL function to find a substring position in a string
         function_name_map = dict()
         function_name_map[self.FUNC_STR_POS] = 'STRPOS'
-        # '%s' is the query parameter: https://www.psycopg.org/docs/usage.html#passing-parameters-to-sql-queries
-        super().__init__(query_param='%s', mapped_functions=function_name_map)
+        super().__init__(mapped_functions=function_name_map)
         self.username, self.password, self.host = get_db_info()
         # PostgreSQL doesn't use integers for booleans: override the defaults
         self._val_as_true = 'TRUE'
         self._val_as_false = 'FALSE'
+
+    @property
+    def query_param(self):
+        """Implements ThreadDB.query_param"""
+        # '%s' is the query parameter: https://www.psycopg.org/docs/usage.html#passing-parameters-to-sql-queries
+        return '%s'
 
     async def build(self, schema):
         """Implements ThreadDB.build()"""
