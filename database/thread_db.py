@@ -9,8 +9,7 @@ class ThreadDB(ABC):
     # Constants to track which SQL functions have different names (between different DB engines)
     FUNC_STR_POS = 'string_pos'
 
-    def __init__(self, query_param, mapped_functions=None):
-        self.__query_param = query_param
+    def __init__(self, mapped_functions=None):
         # Some DB engines interpret booleans differently, have mapped values ready; default as integers to be overridden
         self._val_as_true = 1
         self._val_as_false = 0
@@ -23,8 +22,9 @@ class ThreadDB(ABC):
             self._mapped_functions.update(mapped_functions)
 
     @property
+    @abstractmethod
     def query_param(self):
-        return self.__query_param
+        pass
 
     @property
     def val_as_true(self):

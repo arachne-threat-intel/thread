@@ -20,6 +20,10 @@ class Dao:
             raise ValueError('Incorrect config for \'db-engine\'')
 
     @property
+    def db_qparam(self):
+        return self.db.query_param
+
+    @property
     def db_true_val(self):
         return self.db.val_as_true
 
