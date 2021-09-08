@@ -4,7 +4,6 @@
 
 import logging
 import sqlite3
-import uuid
 
 from .thread_db import ThreadDB
 
@@ -39,13 +38,7 @@ class ThreadSQLite(ThreadDB):
             rows = cursor.fetchall()
             return rows if single_col else [dict(ix) for ix in rows]
 
-    async def insert(self, table, data, return_sql=False):
-        columns = ', '.join(data.keys())
-        temp = ['?' for i in range(len(data.values()))]
-        placeholders = ', '.join(temp)
-        sql = 'INSERT INTO {} ({}) VALUES ({})'.format(table, columns, placeholders)
-        if return_sql:
-            return tuple([sql, tuple(data.values())])
+    async def _execute_insert(self, sql, data):
         with sqlite3.connect(self.database) as conn:
             conn.execute(ENABLE_FOREIGN_KEYS)
             cursor = conn.cursor()
@@ -53,22 +46,6 @@ class ThreadSQLite(ThreadDB):
             saved_id = cursor.lastrowid
             conn.commit()
             return saved_id
-
-    async def insert_generate_uid(self, table, data, id_field='uid', return_sql=False):
-        """Method to generate an ID value whilst inserting into db."""
-        data[id_field] = str(uuid.uuid4())
-        try:
-            # Attempt this insertion with the ID field generated
-            result = await self.insert(table, data, return_sql=return_sql)
-        except sqlite3.IntegrityError as e:
-            # If it failed because the ID was not unique, attempt once more
-            if 'UNIQUE' in str(e) and table + '.' + 'uid' in str(e):
-                data[id_field] = str(uuid.uuid4())
-                result = await self.insert(table, data, return_sql=return_sql)
-            else:
-                raise e
-        # Finally, return the ID value used for insertion
-        return result if return_sql else data[id_field]
 
     async def update(self, table, where=None, data=None, return_sql=False):
         # If there is no data to update the table with, exit method
