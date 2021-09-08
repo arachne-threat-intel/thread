@@ -70,6 +70,15 @@ class ThreadDB(ABC):
         """Method to connect to the db and execute an SQL UPDATE statement."""
         pass
 
+    @abstractmethod
+    async def run_sql_list(self, sql_list=None):
+        """Method to connect to the db and execute a list of SQL statements in a single transaction."""
+        pass
+
+    async def raw_select(self, sql, parameters=None, single_col=False):
+        """Method to run a constructed SQL SELECT query."""
+        return await self._execute_select(sql, parameters=parameters, single_col=single_col)
+
     async def get(self, table, equal=None, not_equal=None):
         """Method to return values from a db table optionally based on equals or not-equals criteria."""
         sql = 'SELECT * FROM %s' % table
@@ -123,6 +132,7 @@ class ThreadDB(ABC):
         return result if return_sql else data[id_field]
 
     async def update(self, table, where=None, data=None, return_sql=False):
+        """Method to update rows from a table of the db."""
         # If there is no data to update the table with, exit method
         if data is None:
             return None
@@ -163,6 +173,7 @@ class ThreadDB(ABC):
         return await self._execute_update(sql, qparams)
 
     async def delete(self, table, data, return_sql=False):
+        """Method to delete rows from a table of the db."""
         sql = 'DELETE FROM %s' % table
         qparams = []
         # Prevent a whole table being cleared - no need for this functionality at time of writing
@@ -181,10 +192,3 @@ class ThreadDB(ABC):
             return tuple([sql, tuple(qparams)])
         # Run the statement by passing qparams as parameters
         return await self._execute_update(sql, qparams)
-
-    async def raw_select(self, sql, parameters=None, single_col=False):
-        """Method to run a constructed SQL SELECT query."""
-        return await self._execute_select(sql, parameters=parameters, single_col=single_col)
-
-    async def run_sql_list(self, sql_list=None):
-        pass
