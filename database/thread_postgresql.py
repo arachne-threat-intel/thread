@@ -85,6 +85,7 @@ class ThreadPostgreSQL(ThreadDB):
         self._val_as_false = 'FALSE'
 
     async def build(self, schema):
+        """Implements ThreadDB.build()"""
         logging.warning('Re-building the database cannot be done when config \'db-engine\' is \'postgresql\'. '
                         'Please run `main.py --build-db` separately instead.')
 
@@ -107,21 +108,28 @@ class ThreadPostgreSQL(ThreadDB):
         return return_val
 
     async def _execute_select(self, sql, parameters=None, single_col=False):
+        """Implements ThreadDB._execute_select()"""
         def cursor_select(cursor):
+            # Execute the SQL query with parameters or not
             if parameters is None:
                 cursor.execute(sql)
             else:
                 cursor.execute(sql, parameters)
+            # Return the rows as dictionaries
             rows = cursor.fetchall()
             return [dict(ix) for ix in rows]
         return self._connection_wrapper(cursor_select, cursor_factory=psycopg2.extras.DictCursor)
 
     async def _execute_insert(self, sql, data):
+        """Implements ThreadDB._execute_insert()"""
         def cursor_insert(cursor):
+            # Execute the SQL statement with the data to be inserted
             cursor.execute(sql, tuple(data.values()))
             return cursor.lastrowid
         return self._connection_wrapper(cursor_insert)
 
     async def get_column_as_list(self, table, column):
+        """Overrides ThreadDB.get_column_as_list()"""
+        # Use the array() function to return the column as an object {array: <column values>}
         results = await self.raw_select('SELECT array(SELECT %s FROM %s)' % (column, table))
         return results[0]['array']  # Let a KeyError raise if 'array' doesn't work - this means the library changed

@@ -1,7 +1,9 @@
 import uuid
 
+from abc import ABC, abstractmethod
 
-class ThreadDB:
+
+class ThreadDB(ABC):
     """A base class for DB tasks (where the SQL statements are the same across DB engines)."""
     # Constants to track which SQL functions have different names (between different DB engines)
     FUNC_STR_POS = 'string_pos'
@@ -47,16 +49,23 @@ class ThreadDB:
         else:
             return func_name
 
+    @abstractmethod
     async def build(self, schema):
+        """Method to build the db given a schema."""
         pass
 
+    @abstractmethod
     async def _execute_select(self, sql, parameters=None, single_col=False):
+        """Method to connect to the db and execute an SQL SELECT query."""
         pass
 
+    @abstractmethod
     async def _execute_insert(self, sql, data):
+        """Method to connect to the db and execute an SQL INSERT statement."""
         pass
 
     async def get(self, table, equal=None, not_equal=None):
+        """Method to return values from a db table optionally based on equals or not-equals criteria."""
         sql = 'SELECT * FROM %s' % table
         # Define all_params dictionary (for equal and not_equal to be None-checked and combined) and qparams list
         all_params, qparams = dict(), []
@@ -76,23 +85,30 @@ class ThreadDB:
                 for k, v in criteria.items():
                     sql += (' AND %s %s= %s' % (k, '!' if eq == 'not_equal' else '', self.query_param))
                     qparams.append(v)
+        # After the SQL query has been formed, execute it
         return await self._execute_select(sql, parameters=qparams)
 
     async def get_column_as_list(self, table, column):
+        """Method to return a column from a db table as a list."""
         return await self.raw_select('SELECT %s FROM %s' % (column, table), single_col=True)
 
     async def insert(self, table, data, return_sql=False):
         """Method to insert data into a table of the db."""
+        # For the INSERT statement, construct the strings `col1, col2, ...` and `<query_param>, <query_param>, ...`
         columns = ', '.join(data.keys())
         temp = [self.query_param for i in range(len(data.values()))]
         placeholders = ', '.join(temp)
+        # Construct the SQL statement using the comma-separated strings created above
         sql = 'INSERT INTO {} ({}) VALUES ({})'.format(table, columns, placeholders)
+        # Return the SQL statement as-is if requested
         if return_sql:
             return tuple([sql, tuple(data.values())])
+        # Else execute the SQL INSERT statement
         return await self._execute_insert(sql, data)
 
     async def insert_generate_uid(self, table, data, id_field='uid', return_sql=False):
         """Method to generate an ID value whilst inserting into db."""
+        # Update the ID field in data to be a generated UID
         data[id_field] = str(uuid.uuid4())
         # Execute the insertion
         result = await self.insert(table, data, return_sql=return_sql)
@@ -106,6 +122,7 @@ class ThreadDB:
         pass
 
     async def raw_select(self, sql, parameters=None, single_col=False):
+        """Method to run a constructed SQL SELECT query."""
         return await self._execute_select(sql, parameters=parameters, single_col=single_col)
 
     async def run_sql_list(self, sql_list=None):
