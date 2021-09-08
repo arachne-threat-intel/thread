@@ -17,8 +17,10 @@ class ThreadSQLite(ThreadDB):
         self.database = database
 
     async def build(self, schema):
+        """Implements ThreadDB.build()"""
+        # Ensure the foreign-keys line is prepended to the schema
         schema = ENABLE_FOREIGN_KEYS + '\n' + schema
-        try:
+        try:  # Execute the schema's SQL statements
             with sqlite3.connect(self.database) as conn:
                 cursor = conn.cursor()
                 cursor.executescript(schema)
@@ -27,21 +29,28 @@ class ThreadSQLite(ThreadDB):
             logging.error('! error building db : {}'.format(exc))
 
     async def _execute_select(self, sql, parameters=None, single_col=False):
+        """Implements ThreadDB._execute_select()"""
         with sqlite3.connect(self.database) as conn:
             conn.execute(ENABLE_FOREIGN_KEYS)
+            # If we are returning a single column, we just want to retrieve the first part of the row (row[0])
+            # else use sqlite3.Row to enable dictionary-conversions
             conn.row_factory = (lambda cur, row: row[0]) if single_col else sqlite3.Row
             cursor = conn.cursor()
+            # Execute the SQL query with parameters or not
             if parameters is None:
                 cursor.execute(sql)
             else:
                 cursor.execute(sql, parameters)
             rows = cursor.fetchall()
+            # Return the data as-is if returning a single column, else return the rows as dictionaries
             return rows if single_col else [dict(ix) for ix in rows]
 
     async def _execute_insert(self, sql, data):
+        """Implements ThreadDB._execute_insert()"""
         with sqlite3.connect(self.database) as conn:
             conn.execute(ENABLE_FOREIGN_KEYS)
             cursor = conn.cursor()
+            # Execute the SQL statement with the data to be inserted
             cursor.execute(sql, tuple(data.values()))
             saved_id = cursor.lastrowid
             conn.commit()
