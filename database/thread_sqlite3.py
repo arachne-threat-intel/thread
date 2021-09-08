@@ -56,66 +56,14 @@ class ThreadSQLite(ThreadDB):
             conn.commit()
             return saved_id
 
-    async def update(self, table, where=None, data=None, return_sql=False):
-        # If there is no data to update the table with, exit method
-        if data is None:
-            return None
-        # If no WHERE data is specified, default to an empty dictionary
-        if where is None:
-            where = {}
-        # The list of query parameters
-        qparams = []
-        # Our SQL statement and optional WHERE clause
-        sql, where_suffix = 'UPDATE {} SET'.format(table), ''
-        # Appending the SET terms; keep a count
-        count = 0
-        for k, v in data.items():
-            # If this is our 2nd (or greater) SET term, separate with a comma
-            sql += ',' if count > 0 else ''
-            # Add this current term to the SQL statement leaving a ? for the value
-            sql += ' {} = ?'.format(k)
-            # Update qparams for this value to be substituted
-            qparams.append(v)
-            count += 1
-        # Appending the WHERE terms; keep a count
-        count = 0
-        for wk, wv in where.items():
-            # If this is our 2nd (or greater) WHERE term, separate with an AND
-            where_suffix += ' AND' if count > 0 else ''
-            # Add this current term like before
-            where_suffix += ' {} = ?'.format(wk)
-            # Update qparams for this value to be substituted
-            qparams.append(wv)
-            count += 1
-        # Finalise WHERE clause if we had items added to it
-        where_suffix = '' if where_suffix == '' else ' WHERE' + where_suffix
-        # Add the WHERE clause to the SQL statement
-        sql += where_suffix
-        if return_sql:
-            return tuple([sql, tuple(qparams)])
-        # Run the statement by passing qparams as parameters
+    async def _execute_update(self, sql, data):
+        """Implements ThreadDB._execute_update()"""
+        # Nothing extra do to or return:
+        # just connect to the db; execute the SQL statement with the data to update; and commit
         with sqlite3.connect(self.database) as conn:
             conn.execute(ENABLE_FOREIGN_KEYS)
             cursor = conn.cursor()
-            cursor.execute(sql, tuple(qparams))
-            conn.commit()
-
-    async def delete(self, table, data, return_sql=False):
-        sql = 'DELETE FROM %s' % table
-        qparams = []
-        where = next(iter(data))
-        value = data.pop(where)
-        sql += ' WHERE %s = ?' % where
-        qparams.append(value)
-        for k, v in data.items():
-            sql += ' AND %s = ?' % k
-            qparams.append(v)
-        if return_sql:
-            return tuple([sql, tuple(qparams)])
-        with sqlite3.connect(self.database) as conn:
-            conn.execute(ENABLE_FOREIGN_KEYS)
-            cursor = conn.cursor()
-            cursor.execute(sql, tuple(qparams))
+            cursor.execute(sql, tuple(data))
             conn.commit()
 
     async def run_sql_list(self, sql_list=None):

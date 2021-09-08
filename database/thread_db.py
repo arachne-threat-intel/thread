@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from abc import ABC, abstractmethod
@@ -64,6 +65,11 @@ class ThreadDB(ABC):
         """Method to connect to the db and execute an SQL INSERT statement."""
         pass
 
+    @abstractmethod
+    async def _execute_update(self, sql, data):
+        """Method to connect to the db and execute an SQL UPDATE statement."""
+        pass
+
     async def get(self, table, equal=None, not_equal=None):
         """Method to return values from a db table optionally based on equals or not-equals criteria."""
         sql = 'SELECT * FROM %s' % table
@@ -74,6 +80,7 @@ class ThreadDB(ABC):
         all_params.update(dict(not_equal=not_equal) if not_equal else {})
         # For each of the equal and not_equal parameters, build SQL query
         for eq, criteria in all_params.items():
+            # criteria should always have items as the if-else update() calls above check this
             where = next(iter(criteria))
             value = criteria.pop(where)
             if value is not None:
@@ -116,10 +123,64 @@ class ThreadDB(ABC):
         return result if return_sql else data[id_field]
 
     async def update(self, table, where=None, data=None, return_sql=False):
-        pass
+        # If there is no data to update the table with, exit method
+        if data is None:
+            return None
+        # If no WHERE data is specified, default to an empty dictionary
+        if where is None:
+            where = {}
+        # The list of query parameters
+        qparams = []
+        # Our SQL statement and optional WHERE clause
+        sql, where_suffix = 'UPDATE {} SET'.format(table), ''
+        # Appending the SET terms; keep a count
+        count = 0
+        for k, v in data.items():
+            # If this is our 2nd (or greater) SET term, separate with a comma
+            sql += ',' if count > 0 else ''
+            # Add this current term to the SQL statement substituting the values with query parameters
+            sql += ' {} = {}'.format(k, self.query_param)
+            # Update qparams for this value to be substituted
+            qparams.append(v)
+            count += 1
+        # Appending the WHERE terms; keep a count
+        count = 0
+        for wk, wv in where.items():
+            # If this is our 2nd (or greater) WHERE term, separate with an AND
+            where_suffix += ' AND' if count > 0 else ''
+            # Add this current term like before
+            where_suffix += ' {} = {}'.format(wk, self.query_param)
+            # Update qparams for this value to be substituted
+            qparams.append(wv)
+            count += 1
+        # Finalise WHERE clause if we had items added to it
+        where_suffix = '' if where_suffix == '' else ' WHERE' + where_suffix
+        # Add the WHERE clause to the SQL statement
+        sql += where_suffix
+        if return_sql:
+            return tuple([sql, tuple(qparams)])
+        # Run the statement by passing qparams as parameters
+        return await self._execute_update(sql, qparams)
 
     async def delete(self, table, data, return_sql=False):
-        pass
+        sql = 'DELETE FROM %s' % table
+        qparams = []
+        # Prevent a whole table being cleared - no need for this functionality at time of writing
+        if not len(data):
+            logging.error('Attempting to delete all rows from table %s; this is not allowed.' % table)
+            return
+        # Construct the WHERE clause using the data
+        where = next(iter(data))
+        value = data.pop(where)
+        sql += ' WHERE %s = %s' % (where, self.query_param)
+        qparams.append(value)
+        for k, v in data.items():
+            sql += ' AND %s = %s' % (k, self.query_param)
+            qparams.append(v)
+        if return_sql:
+            return tuple([sql, tuple(qparams)])
+        # Run the statement by passing qparams as parameters
+        return await self._execute_update(sql, qparams)
 
     async def raw_select(self, sql, parameters=None, single_col=False):
         """Method to run a constructed SQL SELECT query."""
