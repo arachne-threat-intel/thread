@@ -1,7 +1,8 @@
-"""A base class for DB tasks (where the SQL statements are the same across DB engines)."""
+import uuid
 
 
 class ThreadDB:
+    """A base class for DB tasks (where the SQL statements are the same across DB engines)."""
     # Constants to track which SQL functions have different names (between different DB engines)
     FUNC_STR_POS = 'string_pos'
 
@@ -52,6 +53,9 @@ class ThreadDB:
     async def _execute_select(self, sql, parameters=None, single_col=False):
         pass
 
+    async def _execute_insert(self, sql, data):
+        pass
+
     async def get(self, table, equal=None, not_equal=None):
         sql = 'SELECT * FROM %s' % table
         # Define all_params dictionary (for equal and not_equal to be None-checked and combined) and qparams list
@@ -78,11 +82,22 @@ class ThreadDB:
         return await self.raw_select('SELECT %s FROM %s' % (column, table), single_col=True)
 
     async def insert(self, table, data, return_sql=False):
-        pass
+        """Method to insert data into a table of the db."""
+        columns = ', '.join(data.keys())
+        temp = [self.query_param for i in range(len(data.values()))]
+        placeholders = ', '.join(temp)
+        sql = 'INSERT INTO {} ({}) VALUES ({})'.format(table, columns, placeholders)
+        if return_sql:
+            return tuple([sql, tuple(data.values())])
+        return await self._execute_insert(sql, data)
 
     async def insert_generate_uid(self, table, data, id_field='uid', return_sql=False):
         """Method to generate an ID value whilst inserting into db."""
-        pass
+        data[id_field] = str(uuid.uuid4())
+        # Execute the insertion
+        result = await self.insert(table, data, return_sql=return_sql)
+        # Return the ID value used for insertion if not returning the SQL query itself
+        return result if return_sql else data[id_field]
 
     async def update(self, table, where=None, data=None, return_sql=False):
         pass
