@@ -116,6 +116,12 @@ class ThreadPostgreSQL(ThreadDB):
             return [dict(ix) for ix in rows]
         return self._connection_wrapper(cursor_select, cursor_factory=psycopg2.extras.DictCursor)
 
+    async def _execute_insert(self, sql, data):
+        def cursor_insert(cursor):
+            cursor.execute(sql, tuple(data.values()))
+            return cursor.lastrowid
+        return self._connection_wrapper(cursor_insert)
+
     async def get_column_as_list(self, table, column):
         results = await self.raw_select('SELECT array(SELECT %s FROM %s)' % (column, table))
         return results[0]['array']  # Let a KeyError raise if 'array' doesn't work - this means the library changed
