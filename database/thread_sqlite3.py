@@ -12,9 +12,14 @@ ENABLE_FOREIGN_KEYS = 'PRAGMA foreign_keys = ON;'
 
 class ThreadSQLite(ThreadDB):
     def __init__(self, database):
-        # '?' is the query parameter: https://docs.python.org/3/library/sqlite3.html#sqlite3-placeholders
-        super().__init__(query_param='?')
+        super().__init__()
         self.database = database
+
+    @property
+    def query_param(self):
+        """Implements ThreadDB.query_param"""
+        # '?' is the query parameter: https://docs.python.org/3/library/sqlite3.html#sqlite3-placeholders
+        return '?'
 
     async def build(self, schema):
         """Implements ThreadDB.build()"""
