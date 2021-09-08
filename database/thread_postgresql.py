@@ -128,6 +128,14 @@ class ThreadPostgreSQL(ThreadDB):
             return cursor.lastrowid
         return self._connection_wrapper(cursor_insert)
 
+    async def _execute_update(self, sql, data):
+        """Implements ThreadDB._execute_update()"""
+        # Nothing extra do to or return: just execute the SQL statement with the data to update
+        def cursor_update(cursor):
+            # Execute the SQL statement with the data to be inserted
+            cursor.execute(sql, tuple(data.values()))
+        return self._connection_wrapper(cursor_update)
+
     async def get_column_as_list(self, table, column):
         """Overrides ThreadDB.get_column_as_list()"""
         # Use the array() function to return the column as an object {array: <column values>}
