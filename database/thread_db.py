@@ -10,9 +10,6 @@ class ThreadDB(ABC):
     FUNC_STR_POS = 'string_pos'
 
     def __init__(self, mapped_functions=None):
-        # Some DB engines interpret booleans differently, have mapped values ready; default as integers to be overridden
-        self._val_as_true = 1
-        self._val_as_false = 0
         # The map to keep track of SQL functions
         self._mapped_functions = dict()
         # The function to find a substring position in a string
@@ -24,15 +21,18 @@ class ThreadDB(ABC):
     @property
     @abstractmethod
     def query_param(self):
+        """The string representing a query parameter."""
         pass
 
     @property
     def val_as_true(self):
-        return self._val_as_true
+        """The db's value for True."""
+        return 1  # default as int, 1
 
     @property
     def val_as_false(self):
-        return self._val_as_false
+        """The db's value for False."""
+        return 0  # default as int, 0
 
     def get_function_name(self, func_key, *args):
         """Function to retrieve a function name for this ThreadDB instance.
