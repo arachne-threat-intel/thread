@@ -79,15 +79,23 @@ class ThreadPostgreSQL(ThreadDB):
         function_name_map[self.FUNC_STR_POS] = 'STRPOS'
         super().__init__(mapped_functions=function_name_map)
         self.username, self.password, self.host = get_db_info()
-        # PostgreSQL doesn't use integers for booleans: override the defaults
-        self._val_as_true = 'TRUE'
-        self._val_as_false = 'FALSE'
 
     @property
     def query_param(self):
         """Implements ThreadDB.query_param"""
         # '%s' is the query parameter: https://www.psycopg.org/docs/usage.html#passing-parameters-to-sql-queries
         return '%s'
+
+    # PostgreSQL doesn't use integers for booleans: override the defaults
+    @property
+    def val_as_true(self):
+        """Overrides ThreadDB.val_as_true"""
+        return 'TRUE'
+
+    @property
+    def val_as_false(self):
+        """Overrides ThreadDB.val_as_false"""
+        return 'FALSE'
 
     async def build(self, schema):
         """Implements ThreadDB.build()"""
