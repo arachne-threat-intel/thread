@@ -67,6 +67,7 @@ class ThreadSQLite(ThreadDB):
             conn.commit()
 
     async def run_sql_list(self, sql_list=None):
+        """Implements ThreadDB.run_sql_list()"""
         # Don't do anything if we don't have a list
         if not sql_list:
             return
@@ -76,7 +77,9 @@ class ThreadSQLite(ThreadDB):
             # Else, execute each item in the list where the first part must be an SQL statement
             # followed by optional parameters
             for item in sql_list:
-                if len(item) == 1:
+                if item is None:  # skip None-items
+                    continue
+                elif len(item) == 1:
                     cursor.execute(item[0])
                 elif len(item) == 2:
                     # execute() takes parameters as a tuple, ensure that is the case
