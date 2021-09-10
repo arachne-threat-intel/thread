@@ -13,27 +13,28 @@ DB_NAME = ''
 def get_db_info():
     """Function to get database information from a user (launching Thread)."""
     global DB_NAME
-    DB_NAME = input('Enter DB name:\n')
-    username = input('Enter DB username:\n')
-    password = getpass('Enter DB password:\n')
-    host = input('Enter DB host (leave blank/skip for localhost):\n') or '127.0.0.1'
-    return username, password, host
+    DB_NAME = input('Enter name of DB:\n')
+    username = input('Enter DB-server username:\n')
+    password = getpass('Enter DB-server password:\n')
+    host = input('Enter DB-server host (leave blank/skip for localhost):\n') or '127.0.0.1'
+    port = input('Enter DB-server port (check with command `pg_lsclusters`):\n')
+    return username, password, host, port
 
 
 def build_db(schema=os.path.join('conf', 'schema.sql')):
     """The function to set up the Thread database (DB)."""
-    username, password, host = get_db_info()
+    username, password, host, port = get_db_info()
     # print() statements are used rather than logging for this function because it is not running via the launched app
-    _create_db(username, password, host)
-    _create_tables(username, password, host, schema)
+    _create_db(username, password, host, port)
+    _create_tables(username, password, host, port, schema)
 
 
-def _create_db(username, password, host):
+def _create_db(username, password, host, port):
     """The function to create the Thread DB on the server."""
     connection = None
     try:
         # Set up a connection using inputted credentials
-        connection = psycopg2.connect(database='postgres', user=username, password=password, host=host, port='5432')
+        connection = psycopg2.connect(database='postgres', user=username, password=password, host=host, port=port)
         # First, check db is created - this cannot be done in a transaction so set autocommit isolation level
         connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         # Create the db on the server (ignoring if it's already created)
@@ -50,7 +51,7 @@ def _create_db(username, password, host):
             connection.close()
 
 
-def _create_tables(username, password, host, schema_file):
+def _create_tables(username, password, host, port, schema_file):
     """The function to create the tables in the Thread DB on the server."""
     with open(schema_file) as schema_opened:
         schema = schema_opened.read()
@@ -61,7 +62,7 @@ def _create_tables(username, password, host, schema_file):
     connection = None
     try:
         # Set up a connection to the specified database
-        connection = psycopg2.connect(database=DB_NAME, user=username, password=password, host=host, port='5432')
+        connection = psycopg2.connect(database=DB_NAME, user=username, password=password, host=host, port=port)
         with connection:  # use 'with' here to commit transaction at the end of this block
             with connection.cursor() as cursor:
                 cursor.execute(schema)  # run the parsed schema
@@ -78,7 +79,7 @@ class ThreadPostgreSQL(ThreadDB):
         function_name_map = dict()
         function_name_map[self.FUNC_STR_POS] = 'STRPOS'
         super().__init__(mapped_functions=function_name_map)
-        self.username, self.password, self.host = get_db_info()
+        self.username, self.password, self.host, self.port = get_db_info()
 
     @property
     def query_param(self):
@@ -109,7 +110,7 @@ class ThreadPostgreSQL(ThreadDB):
         try:
             # Set up the connection
             connection = psycopg2.connect(database=DB_NAME, user=self.username, password=self.password,
-                                          host=self.host, port='5432')
+                                          host=self.host, port=self.port)
             with connection:
                 with connection.cursor(cursor_factory=cursor_factory) as cursor:
                     # Call the method with the cursor
