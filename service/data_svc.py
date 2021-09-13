@@ -248,7 +248,9 @@ class DataService:
             # A second join for the full attack table; still using a LEFT JOIN
             "LEFT JOIN " + FULL_ATTACK_INFO + " ON " + FULL_ATTACK_INFO + ".uid = report_sentence_hits.attack_uid)"
             # Finish with the WHERE clause stating which report this is for
-            "WHERE report_sentences.report_uid = %s" % self.dao.db_qparam)
+            "WHERE report_sentences.report_uid = %s" % self.dao.db_qparam + " "
+            # Need to order by for JOIN query (otherwise sentences can be out of order if attacks are updated)
+            "ORDER BY report_sentences.sen_index")
         return await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
 
     async def get_techniques(self, get_parent_info=False):
