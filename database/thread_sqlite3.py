@@ -56,7 +56,7 @@ class ThreadSQLite(ThreadDB):
             conn.execute(ENABLE_FOREIGN_KEYS)
             cursor = conn.cursor()
             # Execute the SQL statement with the data to be inserted
-            cursor.execute(sql, tuple(data.values()))
+            cursor.execute(sql, tuple(data))
             saved_id = cursor.lastrowid
             conn.commit()
             return saved_id
