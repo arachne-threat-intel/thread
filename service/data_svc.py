@@ -47,7 +47,9 @@ class DataService:
             # Use the substring method to save in the parent_tid column as the Txxx part of the tid (without the .xx)
             "WITH parent_tids(uid, name, tid, parent_tid) AS "
             "(SELECT uid, name, tid, SUBSTR(tid, 0, %s(tid, '.'))" % str_pos + " "
-            "FROM attack_uids WHERE tid LIKE '%.%') "
+            # %% in LIKE because % messes up parameters in psycopg (https://github.com/psycopg/psycopg2/issues/827)
+            # LIKE '%.%' = '%%.%%' so this does not affect other DB engines
+            "FROM attack_uids WHERE tid LIKE '%%.%%') "
             # With parent_tids, select all fields from it and the name of the parent_tid from the attack_uids table
             # Need to use `AS parent_name` to not confuse it with parent_tids.name
             # Using an INNER JOIN because we only care about returning sub-techniques here
@@ -56,7 +58,7 @@ class DataService:
             # Union the sub-tech query with one for all other techniques (where the tid does not contain a '.')
             # Need to pass in two NULLs so the number of columns for the UNION is the same
             # (and parent_name & parent_tid doesn't exist for these techniques which are not sub-techniques)
-            "UNION SELECT uid, name, tid, NULL, NULL FROM attack_uids WHERE tid NOT LIKE '%.%'")
+            "UNION SELECT uid, name, tid, NULL, NULL FROM attack_uids WHERE tid NOT LIKE '%%.%%'")
         # A prefix SQL statement to use with queries that want the full attack info
         self.SQL_WITH_PAR_ATTACK = \
             'WITH %s(uid, name, tid, parent_tid, parent_name) AS (%s) ' % (FULL_ATTACK_INFO, self.SQL_PAR_ATTACK)

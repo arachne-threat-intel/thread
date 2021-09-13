@@ -115,6 +115,8 @@ class ThreadPostgreSQL(ThreadDB):
                 with connection.cursor(cursor_factory=cursor_factory) as cursor:
                     # Call the method with the cursor
                     return_val = method(cursor)
+        except Exception as e:
+            logging.error('Encountered error: ' + str(e))
         # Ensure the connection closes if anything went wrong
         finally:
             if connection:
@@ -138,7 +140,7 @@ class ThreadPostgreSQL(ThreadDB):
         """Implements ThreadDB._execute_insert()"""
         def cursor_insert(cursor):
             # Execute the SQL statement with the data to be inserted
-            cursor.execute(sql, tuple(data.values()))
+            cursor.execute(sql, tuple(data))
             return cursor.lastrowid
         return self._connection_wrapper(cursor_insert)
 
@@ -147,7 +149,7 @@ class ThreadPostgreSQL(ThreadDB):
         # Nothing extra do to or return: just execute the SQL statement with the data to update
         def cursor_update(cursor):
             # Execute the SQL statement with the data to be inserted
-            cursor.execute(sql, tuple(data.values()))
+            cursor.execute(sql, tuple(data))
         return self._connection_wrapper(cursor_update)
 
     async def get_column_as_list(self, table, column):
