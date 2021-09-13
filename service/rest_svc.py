@@ -315,13 +315,13 @@ class RestService:
         # Merge ML and Reg hits
         analyzed_html = await self.ml_svc.combine_ml_reg(ml_analyzed_html, reg_analyzed_html)
 
-        for sentence in analyzed_html:
+        for s_idx, sentence in enumerate(analyzed_html):
             if sentence['ml_techniques_found']:
-                await self.ml_svc.ml_techniques_found(report_id, sentence)
+                await self.ml_svc.ml_techniques_found(report_id, sentence, s_idx)
             elif sentence['reg_techniques_found']:
-                await self.reg_svc.reg_techniques_found(report_id, sentence)
+                await self.reg_svc.reg_techniques_found(report_id, sentence, s_idx)
             else:
-                data = dict(report_uid=report_id, text=sentence['text'], html=sentence['html'],
+                data = dict(report_uid=report_id, text=sentence['text'], html=sentence['html'], sen_index=s_idx,
                             found_status=self.dao.db_false_val)
                 await self.dao.insert_generate_uid('report_sentences', data)
 
