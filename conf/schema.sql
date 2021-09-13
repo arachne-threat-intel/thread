@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS report_sentences (
     text TEXT,
     -- Its html representation
     html TEXT,
+    -- The order this sentence has relative to the other sentences of a report (e.g. 2 = second sentence in report)
+    sen_index INTEGER,
     -- Whether any attacks for this sentence have been found
     found_status BOOLEAN DEFAULT 0,
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
