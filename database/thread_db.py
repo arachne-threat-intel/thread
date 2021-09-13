@@ -120,7 +120,7 @@ class ThreadDB(ABC):
         if return_sql:
             return tuple([sql, tuple(data.values())])
         # Else execute the SQL INSERT statement
-        return await self._execute_insert(sql, data)
+        return await self._execute_insert(sql, data.values())
 
     async def insert_generate_uid(self, table, data, id_field='uid', return_sql=False):
         """Method to generate an ID value whilst inserting into db."""

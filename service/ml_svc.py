@@ -124,7 +124,9 @@ class MLService:
                 # Attempt to load the model file's contents
                 try:
                     # A UserWarning can appear stating the risks of using a different pickle version from sklearn
-                    return pickle.load(pre_saved_dict)
+                    loaded = pickle.load(pre_saved_dict)
+                    logging.info('[#] Successfully loaded models from pickled file')
+                    return loaded
                 # sklearn.linear_model.logistic has been required in a previous run; might be related to UserWarning
                 except ModuleNotFoundError as mnfe:
                     logging.warning('Could not load existing models: ' + str(mnfe))
