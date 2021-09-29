@@ -21,7 +21,7 @@ def sanitise_filename(filename=''):
 
 
 class WebAPI:
-    def __init__(self, services, js_src, is_local=True):
+    def __init__(self, services, js_src):
         self.dao = services.get('dao')
         self.data_svc = services['data_svc']
         self.web_svc = services['web_svc']
@@ -29,7 +29,7 @@ class WebAPI:
         self.reg_svc = services['reg_svc']
         self.rest_svc = services['rest_svc']
         self.report_statuses = self.rest_svc.get_status_enum()
-        self.is_local = is_local
+        self.is_local = self.web_svc.is_local
         js_src_config = js_src if js_src in [ONLINE_JS_SRC, OFFLINE_JS_SRC] else ONLINE_JS_SRC
         self.BASE_PAGE_DATA = dict(about_url=self.web_svc.get_route(self.web_svc.ABOUT_KEY),
                                    home_url=self.web_svc.get_route(self.web_svc.HOME_KEY),
@@ -86,6 +86,7 @@ class WebAPI:
 
     @template('index.html')
     async def index(self, request):
+        user = await self.web_svc.get_current_user(request)
         # Dictionaries for the template data
         page_data, template_data = dict(), self.BASE_PAGE_DATA.copy()
         # For each report status, get the reports for the index page
@@ -115,7 +116,7 @@ class WebAPI:
             else:
                 page_data[status.value]['reports'] = await self.data_svc.status_grouper(status.value)
         # Update overall template data and return
-        template_data.update(reports_by_status=page_data, is_local=self.is_local)
+        template_data.update(reports_by_status=page_data, is_local=self.is_local, user=user)
         return template_data
 
     async def rest_api(self, request):

@@ -316,6 +316,10 @@ function addMissingTechnique() {
 function myReports() {
   var passwordField = document.getElementById("password");
   if (passwordField.checkValidity()) {
-    restRequest("POST", {"password": passwordField.value}, null, "/thread/myreports/view");
+    restRequest("POST", {"password": passwordField.value}, page_refresh, "/thread/myreports/view");
   }
+}
+
+function myReportsExit() {
+  restRequest("POST", {}, page_refresh, "/thread/myreports/exit");
 }

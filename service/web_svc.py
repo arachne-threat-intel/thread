@@ -7,6 +7,7 @@ import nltk
 import re
 import requests
 
+from aiohttp_security import authorized_userid
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from html2text import html2text
@@ -27,7 +28,8 @@ class WebService:
     EXPORT_PDF_KEY, EXPORT_NAV_KEY, STATIC_KEY = 'export_pdf', 'export_nav', 'static'
     REPORT_PARAM = 'file'
 
-    def __init__(self, route_prefix=None):
+    def __init__(self, route_prefix=None, is_local=True):
+        self.is_local = is_local
         self.tokenizer_sen = None
         self.cached_responses = dict()
         # Initialise app route info
@@ -70,6 +72,12 @@ class WebService:
 
     def clear_cached_responses(self):  # TODO consider how often to call this
         self.cached_responses = dict()
+
+    async def get_current_user(self, request):
+        """Function to obtain the current user given a request."""
+        if self.is_local:
+            return None
+        return await authorized_userid(request)
 
     async def map_all_html(self, url_input):
         a = newspaper.Article(url_input, keep_article_html=True)

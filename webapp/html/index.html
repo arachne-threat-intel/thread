@@ -11,14 +11,18 @@
               {% if not is_local %}
                 <div>
                   <h6>
-                    <span><b>Viewing: Public</b></span>
+                    <span><b>Viewing: {% if user %}{{user}}{% else %}Public{% endif %}</b></span>
                   </h6>
-                  <form>
-                    <label for="password">Password</label>
-                    <input type="password" class="form-control" id="password" required>
-                    <small>View <a href="/account/profile/" target="_blank">your Arachne profile</a> to obtain your Thread password.</small>
-                    <button type="submit" onclick='myReports()' class="btn btn-primary">View My Reports</button>
-                  </form>
+                  {% if user %}
+                    <button type="button" onclick='myReportsExit()' class="btn btn-primary">Exit to Public View</button>
+                  {% else %}
+                    <form>
+                      <label for="password">Password</label>
+                      <input type="password" class="form-control" id="password" required>
+                      <small>View <a href="/account/profile/" target="_blank">your Arachne profile</a> to obtain your Thread password.</small>
+                      <button type="submit" onclick='myReports()' class="btn btn-primary">View My Reports</button>
+                    </form>
+                  {% endif %}
                 </div>
                 <hr>
               {% endif %}
