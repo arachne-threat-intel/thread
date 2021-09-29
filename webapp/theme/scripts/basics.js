@@ -10,9 +10,9 @@ var highlightClassImg = "imgHighlight";
 // The URL for the rest requests
 var restUrl = $('script#basicsScript').data('rest-url');
 
-function restRequest(type, data, callback) {
+function restRequest(type, data, callback=null, url=restUrl) {
   $.ajax({
-    url: restUrl,
+    url: url,
     type: type,
     contentType: 'application/json',
     data: JSON.stringify(data),
@@ -310,5 +310,12 @@ function addMissingTechnique() {
     acceptAttack(sentence_id, uid);
     // If an attack has been added to a temporarily highlighted sentence, the highlighting isn't temporary anymore
     tempHighlighted = undefined
+  }
+}
+
+function myReports() {
+  var passwordField = document.getElementById("password");
+  if (passwordField.checkValidity()) {
+    restRequest("POST", {"password": passwordField.value}, null, "/thread/myreports/view");
   }
 }

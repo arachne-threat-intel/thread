@@ -21,7 +21,7 @@ def sanitise_filename(filename=''):
 
 
 class WebAPI:
-    def __init__(self, services, js_src):
+    def __init__(self, services, js_src, is_local=True):
         self.dao = services.get('dao')
         self.data_svc = services['data_svc']
         self.web_svc = services['web_svc']
@@ -29,6 +29,7 @@ class WebAPI:
         self.reg_svc = services['reg_svc']
         self.rest_svc = services['rest_svc']
         self.report_statuses = self.rest_svc.get_status_enum()
+        self.is_local = is_local
         js_src_config = js_src if js_src in [ONLINE_JS_SRC, OFFLINE_JS_SRC] else ONLINE_JS_SRC
         self.BASE_PAGE_DATA = dict(about_url=self.web_svc.get_route(self.web_svc.ABOUT_KEY),
                                    home_url=self.web_svc.get_route(self.web_svc.HOME_KEY),
@@ -114,7 +115,7 @@ class WebAPI:
             else:
                 page_data[status.value]['reports'] = await self.data_svc.status_grouper(status.value)
         # Update overall template data and return
-        template_data.update(reports_by_status=page_data)
+        template_data.update(reports_by_status=page_data, is_local=self.is_local)
         return template_data
 
     async def rest_api(self, request):

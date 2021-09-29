@@ -6,11 +6,25 @@
     <div class="row">
       <nav class="col-md-2 d-none d-md-block bg-light sidebar">
         <div class="sidebar-sticky">
-          <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1">
-            <span>Enter New Report</span>
-          </h6>
           <div class="tab-content">
             <div id="home" class="tab-pane fade in active show">
+              {% if not is_local %}
+                <div>
+                  <h6>
+                    <span><b>Viewing: Public</b></span>
+                  </h6>
+                  <form>
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control" id="password" required>
+                    <small>View <a href="/account/profile/" target="_blank">your Arachne profile</a> to obtain your Thread password.</small>
+                    <button type="submit" onclick='myReports()' class="btn btn-primary">View My Reports</button>
+                  </form>
+                </div>
+                <hr>
+              {% endif %}
+              <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1">
+                <span><b>Enter New Report</b></span>
+              </h6>
               <div class="card-body divOperationalFlow-tacticsummary">
                 <form>
                   <div class="form-group">

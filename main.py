@@ -156,7 +156,7 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
     ml_svc = MLService(web_svc=web_svc, dao=dao, dir_prefix=dir_prefix)
     rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix=dir_prefix, queue_limit=queue_limit)
     services = dict(dao=dao, data_svc=data_svc, ml_svc=ml_svc, reg_svc=reg_svc, web_svc=web_svc, rest_svc=rest_svc)
-    website_handler = WebAPI(services=services, js_src=js_src)
+    website_handler = WebAPI(services=services, js_src=js_src, is_local=is_local)
     start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict, app_setup_func=app_setup_func)
 
 
