@@ -314,9 +314,9 @@ function addMissingTechnique() {
 }
 
 function myReports() {
-  var passwordField = document.getElementById("password");
-  if (passwordField.checkValidity()) {
-    restRequest("POST", {"password": passwordField.value}, page_refresh, "/thread/myreports/view");
+  var tokenField = document.getElementById("token");
+  if (tokenField.checkValidity()) {
+    restRequest("POST", {"token": tokenField.value}, page_refresh, "/thread/myreports/view");
   }
 }
 

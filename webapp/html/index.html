@@ -17,9 +17,10 @@
                     <button type="button" onclick='myReportsExit()' class="btn btn-primary">Exit to Public View</button>
                   {% else %}
                     <form>
-                      <label for="password">Password</label>
-                      <input type="password" class="form-control" id="password" required>
-                      <small>View <a href="/account/profile/" target="_blank">your Arachne profile</a> to obtain your Thread password.</small>
+                      <label for="token">My Thread Token</label>
+                      <input type="text" class="form-control" id="token" required>
+                      <small>View <a href="/account/profile/" target="_blank">your Arachne profile</a> to obtain your Thread token.</small>
+                      <br>
                       <button type="submit" onclick='myReports()' class="btn btn-primary">View My Reports</button>
                     </form>
                   {% endif %}
