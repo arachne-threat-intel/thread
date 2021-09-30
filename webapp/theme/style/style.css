@@ -62,14 +62,15 @@ footer .twitter-btn { float: right; }
 .navbar-orange > a > .nav-link {
   color: white;
 }
-.nav-tabs {
+#navbarCollapse .nav-tabs {
   border-bottom: none;
 }
-.nav-tabs .nav-link {
+#navbarCollapse .nav-tabs .nav-link {
   color: white;
   font-family: 'Roboto-Light', sans-serif;
 }
-.nav-tabs .nav-link:focus, .nav-tabs .nav-link.active {
+#navbarCollapse .nav-tabs .nav-link:focus,
+#navbarCollapse .nav-tabs .nav-link.active {
   color: white;
   border: none;
   border-top-left-radius: 0rem;
@@ -83,7 +84,7 @@ footer .twitter-btn { float: right; }
   border-top-left-radius: .25rem;
   border-top-right-radius: .25rem;
 }
-.nav-link {
+#navbarCollapse .nav-link {
   font-size: 1rem;
   padding: .3rem 1rem;
   color: #596877;
@@ -290,6 +291,11 @@ table {
 .error-icon {
   color: red;
   cursor: help;
+}
+
+#publicReportCheck, #publicReportCheckCSV {
+  margin: 0.2rem;
+  margin-top: 0.3rem;
 }
 
 /* about.html */
