@@ -143,13 +143,17 @@ function submit_report() {
 }
 
 function upload_file() {
-  // console.log(document.getElementById("csv_file"))
-  var file = document.getElementById("csv_file").files[0];
-  if(file) {
+  // Check the file field is valid before proceeding
+  var fileField = document.getElementById("csv_file");
+  if (!fileField.checkValidity()) {
+    return;
+  }
+  // Parse the file and send in request to complete submission
+  var file = fileField.files[0];
+  if (file) {
     var reader = new FileReader();
     reader.readAsText(file, "UTF-8");
     reader.onload = function(evt) {
-      // console.log(evt.target.result)
       restRequest('POST', {'index': 'insert_csv', 'file': evt.target.result});
     }
     reader.onerror = function(evt) {
