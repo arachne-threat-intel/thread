@@ -18,7 +18,7 @@
                 <input type="text" class="form-control" id="token" required>
                 <small>View <a href="/account/profile/" target="_blank">your Arachne profile</a> to obtain your Thread token.</small>
                 <br>
-                <button type="submit" onclick='myReports()' class="btn btn-primary">View My Reports</button>
+                <button type="button" onclick='myReports()' class="btn btn-primary">View My Reports</button>
               </form>
             {% endif %}
           </div>
@@ -63,7 +63,7 @@
                   <label for="publicReportCheck"><small>I confirm I am making the report(s) created from this submission <b>public</b>.</small></label>
                 </div>
               {% endif %}
-              <button type="submit" onclick='submit_report({% if not is_local %}#publicReportCheck{% endif %})'
+              <button type="button" onclick='submit_report({% if not is_local %}#publicReportCheck{% endif %})'
                       class="btn btn-primary">Submit</button>
             </form>
           </div>
@@ -87,7 +87,7 @@
                 </div>
               {% endif %}
               <div class="file-path-wrapper">
-                <button type="submit" onclick="upload_file({% if not is_local %}#publicReportCheck{% endif %})"
+                <button type="button" onclick="upload_file({% if not is_local %}#publicReportCheck{% endif %})"
                         class="btn btn-primary">Upload CSV File</button>
               </div>
             </form>
