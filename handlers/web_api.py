@@ -86,9 +86,13 @@ class WebAPI:
 
     @template('index.html')
     async def index(self, request):
-        user = await self.web_svc.get_current_user(request)
         # Dictionaries for the template data
         page_data, template_data = dict(), self.BASE_PAGE_DATA.copy()
+        # Adding user details if this is not a local session
+        if not self.is_local:
+            token = await self.web_svc.get_current_token(request)
+            username = await self.web_svc.get_username_from_token(request, token)
+            template_data.update(token=token, username=username)
         # For each report status, get the reports for the index page
         for status in self.report_statuses:
             is_complete_status = status.value == self.report_statuses.COMPLETED.value
@@ -116,7 +120,7 @@ class WebAPI:
             else:
                 page_data[status.value]['reports'] = await self.data_svc.status_grouper(status.value)
         # Update overall template data and return
-        template_data.update(reports_by_status=page_data, user=user)
+        template_data.update(reports_by_status=page_data)
         return template_data
 
     async def rest_api(self, request):

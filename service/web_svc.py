@@ -73,11 +73,22 @@ class WebService:
     def clear_cached_responses(self):  # TODO consider how often to call this
         self.cached_responses = dict()
 
-    async def get_current_user(self, request):
-        """Function to obtain the current user given a request."""
+    async def get_current_token(self, request):
+        """Function to obtain the current user-token given a request."""
         if self.is_local:
             return None
         return await authorized_userid(request)
+
+    async def get_username_from_token(self, request, token=''):
+        """Function to obtain the current username given a token."""
+        if self.is_local:
+            return None
+        try:
+            # Attempt to use app's method to obtain the username; log if this couldn't be done
+            return await request.app.token_to_username(token)
+        except (TypeError, AttributeError) as e:
+            logging.error('Attempted to call token_to_username() but failed: ' + str(e))
+            return None
 
     async def map_all_html(self, url_input):
         a = newspaper.Article(url_input, keep_article_html=True)

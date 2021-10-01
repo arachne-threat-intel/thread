@@ -8,9 +8,9 @@
         {% if not is_local %}
           <div>
             <h6>
-              <span><b>Viewing: {% if user %}{{user}}{% else %}Public{% endif %}</b></span>
+              <span><b>Viewing: {% if username %}{{username}}{% else %}Public{% endif %}</b></span>
             </h6>
-            {% if user %}
+            {% if token %}
               <button type="button" onclick='myReportsExit()' class="btn btn-primary">Exit to Public View</button>
             {% else %}
               <form>
