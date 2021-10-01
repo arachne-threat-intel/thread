@@ -35,7 +35,7 @@ class WebAPI:
                                    home_url=self.web_svc.get_route(self.web_svc.HOME_KEY),
                                    rest_url=self.web_svc.get_route(self.web_svc.REST_KEY),
                                    static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY),
-                                   js_src_online=js_src_config == ONLINE_JS_SRC)
+                                   js_src_online=js_src_config == ONLINE_JS_SRC, is_local=self.is_local)
         self.attack_dropdown_list = []
 
     async def pre_launch_init(self):
@@ -116,7 +116,7 @@ class WebAPI:
             else:
                 page_data[status.value]['reports'] = await self.data_svc.status_grouper(status.value)
         # Update overall template data and return
-        template_data.update(reports_by_status=page_data, is_local=self.is_local, user=user)
+        template_data.update(reports_by_status=page_data, user=user)
         return template_data
 
     async def rest_api(self, request):

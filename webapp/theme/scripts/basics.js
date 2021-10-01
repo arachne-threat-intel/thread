@@ -9,6 +9,8 @@ var highlightClass = "bg-warning";
 var highlightClassImg = "imgHighlight";
 // The URL for the rest requests
 var restUrl = $('script#basicsScript').data('rest-url');
+// If this script is being run locally
+var isLocal = $('script#basicsScript').data('run-local');
 
 function restRequest(type, data, callback=null, url=restUrl) {
   $.ajax({
@@ -127,7 +129,7 @@ function finish_analysis(reportTitle) {
   }
 }
 
-function submit_report() {
+function submit_report(confirmFieldID) {
   // The URL and title field values comma-separated
   var url = document.getElementById("url");
   var urls = url.value.split(",");
@@ -138,14 +140,20 @@ function submit_report() {
     alert("Number of URLs and titles do not match, please insert same number of comma separated items.");
   // Proceed with submitting if both fields are valid
   } else if (title.checkValidity() && url.checkValidity()) {
-    restRequest('POST', {'index':'insert_report', 'url':urls, 'title':titles});
+    // If not running locally, check confirmation checkbox
+    var needsConfirmation = !isLocal && confirmFieldID;
+    if (!needsConfirmation || (needsConfirmation && document.getElementById(confirmFieldID).checkValidity())) {
+      restRequest('POST', {'index':'insert_report', 'url':urls, 'title':titles});
+    }
   }
 }
 
-function upload_file() {
+function upload_file(confirmFieldID) {
   // Check the file field is valid before proceeding
   var fileField = document.getElementById("csv_file");
-  if (!fileField.checkValidity()) {
+  // If not running locally, check confirmation checkbox
+  var needsConfirmation = !isLocal && confirmFieldID;
+  if (!fileField.checkValidity() || (needsConfirmation && !document.getElementById(confirmFieldID).checkValidity())) {
     return;
   }
   // Parse the file and send in request to complete submission
@@ -318,12 +326,23 @@ function addMissingTechnique() {
 }
 
 function myReports() {
-  var tokenField = document.getElementById("token");
-  if (tokenField.checkValidity()) {
-    restRequest("POST", {"token": tokenField.value}, page_refresh, "/thread/myreports/view");
+  if (!isLocal) {
+    var tokenField = document.getElementById("token");
+    if (tokenField.checkValidity()) {
+      restRequest("POST", {"token": tokenField.value}, page_refresh, "/thread/myreports/view");
+    }
   }
 }
 
 function myReportsExit() {
-  restRequest("POST", {}, page_refresh, "/thread/myreports/exit");
+  if (!isLocal) {
+    restRequest("POST", {}, page_refresh, "/thread/myreports/exit");
+  }
+}
+
+function tokenFieldCheck(field) {
+  if (!isLocal) {
+    checkboxID = $(field).data("paired-checkbox");
+    $(checkboxID).prop("required", !Boolean($(field).val().length));
+  }
 }

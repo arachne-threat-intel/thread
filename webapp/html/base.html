@@ -32,7 +32,7 @@
       <script src="{{static_url}}scripts/kanban.js"></script>
     {% endif %}
     <link href='{{static_url}}style/style.css' rel='stylesheet' type='text/css'/>
-    <script id="basicsScript" src="{{static_url}}scripts/basics.js" data-rest-url="{{rest_url}}"></script>
+    <script id="basicsScript" src="{{static_url}}scripts/basics.js" data-rest-url="{{rest_url}}" data-run-local="{{is_local|int}}"></script>
     {% endblock %}
   </head>
 
