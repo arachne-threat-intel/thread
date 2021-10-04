@@ -59,7 +59,7 @@ function prefixHttp(urlInput) {
     // Rejoin elements and update input
     urlInput.value = urls.join(", ");
     // Revert to initial value if invalid
-    if (!urlInput.checkValidity()) {
+    if (!urlInput.reportValidity()) {
       urlInput.value = initialInput;
     }
   }
@@ -139,10 +139,10 @@ function submit_report(confirmFieldID) {
   if (titles.length != urls.length) {
     alert("Number of URLs and titles do not match, please insert same number of comma separated items.");
   // Proceed with submitting if both fields are valid
-  } else if (title.checkValidity() && url.checkValidity()) {
+  } else if (url.reportValidity() && title.reportValidity()) {
     // If not running locally, check confirmation checkbox
     var needsConfirmation = !isLocal && confirmFieldID;
-    if (!needsConfirmation || (needsConfirmation && document.getElementById(confirmFieldID).checkValidity())) {
+    if (!needsConfirmation || (needsConfirmation && document.getElementById(confirmFieldID).reportValidity())) {
       restRequest('POST', {'index':'insert_report', 'url':urls, 'title':titles});
     }
   }
@@ -153,7 +153,7 @@ function upload_file(confirmFieldID) {
   var fileField = document.getElementById("csv_file");
   // If not running locally, check confirmation checkbox
   var needsConfirmation = !isLocal && confirmFieldID;
-  if (!fileField.checkValidity() || (needsConfirmation && !document.getElementById(confirmFieldID).checkValidity())) {
+  if (!fileField.reportValidity() || (needsConfirmation && !document.getElementById(confirmFieldID).reportValidity())) {
     return;
   }
   // Parse the file and send in request to complete submission
@@ -328,7 +328,7 @@ function addMissingTechnique() {
 function myReports() {
   if (!isLocal) {
     var tokenField = document.getElementById("token");
-    if (tokenField.checkValidity()) {
+    if (tokenField.reportValidity()) {
       restRequest("POST", {"token": tokenField.value}, page_refresh, "/thread/myreports/view");
     }
   }
@@ -342,7 +342,11 @@ function myReportsExit() {
 
 function tokenFieldCheck(field) {
   if (!isLocal) {
-    checkboxID = $(field).data("paired-checkbox");
-    $(checkboxID).prop("required", !Boolean($(field).val().length));
+    // Check the token field has a value; change the public-confirmation required and hidden properties based on this
+    var hasValue = Boolean($(field).val().length);
+    var checkboxID = $(field).data("paired-checkbox");
+    $(checkboxID).prop("required", !hasValue);
+    var checkboxDivID = $(field).data("paired-checkbox-div");
+    $(checkboxDivID).prop("hidden", hasValue);
   }
 }
