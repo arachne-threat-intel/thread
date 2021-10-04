@@ -298,6 +298,10 @@ table {
   margin-top: 0.3rem;
 }
 
+#submitTabForms form {
+  margin-top: 1rem;
+}
+
 /* about.html */
 
 #aboutInfo {
