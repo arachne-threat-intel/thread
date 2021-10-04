@@ -129,7 +129,23 @@ function finish_analysis(reportTitle) {
   }
 }
 
-function submit_report(confirmFieldID) {
+function submit(data, submitButton) {
+  // Do extra checks if this is not locally run
+  if(!isLocal) {
+    // IDs of fields related to input of Thread token
+    var confirmFieldID = $(submitButton).data("confirm-field-id");
+    var tokenFieldID = $(submitButton).data("token-field-id");
+    // Check confirmation checkbox
+    if (!document.getElementById(confirmFieldID).reportValidity()) {
+      return;
+    }
+    // Update request-data with token
+    data.token = $("#" + tokenFieldID).val();
+  }
+  restRequest('POST', data);
+}
+
+function submit_report(submitButton) {
   // The URL and title field values comma-separated
   var url = document.getElementById("url");
   var urls = url.value.split(",");
@@ -140,20 +156,14 @@ function submit_report(confirmFieldID) {
     alert("Number of URLs and titles do not match, please insert same number of comma separated items.");
   // Proceed with submitting if both fields are valid
   } else if (url.reportValidity() && title.reportValidity()) {
-    // If not running locally, check confirmation checkbox
-    var needsConfirmation = !isLocal && confirmFieldID;
-    if (!needsConfirmation || (needsConfirmation && document.getElementById(confirmFieldID).reportValidity())) {
-      restRequest('POST', {'index':'insert_report', 'url':urls, 'title':titles});
-    }
+    submit({'index':'insert_report', 'url':urls, 'title':titles}, submitButton);
   }
 }
 
-function upload_file(confirmFieldID) {
+function upload_file(uploadButton) {
   // Check the file field is valid before proceeding
   var fileField = document.getElementById("csv_file");
-  // If not running locally, check confirmation checkbox
-  var needsConfirmation = !isLocal && confirmFieldID;
-  if (!fileField.reportValidity() || (needsConfirmation && !document.getElementById(confirmFieldID).reportValidity())) {
+  if (!fileField.reportValidity()) {
     return;
   }
   // Parse the file and send in request to complete submission
@@ -162,7 +172,7 @@ function upload_file(confirmFieldID) {
     var reader = new FileReader();
     reader.readAsText(file, "UTF-8");
     reader.onload = function(evt) {
-      restRequest('POST', {'index': 'insert_csv', 'file': evt.target.result});
+      submit({'index': 'insert_csv', 'file': evt.target.result}, uploadButton);
     }
     reader.onerror = function(evt) {
       alert("Error reading file");
