@@ -167,24 +167,46 @@ class RestService:
         return await self.data_svc.get_confirmed_attacks_for_sentence(sentence_id=sen_id)
 
     async def insert_report(self, request, criteria=None):
-        try:
-            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
-            criteria['title']
-        except (KeyError, TypeError):
-            return dict(error='Error inserting report(s).')
+        # Check for errors whilst updating request data with token (if applicable)
+        error = await self.pre_insert_add_token(request, request_data=criteria, key='title')
+        if error:
+            return error
         return await self._insert_batch_reports(criteria, len(criteria['title']))
 
     async def insert_csv(self, request, criteria=None):
-        try:
-            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
-            criteria['file']
-        except (KeyError, TypeError):
-            return dict(error='Error inserting report(s).')
+        # Check for errors whilst updating request data with token (if applicable)
+        error = await self.pre_insert_add_token(request, request_data=criteria, key='file')
+        if error:
+            return error
         try:
             df = self.verify_csv(criteria['file'])
         except (TypeError, ValueError) as e:  # Any errors occurring from the csv-checks
             return dict(error=str(e), alert_user=1)
         return await self._insert_batch_reports(df, df.shape[0])
+
+    async def pre_insert_add_token(self, request, request_data=None, key=None):
+        """Function to check sent request data before inserting reports and return the token to use."""
+        try:
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
+            request_data[key]
+        except (KeyError, TypeError):
+            return dict(error='Error inserting report(s).')
+        # If not running locally, check the token from the request_data is valid if one is given
+        if self.web_svc.is_local:
+            return None
+        token = request_data.get('token')  # obtain the token
+        if token:
+            # If there is a token, check it is a valid token
+            user = await self.web_svc.get_username_from_token(request, token=token)
+            # Alert user if they tried to associate their submission with an invalid token
+            if user is None:
+                return dict(error='Report(s) not submitted. Please enter a valid token or confirm you are making this '
+                                  'submission public. To find your token, please refer to your Arachne profile. If '
+                                  'this error is persistent, please contact us.', alert_user=1)
+        # If there is no token, blank data with None (to avoid mix of empty strings and Nones)
+        else:
+            request_data.update(token=None)
+        return None
 
     async def _insert_batch_reports(self, batch, row_count):
         # Possible responses to the request
