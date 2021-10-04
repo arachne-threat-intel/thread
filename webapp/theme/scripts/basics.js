@@ -133,16 +133,16 @@ function submit(data, submitButton) {
   // Do extra checks if this is not locally run
   if(!isLocal) {
     // IDs of fields related to input of Thread token
-    var confirmFieldID = $(submitButton).data("confirm-field-id");
     var tokenFieldID = $(submitButton).data("token-field-id");
+    var checkboxID = $(tokenFieldID).data("paired-checkbox");
     // Check confirmation checkbox
-    if (!document.getElementById(confirmFieldID).reportValidity()) {
+    if (!document.getElementById(checkboxID.replace("#", "")).reportValidity()) {
       return;
     }
     // Update request-data with token
-    data.token = $("#" + tokenFieldID).val();
+    data.token = $(tokenFieldID).val();
   }
-  restRequest('POST', data);
+  restRequest('POST', data, page_refresh);
 }
 
 function submit_report(submitButton) {
@@ -354,9 +354,17 @@ function tokenFieldCheck(field) {
   if (!isLocal) {
     // Check the token field has a value; change the public-confirmation required and hidden properties based on this
     var hasValue = Boolean($(field).val().length);
+    // Make the confirmation checkbox required if there is no value for the token field
     var checkboxID = $(field).data("paired-checkbox");
     $(checkboxID).prop("required", !hasValue);
-    var checkboxDivID = $(field).data("paired-checkbox-div");
+    // Hide the checkbox and accompanying label if there is a value
+    var checkboxDivID = $(checkboxID).data("parent-div");
+    var wasHidden = $(checkboxDivID).prop("hidden");
+    // If we are changing the hidden property (i.e. going from display > hidden and vice-versa), uncheck the box
+    if (wasHidden != hasValue) {
+      $(checkboxID).prop("checked", false);
+    }
+    // Finish by hiding or displaying the confirmation checkbox
     $(checkboxDivID).prop("hidden", hasValue);
   }
 }

@@ -57,17 +57,18 @@
                   <label for="reportToken">Thread Token</label>
                   <input type="text" class="form-control" id="reportToken" placeholder="Token for private report(s)"
                          onchange="tokenFieldCheck(this)" data-paired-checkbox="#publicReportCheck"
-                         data-paired-checkbox-div="#publicReportConf" value="{% if token %}{{token}}{% endif %}">
+                         value="{% if token %}{{token}}{% endif %}">
                 </div>
                 <div id="publicReportConf" {% if token %}hidden{% endif %}>
                   <div class="form-group d-flex">
-                    <input type="checkbox" id="publicReportCheck" {% if not token %}required{% endif %}>
+                    <input type="checkbox" id="publicReportCheck"
+                           data-parent-div="#publicReportConf" {% if not token %}required{% endif %}>
                     <label for="publicReportCheck"><small>I confirm I am making the report(s) created from this submission <b>public</b>.</small></label>
                   </div>
                 </div>
               {% endif %}
               <button type="button" onclick="submit_report(this)" class="btn btn-primary"
-                      data-confirm-field-id="publicReportCheck" data-token-field-id="reportToken">Submit</button>
+                      data-token-field-id="#reportToken">Submit</button>
             </form>
           </div>
           <div class="tab-pane fade" id="csv-div" role="tabpanel" aria-labelledby="csv-tab">
@@ -83,18 +84,19 @@
                   <label for="reportTokenCSV">Thread Token</label>
                   <input type="text" class="form-control" id="reportTokenCSV" placeholder="Token for private report(s)"
                          onchange="tokenFieldCheck(this)" data-paired-checkbox="#publicReportCheckCSV"
-                         data-paired-checkbox-div="#publicReportConfCSV" value="{% if token %}{{token}}{% endif %}">
+                         value="{% if token %}{{token}}{% endif %}">
                 </div>
                 <div id="publicReportConfCSV" {% if token %}hidden{% endif %}>
                   <div class="form-group d-flex">
-                    <input type="checkbox" id="publicReportCheckCSV" {% if not token %}required{% endif %}>
-                    <label for="publicReportCheck"><small>I confirm I am making the report(s) created from this submission <b>public</b>.</small></label>
+                    <input type="checkbox" id="publicReportCheckCSV"
+                           data-parent-div="#publicReportConfCSV" {% if not token %}required{% endif %}>
+                    <label for="publicReportCheckCSV"><small>I confirm I am making the report(s) created from this submission <b>public</b>.</small></label>
                   </div>
                 </div>
               {% endif %}
               <div class="file-path-wrapper">
                 <button type="button" onclick="upload_file(this)" class="btn btn-primary"
-                        data-confirm-field-id="publicReportCheckCSV" data-token-field-id="reportTokenCSV">Upload CSV File</button>
+                        data-token-field-id="#reportTokenCSV">Upload CSV File</button>
               </div>
             </form>
           </div>
