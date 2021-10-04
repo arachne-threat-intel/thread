@@ -72,9 +72,9 @@ class RestService:
     async def set_status(self, request, criteria=None):
         default_error = dict(error='Error setting status.')
         try:
-            # Check for malformed request parameters
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
             new_status, report_title = criteria['set_status'], criteria['report_title']
-        except KeyError:
+        except (KeyError, TypeError):
             return default_error
         # Get the report data from the provided report title
         try:
@@ -104,9 +104,9 @@ class RestService:
     async def delete_report(self, request, criteria=None):
         default_error = dict(error='Error deleting report.')
         try:
-            # Check for malformed request parameters
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
             report_title = criteria['report_title']
-        except KeyError:
+        except (KeyError, TypeError):
             return default_error
         # Get the report data from the provided report title
         try:
@@ -127,9 +127,9 @@ class RestService:
     async def remove_sentence(self, request, criteria=None):
         default_error = dict(error='Error removing item.')
         try:
-            # Check for malformed request parameters
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
             sen_id = criteria['sentence_id']
-        except KeyError:
+        except (KeyError, TypeError):
             return default_error
         # Determine if sentence or image
         sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
@@ -152,35 +152,38 @@ class RestService:
 
     async def sentence_context(self, request, criteria=None):
         try:
-            # Check for malformed request parameters
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
             sen_id = criteria['sentence_id']
-        except KeyError:
+        except (KeyError, TypeError):
             return dict(error='Error retrieving sentence info.')
         return await self.data_svc.get_active_sentence_hits(sentence_id=sen_id)
 
     async def confirmed_attacks(self, request, criteria=None):
         try:
-            # Check for malformed request parameters
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
             sen_id = criteria['sentence_id']
-        except KeyError:
+        except (KeyError, TypeError):
             return dict(error='Error retrieving sentence info.')
         return await self.data_svc.get_confirmed_attacks_for_sentence(sentence_id=sen_id)
 
     async def insert_report(self, request, criteria=None):
         try:
-            # Check for malformed request parameters
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
             criteria['title']
-        except KeyError:
+        except (KeyError, TypeError):
             return dict(error='Error inserting report(s).')
         return await self._insert_batch_reports(criteria, len(criteria['title']))
 
     async def insert_csv(self, request, criteria=None):
         try:
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
+            criteria['file']
+        except (KeyError, TypeError):
+            return dict(error='Error inserting report(s).')
+        try:
             df = self.verify_csv(criteria['file'])
         except (TypeError, ValueError) as e:  # Any errors occurring from the csv-checks
             return dict(error=str(e), alert_user=1)
-        except KeyError:  # Check for malformed request parameters
-            return dict(error='Error inserting report(s).')
         return await self._insert_batch_reports(df, df.shape[0])
 
     async def _insert_batch_reports(self, batch, row_count):
@@ -339,7 +342,7 @@ class RestService:
         try:
             # The sentence and attack IDs
             sen_id, attack_id = criteria['sentence_id'], criteria['attack_uid']
-        except KeyError:
+        except (KeyError, TypeError):
             return dict(error='Error adding attack.')
         # Get the attack information for this attack id
         attack_dict = await self.dao.get('attack_uids', dict(uid=attack_id))
@@ -411,7 +414,7 @@ class RestService:
         try:
             # The sentence and attack IDs
             sen_id, attack_id = criteria['sentence_id'], criteria['attack_uid']
-        except KeyError:
+        except (KeyError, TypeError):
             return dict(error='Error rejecting attack.')
         # Get the report sentence information for the sentence id
         sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
