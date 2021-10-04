@@ -69,7 +69,7 @@ class RestService:
             await self.queue.put(report)
             self.queue_as_list.append(report[URL])
 
-    async def set_status(self, criteria=None):
+    async def set_status(self, request, criteria=None):
         default_error = dict(error='Error setting status.')
         try:
             # Check for malformed request parameters
@@ -101,7 +101,7 @@ class RestService:
         else:
             return default_error
 
-    async def delete_report(self, criteria=None):
+    async def delete_report(self, request, criteria=None):
         default_error = dict(error='Error deleting report.')
         try:
             # Check for malformed request parameters
@@ -124,7 +124,7 @@ class RestService:
         await self.dao.delete('reports', dict(uid=report_id))
         return REST_SUCCESS
 
-    async def remove_sentence(self, criteria=None):
+    async def remove_sentence(self, request, criteria=None):
         default_error = dict(error='Error removing item.')
         try:
             # Check for malformed request parameters
@@ -150,7 +150,7 @@ class RestService:
         await self.dao.delete('original_html', dict(uid=sen_id))
         return REST_SUCCESS
 
-    async def sentence_context(self, criteria=None):
+    async def sentence_context(self, request, criteria=None):
         try:
             # Check for malformed request parameters
             sen_id = criteria['sentence_id']
@@ -158,7 +158,7 @@ class RestService:
             return dict(error='Error retrieving sentence info.')
         return await self.data_svc.get_active_sentence_hits(sentence_id=sen_id)
 
-    async def confirmed_attacks(self, criteria=None):
+    async def confirmed_attacks(self, request, criteria=None):
         try:
             # Check for malformed request parameters
             sen_id = criteria['sentence_id']
@@ -166,7 +166,7 @@ class RestService:
             return dict(error='Error retrieving sentence info.')
         return await self.data_svc.get_confirmed_attacks_for_sentence(sentence_id=sen_id)
 
-    async def insert_report(self, criteria=None):
+    async def insert_report(self, request, criteria=None):
         try:
             # Check for malformed request parameters
             criteria['title']
@@ -174,7 +174,7 @@ class RestService:
             return dict(error='Error inserting report(s).')
         return await self._insert_batch_reports(criteria, len(criteria['title']))
 
-    async def insert_csv(self, criteria=None):
+    async def insert_csv(self, request, criteria=None):
         try:
             df = self.verify_csv(criteria['file'])
         except (TypeError, ValueError) as e:  # Any errors occurring from the csv-checks
@@ -335,7 +335,7 @@ class RestService:
                               data=dict(current_status=ReportStatus.NEEDS_REVIEW.value))
         logging.info('Finished analysing report ' + report_id)
 
-    async def add_attack(self, criteria=None):
+    async def add_attack(self, request, criteria=None):
         try:
             # The sentence and attack IDs
             sen_id, attack_id = criteria['sentence_id'], criteria['attack_uid']
@@ -407,7 +407,7 @@ class RestService:
         # Return status message
         return REST_SUCCESS
 
-    async def reject_attack(self, criteria=None):
+    async def reject_attack(self, request, criteria=None):
         try:
             # The sentence and attack IDs
             sen_id, attack_id = criteria['sentence_id'], criteria['attack_uid']
