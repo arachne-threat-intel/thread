@@ -35,7 +35,8 @@ class ReportStatus(Enum):
 
 
 class RestService:
-    def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix='', queue_limit=None):
+    def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix='', queue_limit=None, max_tasks=1):
+        self.MAX_TASKS = max_tasks
         self.QUEUE_LIMIT = queue_limit
         self.dao = dao
         self.data_svc = data_svc
@@ -295,9 +296,8 @@ class RestService:
         input: nil
         output: nil
         """
-        max_tasks = 1
         # While there are tasks to do and we haven't exceeded the max number of reports to analyse concurrently
-        while 0 < self.queue.qsize() <= max_tasks:
+        while 0 < self.queue.qsize() <= self.MAX_TASKS:
             # Remove the next criteria stored in the queue
             criteria = await self.queue.get()
             # Use run_in_executor (due to event loop potentially blocked otherwise) to start analysis

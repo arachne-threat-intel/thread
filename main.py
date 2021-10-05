@@ -128,6 +128,7 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
         port = config.get('port', 9999)
         taxii_local = config.get('taxii-local', 'taxii-server')
         js_src = config.get('js-libraries', 'js-online-src')
+        max_tasks = config.get('max-analysis-tasks', 1)
         queue_limit = config.get('queue_limit', 0)
         json_file = config.get('json_file', None)
         json_file_path = os.path.join('models', json_file) if json_file else None
@@ -144,6 +145,10 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
     except TypeError:
         raise ValueError(int_error % 'queue_limit')
     try:
+        max_tasks = max(1, max_tasks)
+    except TypeError:
+        raise ValueError(int_error % 'max-analysis-tasks')
+    try:
         int(port)
     except ValueError:
         raise ValueError(int_error % 'port')
@@ -154,7 +159,8 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
     reg_svc = RegService(dao=dao)
     data_svc = DataService(dao=dao, web_svc=web_svc, dir_prefix=dir_prefix)
     ml_svc = MLService(web_svc=web_svc, dao=dao, dir_prefix=dir_prefix)
-    rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix=dir_prefix, queue_limit=queue_limit)
+    rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix=dir_prefix, queue_limit=queue_limit,
+                           max_tasks=max_tasks)
     services = dict(dao=dao, data_svc=data_svc, ml_svc=ml_svc, reg_svc=reg_svc, web_svc=web_svc, rest_svc=rest_svc)
     website_handler = WebAPI(services=services, js_src=js_src)
     start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict, app_setup_func=app_setup_func)

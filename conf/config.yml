@@ -19,6 +19,9 @@ db-engine: sqlite3
 # If you would like the database to be re-built on launch of Thread
 # Ineffective when db-engine = 'postgresql'; if wanted, call `main.py --build-db` separately (before launching Thread)
 build: True
+# The maximum number of reports which can be analysed concurrently at a time.
+# The default value of 1 means for reports in the queue, one is analysed at a time before the next report in the queue.
+max-analysis-tasks: 1
 
 # The following fields are optional - please check comments for behaviour when omitted.
 
