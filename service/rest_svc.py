@@ -9,6 +9,7 @@ import re
 
 from contextlib import suppress
 from enum import Enum, unique
+from functools import partial
 from io import StringIO
 from urllib.parse import unquote
 
@@ -43,7 +44,6 @@ class RestService:
         self.reg_svc = reg_svc
         self.queue = asyncio.Queue()  # task queue
         self.queue_as_list = []  # task queue as list
-        self.resources = []  # resource array
         # A dictionary to keep track of report statuses we have seen
         self.seen_report_status = dict()
         # The offline attack dictionary TODO check and update differences from db (different attack names)
@@ -292,27 +292,29 @@ class RestService:
     async def check_queue(self):
         """
         description: executes as concurrent job, manages taking jobs off the queue and executing them.
-        If a job is already being processed, wait until that job is done, then execute next job on queue.
         input: nil
         output: nil
         """
-        for task in range(len(self.resources)):  # check resources for finished tasks
-            if self.resources[task].done():
-                del self.resources[task]  # delete finished tasks
-
         max_tasks = 1
-        while self.queue.qsize() > 0:  # while there are still tasks to do....
-            await asyncio.sleep(0.01)  # check resources and execute tasks
-            if len(self.resources) >= max_tasks:  # if the resource pool is maxed out...
-                while len(self.resources) >= max_tasks:  # check resource pool until a task is finished
-                    for task in range(len(self.resources)):
-                        if self.resources[task].done():
-                            del self.resources[task]  # when task is finished, remove from resource pool
-                    await asyncio.sleep(1)  # allow other tasks to run while waiting
-            criteria = await self.queue.get()  # get next task off queue and run it
-            task = asyncio.create_task(self.start_analysis(criteria))
-            self.queue_as_list.remove(criteria[URL])
-            self.resources.append(task)
+        # While there are tasks to do and we haven't exceeded the max number of reports to analyse concurrently
+        while 0 < self.queue.qsize() <= max_tasks:
+            # Remove the next criteria stored in the queue
+            criteria = await self.queue.get()
+            # Use run_in_executor (due to event loop potentially blocked otherwise) to start analysis
+            loop = asyncio.get_running_loop()
+            loop.run_in_executor(None, partial(self.run_start_analysis, criteria=criteria))
+            await asyncio.sleep(1)  # allow other tasks to run while waiting
+
+    def run_start_analysis(self, criteria=None):
+        """Function to run start_analysis() for given criteria."""
+        # Create a new loop to execute the async method as per https://stackoverflow.com/a/46075571
+        loop = asyncio.new_event_loop()
+        try:
+            coroutine = self.start_analysis(criteria)
+            asyncio.set_event_loop(loop)
+            return loop.run_until_complete(coroutine)
+        finally:
+            loop.close()
 
     async def start_analysis(self, criteria=None):
         report_id = criteria[UID]
@@ -358,6 +360,7 @@ class RestService:
         # Update card to reflect the end of queue
         await self.dao.update('reports', where=dict(uid=report_id),
                               data=dict(current_status=ReportStatus.NEEDS_REVIEW.value))
+        self.queue_as_list.remove(criteria[URL])
         logging.info('Finished analysing report ' + report_id)
 
     async def add_attack(self, request, criteria=None):
