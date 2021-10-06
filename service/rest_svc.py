@@ -231,14 +231,14 @@ class RestService:
     async def _insert_batch_reports(self, batch, row_count, token=None):
         # Possible responses to the request
         default_error, success = dict(error='Error inserting report(s).'), REST_SUCCESS.copy()
-        # Flag if queue limit is exceeded
-        limit_exceeded = False
+        # Different counts for different reasons why reports are not queued
+        limit_exceeded, duplicate_urls, malformed_urls = 0, 0, 0
         # Get the relevant queue for this user
         queue = self.get_queue_for_user(token=token)
         for row in range(row_count):
             # If a new report will exceed the queue limit, stop iterating through further reports
             if self.QUEUE_LIMIT and self.queue.qsize() + 1 > self.QUEUE_LIMIT:
-                limit_exceeded = True
+                limit_exceeded = row_count - row
                 break
             try:
                 title, url = batch['title'][row].strip(), batch[URL][row].strip()
@@ -258,24 +258,30 @@ class RestService:
             # Set up a temporary dictionary to represent db object
             temp_dict = dict(title=title, url=url, current_status=ReportStatus.QUEUE.value, token=token)
             # Before adding to the db, check that this submitted URL isn't already in the queue; if so, skip it
-            url_found = False
+            skip_report = False
             for queued_url in queue:
                 try:
                     if self.web_svc.urls_match(testing_url=url, matches_with=queued_url):
-                        url_found = True
+                        skip_report = True
+                        duplicate_urls += 1
                         break
                 except ValueError:
-                    return default_error
+                    skip_report = True
+                    malformed_urls += 1
+                    break
             # Proceed to add to queue if URL was not found
-            if not url_found:
+            if not skip_report:
                 # Insert report into db and update temp_dict with inserted ID from db
                 temp_dict[UID] = await self.dao.insert_generate_uid('reports', temp_dict)
                 # Finally, update queue and check queue when batch is finished
                 await self.queue.put(temp_dict)
                 queue.append(url)
-        if limit_exceeded:
-            success.update(
-                dict(info='Request contained URL(s) which exceeded queue limit. These were not added to the queue'))
+        if limit_exceeded or duplicate_urls or malformed_urls:
+            message = '%s of %s ' % (sum([limit_exceeded, duplicate_urls, malformed_urls]), row_count) + \
+                      'report(s) not added to the queue.\n- %s exceeded queue limit.' % limit_exceeded + \
+                      '\n- %s already in the queue/duplicate URL(s).' % duplicate_urls + \
+                      '\n- %s malformed URL(s).' % malformed_urls
+            success.update(dict(info=message, alert_user=1))
         asyncio.create_task(self.check_queue())
         return success
 

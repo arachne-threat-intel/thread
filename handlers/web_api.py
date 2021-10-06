@@ -151,7 +151,7 @@ class WebAPI:
         status = 200
         if output is not None and type(output) != dict:
             pass
-        elif output is None or output.get('success'):
+        elif output is None or (output.get('success') and not output.get('alert_user')):
             status = 204
         elif output.get('ignored'):
             status = 202

@@ -18,7 +18,10 @@ function restRequest(type, data, callback=null, url=restUrl) {
     type: type,
     contentType: 'application/json',
     data: JSON.stringify(data),
-    success: function(data) {
+    success: function(data, textStatus, xhr) {
+      if (xhr?.responseJSON?.alert_user && xhr?.responseJSON?.info) {
+        alert(xhr.responseJSON.info);
+      }
       if (callback instanceof Function) {
         callback(data);
       }
