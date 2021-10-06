@@ -13,6 +13,7 @@ from functools import partial
 from io import StringIO
 from urllib.parse import unquote
 
+PUBLIC = 'public'
 UID = 'uid'
 URL = 'url'
 REST_IGNORED = dict(ignored=1)
@@ -43,8 +44,8 @@ class RestService:
         self.web_svc = web_svc
         self.ml_svc = ml_svc
         self.reg_svc = reg_svc
+        self.queue_map = dict()  # map each user to their own queue
         self.queue = asyncio.Queue()  # task queue
-        self.queue_as_list = []  # task queue as list
         # A dictionary to keep track of report statuses we have seen
         self.seen_report_status = dict()
         # The offline attack dictionary TODO check and update differences from db (different attack names)
@@ -56,6 +57,15 @@ class RestService:
     def get_status_enum():
         return ReportStatus
 
+    def get_queue_for_user(self, token=None):
+        """Function to retrieve queue (as list) for a given user token."""
+        # No token = queue for public-use
+        token = token or PUBLIC
+        # Set up empty list if queue-map doesn't already have one
+        if token not in self.queue_map:
+            self.queue_map[token] = []
+        return self.queue_map[token]
+
     async def prepare_queue(self):
         """Function to add to the queue any reports left from a previous session."""
         reports = await self.dao.get('reports', dict(error=self.dao.db_false_val,
@@ -66,9 +76,11 @@ class RestService:
             await self.dao.delete('report_sentences', dict(report_uid=report[UID]))
             await self.dao.delete('report_sentence_hits', dict(report_uid=report[UID]))
             await self.dao.delete('original_html', dict(report_uid=report[UID]))
+            # Get the relevant queue for this user
+            queue = self.get_queue_for_user(token=report.get('token'))
             # Add to the queue
             await self.queue.put(report)
-            self.queue_as_list.append(report[URL])
+            queue.append(report[URL])
 
     async def set_status(self, request, criteria=None):
         default_error = dict(error='Error setting status.')
@@ -172,7 +184,7 @@ class RestService:
         error = await self.pre_insert_add_token(request, request_data=criteria, key='title')
         if error:
             return error
-        return await self._insert_batch_reports(criteria, len(criteria['title']))
+        return await self._insert_batch_reports(criteria, len(criteria['title']), token=criteria.get('token'))
 
     async def insert_csv(self, request, criteria=None):
         # Check for errors whilst updating request data with token (if applicable)
@@ -183,7 +195,7 @@ class RestService:
             df = self.verify_csv(criteria['file'])
         except (TypeError, ValueError) as e:  # Any errors occurring from the csv-checks
             return dict(error=str(e), alert_user=1)
-        return await self._insert_batch_reports(df, df.shape[0])
+        return await self._insert_batch_reports(df, df.shape[0], token=criteria.get('token'))
 
     async def pre_insert_add_token(self, request, request_data=None, key=None):
         """Function to check sent request data before inserting reports and return the token to use."""
@@ -209,11 +221,13 @@ class RestService:
             request_data.update(token=None)
         return None
 
-    async def _insert_batch_reports(self, batch, row_count):
+    async def _insert_batch_reports(self, batch, row_count, token=None):
         # Possible responses to the request
         default_error, success = dict(error='Error inserting report(s).'), REST_SUCCESS.copy()
         # Flag if queue limit is exceeded
         limit_exceeded = False
+        # Get the relevant queue for this user
+        queue = self.get_queue_for_user(token=token)
         for row in range(row_count):
             # If a new report will exceed the queue limit, stop iterating through further reports
             if self.QUEUE_LIMIT and self.queue.qsize() + 1 > self.QUEUE_LIMIT:
@@ -235,10 +249,10 @@ class RestService:
             # Ensure the report has a unique title
             title = await self.data_svc.get_unique_title(title)
             # Set up a temporary dictionary to represent db object
-            temp_dict = dict(title=title, url=url, current_status=ReportStatus.QUEUE.value)
+            temp_dict = dict(title=title, url=url, current_status=ReportStatus.QUEUE.value, token=token)
             # Before adding to the db, check that this submitted URL isn't already in the queue; if so, skip it
             url_found = False
-            for queued_url in self.queue_as_list:
+            for queued_url in queue:
                 try:
                     if self.web_svc.urls_match(testing_url=url, matches_with=queued_url):
                         url_found = True
@@ -251,7 +265,7 @@ class RestService:
                 temp_dict[UID] = await self.dao.insert_generate_uid('reports', temp_dict)
                 # Finally, update queue and check queue when batch is finished
                 await self.queue.put(temp_dict)
-                self.queue_as_list.append(url)
+                queue.append(url)
         if limit_exceeded:
             success.update(
                 dict(info='Request contained URL(s) which exceeded queue limit. These were not added to the queue'))
@@ -360,7 +374,9 @@ class RestService:
         # Update card to reflect the end of queue
         await self.dao.update('reports', where=dict(uid=report_id),
                               data=dict(current_status=ReportStatus.NEEDS_REVIEW.value))
-        self.queue_as_list.remove(criteria[URL])
+        # Update the relevant queue for this user
+        queue = self.get_queue_for_user(token=criteria.get('token'))
+        queue.remove(criteria[URL])
         logging.info('Finished analysing report ' + report_id)
 
     async def add_attack(self, request, criteria=None):
