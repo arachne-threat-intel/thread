@@ -46,6 +46,7 @@ class RestService:
         self.reg_svc = reg_svc
         self.queue_map = dict()  # map each user to their own queue
         self.queue = asyncio.Queue()  # task queue
+        self.current_tasks = []  # tasks that are currently being executed
         # A dictionary to keep track of report statuses we have seen
         self.seen_report_status = dict()
         # The offline attack dictionary TODO check and update differences from db (different attack names)
@@ -65,6 +66,12 @@ class RestService:
         if token not in self.queue_map:
             self.queue_map[token] = []
         return self.queue_map[token]
+
+    def clean_current_tasks(self):
+        """Function to remove finished tasks from the current_tasks list."""
+        for task in range(len(self.current_tasks)):  # check resources for finished tasks
+            if self.current_tasks[task].done():
+                del self.current_tasks[task]  # delete finished tasks
 
     async def prepare_queue(self):
         """Function to add to the queue any reports left from a previous session."""
@@ -310,14 +317,17 @@ class RestService:
         input: nil
         output: nil
         """
-        # While there are tasks to do and we haven't exceeded the max number of reports to analyse concurrently
-        while 0 < self.queue.qsize() <= self.MAX_TASKS:
-            # Remove the next criteria stored in the queue
-            criteria = await self.queue.get()
+        self.clean_current_tasks()
+        while self.queue.qsize() > 0:  # while there are still tasks to do...
+            await asyncio.sleep(1)  # allow other tasks to run while waiting
+            while len(self.current_tasks) >= self.MAX_TASKS:  # check resource pool until a task is finished
+                self.clean_current_tasks()
+                await asyncio.sleep(1)  # allow other tasks to run while waiting
+            criteria = await self.queue.get()  # get next task off queue and run it
             # Use run_in_executor (due to event loop potentially blocked otherwise) to start analysis
             loop = asyncio.get_running_loop()
-            loop.run_in_executor(None, partial(self.run_start_analysis, criteria=criteria))
-            await asyncio.sleep(1)  # allow other tasks to run while waiting
+            task = loop.run_in_executor(None, partial(self.run_start_analysis, criteria=criteria))
+            self.current_tasks.append(task)
 
     def run_start_analysis(self, criteria=None):
         """Function to run start_analysis() for given criteria."""
