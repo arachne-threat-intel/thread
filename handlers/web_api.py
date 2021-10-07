@@ -88,6 +88,8 @@ class WebAPI:
     async def index(self, request):
         # Dictionaries for the template data
         page_data, template_data = dict(), self.BASE_PAGE_DATA.copy()
+        # The token used for this session
+        token = None
         # Adding user details if this is not a local session
         if not self.is_local:
             token = await self.web_svc.get_current_token(request)
@@ -101,8 +103,10 @@ class WebAPI:
                                            analysis_button='View Analysis' if is_complete_status else 'Analyse')
             # If the status is 'queue', obtain errored reports separately so we can provide info without these
             if status.value == self.report_statuses.QUEUE.value:
-                pending = await self.data_svc.status_grouper(status.value, criteria=dict(error=self.dao.db_false_val))
-                errored = await self.data_svc.status_grouper(status.value, criteria=dict(error=self.dao.db_true_val))
+                pending = await self.data_svc.status_grouper(
+                    status.value, criteria=dict(error=self.dao.db_false_val, token=token))
+                errored = await self.data_svc.status_grouper(
+                    status.value, criteria=dict(error=self.dao.db_true_val, token=token))
                 page_data[status.value]['reports'] = pending + errored
                 if self.rest_svc.QUEUE_LIMIT:
                     template_data['queue_set'] = 1
@@ -118,7 +122,8 @@ class WebAPI:
                 del page_data[status.value]['analysis_button']
             # Else proceed to obtain the reports for this status as normal
             else:
-                page_data[status.value]['reports'] = await self.data_svc.status_grouper(status.value)
+                page_data[status.value]['reports'] = \
+                    await self.data_svc.status_grouper(status.value, criteria=dict(token=token))
         # Update overall template data and return
         template_data.update(reports_by_status=page_data)
         return template_data
