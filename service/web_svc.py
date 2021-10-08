@@ -73,6 +73,19 @@ class WebService:
     def clear_cached_responses(self):  # TODO consider how often to call this
         self.cached_responses = dict()
 
+    async def action_allowed(self, request, action, context=None):
+        """Function to check an action is permitted given a request."""
+        if self.is_local:
+            # A permission-checker is not implemented for local-use
+            # and the user is in control of all their data, so allow the action
+            return True
+        try:
+            # Attempt to use app's method to check permission; log if this couldn't be done
+            return await request.app.permission_checker(request, action, context)
+        except (TypeError, AttributeError) as e:
+            logging.error('Misconfigured app: permission_checker() error: ' + str(e))
+            return False
+
     async def get_current_token(self, request):
         """Function to obtain the current user-token given a request."""
         if self.is_local:
@@ -87,7 +100,7 @@ class WebService:
             # Attempt to use app's method to obtain the username; log if this couldn't be done
             return await request.app.token_to_username(token)
         except (TypeError, AttributeError) as e:
-            logging.error('Attempted to call token_to_username() but failed: ' + str(e))
+            logging.error('Misconfigured app: token_to_username() error: ' + str(e))
             return None
 
     async def map_all_html(self, url_input):

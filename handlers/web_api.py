@@ -181,6 +181,8 @@ class WebAPI:
             report_id = report[0]['uid']
         except (KeyError, IndexError):
             return self.respond_error(message='Invalid URL')
+        # Found a valid report, check if protected by token
+        await self.web_svc.action_allowed(request, 'edit', context=dict(report=report[0]))
         # A queued report would pass the above check but be blank; raise an error instead
         if report[0]['current_status'] == self.report_statuses.QUEUE.value:
             return self.respond_error(message='Invalid URL')
