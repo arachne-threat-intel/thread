@@ -214,6 +214,8 @@ class WebAPI:
             report_id, report_status = report[0]['uid'], report[0]['current_status']
         except (KeyError, IndexError):
             return self.respond_error()
+        # Found a valid report, check if protected by token
+        await self.web_svc.action_allowed(request, 'nav-export', context=dict(report=report[0]))
         # A queued report would pass the above check but be blank; raise an error instead
         if report_status == self.report_statuses.QUEUE.value:
             return self.respond_error()
@@ -258,6 +260,8 @@ class WebAPI:
             report_id, report_status, report_url = report[0]['uid'], report[0]['current_status'], report[0]['url']
         except (KeyError, IndexError):
             return self.respond_error()
+        # Found a valid report, check if protected by token
+        await self.web_svc.action_allowed(request, 'pdf-export', context=dict(report=report[0]))
         # A queued report would pass the above check but be blank; raise an error instead
         if report_status == self.report_statuses.QUEUE.value:
             return self.respond_error()

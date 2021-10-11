@@ -7,6 +7,7 @@ import os
 import pandas as pd
 import re
 
+from aiohttp import web
 from contextlib import suppress
 from enum import Enum, unique
 from functools import partial
@@ -105,6 +106,8 @@ class RestService:
             report_id, r_status = report_dict[0][UID], report_dict[0]['current_status']
         except (KeyError, IndexError):  # Thrown if the report title did not match any report in the db
             return default_error
+        # Found a valid report, check if protected by token
+        await self.web_svc.action_allowed(request, 'set-status', context=dict(report=report_dict[0]))
         # May be refined to allow reverting statuses in future - should use enum to check valid status
         if new_status == ReportStatus.COMPLETED.value:
             # Check there are no unconfirmed attacks
@@ -137,6 +140,8 @@ class RestService:
             report_id, r_status, r_error = report[0][UID], report[0]['current_status'], report[0]['error']
         except (KeyError, IndexError):  # Thrown if the report title is not in the db or db record is malformed
             return default_error
+        # Found a valid report, check if protected by token
+        await self.web_svc.action_allowed(request, 'delete-report', context=dict(report=report[0]))
         # Check a queued, error-free report ID hasn't been provided -> this may be mid-analysis
         if r_status == ReportStatus.QUEUE.value and not r_error:
             return default_error
@@ -160,7 +165,8 @@ class RestService:
             report_id = sentence_dict[0]['report_uid']
         with suppress(KeyError, IndexError):
             report_id = img_dict[0]['report_uid']
-        # Use this report ID to determine its status and if we can continue
+        # Use this report ID to check permissions, determine its status and if we can continue
+        await self.check_report_permission(request, report_id=report_id, action='delete-sentence')
         if not await self.check_report_status_multiple(
                 report_id=report_id, statuses=[ReportStatus.IN_REVIEW.value, ReportStatus.NEEDS_REVIEW.value]):
             return default_error
@@ -171,20 +177,32 @@ class RestService:
         return REST_SUCCESS
 
     async def sentence_context(self, request, criteria=None):
-        try:
-            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
-            sen_id = criteria['sentence_id']
-        except (KeyError, TypeError):
-            return dict(error='Error retrieving sentence info.')
+        sen_id = await self.check_and_get_sentence_id(request, request_data=criteria)
         return await self.data_svc.get_active_sentence_hits(sentence_id=sen_id)
 
     async def confirmed_attacks(self, request, criteria=None):
-        try:
-            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
-            sen_id = criteria['sentence_id']
-        except (KeyError, TypeError):
-            return dict(error='Error retrieving sentence info.')
+        sen_id = await self.check_and_get_sentence_id(request, request_data=criteria)
         return await self.data_svc.get_confirmed_attacks_for_sentence(sentence_id=sen_id)
+
+    async def check_and_get_sentence_id(self, request, request_data=None):
+        """Function to verify request data contains a valid sentence ID and return it."""
+        try:
+            # Check for malformed request parameters (KeyError) or request_data being None (TypeError)
+            sen_id = request_data['sentence_id']
+        except (KeyError, TypeError):
+            raise web.HTTPBadRequest()
+        # Get the report sentence information for the sentence id
+        sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
+        try:
+            report_id = sentence_dict[0]['report_uid']
+        except (KeyError, IndexError):  # No valid sentence
+            raise web.HTTPBadRequest()
+        # No further checks if local
+        if self.web_svc.is_local:
+            return sen_id
+        # Check permissions
+        await self.check_report_permission(request, report_id=report_id, action='get-sentence')
+        return sen_id
 
     async def insert_report(self, request, criteria=None):
         # Check for errors whilst updating request data with token (if applicable)
@@ -406,7 +424,7 @@ class RestService:
         # Get the report sentence information for the sentence id
         sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
         # Check the method can continue
-        checks = await self._pre_add_reject_attack_checks(sen_id=sen_id, sentence_dict=sentence_dict,
+        checks = await self._pre_add_reject_attack_checks(request, sen_id=sen_id, sentence_dict=sentence_dict,
                                                           attack_id=attack_id, attack_dict=attack_dict)
         if checks is not None:
             return checks
@@ -478,7 +496,7 @@ class RestService:
         # Get the attack information for this attack id
         attack_dict = await self.dao.get('attack_uids', dict(uid=attack_id))
         # Check the method can continue
-        checks = await self._pre_add_reject_attack_checks(sen_id=sen_id, sentence_dict=sentence_dict,
+        checks = await self._pre_add_reject_attack_checks(request, sen_id=sen_id, sentence_dict=sentence_dict,
                                                           attack_id=attack_id, attack_dict=attack_dict)
         if checks is not None:
             return checks
@@ -525,7 +543,7 @@ class RestService:
         await self.check_report_status(report_id=sentence_dict[0]['report_uid'], update_if_false=True)
         return REST_SUCCESS
 
-    async def _pre_add_reject_attack_checks(self, sen_id='', sentence_dict=None, attack_id='', attack_dict=None):
+    async def _pre_add_reject_attack_checks(self, request, sen_id='', sentence_dict=None, attack_id='', attack_dict=None):
         """Function to check for adding or rejecting attacks, enough sentence and attack data has been given."""
         # Check there is sentence data to access
         try:
@@ -538,6 +556,8 @@ class RestService:
             attack_dict[0]['name'], attack_dict[0]['tid']
         except (KeyError, IndexError):  # attack-info error (AE) occurred
             return dict(error='Error. Please quote AE%s when contacting admin.' % attack_id, alert_user=1)
+        # Check permissions
+        await self.check_report_permission(request, report_id=report_id, action='add-reject-attack')
         # Check the report status is acceptable (return a report status error (RSE) if not)
         if not await self.check_report_status_multiple(report_id=report_id,
                                                        statuses=[ReportStatus.IN_REVIEW.value,
@@ -545,10 +565,28 @@ class RestService:
             return dict(error='Error. Please quote RSE%s when contacting admin.' % report_id, alert_user=1)
         return None
 
+    async def check_report_permission(self, request, report_id='', action='unspecified'):
+        """Function to check a request is permitted given an action involving a report ID."""
+        # Do this if we need to
+        if self.web_svc.is_local:
+            return True
+        # If there is no report ID, the user hasn't supplied something correctly
+        if not report_id:
+            raise web.HTTPBadRequest()
+        # Obtain the report from the db
+        report = await self.dao.get('reports', dict(uid=report_id))
+        try:
+            report[0]['uid']
+        except (KeyError, IndexError):
+            # No report exists or db record malformed
+            raise web.HTTPBadRequest()
+        # Run the checker
+        await self.web_svc.action_allowed(request, action, context=dict(report=report[0]))
+
     async def check_report_status(self, report_id='', status=ReportStatus.IN_REVIEW.value, update_if_false=False):
         """Function to check a report is of the given status and updates it if not."""
         # No report ID, no result
-        if report_id is None:
+        if not report_id:
             return None
         # A quick check without a db call; if the status is right, exit method
         if self.seen_report_status.get(report_id) == status:
@@ -577,7 +615,7 @@ class RestService:
     async def check_report_status_multiple(self, report_id='', statuses=None):
         """Function to check a report is one of the given statuses."""
         # No report ID or statuses, no result
-        if report_id is None or statuses is None:
+        if (not report_id) or statuses is None:
             return None
         # A quick check without a db call; if the status is right, exit method
         if self.seen_report_status.get(report_id) in statuses:
