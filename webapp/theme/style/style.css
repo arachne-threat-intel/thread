@@ -37,6 +37,10 @@ footer .footer-link {
 
 footer .twitter-btn { float: right; }
 
+.cookie-alert {
+  text-shadow: none;
+}
+
 /*Override some bootstrap defaults*/
 .jumbotron {
   padding: 0;

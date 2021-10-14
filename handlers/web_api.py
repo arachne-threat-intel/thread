@@ -5,11 +5,14 @@ import logging
 
 from aiohttp.web_exceptions import HTTPException
 from aiohttp_jinja2 import template, web
+from aiohttp_session import get_session
 from urllib.parse import quote
 
 # The config options to load JS dependencies
 ONLINE_JS_SRC = 'js-online-src'
 OFFLINE_JS_SRC = 'js-local-src'
+# Key for a flag checking when a user has accepted the cookie notice
+ACCEPT_COOKIE = 'accept_cookie_notice'
 
 
 def sanitise_filename(filename=''):
@@ -55,6 +58,20 @@ class WebAPI:
         else:
             return web.json_response(text=message, status=500)
 
+    async def add_base_page_data(self, request, data=None):
+        """Function to add the base page data to context data given a request."""
+        # If there is no data dictionary to update, there is nothing to do
+        if type(data) != dict:
+            return
+        # Update data with the base page data
+        data.update(self.BASE_PAGE_DATA)
+        # Non-local sessions include cookies, update context data for this
+        if not self.is_local:
+            # Check request if the cookie banner has been dismissed
+            session = await get_session(request)
+            data.update(hide_cookie_notice=session.get(ACCEPT_COOKIE, False),
+                        cookie_url=self.web_svc.get_route(self.web_svc.COOKIE_KEY))
+
     @staticmethod
     @web.middleware
     async def req_handler(request: web.Request, handler):
@@ -78,16 +95,30 @@ class WebAPI:
         response.headers[server] = server_msg
         return response
 
+    async def accept_cookies(self, request):
+        # There's no content expected for this request
+        response = web.HTTPNoContent()
+        # There's nothing to do (no cookies to accept) for local-use
+        if self.is_local:
+            return response
+        # Only strictly necessary cookies are being used so we are not expecting rejecting cookies
+        # nor do we need to store user's response. Just update the session flag to prevent displaying notice again.
+        session = await get_session(request)
+        session[ACCEPT_COOKIE] = True
+        return response
+
     @template('about.html')
     async def about(self, request):
         page_data = dict(title='About')
-        page_data.update(self.BASE_PAGE_DATA)
+        await self.add_base_page_data(request, data=page_data)
         return page_data
 
     @template('index.html')
     async def index(self, request):
         # Dictionaries for the template data
-        page_data, template_data = dict(), self.BASE_PAGE_DATA.copy()
+        page_data, template_data = dict(), dict()
+        # Add base page data to overall template data
+        await self.add_base_page_data(request, data=template_data)
         # The token used for this session
         token = None
         # Adding user details if this is not a local session
@@ -171,7 +202,9 @@ class WebAPI:
         :param request: The title of the report information
         :return: dictionary of report data
         """
-        template_data = self.BASE_PAGE_DATA.copy()  # dictionary for the template data
+        # Dictionary for the template data with the base page data included
+        template_data = dict()
+        await self.add_base_page_data(request, data=template_data)
         # The 'file' property is already unquoted despite a quoted string used in the URL
         report_title = request.match_info.get(self.web_svc.REPORT_PARAM)
         title_quoted = quote(report_title, safe='')

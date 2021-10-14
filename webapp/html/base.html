@@ -64,6 +64,15 @@
     <footer class="footer p-3 thread-navbar">
       <div class="text-center text-white-50">
         <p>©2021, Arachne Digital.</p>
+        {% if not is_local and not hide_cookie_notice %}
+          <div class="alert alert-info alert-dismissible fade show cookie-alert" role="alert">
+            We use strictly necessary cookies whilst you are here. These are to enable the website to work and cannot be
+            disabled.<br>To read more about what this means, please see <b>Arachne's Privacy Policy</b>.
+            <form action="{{cookie_url}}" method="GET">{# Empty form so the button fires a REST request #}
+              <button type="submit" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </form>
+          </div>
+        {% endif %}
       </div>
     </footer>
   </body>

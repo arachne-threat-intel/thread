@@ -24,7 +24,7 @@ ABBREVIATIONS = {'dr', 'vs', 'mr', 'mrs', 'ms', 'prof', 'inc', 'fig', 'e.g', 'i.
 
 class WebService:
     # Static class variables for the keys in app_routes
-    HOME_KEY, EDIT_KEY, ABOUT_KEY, REST_KEY = 'home', 'edit', 'about', 'rest'
+    HOME_KEY, COOKIE_KEY, EDIT_KEY, ABOUT_KEY, REST_KEY = 'home', 'cookies', 'edit', 'about', 'rest'
     EXPORT_PDF_KEY, EXPORT_NAV_KEY, STATIC_KEY = 'export_pdf', 'export_nav', 'static'
     REPORT_PARAM = 'file'
 
@@ -44,7 +44,7 @@ class WebService:
             route_prefix = '/' + route_prefix_param
             home_route = route_prefix
         return {
-            self.HOME_KEY: home_route,
+            self.HOME_KEY: home_route, self.COOKIE_KEY: route_prefix + '/cookies',
             self.EDIT_KEY: route_prefix + '/edit/{%s}' % self.REPORT_PARAM,
             self.ABOUT_KEY: route_prefix + '/about', self.REST_KEY: route_prefix + '/rest',
             self.EXPORT_PDF_KEY: route_prefix + '/export/pdf/{%s}' % self.REPORT_PARAM,
