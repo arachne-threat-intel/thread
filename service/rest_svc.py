@@ -45,6 +45,7 @@ class RestService:
         self.web_svc = web_svc
         self.ml_svc = ml_svc
         self.reg_svc = reg_svc
+        self.is_local = self.web_svc.is_local
         self.queue_map = dict()  # map each user to their own queue
         self.queue = asyncio.Queue()  # task queue
         self.current_tasks = []  # tasks that are currently being executed
@@ -198,7 +199,7 @@ class RestService:
         except (KeyError, IndexError):  # No valid sentence
             raise web.HTTPBadRequest()
         # No further checks if local
-        if self.web_svc.is_local:
+        if self.is_local:
             return sen_id
         # Check permissions
         await self.check_report_permission(request, report_id=report_id, action='get-sentence')
@@ -223,15 +224,17 @@ class RestService:
         return await self._insert_batch_reports(df, df.shape[0], token=criteria.get('token'))
 
     async def pre_insert_add_token(self, request, request_data=None, key=None):
-        """Function to check sent request data before inserting reports and return the token to use."""
+        """Function to check sent request data before inserting reports and return an error if there was an issue."""
         try:
             # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
             request_data[key]
         except (KeyError, TypeError):
             return dict(error='Error inserting report(s).')
-        # If not running locally, check the token from the request_data is valid if one is given
-        if self.web_svc.is_local:
+        # If running locally, there are no further checks but ensure the token is None (to avoid mix of ''s and Nones)
+        if self.is_local:
+            request_data.update(token=None)
             return None
+        # If not running locally, check the token from the request_data is valid if one is given
         token = request_data.get('token')  # obtain the token
         if token:
             # If there is a token, check it is a valid token
@@ -255,7 +258,7 @@ class RestService:
         queue = self.get_queue_for_user(token=token)
         for row in range(row_count):
             # If a new report will exceed the queue limit, stop iterating through further reports
-            if self.QUEUE_LIMIT and self.queue.qsize() + 1 > self.QUEUE_LIMIT:
+            if self.QUEUE_LIMIT and len(queue) + 1 > self.QUEUE_LIMIT:
                 limit_exceeded = row_count - row
                 break
             try:
@@ -568,7 +571,7 @@ class RestService:
     async def check_report_permission(self, request, report_id='', action='unspecified'):
         """Function to check a request is permitted given an action involving a report ID."""
         # Do this if we need to
-        if self.web_svc.is_local:
+        if self.is_local:
             return True
         # If there is no report ID, the user hasn't supplied something correctly
         if not report_id:

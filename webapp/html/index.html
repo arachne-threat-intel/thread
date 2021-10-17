@@ -5,14 +5,14 @@
   <div class="container-fluid">
     <div class="row">
       <nav class="col-md-2 d-none d-md-block bg-light sidebar">
-        {% if not is_local %}
+        {% if not is_local %}{# Display 'Viewing: username or Public' #}
           <div>
             <h6>
               <span><b>Viewing: {% if username %}{{username}}{% else %}Public{% endif %}</b></span>
             </h6>
-            {% if token %}
+            {% if token %}{# If we have a token, display a button to exit user's view and switch to Public view #}
               <button type="button" onclick='myReportsExit()' class="btn btn-primary">Exit to Public View</button>
-            {% else %}
+            {% else %}{# If there is no token, display a form to input to a token #}
               <form>
                 <label for="token">My Thread Token</label>
                 <input type="text" class="form-control" id="token" required>
@@ -24,9 +24,11 @@
           </div>
           <hr>
         {% endif %}
+        {# Report submission forms section #}
         <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-2">
           <span><b>Enter New Report(s)</b></span>
         </h6>
+        {# The two tabs for report submissions: URLs and CSVs #}
         <ul class="nav nav-tabs" id="submitTabs" role="tablist">
           <li class="nav-item" role="presentation">
             <button class="nav-link active" id="url-tab" data-bs-toggle="tab" data-bs-target="#url-div"
@@ -41,8 +43,9 @@
             </button>
           </li>
         </ul>
-        <div class="tab-content" id="submitTabForms">
-          <div class="tab-pane fade show active" id="url-div" role="tabpanel" aria-labelledby="url-tab">
+        {# The content underneath a selected tab; default selected tab is URL report submissions #}
+        <div class="tab-content" id="submitTabForms">{# Wrapper-div to include content for all forms underneath the tabs #}
+          <div class="tab-pane fade show active" id="url-div" role="tabpanel" aria-labelledby="url-tab">{# First form: URLs #}
             <form>
               <div class="form-group">
                 <label for="url">Insert URL(s)</label>
@@ -52,7 +55,7 @@
                 <label for="title">Insert Title(s)</label>
                 <input type="text" class="form-control" id="title" placeholder="Enter the article title(s) (comma separated)" required>
               </div>
-              {% if not is_local %}
+              {% if not is_local %}{# Display fields for token-protection and non-token-use confirmation #}
                 <div class="form-group">
                   <label for="reportToken">Thread Token</label>
                   <input type="text" class="form-control" id="reportToken" placeholder="Token for private report(s)"
@@ -71,7 +74,7 @@
                       data-token-field-id="#reportToken">Submit</button>
             </form>
           </div>
-          <div class="tab-pane fade" id="csv-div" role="tabpanel" aria-labelledby="csv-tab">
+          <div class="tab-pane fade" id="csv-div" role="tabpanel" aria-labelledby="csv-tab">{# Next form: CSVs #}
             <form class="md-form">
               <div class="file-field">
                 <a class="btn-floating peach-gradient mt-0 float-left">
@@ -79,7 +82,7 @@
                   <input type="file" id="csv_file" accept=".csv" required>
                 </a>
               </div>
-              {% if not is_local %}
+              {% if not is_local %}{# Display fields for token-protection and non-token-use confirmation #}
                 <div class="form-group">
                   <label for="reportTokenCSV">Thread Token</label>
                   <input type="text" class="form-control" id="reportTokenCSV" placeholder="Token for private report(s)"
@@ -101,7 +104,7 @@
             </form>
           </div>
         </div>
-      {% if queue_set %}
+      {% if queue_set %}{# Display queue-message if a queue is set #}
         <hr>
         <small>Any reports which exceed the Queue limit will be dropped.</small>
       {% endif %}
