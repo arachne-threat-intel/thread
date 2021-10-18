@@ -7,6 +7,7 @@ import nltk
 import re
 import requests
 
+from aiohttp_security import authorized_userid
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from html2text import html2text
@@ -23,11 +24,12 @@ ABBREVIATIONS = {'dr', 'vs', 'mr', 'mrs', 'ms', 'prof', 'inc', 'fig', 'e.g', 'i.
 
 class WebService:
     # Static class variables for the keys in app_routes
-    HOME_KEY, EDIT_KEY, ABOUT_KEY, REST_KEY = 'home', 'edit', 'about', 'rest'
+    HOME_KEY, COOKIE_KEY, EDIT_KEY, ABOUT_KEY, REST_KEY = 'home', 'cookies', 'edit', 'about', 'rest'
     EXPORT_PDF_KEY, EXPORT_NAV_KEY, STATIC_KEY = 'export_pdf', 'export_nav', 'static'
     REPORT_PARAM = 'file'
 
-    def __init__(self, route_prefix=None):
+    def __init__(self, route_prefix=None, is_local=True):
+        self.is_local = is_local
         self.tokenizer_sen = None
         self.cached_responses = dict()
         # Initialise app route info
@@ -42,7 +44,7 @@ class WebService:
             route_prefix = '/' + route_prefix_param
             home_route = route_prefix
         return {
-            self.HOME_KEY: home_route,
+            self.HOME_KEY: home_route, self.COOKIE_KEY: route_prefix + '/cookies',
             self.EDIT_KEY: route_prefix + '/edit/{%s}' % self.REPORT_PARAM,
             self.ABOUT_KEY: route_prefix + '/about', self.REST_KEY: route_prefix + '/rest',
             self.EXPORT_PDF_KEY: route_prefix + '/export/pdf/{%s}' % self.REPORT_PARAM,
@@ -70,6 +72,36 @@ class WebService:
 
     def clear_cached_responses(self):  # TODO consider how often to call this
         self.cached_responses = dict()
+
+    async def action_allowed(self, request, action, context=None):
+        """Function to check an action is permitted given a request."""
+        if self.is_local:
+            # A permission-checker is not implemented for local-use
+            # and the user is in control of all their data, so allow the action
+            return True
+        try:
+            # Attempt to use app's method to check permission; log if this couldn't be done
+            return await request.app.permission_checker(request, action, context)
+        except (TypeError, AttributeError) as e:
+            logging.error('Misconfigured app: permission_checker() error: ' + str(e))
+            return False
+
+    async def get_current_token(self, request):
+        """Function to obtain the current user-token given a request."""
+        if self.is_local:
+            return None
+        return await authorized_userid(request)
+
+    async def get_username_from_token(self, request, token=''):
+        """Function to obtain the current username given a token."""
+        if self.is_local:
+            return None
+        try:
+            # Attempt to use app's method to obtain the username; log if this couldn't be done
+            return await request.app.token_to_username(token)
+        except (TypeError, AttributeError) as e:
+            logging.error('Misconfigured app: token_to_username() error: ' + str(e))
+            return None
 
     async def map_all_html(self, url_input):
         a = newspaper.Article(url_input, keep_article_html=True)

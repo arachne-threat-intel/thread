@@ -19,7 +19,9 @@ CREATE TABLE IF NOT EXISTS reports (
     -- Its stage in the analysis process: queue, needs review, etc.
     current_status TEXT,
     -- Whether there is an error with this report
-    error BOOLEAN DEFAULT 0
+    error BOOLEAN DEFAULT 0,
+    -- If applicable, a token to limit who can view this report
+    token VARCHAR(60) DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS report_sentences (

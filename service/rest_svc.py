@@ -7,11 +7,14 @@ import os
 import pandas as pd
 import re
 
+from aiohttp import web
 from contextlib import suppress
 from enum import Enum, unique
+from functools import partial
 from io import StringIO
 from urllib.parse import unquote
 
+PUBLIC = 'public'
 UID = 'uid'
 URL = 'url'
 REST_IGNORED = dict(ignored=1)
@@ -34,16 +37,18 @@ class ReportStatus(Enum):
 
 
 class RestService:
-    def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix='', queue_limit=None):
+    def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix='', queue_limit=None, max_tasks=1):
+        self.MAX_TASKS = max_tasks
         self.QUEUE_LIMIT = queue_limit
         self.dao = dao
         self.data_svc = data_svc
         self.web_svc = web_svc
         self.ml_svc = ml_svc
         self.reg_svc = reg_svc
+        self.is_local = self.web_svc.is_local
+        self.queue_map = dict()  # map each user to their own queue
         self.queue = asyncio.Queue()  # task queue
-        self.queue_as_list = []  # task queue as list
-        self.resources = []  # resource array
+        self.current_tasks = []  # tasks that are currently being executed
         # A dictionary to keep track of report statuses we have seen
         self.seen_report_status = dict()
         # The offline attack dictionary TODO check and update differences from db (different attack names)
@@ -55,6 +60,21 @@ class RestService:
     def get_status_enum():
         return ReportStatus
 
+    def get_queue_for_user(self, token=None):
+        """Function to retrieve queue (as list) for a given user token."""
+        # No token = queue for public-use
+        token = token or PUBLIC
+        # Set up empty list if queue-map doesn't already have one
+        if token not in self.queue_map:
+            self.queue_map[token] = []
+        return self.queue_map[token]
+
+    def clean_current_tasks(self):
+        """Function to remove finished tasks from the current_tasks list."""
+        for task in range(len(self.current_tasks)):  # check resources for finished tasks
+            if self.current_tasks[task].done():
+                del self.current_tasks[task]  # delete finished tasks
+
     async def prepare_queue(self):
         """Function to add to the queue any reports left from a previous session."""
         reports = await self.dao.get('reports', dict(error=self.dao.db_false_val,
@@ -65,16 +85,18 @@ class RestService:
             await self.dao.delete('report_sentences', dict(report_uid=report[UID]))
             await self.dao.delete('report_sentence_hits', dict(report_uid=report[UID]))
             await self.dao.delete('original_html', dict(report_uid=report[UID]))
+            # Get the relevant queue for this user
+            queue = self.get_queue_for_user(token=report.get('token'))
             # Add to the queue
             await self.queue.put(report)
-            self.queue_as_list.append(report[URL])
+            queue.append(report[URL])
 
-    async def set_status(self, criteria=None):
+    async def set_status(self, request, criteria=None):
         default_error = dict(error='Error setting status.')
         try:
-            # Check for malformed request parameters
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
             new_status, report_title = criteria['set_status'], criteria['report_title']
-        except KeyError:
+        except (KeyError, TypeError):
             return default_error
         # Get the report data from the provided report title
         try:
@@ -85,6 +107,8 @@ class RestService:
             report_id, r_status = report_dict[0][UID], report_dict[0]['current_status']
         except (KeyError, IndexError):  # Thrown if the report title did not match any report in the db
             return default_error
+        # Found a valid report, check if protected by token
+        await self.web_svc.action_allowed(request, 'set-status', context=dict(report=report_dict[0]))
         # May be refined to allow reverting statuses in future - should use enum to check valid status
         if new_status == ReportStatus.COMPLETED.value:
             # Check there are no unconfirmed attacks
@@ -101,12 +125,12 @@ class RestService:
         else:
             return default_error
 
-    async def delete_report(self, criteria=None):
+    async def delete_report(self, request, criteria=None):
         default_error = dict(error='Error deleting report.')
         try:
-            # Check for malformed request parameters
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
             report_title = criteria['report_title']
-        except KeyError:
+        except (KeyError, TypeError):
             return default_error
         # Get the report data from the provided report title
         try:
@@ -117,6 +141,8 @@ class RestService:
             report_id, r_status, r_error = report[0][UID], report[0]['current_status'], report[0]['error']
         except (KeyError, IndexError):  # Thrown if the report title is not in the db or db record is malformed
             return default_error
+        # Found a valid report, check if protected by token
+        await self.web_svc.action_allowed(request, 'delete-report', context=dict(report=report[0]))
         # Check a queued, error-free report ID hasn't been provided -> this may be mid-analysis
         if r_status == ReportStatus.QUEUE.value and not r_error:
             return default_error
@@ -124,12 +150,12 @@ class RestService:
         await self.dao.delete('reports', dict(uid=report_id))
         return REST_SUCCESS
 
-    async def remove_sentence(self, criteria=None):
+    async def remove_sentence(self, request, criteria=None):
         default_error = dict(error='Error removing item.')
         try:
-            # Check for malformed request parameters
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
             sen_id = criteria['sentence_id']
-        except KeyError:
+        except (KeyError, TypeError):
             return default_error
         # Determine if sentence or image
         sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
@@ -140,7 +166,8 @@ class RestService:
             report_id = sentence_dict[0]['report_uid']
         with suppress(KeyError, IndexError):
             report_id = img_dict[0]['report_uid']
-        # Use this report ID to determine its status and if we can continue
+        # Use this report ID to check permissions, determine its status and if we can continue
+        await self.check_report_permission(request, report_id=report_id, action='delete-sentence')
         if not await self.check_report_status_multiple(
                 report_id=report_id, statuses=[ReportStatus.IN_REVIEW.value, ReportStatus.NEEDS_REVIEW.value]):
             return default_error
@@ -150,48 +177,89 @@ class RestService:
         await self.dao.delete('original_html', dict(uid=sen_id))
         return REST_SUCCESS
 
-    async def sentence_context(self, criteria=None):
-        try:
-            # Check for malformed request parameters
-            sen_id = criteria['sentence_id']
-        except KeyError:
-            return dict(error='Error retrieving sentence info.')
+    async def sentence_context(self, request, criteria=None):
+        sen_id = await self.check_and_get_sentence_id(request, request_data=criteria)
         return await self.data_svc.get_active_sentence_hits(sentence_id=sen_id)
 
-    async def confirmed_attacks(self, criteria=None):
-        try:
-            # Check for malformed request parameters
-            sen_id = criteria['sentence_id']
-        except KeyError:
-            return dict(error='Error retrieving sentence info.')
+    async def confirmed_attacks(self, request, criteria=None):
+        sen_id = await self.check_and_get_sentence_id(request, request_data=criteria)
         return await self.data_svc.get_confirmed_attacks_for_sentence(sentence_id=sen_id)
 
-    async def insert_report(self, criteria=None):
+    async def check_and_get_sentence_id(self, request, request_data=None):
+        """Function to verify request data contains a valid sentence ID and return it."""
         try:
-            # Check for malformed request parameters
-            criteria['title']
-        except KeyError:
-            return dict(error='Error inserting report(s).')
-        return await self._insert_batch_reports(criteria, len(criteria['title']))
+            # Check for malformed request parameters (KeyError) or request_data being None (TypeError)
+            sen_id = request_data['sentence_id']
+        except (KeyError, TypeError):
+            raise web.HTTPBadRequest()
+        # Get the report sentence information for the sentence id
+        sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
+        try:
+            report_id = sentence_dict[0]['report_uid']
+        except (KeyError, IndexError):  # No valid sentence
+            raise web.HTTPBadRequest()
+        # No further checks if local
+        if self.is_local:
+            return sen_id
+        # Check permissions
+        await self.check_report_permission(request, report_id=report_id, action='get-sentence')
+        return sen_id
 
-    async def insert_csv(self, criteria=None):
+    async def insert_report(self, request, criteria=None):
+        # Check for errors whilst updating request data with token (if applicable)
+        error = await self.pre_insert_add_token(request, request_data=criteria, key='title')
+        if error:
+            return error
+        return await self._insert_batch_reports(criteria, len(criteria['title']), token=criteria.get('token'))
+
+    async def insert_csv(self, request, criteria=None):
+        # Check for errors whilst updating request data with token (if applicable)
+        error = await self.pre_insert_add_token(request, request_data=criteria, key='file')
+        if error:
+            return error
         try:
             df = self.verify_csv(criteria['file'])
         except (TypeError, ValueError) as e:  # Any errors occurring from the csv-checks
             return dict(error=str(e), alert_user=1)
-        except KeyError:  # Check for malformed request parameters
-            return dict(error='Error inserting report(s).')
-        return await self._insert_batch_reports(df, df.shape[0])
+        return await self._insert_batch_reports(df, df.shape[0], token=criteria.get('token'))
 
-    async def _insert_batch_reports(self, batch, row_count):
+    async def pre_insert_add_token(self, request, request_data=None, key=None):
+        """Function to check sent request data before inserting reports and return an error if there was an issue."""
+        try:
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
+            request_data[key]
+        except (KeyError, TypeError):
+            return dict(error='Error inserting report(s).')
+        # If running locally, there are no further checks but ensure the token is None (to avoid mix of ''s and Nones)
+        if self.is_local:
+            request_data.update(token=None)
+            return None
+        # If not running locally, check the token from the request_data is valid if one is given
+        token = request_data.get('token')  # obtain the token
+        if token:
+            # If there is a token, check it is a valid token
+            user = await self.web_svc.get_username_from_token(request, token=token)
+            # Alert user if they tried to associate their submission with an invalid token
+            if user is None:
+                return dict(error='Report(s) not submitted. Please enter a valid token or confirm you are making this '
+                                  'submission public. To find your token, please refer to your Arachne profile. If '
+                                  'this error is persistent, please contact us.', alert_user=1)
+        # If there is no token, blank data with None (to avoid mix of empty strings and Nones)
+        else:
+            request_data.update(token=None)
+        return None
+
+    async def _insert_batch_reports(self, batch, row_count, token=None):
         # Possible responses to the request
         default_error, success = dict(error='Error inserting report(s).'), REST_SUCCESS.copy()
-        # Flag if queue limit is exceeded
-        limit_exceeded = False
+        # Different counts for different reasons why reports are not queued
+        limit_exceeded, duplicate_urls, malformed_urls = 0, 0, 0
+        # Get the relevant queue for this user
+        queue = self.get_queue_for_user(token=token)
         for row in range(row_count):
             # If a new report will exceed the queue limit, stop iterating through further reports
-            if self.QUEUE_LIMIT and self.queue.qsize() + 1 > self.QUEUE_LIMIT:
-                limit_exceeded = True
+            if self.QUEUE_LIMIT and len(queue) + 1 > self.QUEUE_LIMIT:
+                limit_exceeded = row_count - row
                 break
             try:
                 title, url = batch['title'][row].strip(), batch[URL][row].strip()
@@ -209,26 +277,32 @@ class RestService:
             # Ensure the report has a unique title
             title = await self.data_svc.get_unique_title(title)
             # Set up a temporary dictionary to represent db object
-            temp_dict = dict(title=title, url=url, current_status=ReportStatus.QUEUE.value)
+            temp_dict = dict(title=title, url=url, current_status=ReportStatus.QUEUE.value, token=token)
             # Before adding to the db, check that this submitted URL isn't already in the queue; if so, skip it
-            url_found = False
-            for queued_url in self.queue_as_list:
+            skip_report = False
+            for queued_url in queue:
                 try:
                     if self.web_svc.urls_match(testing_url=url, matches_with=queued_url):
-                        url_found = True
+                        skip_report = True
+                        duplicate_urls += 1
                         break
                 except ValueError:
-                    return default_error
+                    skip_report = True
+                    malformed_urls += 1
+                    break
             # Proceed to add to queue if URL was not found
-            if not url_found:
+            if not skip_report:
                 # Insert report into db and update temp_dict with inserted ID from db
                 temp_dict[UID] = await self.dao.insert_generate_uid('reports', temp_dict)
                 # Finally, update queue and check queue when batch is finished
                 await self.queue.put(temp_dict)
-                self.queue_as_list.append(url)
-        if limit_exceeded:
-            success.update(
-                dict(info='Request contained URL(s) which exceeded queue limit. These were not added to the queue'))
+                queue.append(url)
+        if limit_exceeded or duplicate_urls or malformed_urls:
+            message = '%s of %s ' % (sum([limit_exceeded, duplicate_urls, malformed_urls]), row_count) + \
+                      'report(s) not added to the queue.\n- %s exceeded queue limit.' % limit_exceeded + \
+                      '\n- %s already in the queue/duplicate URL(s).' % duplicate_urls + \
+                      '\n- %s malformed URL(s).' % malformed_urls
+            success.update(dict(info=message, alert_user=1))
         asyncio.create_task(self.check_queue())
         return success
 
@@ -267,27 +341,31 @@ class RestService:
     async def check_queue(self):
         """
         description: executes as concurrent job, manages taking jobs off the queue and executing them.
-        If a job is already being processed, wait until that job is done, then execute next job on queue.
         input: nil
         output: nil
         """
-        for task in range(len(self.resources)):  # check resources for finished tasks
-            if self.resources[task].done():
-                del self.resources[task]  # delete finished tasks
-
-        max_tasks = 1
-        while self.queue.qsize() > 0:  # while there are still tasks to do....
-            await asyncio.sleep(0.01)  # check resources and execute tasks
-            if len(self.resources) >= max_tasks:  # if the resource pool is maxed out...
-                while len(self.resources) >= max_tasks:  # check resource pool until a task is finished
-                    for task in range(len(self.resources)):
-                        if self.resources[task].done():
-                            del self.resources[task]  # when task is finished, remove from resource pool
-                    await asyncio.sleep(1)  # allow other tasks to run while waiting
+        self.clean_current_tasks()
+        while self.queue.qsize() > 0:  # while there are still tasks to do...
+            await asyncio.sleep(1)  # allow other tasks to run while waiting
+            while len(self.current_tasks) >= self.MAX_TASKS:  # check resource pool until a task is finished
+                self.clean_current_tasks()
+                await asyncio.sleep(1)  # allow other tasks to run while waiting
             criteria = await self.queue.get()  # get next task off queue and run it
-            task = asyncio.create_task(self.start_analysis(criteria))
-            self.queue_as_list.remove(criteria[URL])
-            self.resources.append(task)
+            # Use run_in_executor (due to event loop potentially blocked otherwise) to start analysis
+            loop = asyncio.get_running_loop()
+            task = loop.run_in_executor(None, partial(self.run_start_analysis, criteria=criteria))
+            self.current_tasks.append(task)
+
+    def run_start_analysis(self, criteria=None):
+        """Function to run start_analysis() for given criteria."""
+        # Create a new loop to execute the async method as per https://stackoverflow.com/a/46075571
+        loop = asyncio.new_event_loop()
+        try:
+            coroutine = self.start_analysis(criteria)
+            asyncio.set_event_loop(loop)
+            return loop.run_until_complete(coroutine)
+        finally:
+            loop.close()
 
     async def start_analysis(self, criteria=None):
         report_id = criteria[UID]
@@ -333,20 +411,23 @@ class RestService:
         # Update card to reflect the end of queue
         await self.dao.update('reports', where=dict(uid=report_id),
                               data=dict(current_status=ReportStatus.NEEDS_REVIEW.value))
+        # Update the relevant queue for this user
+        queue = self.get_queue_for_user(token=criteria.get('token'))
+        queue.remove(criteria[URL])
         logging.info('Finished analysing report ' + report_id)
 
-    async def add_attack(self, criteria=None):
+    async def add_attack(self, request, criteria=None):
         try:
             # The sentence and attack IDs
             sen_id, attack_id = criteria['sentence_id'], criteria['attack_uid']
-        except KeyError:
+        except (KeyError, TypeError):
             return dict(error='Error adding attack.')
         # Get the attack information for this attack id
         attack_dict = await self.dao.get('attack_uids', dict(uid=attack_id))
         # Get the report sentence information for the sentence id
         sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
         # Check the method can continue
-        checks = await self._pre_add_reject_attack_checks(sen_id=sen_id, sentence_dict=sentence_dict,
+        checks = await self._pre_add_reject_attack_checks(request, sen_id=sen_id, sentence_dict=sentence_dict,
                                                           attack_id=attack_id, attack_dict=attack_dict)
         if checks is not None:
             return checks
@@ -407,18 +488,18 @@ class RestService:
         # Return status message
         return REST_SUCCESS
 
-    async def reject_attack(self, criteria=None):
+    async def reject_attack(self, request, criteria=None):
         try:
             # The sentence and attack IDs
             sen_id, attack_id = criteria['sentence_id'], criteria['attack_uid']
-        except KeyError:
+        except (KeyError, TypeError):
             return dict(error='Error rejecting attack.')
         # Get the report sentence information for the sentence id
         sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
         # Get the attack information for this attack id
         attack_dict = await self.dao.get('attack_uids', dict(uid=attack_id))
         # Check the method can continue
-        checks = await self._pre_add_reject_attack_checks(sen_id=sen_id, sentence_dict=sentence_dict,
+        checks = await self._pre_add_reject_attack_checks(request, sen_id=sen_id, sentence_dict=sentence_dict,
                                                           attack_id=attack_id, attack_dict=attack_dict)
         if checks is not None:
             return checks
@@ -465,7 +546,7 @@ class RestService:
         await self.check_report_status(report_id=sentence_dict[0]['report_uid'], update_if_false=True)
         return REST_SUCCESS
 
-    async def _pre_add_reject_attack_checks(self, sen_id='', sentence_dict=None, attack_id='', attack_dict=None):
+    async def _pre_add_reject_attack_checks(self, request, sen_id='', sentence_dict=None, attack_id='', attack_dict=None):
         """Function to check for adding or rejecting attacks, enough sentence and attack data has been given."""
         # Check there is sentence data to access
         try:
@@ -478,6 +559,8 @@ class RestService:
             attack_dict[0]['name'], attack_dict[0]['tid']
         except (KeyError, IndexError):  # attack-info error (AE) occurred
             return dict(error='Error. Please quote AE%s when contacting admin.' % attack_id, alert_user=1)
+        # Check permissions
+        await self.check_report_permission(request, report_id=report_id, action='add-reject-attack')
         # Check the report status is acceptable (return a report status error (RSE) if not)
         if not await self.check_report_status_multiple(report_id=report_id,
                                                        statuses=[ReportStatus.IN_REVIEW.value,
@@ -485,10 +568,28 @@ class RestService:
             return dict(error='Error. Please quote RSE%s when contacting admin.' % report_id, alert_user=1)
         return None
 
+    async def check_report_permission(self, request, report_id='', action='unspecified'):
+        """Function to check a request is permitted given an action involving a report ID."""
+        # Do this if we need to
+        if self.is_local:
+            return True
+        # If there is no report ID, the user hasn't supplied something correctly
+        if not report_id:
+            raise web.HTTPBadRequest()
+        # Obtain the report from the db
+        report = await self.dao.get('reports', dict(uid=report_id))
+        try:
+            report[0]['uid']
+        except (KeyError, IndexError):
+            # No report exists or db record malformed
+            raise web.HTTPBadRequest()
+        # Run the checker
+        await self.web_svc.action_allowed(request, action, context=dict(report=report[0]))
+
     async def check_report_status(self, report_id='', status=ReportStatus.IN_REVIEW.value, update_if_false=False):
         """Function to check a report is of the given status and updates it if not."""
         # No report ID, no result
-        if report_id is None:
+        if not report_id:
             return None
         # A quick check without a db call; if the status is right, exit method
         if self.seen_report_status.get(report_id) == status:
@@ -517,7 +618,7 @@ class RestService:
     async def check_report_status_multiple(self, report_id='', statuses=None):
         """Function to check a report is one of the given statuses."""
         # No report ID or statuses, no result
-        if report_id is None or statuses is None:
+        if (not report_id) or statuses is None:
             return None
         # A quick check without a db call; if the status is right, exit method
         if self.seen_report_status.get(report_id) in statuses:

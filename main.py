@@ -54,12 +54,13 @@ async def background_tasks(taxii_local=ONLINE_BUILD_SOURCE, build=False, json_fi
             await data_svc.insert_attack_json_data(json_file)
 
 
-async def init(host, port):
+async def init(host, port, app_setup_func=None):
     """
     Function to initialize the aiohttp app
 
     :param host: Address to reach webserver on
     :param port: Port to listen on
+    :param app_setup_func: Optional, a function that applies extra config to the app
     :return: nil
     """
     # Run any required functions before the app is launched
@@ -76,7 +77,12 @@ async def init(host, port):
     app.router.add_route('*', web_svc.get_route(WebService.REST_KEY), website_handler.rest_api)
     app.router.add_route('GET', web_svc.get_route(WebService.EXPORT_PDF_KEY), website_handler.pdf_export)
     app.router.add_route('GET', web_svc.get_route(WebService.EXPORT_NAV_KEY), website_handler.nav_export)
+    app.router.add_route('GET', web_svc.get_route(WebService.COOKIE_KEY), website_handler.accept_cookies)
     app.router.add_static(web_svc.get_route(WebService.STATIC_KEY), os.path.join(webapp_dir, 'theme'))
+
+    # If extra app-setup is required, do this
+    if callable(app_setup_func):
+        app_setup_func(app)
 
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(os.path.join(webapp_dir, 'html')))
     runner = web.AppRunner(app)
@@ -86,7 +92,7 @@ async def init(host, port):
     await rest_svc.check_queue()
 
 
-def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=None):
+def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=None, app_setup_func=None):
     """
     Main function to start app
     :param host: Address to reach webserver on
@@ -94,18 +100,19 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
     :param taxii_local: Expects online or offline build_source to specify the build type
     :param build: Defines whether or not a new database will be rebuilt
     :param json_file: Expects a path to the enterprise attack json if the 'offline' build method is called
+    :param app_setup_func: Optional, a function that applies extra config to the app
     :return: nil
     """
     loop = asyncio.get_event_loop()
     loop.create_task(background_tasks(taxii_local=taxii_local, build=build, json_file=json_file))
-    loop.run_until_complete(init(host, port))
+    loop.run_until_complete(init(host, port, app_setup_func=app_setup_func))
     try:
         loop.run_forever()
     except KeyboardInterrupt:
         pass
 
 
-def main(directory_prefix='', route_prefix=None):
+def main(directory_prefix='', route_prefix=None, app_setup_func=None):
     global data_svc, dir_prefix, ml_svc, rest_svc, web_svc, website_handler
 
     dir_prefix = directory_prefix
@@ -122,6 +129,7 @@ def main(directory_prefix='', route_prefix=None):
         port = config.get('port', 9999)
         taxii_local = config.get('taxii-local', 'taxii-server')
         js_src = config.get('js-libraries', 'js-online-src')
+        max_tasks = config.get('max-analysis-tasks', 1)
         queue_limit = config.get('queue_limit', 0)
         json_file = config.get('json_file', None)
         json_file_path = os.path.join('models', json_file) if json_file else None
@@ -138,20 +146,25 @@ def main(directory_prefix='', route_prefix=None):
     except TypeError:
         raise ValueError(int_error % 'queue_limit')
     try:
+        max_tasks = max(1, max_tasks)
+    except TypeError:
+        raise ValueError(int_error % 'max-analysis-tasks')
+    try:
         int(port)
     except ValueError:
         raise ValueError(int_error % 'port')
 
     # Initialise DAO, start services and initiate main function
     dao = Dao(os.path.join(dir_prefix, 'database', 'thread.db'), engine=db_eng)
-    web_svc = WebService(route_prefix=route_prefix)
+    web_svc = WebService(route_prefix=route_prefix, is_local=is_local)
     reg_svc = RegService(dao=dao)
     data_svc = DataService(dao=dao, web_svc=web_svc, dir_prefix=dir_prefix)
     ml_svc = MLService(web_svc=web_svc, dao=dao, dir_prefix=dir_prefix)
-    rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix=dir_prefix, queue_limit=queue_limit)
+    rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix=dir_prefix, queue_limit=queue_limit,
+                           max_tasks=max_tasks)
     services = dict(dao=dao, data_svc=data_svc, ml_svc=ml_svc, reg_svc=reg_svc, web_svc=web_svc, rest_svc=rest_svc)
     website_handler = WebAPI(services=services, js_src=js_src)
-    start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict)
+    start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict, app_setup_func=app_setup_func)
 
 
 if __name__ == '__main__':

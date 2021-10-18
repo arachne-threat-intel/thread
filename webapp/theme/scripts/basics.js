@@ -9,14 +9,19 @@ var highlightClass = "bg-warning";
 var highlightClassImg = "imgHighlight";
 // The URL for the rest requests
 var restUrl = $('script#basicsScript').data('rest-url');
+// If this script is being run locally
+var isLocal = $('script#basicsScript').data('run-local');
 
-function restRequest(type, data, callback) {
+function restRequest(type, data, callback=null, url=restUrl) {
   $.ajax({
-    url: restUrl,
+    url: url,
     type: type,
     contentType: 'application/json',
     data: JSON.stringify(data),
-    success: function(data) {
+    success: function(data, textStatus, xhr) {
+      if (xhr?.responseJSON?.alert_user && xhr?.responseJSON?.info) {
+        alert(xhr.responseJSON.info);
+      }
       if (callback instanceof Function) {
         callback(data);
       }
@@ -57,7 +62,7 @@ function prefixHttp(urlInput) {
     // Rejoin elements and update input
     urlInput.value = urls.join(", ");
     // Revert to initial value if invalid
-    if (!urlInput.checkValidity()) {
+    if (!urlInput.reportValidity()) {
       urlInput.value = initialInput;
     }
   }
@@ -127,7 +132,23 @@ function finish_analysis(reportTitle) {
   }
 }
 
-function submit_report() {
+function submit(data, submitButton) {
+  // Do extra checks if this is not locally run
+  if(!isLocal) {
+    // IDs of fields related to input of Thread token
+    var tokenFieldID = $(submitButton).data("token-field-id");
+    var checkboxID = $(tokenFieldID).data("paired-checkbox");
+    // Check confirmation checkbox
+    if (!document.getElementById(checkboxID.replace("#", "")).reportValidity()) {
+      return;
+    }
+    // Update request-data with token
+    data.token = $(tokenFieldID).val();
+  }
+  restRequest('POST', data, page_refresh);
+}
+
+function submit_report(submitButton) {
   // The URL and title field values comma-separated
   var url = document.getElementById("url");
   var urls = url.value.split(",");
@@ -137,20 +158,24 @@ function submit_report() {
   if (titles.length != urls.length) {
     alert("Number of URLs and titles do not match, please insert same number of comma separated items.");
   // Proceed with submitting if both fields are valid
-  } else if (title.checkValidity() && url.checkValidity()) {
-    restRequest('POST', {'index':'insert_report', 'url':urls, 'title':titles});
+  } else if (url.reportValidity() && title.reportValidity()) {
+    submit({'index':'insert_report', 'url':urls, 'title':titles}, submitButton);
   }
 }
 
-function upload_file() {
-  // console.log(document.getElementById("csv_file"))
-  var file = document.getElementById("csv_file").files[0];
-  if(file) {
+function upload_file(uploadButton) {
+  // Check the file field is valid before proceeding
+  var fileField = document.getElementById("csv_file");
+  if (!fileField.reportValidity()) {
+    return;
+  }
+  // Parse the file and send in request to complete submission
+  var file = fileField.files[0];
+  if (file) {
     var reader = new FileReader();
     reader.readAsText(file, "UTF-8");
     reader.onload = function(evt) {
-      // console.log(evt.target.result)
-      restRequest('POST', {'index': 'insert_csv', 'file': evt.target.result});
+      submit({'index': 'insert_csv', 'file': evt.target.result}, uploadButton);
     }
     reader.onerror = function(evt) {
       alert("Error reading file");
@@ -310,5 +335,39 @@ function addMissingTechnique() {
     acceptAttack(sentence_id, uid);
     // If an attack has been added to a temporarily highlighted sentence, the highlighting isn't temporary anymore
     tempHighlighted = undefined
+  }
+}
+
+function myReports() {
+  if (!isLocal) {
+    var tokenField = document.getElementById("token");
+    if (tokenField.reportValidity()) {
+      restRequest("POST", {"token": tokenField.value}, page_refresh, "/thread/myreports/view");
+    }
+  }
+}
+
+function myReportsExit() {
+  if (!isLocal) {
+    restRequest("POST", {}, page_refresh, "/thread/myreports/exit");
+  }
+}
+
+function tokenFieldCheck(field) {
+  if (!isLocal) {
+    // Check the token field has a value; change the public-confirmation required and hidden properties based on this
+    var hasValue = Boolean($(field).val().length);
+    // Make the confirmation checkbox required if there is no value for the token field
+    var checkboxID = $(field).data("paired-checkbox");
+    $(checkboxID).prop("required", !hasValue);
+    // Hide the checkbox and accompanying label if there is a value
+    var checkboxDivID = $(checkboxID).data("parent-div");
+    var wasHidden = $(checkboxDivID).prop("hidden");
+    // If we are changing the hidden property (i.e. going from display > hidden and vice-versa), uncheck the box
+    if (wasHidden != hasValue) {
+      $(checkboxID).prop("checked", false);
+    }
+    // Finish by hiding or displaying the confirmation checkbox
+    $(checkboxDivID).prop("hidden", hasValue);
   }
 }

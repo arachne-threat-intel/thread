@@ -88,19 +88,21 @@ class ThreadDB(ABC):
         all_params.update(dict(equal=equal) if equal else {})
         all_params.update(dict(not_equal=not_equal) if not_equal else {})
         # For each of the equal and not_equal parameters, build SQL query
+        count = 0
         for eq, criteria in all_params.items():
-            # criteria should always have items as the if-else update() calls above check this
-            where = next(iter(criteria))
-            value = criteria.pop(where)
-            if value is not None:
-                # If this is our first criteria we are adding, we need the WHERE keyword, else adding AND
-                sql += ' AND' if len(qparams) > 0 else ' WHERE'
-                # Add the ! for != if this is a not-equals check
-                sql += (' %s %s= %s' % (where, '!' if eq == 'not_equal' else '', self.query_param))
-                qparams.append(value)
-                for k, v in criteria.items():
-                    sql += (' AND %s %s= %s' % (k, '!' if eq == 'not_equal' else '', self.query_param))
-                    qparams.append(v)
+            for where, value in criteria.items():
+                # If there is a column we want to specify WHERE criteria for
+                if where is not None:
+                    # If this is our first criteria we are adding, we need the WHERE keyword, else adding AND
+                    sql += ' AND' if count > 0 else ' WHERE'
+                    if value is None:
+                        # Do a NULL check for the column
+                        sql += (' %s IS%s NULL' % (where, ' NOT' if eq == 'not_equal' else ''))
+                    else:
+                        # Add the ! for != if this is a not-equals check
+                        sql += (' %s %s= %s' % (where, '!' if eq == 'not_equal' else '', self.query_param))
+                        qparams.append(value)
+                    count += 1
         # After the SQL query has been formed, execute it
         return await self._execute_select(sql, parameters=qparams)
 
@@ -112,15 +114,17 @@ class ThreadDB(ABC):
         """Method to insert data into a table of the db."""
         # For the INSERT statement, construct the strings `col1, col2, ...` and `<query_param>, <query_param>, ...`
         columns = ', '.join(data.keys())
-        temp = [self.query_param for i in range(len(data.values()))]
+        temp = ['NULL' if v is None else self.query_param for v in data.values()]
         placeholders = ', '.join(temp)
         # Construct the SQL statement using the comma-separated strings created above
         sql = 'INSERT INTO {} ({}) VALUES ({})'.format(table, columns, placeholders)
+        # Filter out null values to match number of query parameters
+        non_null = [v for v in data.values() if v is not None]
         # Return the SQL statement as-is if requested
         if return_sql:
-            return tuple([sql, tuple(data.values())])
+            return tuple([sql, tuple(non_null)])
         # Else execute the SQL INSERT statement
-        return await self._execute_insert(sql, data.values())
+        return await self._execute_insert(sql, non_null)
 
     async def insert_generate_uid(self, table, data, id_field='uid', return_sql=False):
         """Method to generate an ID value whilst inserting into db."""
@@ -148,20 +152,28 @@ class ThreadDB(ABC):
         for k, v in data.items():
             # If this is our 2nd (or greater) SET term, separate with a comma
             sql += ',' if count > 0 else ''
-            # Add this current term to the SQL statement substituting the values with query parameters
-            sql += ' {} = {}'.format(k, self.query_param)
-            # Update qparams for this value to be substituted
-            qparams.append(v)
+            if v is None:
+                # Add setting as NULL for this column
+                sql += ' {} = NULL'.format(k)
+            else:
+                # Add this current term to the SQL statement substituting the values with query parameters
+                sql += ' {} = {}'.format(k, self.query_param)
+                # Update qparams for this value to be substituted
+                qparams.append(v)
             count += 1
         # Appending the WHERE terms; keep a count
         count = 0
         for wk, wv in where.items():
             # If this is our 2nd (or greater) WHERE term, separate with an AND
             where_suffix += ' AND' if count > 0 else ''
-            # Add this current term like before
-            where_suffix += ' {} = {}'.format(wk, self.query_param)
-            # Update qparams for this value to be substituted
-            qparams.append(wv)
+            if wv is None:
+                # Add NULL-check for this column
+                where_suffix += ' {} IS NULL'.format(wk)
+            else:
+                # Add this current term like before
+                where_suffix += ' {} = {}'.format(wk, self.query_param)
+                # Update qparams for this value to be substituted
+                qparams.append(wv)
             count += 1
         # Finalise WHERE clause if we had items added to it
         where_suffix = '' if where_suffix == '' else ' WHERE' + where_suffix
@@ -181,13 +193,18 @@ class ThreadDB(ABC):
             logging.error('Attempting to delete all rows from table %s; this is not allowed.' % table)
             return
         # Construct the WHERE clause using the data
-        where = next(iter(data))
-        value = data.pop(where)
-        sql += ' WHERE %s = %s' % (where, self.query_param)
-        qparams.append(value)
+        count = 0
         for k, v in data.items():
-            sql += ' AND %s = %s' % (k, self.query_param)
-            qparams.append(v)
+            # If this is our first criteria we are adding, we need the WHERE keyword, else adding AND
+            sql += ' AND' if count > 0 else ' WHERE'
+            if v is None:
+                # Do a NULL check for the column
+                sql += (' %s IS NULL' % k)
+            else:
+                # Add the ! for != if this is a not-equals check
+                sql += (' %s = %s' % (k, self.query_param))
+                qparams.append(v)
+            count += 1
         if return_sql:
             return tuple([sql, tuple(qparams)])
         # Run the statement by passing qparams as parameters

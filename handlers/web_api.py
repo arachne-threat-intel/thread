@@ -5,11 +5,14 @@ import logging
 
 from aiohttp.web_exceptions import HTTPException
 from aiohttp_jinja2 import template, web
+from aiohttp_session import get_session
 from urllib.parse import quote
 
 # The config options to load JS dependencies
 ONLINE_JS_SRC = 'js-online-src'
 OFFLINE_JS_SRC = 'js-local-src'
+# Key for a flag checking when a user has accepted the cookie notice
+ACCEPT_COOKIE = 'accept_cookie_notice'
 
 
 def sanitise_filename(filename=''):
@@ -29,12 +32,13 @@ class WebAPI:
         self.reg_svc = services['reg_svc']
         self.rest_svc = services['rest_svc']
         self.report_statuses = self.rest_svc.get_status_enum()
+        self.is_local = self.web_svc.is_local
         js_src_config = js_src if js_src in [ONLINE_JS_SRC, OFFLINE_JS_SRC] else ONLINE_JS_SRC
         self.BASE_PAGE_DATA = dict(about_url=self.web_svc.get_route(self.web_svc.ABOUT_KEY),
                                    home_url=self.web_svc.get_route(self.web_svc.HOME_KEY),
                                    rest_url=self.web_svc.get_route(self.web_svc.REST_KEY),
                                    static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY),
-                                   js_src_online=js_src_config == ONLINE_JS_SRC)
+                                   js_src_online=js_src_config == ONLINE_JS_SRC, is_local=self.is_local)
         self.attack_dropdown_list = []
 
     async def pre_launch_init(self):
@@ -53,6 +57,20 @@ class WebAPI:
             return web.json_response(None, status=500)
         else:
             return web.json_response(text=message, status=500)
+
+    async def add_base_page_data(self, request, data=None):
+        """Function to add the base page data to context data given a request."""
+        # If there is no data dictionary to update, there is nothing to do
+        if type(data) != dict:
+            return
+        # Update data with the base page data
+        data.update(self.BASE_PAGE_DATA)
+        # Non-local sessions include cookies, update context data for this
+        if not self.is_local:
+            # Check request if the cookie banner has been dismissed
+            session = await get_session(request)
+            data.update(hide_cookie_notice=session.get(ACCEPT_COOKIE, False),
+                        cookie_url=self.web_svc.get_route(self.web_svc.COOKIE_KEY))
 
     @staticmethod
     @web.middleware
@@ -77,16 +95,37 @@ class WebAPI:
         response.headers[server] = server_msg
         return response
 
+    async def accept_cookies(self, request):
+        # There's no content expected for this request
+        response = web.HTTPNoContent()
+        # There's nothing to do (no cookies to accept) for local-use
+        if self.is_local:
+            return response
+        # Only strictly necessary cookies are being used so we are not expecting rejecting cookies
+        # nor do we need to store user's response. Just update the session flag to prevent displaying notice again.
+        session = await get_session(request)
+        session[ACCEPT_COOKIE] = True
+        return response
+
     @template('about.html')
     async def about(self, request):
         page_data = dict(title='About')
-        page_data.update(self.BASE_PAGE_DATA)
+        await self.add_base_page_data(request, data=page_data)
         return page_data
 
     @template('index.html')
     async def index(self, request):
         # Dictionaries for the template data
-        page_data, template_data = dict(), self.BASE_PAGE_DATA.copy()
+        page_data, template_data = dict(), dict()
+        # Add base page data to overall template data
+        await self.add_base_page_data(request, data=template_data)
+        # The token used for this session
+        token = None
+        # Adding user details if this is not a local session
+        if not self.is_local:
+            token = await self.web_svc.get_current_token(request)
+            username = await self.web_svc.get_username_from_token(request, token)
+            template_data.update(token=token, username=username)
         # For each report status, get the reports for the index page
         for status in self.report_statuses:
             is_complete_status = status.value == self.report_statuses.COMPLETED.value
@@ -95,8 +134,10 @@ class WebAPI:
                                            analysis_button='View Analysis' if is_complete_status else 'Analyse')
             # If the status is 'queue', obtain errored reports separately so we can provide info without these
             if status.value == self.report_statuses.QUEUE.value:
-                pending = await self.data_svc.status_grouper(status.value, criteria=dict(error=self.dao.db_false_val))
-                errored = await self.data_svc.status_grouper(status.value, criteria=dict(error=self.dao.db_true_val))
+                pending = await self.data_svc.status_grouper(
+                    status.value, criteria=dict(error=self.dao.db_false_val, token=token))
+                errored = await self.data_svc.status_grouper(
+                    status.value, criteria=dict(error=self.dao.db_true_val, token=token))
                 page_data[status.value]['reports'] = pending + errored
                 if self.rest_svc.QUEUE_LIMIT:
                     template_data['queue_set'] = 1
@@ -112,7 +153,8 @@ class WebAPI:
                 del page_data[status.value]['analysis_button']
             # Else proceed to obtain the reports for this status as normal
             else:
-                page_data[status.value]['reports'] = await self.data_svc.status_grouper(status.value)
+                page_data[status.value]['reports'] = \
+                    await self.data_svc.status_grouper(status.value, criteria=dict(token=token))
         # Update overall template data and return
         template_data.update(reports_by_status=page_data)
         return template_data
@@ -128,15 +170,15 @@ class WebAPI:
             index = data.pop('index')
             options = dict(
                 POST=dict(
-                    add_attack=lambda d: self.rest_svc.add_attack(criteria=d),
-                    reject_attack=lambda d: self.rest_svc.reject_attack(criteria=d),
-                    set_status=lambda d: self.rest_svc.set_status(criteria=d),
-                    insert_report=lambda d: self.rest_svc.insert_report(criteria=d),
-                    insert_csv=lambda d: self.rest_svc.insert_csv(criteria=d),
-                    remove_sentence=lambda d: self.rest_svc.remove_sentence(criteria=d),
-                    delete_report=lambda d: self.rest_svc.delete_report(criteria=d),
-                    sentence_context=lambda d: self.rest_svc.sentence_context(criteria=d),
-                    confirmed_attacks=lambda d: self.rest_svc.confirmed_attacks(criteria=d)
+                    add_attack=lambda d: self.rest_svc.add_attack(request=request, criteria=d),
+                    reject_attack=lambda d: self.rest_svc.reject_attack(request=request, criteria=d),
+                    set_status=lambda d: self.rest_svc.set_status(request=request, criteria=d),
+                    insert_report=lambda d: self.rest_svc.insert_report(request=request, criteria=d),
+                    insert_csv=lambda d: self.rest_svc.insert_csv(request=request, criteria=d),
+                    remove_sentence=lambda d: self.rest_svc.remove_sentence(request=request, criteria=d),
+                    delete_report=lambda d: self.rest_svc.delete_report(request=request, criteria=d),
+                    sentence_context=lambda d: self.rest_svc.sentence_context(request=request, criteria=d),
+                    confirmed_attacks=lambda d: self.rest_svc.confirmed_attacks(request=request, criteria=d)
                 ))
             method = options[request.method][index]
         except KeyError:
@@ -145,7 +187,7 @@ class WebAPI:
         status = 200
         if output is not None and type(output) != dict:
             pass
-        elif output is None or output.get('success'):
+        elif output is None or (output.get('success') and not output.get('alert_user')):
             status = 204
         elif output.get('ignored'):
             status = 202
@@ -160,7 +202,9 @@ class WebAPI:
         :param request: The title of the report information
         :return: dictionary of report data
         """
-        template_data = self.BASE_PAGE_DATA.copy()  # dictionary for the template data
+        # Dictionary for the template data with the base page data included
+        template_data = dict()
+        await self.add_base_page_data(request, data=template_data)
         # The 'file' property is already unquoted despite a quoted string used in the URL
         report_title = request.match_info.get(self.web_svc.REPORT_PARAM)
         title_quoted = quote(report_title, safe='')
@@ -170,6 +214,8 @@ class WebAPI:
             report_id = report[0]['uid']
         except (KeyError, IndexError):
             return self.respond_error(message='Invalid URL')
+        # Found a valid report, check if protected by token
+        await self.web_svc.action_allowed(request, 'edit', context=dict(report=report[0]))
         # A queued report would pass the above check but be blank; raise an error instead
         if report[0]['current_status'] == self.report_statuses.QUEUE.value:
             return self.respond_error(message='Invalid URL')
@@ -201,6 +247,8 @@ class WebAPI:
             report_id, report_status = report[0]['uid'], report[0]['current_status']
         except (KeyError, IndexError):
             return self.respond_error()
+        # Found a valid report, check if protected by token
+        await self.web_svc.action_allowed(request, 'nav-export', context=dict(report=report[0]))
         # A queued report would pass the above check but be blank; raise an error instead
         if report_status == self.report_statuses.QUEUE.value:
             return self.respond_error()
@@ -245,6 +293,8 @@ class WebAPI:
             report_id, report_status, report_url = report[0]['uid'], report[0]['current_status'], report[0]['url']
         except (KeyError, IndexError):
             return self.respond_error()
+        # Found a valid report, check if protected by token
+        await self.web_svc.action_allowed(request, 'pdf-export', context=dict(report=report[0]))
         # A queued report would pass the above check but be blank; raise an error instead
         if report_status == self.report_statuses.QUEUE.value:
             return self.respond_error()
