@@ -36,6 +36,7 @@ def build_db(schema=os.path.join('conf', 'schema.sql')):
     # Proceed to build both schemas
     _create_tables(username, password, host, port, schema=schema_text)
     _create_tables(username, password, host, port, schema=copied_tables_schema)
+    print('Build scripts completed; don\'t forget to GRANT permissions to less-privileged users where applicable.')
 
 
 def _create_db(username, password, host, port):

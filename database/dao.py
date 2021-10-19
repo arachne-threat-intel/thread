@@ -53,7 +53,10 @@ class Dao:
         return await self.db.insert(table, data, return_sql=return_sql)
 
     async def insert_generate_uid(self, table, data, id_field='uid', return_sql=False):
-        return await self.db.insert_generate_uid(table, data, id_field, return_sql=return_sql)
+        return await self.db.insert_generate_uid(table, data, id_field=id_field, return_sql=return_sql)
+
+    async def insert_with_backup(self, table, data, id_field='uid'):
+        return await self.db.insert_with_backup(table, data, id_field=id_field)
 
     async def delete(self, table, data, return_sql=False):
         return await self.db.delete(table, data, return_sql=return_sql)

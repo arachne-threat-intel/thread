@@ -3,6 +3,8 @@ import uuid
 
 from abc import ABC, abstractmethod
 
+BACKUP_TABLE_SUFFIX = '_initial'
+
 
 class ThreadDB(ABC):
     """A base class for DB tasks (where the SQL statements are the same across DB engines)."""
@@ -84,7 +86,7 @@ class ThreadDB(ABC):
         # Now that the new schema has the tables we want copied, replace mention of the table name with '<name>_initial'
         # We want all occurrences replaced because of foreign key constraints
         for table in copied_tables:
-            new_schema = new_schema.replace(table, '%s_initial' % table)
+            new_schema = new_schema.replace(table, '%s%s' % (table, BACKUP_TABLE_SUFFIX))
         # Return the new schema
         return new_schema.strip()
 
@@ -150,6 +152,9 @@ class ThreadDB(ABC):
 
     async def insert(self, table, data, return_sql=False):
         """Method to insert data into a table of the db."""
+        # If there's no data to return, exit method
+        if type(data) != dict:
+            return
         # For the INSERT statement, construct the strings `col1, col2, ...` and `<query_param>, <query_param>, ...`
         columns = ', '.join(data.keys())
         temp = ['NULL' if v is None else self.query_param for v in data.values()]
@@ -166,12 +171,30 @@ class ThreadDB(ABC):
 
     async def insert_generate_uid(self, table, data, id_field='uid', return_sql=False):
         """Method to generate an ID value whilst inserting into db."""
+        # If there's no data to return, exit method
+        if type(data) != dict:
+            return
         # Update the ID field in data to be a generated UID
         data[id_field] = str(uuid.uuid4())
         # Execute the insertion
         result = await self.insert(table, data, return_sql=return_sql)
         # Return the ID value used for insertion if not returning the SQL query itself
         return result if return_sql else data[id_field]
+
+    async def insert_with_backup(self, table, data, id_field='uid'):
+        """Function to insert data into its relevant table and its backup (*_initial) table."""
+        # If there's no data to return, exit method
+        if type(data) != dict:
+            return
+        # Insert the data into the table and obtain the ID to return
+        record_id = await self.insert_generate_uid(table, data, id_field=id_field)
+        # Make a copy of the data to update the ID
+        copied_data = dict(data)
+        copied_data[id_field] = record_id
+        # Insert the copied data into the backup table
+        await self.insert('%s%s' % (table, BACKUP_TABLE_SUFFIX), copied_data)
+        # Return the ID for the two records
+        return record_id
 
     async def update(self, table, where=None, data=None, return_sql=False):
         """Method to update rows from a table of the db."""

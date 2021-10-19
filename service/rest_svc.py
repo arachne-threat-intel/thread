@@ -401,12 +401,12 @@ class RestService:
             else:
                 data = dict(report_uid=report_id, text=sentence['text'], html=sentence['html'], sen_index=s_idx,
                             found_status=self.dao.db_false_val)
-                await self.dao.insert_generate_uid('report_sentences', data)
+                await self.dao.insert_with_backup('report_sentences', data)
 
         for element in original_html:
             html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'],
                                 found_status=self.dao.db_false_val)
-            await self.dao.insert_generate_uid('original_html', html_element)
+            await self.dao.insert_with_backup('original_html', html_element)
 
         # Update card to reflect the end of queue
         await self.dao.update('reports', where=dict(uid=report_id),

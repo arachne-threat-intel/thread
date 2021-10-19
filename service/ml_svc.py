@@ -159,7 +159,7 @@ class MLService:
         return list_of_sentences
 
     async def ml_techniques_found(self, report_id, sentence, sentence_index):
-        sentence_id = await self.dao.insert_generate_uid(
+        sentence_id = await self.dao.insert_with_backup(
             'report_sentences', dict(report_uid=report_id, text=sentence['text'], html=sentence['html'],
                                      sen_index=sentence_index, found_status=self.dao.db_true_val))
         for technique in sentence['ml_techniques_found']:
@@ -183,7 +183,7 @@ class MLService:
             attack_technique = attack_uid[0]['uid']
             attack_technique_name = '{} (m)'.format(attack_uid[0]['name'])
             attack_tid = attack_uid[0]['tid']
-            await self.dao.insert_generate_uid(
+            await self.dao.insert_with_backup(
                 'report_sentence_hits',
                 dict(sentence_id=sentence_id, attack_uid=attack_technique, attack_technique_name=attack_technique_name,
                      report_uid=report_id, attack_tid=attack_tid, initial_model_match=self.dao.db_true_val))
