@@ -23,10 +23,19 @@ def get_db_info():
 
 def build_db(schema=os.path.join('conf', 'schema.sql')):
     """The function to set up the Thread database (DB)."""
+    # Begin by obtaining the text from the schema file
+    with open(schema) as schema_opened:
+        schema_text = schema_opened.read()
+    # Ask for the required DB info/credentials to proceed
     username, password, host, port = get_db_info()
     # print() statements are used rather than logging for this function because it is not running via the launched app
+    # Create the database itself
     _create_db(username, password, host, port)
-    _create_tables(username, password, host, port, schema)
+    # Use the schema to generate a new schema for tables that need to have a copied structure
+    copied_tables_schema = ThreadDB.generate_copied_tables(schema=schema_text)
+    # Proceed to build both schemas
+    _create_tables(username, password, host, port, schema=schema_text)
+    _create_tables(username, password, host, port, schema=copied_tables_schema)
 
 
 def _create_db(username, password, host, port):
@@ -51,10 +60,8 @@ def _create_db(username, password, host, port):
             connection.close()
 
 
-def _create_tables(username, password, host, port, schema_file):
+def _create_tables(username, password, host, port, schema=''):
     """The function to create the tables in the Thread DB on the server."""
-    with open(schema_file) as schema_opened:
-        schema = schema_opened.read()
     # Booleans are not integers in PostgreSQL; replace any default boolean integers with True/False
     boolean_default = 'BOOLEAN DEFAULT'
     schema = schema.replace('%s 1' % boolean_default, '%s TRUE' % boolean_default)
@@ -66,7 +73,7 @@ def _create_tables(username, password, host, port, schema_file):
         with connection:  # use 'with' here to commit transaction at the end of this block
             with connection.cursor() as cursor:
                 cursor.execute(schema)  # run the parsed schema
-        print('Schema %s successfully run.' % schema_file)
+        print('Schema successfully run.')
     # Ensure the connection closes if anything went wrong
     finally:
         if connection:
