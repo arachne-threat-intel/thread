@@ -63,15 +63,21 @@ class DataService:
         self.SQL_WITH_PAR_ATTACK = \
             'WITH %s(uid, name, tid, parent_tid, parent_name) AS (%s) ' % (FULL_ATTACK_INFO, self.SQL_PAR_ATTACK)
 
-    async def reload_database(self, schema=os.path.join('conf', 'schema.sql')):
+    async def reload_database(self, schema_file=os.path.join('conf', 'schema.sql')):
         """
         Function to reinitialize the database with the packaged schema
-        :param schema: SQL schema file to build database from
+        :param schema_file: SQL schema file to build database from
         :return: nil
         """
-        schema = os.path.join(self.dir_prefix, schema)  # prefix directory path if there is one
-        with open(schema) as schema:
-            await self.dao.build(schema.read())
+        # Begin by obtaining the text from the schema file
+        schema_file = os.path.join(self.dir_prefix, schema_file)  # prefix directory path if there is one
+        with open(schema_file) as schema_opened:
+            schema = schema_opened.read()
+        # Given the schema, generate a new schema for tables that need to have a copied structure
+        copied_tables_schema = self.dao.generate_copied_tables(schema=schema)
+        # Proceed to build both schemas
+        await self.dao.build(schema)
+        await self.dao.build(copied_tables_schema)
 
     async def insert_attack_stix_data(self):
         """

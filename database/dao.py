@@ -37,6 +37,9 @@ class Dao:
     async def build(self, schema):
         await self.db.build(schema)
 
+    def generate_copied_tables(self, schema):
+        return self.db.generate_copied_tables(schema)
+
     async def get(self, table, equal=None, not_equal=None):
         return await self.db.get(table, equal=equal, not_equal=not_equal)
 

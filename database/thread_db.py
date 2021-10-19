@@ -50,6 +50,44 @@ class ThreadDB(ABC):
         else:
             return func_name
 
+    @staticmethod
+    def generate_copied_tables(schema=''):
+        """Function to return a new schema that has copied structures of report-sentence tables from a given schema."""
+        # The new schema to build on and return
+        new_schema = ''
+        # The beginning and end strings of a create SQL statement
+        create_begin, create_end = 'CREATE TABLE IF NOT EXISTS', ');'
+        # The report-sentence tables that we are copying the structure of
+        copied_tables = ['report_sentences', 'report_sentence_hits', 'original_html']
+        # For each table name...
+        for table in copied_tables:
+            # Attempt to find the beginning of the create statement for this table in the schema
+            try:
+                start_pos = schema.index('%s %s' % (create_begin, table))
+            # If it fails, log this and skip to the next table
+            except ValueError:
+                logging.error('Copy table `%s` failed: given schema has different or missing CREATE statement.' % table)
+                continue
+            # Given a starting position, find where the table's create statement finishes
+            try:
+                end_pos = schema[start_pos:].index(create_end)
+            # If it fails, log this and skip to the next table
+            except ValueError:
+                logging.error('Copy table `%s` failed: could not find closing `%s` in schema.' % (table, create_end))
+                continue
+            # We can now isolate just the create statement for this table
+            # End position is offset by the start_pos (because index() was called from start_pos)
+            # + len(create_end) because we need to include the end of the creation string itself (i.e. include ');' )
+            create_statement = schema[start_pos:(start_pos + end_pos + len(create_end))]
+            # Add the create statement for this table to the new schema
+            new_schema += '\n\n' + create_statement
+        # Now that the new schema has the tables we want copied, replace mention of the table name with '<name>_initial'
+        # We want all occurrences replaced because of foreign key constraints
+        for table in copied_tables:
+            new_schema = new_schema.replace(table, '%s_initial' % table)
+        # Return the new schema
+        return new_schema.strip()
+
     @abstractmethod
     async def build(self, schema):
         """Method to build the db given a schema."""
