@@ -116,7 +116,7 @@ class RestService:
             if unchecked:
                 return dict(error='There are ' + str(unchecked) + ' attacks unconfirmed for this report.', alert_user=1)
             # Check the report status is not queued (because queued reports will have 0 unchecked attacks)
-            if r_status == ReportStatus.QUEUE.value:
+            if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
                 return default_error
             # Finally, update the status
             await self.dao.update('reports', where=dict(uid=report_id), data=dict(current_status=new_status))
@@ -144,7 +144,8 @@ class RestService:
         # Found a valid report, check if protected by token
         await self.web_svc.action_allowed(request, 'delete-report', context=dict(report=report[0]))
         # Check a queued, error-free report ID hasn't been provided -> this may be mid-analysis
-        if r_status == ReportStatus.QUEUE.value and not r_error:
+        if (not r_error) and (r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value,
+                                               ReportStatus.COMPLETED.value]):
             return default_error
         # Proceed with delete
         await self.dao.delete('reports', dict(uid=report_id))
@@ -175,6 +176,8 @@ class RestService:
         await self.dao.delete('report_sentences', dict(uid=sen_id))
         # This could also be an image, so delete from original_html table too
         await self.dao.delete('original_html', dict(uid=sen_id))
+        # As a report has been edited, ensure the report's status reflects analysis has started
+        await self.check_report_status(report_id=report_id, update_if_false=True)
         return REST_SUCCESS
 
     async def sentence_context(self, request, criteria=None):

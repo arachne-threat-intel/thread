@@ -249,8 +249,9 @@ class WebAPI:
             return self.respond_error()
         # Found a valid report, check if protected by token
         await self.web_svc.action_allowed(request, 'nav-export', context=dict(report=report[0]))
-        # A queued report would pass the above check but be blank; raise an error instead
-        if report_status == self.report_statuses.QUEUE.value:
+        # A queued report would pass the above checks but be blank; raise an error instead
+        if report_status not in [self.report_statuses.NEEDS_REVIEW.value, self.report_statuses.IN_REVIEW.value,
+                                 self.report_statuses.COMPLETED.value]:
             return self.respond_error()
 
         # Create the layer name and description
@@ -295,8 +296,9 @@ class WebAPI:
             return self.respond_error()
         # Found a valid report, check if protected by token
         await self.web_svc.action_allowed(request, 'pdf-export', context=dict(report=report[0]))
-        # A queued report would pass the above check but be blank; raise an error instead
-        if report_status == self.report_statuses.QUEUE.value:
+        # A queued report would pass the above checks but be blank; raise an error instead
+        if report_status not in [self.report_statuses.NEEDS_REVIEW.value, self.report_statuses.IN_REVIEW.value,
+                                 self.report_statuses.COMPLETED.value]:
             return self.respond_error()
         # Continue with the method and retrieve the report's sentences
         sentences = await self.data_svc.get_report_sentences_with_attacks(report_id=report_id)
