@@ -132,8 +132,10 @@ class WebAPI:
         for status in self.report_statuses:
             is_complete_status = status.value == self.report_statuses.COMPLETED.value
             # Properties for all statuses when displayed on the index page
-            page_data[status.value] = dict(display_name=status.display_name, allow_delete=True,
-                                           analysis_button='View Analysis' if is_complete_status else 'Analyse')
+            page_data[status.value] = \
+                dict(display_name=status.display_name, allow_delete=True,
+                     error_msg='Sorry, an error occurred with this report and may appear different than intended.',
+                     analysis_button='View Analysis' if is_complete_status else 'Analyse')
             # If the status is 'queue', obtain errored reports separately so we can provide info without these
             if status.value == self.report_statuses.QUEUE.value:
                 pending = await self.data_svc.status_grouper(
@@ -153,6 +155,8 @@ class WebAPI:
                 page_data[status.value]['allow_delete'] = False
                 # There is no analysis button for queued reports
                 del page_data[status.value]['analysis_button']
+                # Queued reports with errors have an error because the contents can't be viewed: update error message
+                page_data[status.value]['error_msg'] = 'Sorry, the contents of this report could not be retrieved.'
             # Else proceed to obtain the reports for this status as normal
             else:
                 page_data[status.value]['reports'] = \

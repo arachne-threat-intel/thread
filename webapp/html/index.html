@@ -111,29 +111,29 @@
       </nav>
       <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
         <div class="row flex-row flex-sm-nowrap py-3">
-          {% for key, value in reports_by_status.items() %}
+          {% for key, value in reports_by_status.items() %}{# Loop through each report status #}
             <div class="col">
               <div class="card bg-light status-column">
                 <div id={{key}} class="card-body">
-                  <h6 class="card-title text-uppercase text-truncate py-2">{{value.display_name}}</h6>
+                  <h6 class="card-title text-uppercase text-truncate py-2">{{value.display_name}}</h6>{# Header for status #}
                   <div class="items border border-light">
-                    {% for report in value.reports %}
+                    {% for report in value.reports %}{# Display the reports in a column for this status #}
                       <div class="card shadow-sm" id="{{key}}-{{report.title_quoted}}">
                         <div class="card-body">
-                          {% if report.error %}
+                          {% if report.error %}{# Display error icon if applicable #}
                             <a data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top"
-                               title="Sorry, the contents of this report could not be retrieved.">
+                               title="{% if value.error_msg %}{{value.error_msg}}{% else %}Error{% endif %}">
                               <span class="fas fa-exclamation glyphicon glyphicon-exclamation-sign error-icon"></span>
                             </a>
                           {% endif %}
-                          {% if value.allow_delete or report.error %}
+                          {% if value.allow_delete or report.error %}{# Display button to delete report if allowed #}
                             <a data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top"
                                title="Delete this report."
                                onclick="deleteReport('{{report.title_quoted}}')">
                                <span class="fas fa-trash-alt glyphicon glyphicon-trash btn-sm btn-outline-danger float-right report-action"></span>
                             </a>
                           {% endif %}
-                          {% if value.allow_rollback %}
+                          {% if value.allow_rollback %}{# Display button to rollback report if allowed #}
                             <a data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top"
                                title="Rollback report to NEEDS REVIEW."
                                onclick="rollbackReport('{{report.title_quoted}}')">
@@ -141,9 +141,9 @@
                             </a>
                           {% endif %}
                           <p>
-                          <p class="card-text">{{report.title}}</p>
-                          <a href="{{report.url}}" class="btn btn-sm btn-outline-secondary">Source</a>
-                          {% if value.analysis_button %}
+                          <p class="card-text">{{report.title}}</p>{# Display the report title #}
+                          <a href="{{report.url}}" class="btn btn-sm btn-outline-secondary">Source</a>{# All reports have a source URL #}
+                          {% if value.analysis_button %}{# Display analyse button if applicable #}
                             <a href="{{report.link}}" class="btn btn-sm btn-outline-secondary">{{value.analysis_button}}</a>
                           {% endif %}
                         </div>
