@@ -4,6 +4,7 @@ import uuid
 from abc import ABC, abstractmethod
 
 BACKUP_TABLE_SUFFIX = '_initial'
+TABLES_WITH_BACKUPS = ['report_sentences', 'report_sentence_hits', 'original_html']
 
 
 class ThreadDB(ABC):
@@ -19,12 +20,24 @@ class ThreadDB(ABC):
         # Update mapped_functions if provided
         if mapped_functions is not None:
             self._mapped_functions.update(mapped_functions)
+        # A map tp store the column names of the initial-data tables
+        self._table_columns = dict()
 
     @property
     @abstractmethod
     def query_param(self):
         """The string representing a query parameter."""
         pass
+
+    @property
+    def backup_table_suffix(self):
+        """The suffix of initial-data tables."""
+        return BACKUP_TABLE_SUFFIX
+
+    @property
+    def backup_table_list(self):
+        """The list of initial-data tables."""
+        return TABLES_WITH_BACKUPS
 
     @property
     def val_as_true(self):
@@ -59,10 +72,8 @@ class ThreadDB(ABC):
         new_schema = ''
         # The beginning and end strings of a create SQL statement
         create_begin, create_end = 'CREATE TABLE IF NOT EXISTS', ');'
-        # The report-sentence tables that we are copying the structure of
-        copied_tables = ['report_sentences', 'report_sentence_hits', 'original_html']
-        # For each table name...
-        for table in copied_tables:
+        # For each table that we are copying the structure of...
+        for table in TABLES_WITH_BACKUPS:
             # Attempt to find the beginning of the create statement for this table in the schema
             try:
                 start_pos = schema.index('%s %s' % (create_begin, table))
@@ -85,7 +96,7 @@ class ThreadDB(ABC):
             new_schema += '\n\n' + create_statement
         # Now that the new schema has the tables we want copied, replace mention of the table name with '<name>_initial'
         # We want all occurrences replaced because of foreign key constraints
-        for table in copied_tables:
+        for table in TABLES_WITH_BACKUPS:
             new_schema = new_schema.replace(table, '%s%s' % (table, BACKUP_TABLE_SUFFIX))
         # Return the new schema
         return new_schema.strip()
@@ -93,6 +104,11 @@ class ThreadDB(ABC):
     @abstractmethod
     async def build(self, schema):
         """Method to build the db given a schema."""
+        pass
+
+    @abstractmethod
+    async def _get_column_names(self, sql):
+        """Method to get column names for data retrieved by a given SQL statement."""
         pass
 
     @abstractmethod
@@ -149,6 +165,19 @@ class ThreadDB(ABC):
     async def get_column_as_list(self, table, column):
         """Method to return a column from a db table as a list."""
         return await self.raw_select('SELECT %s FROM %s' % (column, table), single_col=True)
+
+    async def initialise_column_names(self):
+        """Method to initialise the map used to store column names for the db tables."""
+        # We currently only care about storing initial data table columns for INSERT INTO SELECT statements
+        for table in TABLES_WITH_BACKUPS:
+            # Access no data but select all columns for the given table
+            sql = 'SELECT * FROM %s LIMIT 0' % table
+            # Update map with the list of columns obtained from this SQL statement
+            self._table_columns[table] = await self._get_column_names(sql)
+
+    def get_column_names_from_table(self, table):
+        """Method to return the list of columns from a db table."""
+        return self._table_columns.get(table, '')
 
     async def insert(self, table, data, return_sql=False):
         """Method to insert data into a table of the db."""
