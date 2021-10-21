@@ -7,6 +7,11 @@ var tempHighlighted = undefined;
 // The classes used for highlighting a sentence or image
 var highlightClass = "bg-warning";
 var highlightClassImg = "imgHighlight";
+// The class used when a sentence is clicked
+var clickedClass = "report-sentence-clicked";
+// ID selectors for report-sentence buttons
+var delSenBtn = "#delSenBtn";
+var missingTechBtn = "#missingTechBtn";
 // The URL for the rest requests
 var restUrl = $('script#basicsScript').data('rest-url');
 // If this script is being run locally
@@ -78,15 +83,21 @@ function remove_sentence() {
   var messageInfo = "";
   // If it is a sentence that is selected
   if (selectedSentence) {
+    // Scroll sentence into view - commented out due to timings with confirm() box and browser compatibility
+    // selectedSentence.scrollIntoView({block: "center", inline: "center"});
     // Prepare the first three words of the sentence as a reminder to the user of the sentence that is selected
     sen_text = selectedSentence.innerText;
     truncated = sen_text.split(' ').slice(0,3).join(' ');
     // Add trailing ellipsis if the sentence has more than three words
     truncated += (truncated == sen_text) ? "" : "...";
-    messageInfo = `sentence ("${truncated.trim()}")`;
+    truncated = truncated.trim();
+    // Don't display preview for sentence if too long
+    messageInfo = truncated.length > 40 ? "sentence" : `sentence ("${truncated}")`;
     // Flag selected to be this sentence to be removed
     selected = selectedSentence;
   } else if (selectedImage) {  // Else if an image is selected
+    // Scroll image into view - commented out due to timings with confirm() box and browser compatibility
+    // selectedImage.scrollIntoView({block: "center", inline: "center"});
     messageInfo = "image";
     // Flag selected to be this image to be removed
     selected = selectedImage;
@@ -103,8 +114,8 @@ function remove_sentence() {
     // Nothing is currently selected after this removal
     tempHighlighted = undefined;
     // Disable further actions until another item is selected
-    $("#missingTechBtn").prop("disabled", true);
-    $("#delSenBtn").prop("disabled", true);
+    $(missingTechBtn).prop("disabled", true);
+    $(delSenBtn).prop("disabled", true);
     // Send off request to delete from the db
     restRequest('POST', {'index':'remove_sentence', 'sentence_id': sentence_id});
   }
@@ -236,12 +247,16 @@ function updateSentenceContext(data) {
     $("#img" + tempHighlighted).removeClass(highlightClassImg);
     tempHighlighted = undefined;
   }
+  // Regardless of what is clicked, remove any previous clicked-styling for report sentences
+  $(".report-sentence").removeClass(clickedClass);
   // Reset any 'Techniques Found' list
   $("#tableSentenceInfo tr").remove();
   // Flag we will enable any disabled sentence buttons
   enableSenButtons = true;
   // If this sentence has attacks, display the attacks as normal
   if (data && data.length > 0) {
+    // Highlight to the user this sentence has been clicked
+    $("#elmt" + sentence_id).addClass(clickedClass);
     $.each(data, function(index, op) {
       // For the href, replace any '.' in the TID with a '/' as that is the URL format for sub-techniques
       td1 = "<td><a href=https://attack.mitre.org/techniques/" + op.attack_tid.replace(".", "/") + " target=_blank>"
@@ -265,14 +280,15 @@ function updateSentenceContext(data) {
     // else this sentence wasn't highlighted before; add the highlighting
     } else {
       $("#elmt" + sentence_id).addClass(highlightClass);
+      $("#elmt" + sentence_id).addClass(clickedClass);
       $("#img" + sentence_id).addClass(highlightClassImg);
       tempHighlighted = sentence_id;
     }
   }
   // Permit clicking missing techniques button depending if an image is currently highlighted
-  $("#missingTechBtn").prop("disabled", $(`.${highlightClassImg}`).length > 0 || !enableSenButtons);
+  $(missingTechBtn).prop("disabled", $(`.${highlightClassImg}`).length > 0 || !enableSenButtons);
   // Allow 'remove selected' button
-  $("#delSenBtn").prop("disabled", !enableSenButtons);
+  $(delSenBtn).prop("disabled", !enableSenButtons);
 }
 
 function updateConfirmedContext(data) {
@@ -328,6 +344,22 @@ $(document).ready(function() {
   $("header").css("height", $(".navbar").outerHeight());
   autoHeight();
 });
+
+// Add event listener for DEL button keypress if not added already
+if (!document.delListener) {
+  document.addEventListener("keydown", function(event) {
+    // Check the button pressed
+    if (event.key === "Delete") {
+      // Check if there is a delete-sentence button on the page and if it is enabled
+      if ($(delSenBtn).length && !$(delSenBtn).prop("disabled")) {
+        // Prompt user if they want to delete this sentence
+        remove_sentence();
+      }
+    }
+  });
+  // Update flag so this is not added again
+  document.delListener = true;
+}
 
 // onResize bind of the function
 $(window).resize(function() {
