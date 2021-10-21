@@ -131,6 +131,15 @@ class ThreadPostgreSQL(ThreadDB):
                 connection.close()
         return return_val
 
+    async def _get_column_names(self, sql):
+        """Implements ThreadDB._get_column_names()"""
+        def cursor_select(cursor):
+            # Execute the SQL query
+            cursor.execute(sql)
+            # Return the column names from the cursor description
+            return [desc[0] for desc in cursor.description]
+        return self._connection_wrapper(cursor_select, cursor_factory=psycopg2.extras.DictCursor)
+
     async def _execute_select(self, sql, parameters=None, single_col=False):
         """Implements ThreadDB._execute_select()"""
         def cursor_select(cursor):

@@ -33,6 +33,15 @@ class ThreadSQLite(ThreadDB):
         except Exception as exc:
             logging.error('! error building db : {}'.format(exc))
 
+    async def _get_column_names(self, sql):
+        """Implements ThreadDB._get_column_names()"""
+        with sqlite3.connect(self.database) as conn:
+            cursor = conn.cursor()
+            # Execute the SQL query
+            cursor.execute(sql)
+            # Return the column names from the cursor description
+            return [desc[0] for desc in cursor.description]
+
     async def _execute_select(self, sql, parameters=None, single_col=False):
         """Implements ThreadDB._execute_select()"""
         with sqlite3.connect(self.database) as conn:

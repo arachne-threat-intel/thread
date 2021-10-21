@@ -49,6 +49,8 @@ class WebAPI:
         await self.rest_svc.prepare_queue()
         # We want the list of attacks ready before the app starts
         self.attack_dropdown_list = await self.data_svc.get_techniques(get_parent_info=True)
+        # We want column names ready
+        await self.dao.db.initialise_column_names()
 
     @staticmethod
     def respond_error(message=None):
