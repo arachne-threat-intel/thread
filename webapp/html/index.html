@@ -127,7 +127,18 @@
                             </a>
                           {% endif %}
                           {% if value.allow_delete or report.error %}
-                            <a onclick="deleteReport('{{report.title_quoted}}')" class="fas fa-trash-alt glyphicon glyphicon-trash btn-sm btn-outline-danger float-right"></a>
+                            <a data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top"
+                               title="Delete this report."
+                               onclick="deleteReport('{{report.title_quoted}}')">
+                               <span class="fas fa-trash-alt glyphicon glyphicon-trash btn-sm btn-outline-danger float-right report-action"></span>
+                            </a>
+                          {% endif %}
+                          {% if value.allow_rollback %}
+                            <a data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top"
+                               title="Rollback report to NEEDS REVIEW."
+                               onclick="rollbackReport('{{report.title_quoted}}')">
+                               <span class="fas fa-undo-alt glyphicon glyphicon-refresh btn-sm float-right report-action"></span>
+                            </a>
                           {% endif %}
                           <p>
                           <p class="card-text">{{report.title}}</p>

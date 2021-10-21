@@ -297,6 +297,10 @@ table {
   cursor: help;
 }
 
+.report-action {
+  cursor: pointer;
+}
+
 #publicReportCheck, #publicReportCheckCSV {
   margin: 0.2rem;
   margin-top: 0.3rem;

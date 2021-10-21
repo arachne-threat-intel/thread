@@ -96,7 +96,7 @@ function remove_sentence() {
   }
   // Confirm with the user that this is being removed
   if (confirm("Are you sure you want to remove the currently selected " + messageInfo
-        + "? This can only be retrieved by re-submitting this report.")) {
+        + "? This can only be retrieved by re-submitting or rollbacking this report.")) {
     // Remove the element itself and any related elements (e.g. buffering <br>s)
     selected.remove();
     $(`.elmtRelated${sentence_id}`).remove();
@@ -123,6 +123,12 @@ function rejectAttack(id, attack_uid) {
 function deleteReport(reportTitle) {
   if (confirm('Are you sure you want to delete this report?')) {
     restRequest('POST', {'index': 'delete_report', 'report_title': reportTitle}, page_refresh);
+  }
+}
+
+function rollbackReport(reportTitle) {
+  if (confirm('Are you sure you want to rollback this report to NEEDS REVIEW?')) {
+    restRequest('POST', {'index': 'rollback_report', 'report_title': reportTitle}, page_refresh);
   }
 }
 

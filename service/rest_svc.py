@@ -180,6 +180,42 @@ class RestService:
         await self.check_report_status(report_id=report_id, update_if_false=True)
         return REST_SUCCESS
 
+    async def rollback_report(self, request, criteria=None):
+        default_error = dict(error='Error completing rollback of report.')
+        try:
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
+            report_title = criteria['report_title']
+        except (KeyError, TypeError):
+            return default_error
+        # Get the report data from the provided report title
+        try:
+            report = await self.dao.get('reports', dict(title=unquote(report_title)))
+        except TypeError:  # Thrown when unquote() receives a non-string type
+            return default_error
+        try:
+            report_id, r_status = report[0][UID], report[0]['current_status']
+        except (KeyError, IndexError):  # Thrown if the report title is not in the db or db record is malformed
+            return default_error
+        # Found a valid report, check if protected by token
+        await self.web_svc.action_allowed(request, 'rollback-report', context=dict(report=report[0]))
+        # Only mid-review reports can be rollbacked
+        if r_status != ReportStatus.IN_REVIEW.value:
+            return default_error
+        # Proceed with the rollback; first, hide the report from the UI and give it a temp status
+        await self.dao.update('reports', where=dict(uid=report_id), data=dict(current_status='HIDDEN'))
+        # Execute the rollback
+        success = await self.data_svc.rollback_report(report_id=report_id)
+        if success:
+            # Finish by setting the status to 'Needs Review' and removing error (if error was added previously)
+            await self.dao.update(
+                'reports', where=dict(uid=report_id),
+                data=dict(current_status=ReportStatus.NEEDS_REVIEW.value, error=self.dao.db_false_val))
+        else:
+            # If unsuccessful: log this, change report status back to what it was and add error flag
+            logging.error('Report %s failed to rollback.' % report_id)
+            await self.dao.update('reports', where=dict(uid=report_id),
+                                  data=dict(current_status=r_status, error=self.dao.db_true_val))
+
     async def sentence_context(self, request, criteria=None):
         sen_id = await self.check_and_get_sentence_id(request, request_data=criteria)
         return await self.data_svc.get_active_sentence_hits(sentence_id=sen_id)

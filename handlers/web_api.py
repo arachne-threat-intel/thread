@@ -157,6 +157,8 @@ class WebAPI:
             else:
                 page_data[status.value]['reports'] = \
                     await self.data_svc.status_grouper(status.value, criteria=dict(token=token))
+            # Allow only mid-review reports to be rollbacked
+            page_data[status.value]['allow_rollback'] = status.value == self.report_statuses.IN_REVIEW.value
         # Update overall template data and return
         template_data.update(reports_by_status=page_data)
         return template_data
@@ -179,6 +181,7 @@ class WebAPI:
                     insert_csv=lambda d: self.rest_svc.insert_csv(request=request, criteria=d),
                     remove_sentence=lambda d: self.rest_svc.remove_sentence(request=request, criteria=d),
                     delete_report=lambda d: self.rest_svc.delete_report(request=request, criteria=d),
+                    rollback_report=lambda d: self.rest_svc.rollback_report(request=request, criteria=d),
                     sentence_context=lambda d: self.rest_svc.sentence_context(request=request, criteria=d),
                     confirmed_attacks=lambda d: self.rest_svc.confirmed_attacks(request=request, criteria=d)
                 ))

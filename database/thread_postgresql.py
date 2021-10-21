@@ -111,10 +111,10 @@ class ThreadPostgreSQL(ThreadDB):
         logging.warning('Re-building the database cannot be done when config \'db-engine\' is \'postgresql\'. '
                         'Please run `main.py --build-db` separately instead.')
 
-    def _connection_wrapper(self, method, cursor_factory=None):
+    def _connection_wrapper(self, method, cursor_factory=None, return_success=False):
         """A function to execute a method that requires a db connection cursor."""
-        # Blank variables for the connection and the return value
-        connection, return_val = None, None
+        # Blank variables for the connection, the return value and if the method was successful
+        connection, return_val, success = None, None, True
         try:
             # Set up the connection
             connection = psycopg2.connect(database=DB_NAME, user=self.username, password=self.password,
@@ -125,11 +125,13 @@ class ThreadPostgreSQL(ThreadDB):
                     return_val = method(cursor)
         except Exception as e:
             logging.error('Encountered error: ' + str(e))
+            success = False
         # Ensure the connection closes if anything went wrong
         finally:
             if connection:
                 connection.close()
-        return return_val
+        # If we're returning a success-boolean, return that; else return any value obtained
+        return success if return_success else return_val
 
     async def _get_column_names(self, sql):
         """Implements ThreadDB._get_column_names()"""
@@ -175,7 +177,7 @@ class ThreadPostgreSQL(ThreadDB):
         results = await self.raw_select('SELECT array(SELECT %s FROM %s)' % (column, table))
         return results[0]['array']  # Let a KeyError raise if 'array' doesn't work - this means the library changed
 
-    async def run_sql_list(self, sql_list=None):
+    async def run_sql_list(self, sql_list=None, return_success=True):
         """Implements ThreadDB.run_sql_list()"""
         def cursor_multiple_execute(cursor):
             # Execute each list item where the first part must be an SQL statement followed by optional parameters
@@ -191,4 +193,4 @@ class ThreadPostgreSQL(ThreadDB):
         # Don't do anything if we don't have a list
         if not sql_list:
             return
-        return self._connection_wrapper(cursor_multiple_execute)
+        return self._connection_wrapper(cursor_multiple_execute, return_success=return_success)
