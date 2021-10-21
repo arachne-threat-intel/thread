@@ -127,7 +127,7 @@ class ThreadDB(ABC):
         pass
 
     @abstractmethod
-    async def run_sql_list(self, sql_list=None):
+    async def run_sql_list(self, sql_list=None, return_success=True):
         """Method to connect to the db and execute a list of SQL statements in a single transaction."""
         pass
 
@@ -177,7 +177,7 @@ class ThreadDB(ABC):
 
     def get_column_names_from_table(self, table):
         """Method to return the list of columns from a db table."""
-        return self._table_columns.get(table, '')
+        return self._table_columns.get(table, [])
 
     async def insert(self, table, data, return_sql=False):
         """Method to insert data into a table of the db."""

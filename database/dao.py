@@ -64,5 +64,5 @@ class Dao:
     async def raw_select(self, query, parameters=None):
         return await self.db.raw_select(query, parameters=parameters)
 
-    async def run_sql_list(self, sql_list=None):
-        return await self.db.run_sql_list(sql_list=sql_list)
+    async def run_sql_list(self, sql_list=None, return_success=True):
+        return await self.db.run_sql_list(sql_list=sql_list, return_success=return_success)

@@ -341,6 +341,28 @@ class DataService:
         # Run the above query and return its results
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
 
+    async def rollback_report(self, report_id=''):
+        """Function to rollback a report to its initial state."""
+        # The list of SQL statements to run for this operation
+        sql_list = [
+            # Delete the report sentences - this will trigger related true/false positives/negatives to be deleted
+            await self.dao.delete('report_sentences', dict(report_uid=report_id), return_sql=True),
+            # Delete related images for this report
+            await self.dao.delete('original_html', dict(report_uid=report_id), return_sql=True)
+        ]
+        # For each table that contains the initial report data
+        for table in self.dao.db.backup_table_list:
+            columns = ', '.join(self.dao.db.get_column_names_from_table(table))
+            # Construct the INSERT INTO SELECT statement: select all columns from the initial data and insert into table
+            sql = 'INSERT INTO %s (%s) SELECT %s FROM %s%s WHERE report_uid = %s;' % \
+                  (table, columns, columns, table, self.dao.db.backup_table_suffix, self.dao.db_qparam)
+            # Table names can't be parameters so state the report ID as a parameter for the above statement
+            parameters = tuple([report_id])
+            # Append to the SQL list the statement itself and the parameters to use
+            sql_list.append(tuple([sql, parameters]))
+        # Run the deletions and insertions for this method altogether; return if it was successful
+        return await self.dao.run_sql_list(sql_list=sql_list)
+
     async def get_unique_title(self, title):
         """
         Function to retrieve a unique title whilst checking for a given title in the database.
