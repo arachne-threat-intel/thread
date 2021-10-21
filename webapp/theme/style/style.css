@@ -333,6 +333,7 @@ table {
 }
 
 .reportImage {
+  cursor: pointer;
   display: block;
   max-height: 700px;
   margin-left: auto;
@@ -340,8 +341,16 @@ table {
   width: 75%;
 }
 
+.report-sentence {
+  cursor: pointer;
+}
+
 .report-sentence:hover {
   background-color: #ffffbd;
+}
+
+.report-sentence-clicked {
+  border: solid;
 }
 
 .imgHighlight {
