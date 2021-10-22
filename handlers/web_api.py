@@ -107,6 +107,8 @@ class WebAPI:
         # nor do we need to store user's response. Just update the session flag to prevent displaying notice again.
         session = await get_session(request)
         session[ACCEPT_COOKIE] = True
+        # Default response content-type triggers a browser download; change this
+        response.content_type = 'text/html'
         return response
 
     @template('about.html')
