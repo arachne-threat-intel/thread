@@ -442,8 +442,8 @@ class RestService:
                             found_status=self.dao.db_false_val)
                 await self.dao.insert_with_backup('report_sentences', data)
 
-        for element in original_html:
-            html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'],
+        for e_idx, element in enumerate(original_html):
+            html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'], elem_index=e_idx,
                                 found_status=self.dao.db_false_val)
             await self.dao.insert_with_backup('original_html', html_element)
 

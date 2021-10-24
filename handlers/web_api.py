@@ -232,7 +232,8 @@ class WebAPI:
             return self.respond_error(message='Invalid URL')
         # Proceed to gather the data for the template
         sentences = await self.data_svc.get_report_sentences(report_id)
-        original_html = await self.dao.get('original_html', dict(report_uid=report_id))
+        original_html = await self.dao.get('original_html', equal=dict(report_uid=report_id),
+                                           order_by_asc=dict(elem_index=1))
         final_html = await self.web_svc.build_final_html(original_html, sentences)
         pdf_link = self.web_svc.get_route(self.web_svc.EXPORT_PDF_KEY, param=title_quoted)
         nav_link = self.web_svc.get_route(self.web_svc.EXPORT_NAV_KEY, param=title_quoted)
