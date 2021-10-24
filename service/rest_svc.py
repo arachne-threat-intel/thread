@@ -210,11 +210,13 @@ class RestService:
             await self.dao.update(
                 'reports', where=dict(uid=report_id),
                 data=dict(current_status=ReportStatus.NEEDS_REVIEW.value, error=self.dao.db_false_val))
+            return REST_SUCCESS
         else:
             # If unsuccessful: log this, change report status back to what it was and add error flag
             logging.error('Report %s failed to rollback.' % report_id)
             await self.dao.update('reports', where=dict(uid=report_id),
                                   data=dict(current_status=r_status, error=self.dao.db_true_val))
+            return default_error
 
     async def sentence_context(self, request, criteria=None):
         sen_id = await self.check_and_get_sentence_id(request, request_data=criteria)
