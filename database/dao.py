@@ -2,21 +2,15 @@
 
 import logging
 
-from .thread_postgresql import ThreadPostgreSQL
-from .thread_sqlite3 import ThreadSQLite
-
 # The types of database engines supported
 DB_SQLITE, DB_POSTGRESQL = 'sqlite3', 'postgresql'
 
 
 class Dao:
-    def __init__(self, database, engine=DB_SQLITE):
+    def __init__(self, engine=None):
         self.logger = logging.getLogger('DataService')
-        if engine == DB_SQLITE:
-            self.db = ThreadSQLite(database)
-        elif engine == DB_POSTGRESQL:
-            self.db = ThreadPostgreSQL()
-        else:
+        self.db = engine
+        if engine is None:
             raise ValueError('Incorrect config for \'db-engine\'')
 
     @property

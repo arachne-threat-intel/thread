@@ -20,8 +20,7 @@ from service.reg_svc import RegService
 from service.ml_svc import MLService
 from service.rest_svc import RestService
 
-from database.dao import Dao, DB_SQLITE
-from database.thread_postgresql import build_db as build_postgresql
+from database.dao import Dao, DB_POSTGRESQL, DB_SQLITE
 
 # If calling Thread from outside the project directory, then we need to specify
 # a directory prefix (e.g. when Thread is a subdirectory)
@@ -123,7 +122,7 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
     with open(os.path.join(dir_prefix, 'conf', 'config.yml')) as c:
         config = yaml.safe_load(c)
         is_local = config.get('run-local', True)
-        db_eng = config.get('db-engine', DB_SQLITE)
+        db_conf = config.get('db-engine', DB_SQLITE)
         conf_build = config.get('build', True)
         host = config.get('host', '0.0.0.0')
         port = config.get('port', 9999)
@@ -153,9 +152,18 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
         int(port)
     except ValueError:
         raise ValueError(int_error % 'port')
+    # Determine DB engine to use
+    db_obj = None
+    if db_conf == DB_SQLITE:
+        from database.thread_sqlite3 import ThreadSQLite
+        db_obj = ThreadSQLite(os.path.join(dir_prefix, 'database', 'thread.db'))
+    elif db_conf == DB_POSTGRESQL:
+        # Import here to avoid PostgreSQL requirements needed for non-PostgreSQL use
+        from database.thread_postgresql import ThreadPostgreSQL
+        db_obj = ThreadPostgreSQL()
 
     # Initialise DAO, start services and initiate main function
-    dao = Dao(os.path.join(dir_prefix, 'database', 'thread.db'), engine=db_eng)
+    dao = Dao(engine=db_obj)
     web_svc = WebService(route_prefix=route_prefix, is_local=is_local)
     reg_svc = RegService(dao=dao)
     data_svc = DataService(dao=dao, web_svc=web_svc, dir_prefix=dir_prefix)
@@ -176,6 +184,8 @@ if __name__ == '__main__':
 
     if args.get('build_db'):
         schema = args.get('schema')
+        # Import here to avoid PostgreSQL requirements needed for non-PostgreSQL use
+        from database.thread_postgresql import build_db as build_postgresql
         build_postgresql() if schema is None else build_postgresql(schema)
     else:
         main()
