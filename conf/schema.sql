@@ -136,6 +136,8 @@ CREATE TABLE IF NOT EXISTS original_html (
     text TEXT,
     -- The element's tag
     tag TEXT,
+    -- The order this html element has relative to the other elements in a report (e.g. 0 = first element in report)
+    elem_index INTEGER,
     -- Whether the Thread-analysis (not user-analysis) detected any attack for this element
     found_status BOOLEAN DEFAULT 0,
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE

@@ -34,8 +34,9 @@ class Dao:
     def generate_copied_tables(self, schema):
         return self.db.generate_copied_tables(schema)
 
-    async def get(self, table, equal=None, not_equal=None):
-        return await self.db.get(table, equal=equal, not_equal=not_equal)
+    async def get(self, table, equal=None, not_equal=None, order_by_asc=None, order_by_desc=None):
+        return await self.db.get(table, equal=equal, not_equal=not_equal, order_by_asc=order_by_asc,
+                                 order_by_desc=order_by_desc)
 
     async def get_column_as_list(self, table, column):
         return await self.db.get_column_as_list(table, column)

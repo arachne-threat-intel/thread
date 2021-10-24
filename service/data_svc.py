@@ -237,7 +237,7 @@ class DataService:
         return reports
 
     async def get_report_sentences(self, report_id):
-        return await self.dao.get('report_sentences', dict(report_uid=report_id))
+        return await self.dao.get('report_sentences', equal=dict(report_uid=report_id), order_by_asc=dict(sen_index=1))
 
     async def get_report_sentences_with_attacks(self, report_id=''):
         """Function to retrieve all report sentences and any attacks they may have given a report ID."""

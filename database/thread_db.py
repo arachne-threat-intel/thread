@@ -135,14 +135,18 @@ class ThreadDB(ABC):
         """Method to run a constructed SQL SELECT query."""
         return await self._execute_select(sql, parameters=parameters, single_col=single_col)
 
-    async def get(self, table, equal=None, not_equal=None):
+    async def get(self, table, equal=None, not_equal=None, order_by_asc=None, order_by_desc=None):
         """Method to return values from a db table optionally based on equals or not-equals criteria."""
         sql = 'SELECT * FROM %s' % table
-        # Define all_params dictionary (for equal and not_equal to be None-checked and combined) and qparams list
-        all_params, qparams = dict(), []
+        # Define all_params dictionary (for equal and not_equal to be None-checked and combined)
+        # all_ordering dictionary (for ASC and DESC ordering combined) and qparams list
+        all_params, all_ordering, qparams = dict(), dict(), []
         # Append to all_params equal and not_equal if not None
         all_params.update(dict(equal=equal) if equal else {})
         all_params.update(dict(not_equal=not_equal) if not_equal else {})
+        # Do the same for the ordering dictionaries
+        all_ordering.update(dict(asc=order_by_asc) if order_by_asc else {})
+        all_ordering.update(dict(desc=order_by_desc) if order_by_desc else {})
         # For each of the equal and not_equal parameters, build SQL query
         count = 0
         for eq, criteria in all_params.items():
@@ -158,6 +162,19 @@ class ThreadDB(ABC):
                         # Add the ! for != if this is a not-equals check
                         sql += (' %s %s= %s' % (where, '!' if eq == 'not_equal' else '', self.query_param))
                         qparams.append(value)
+                    count += 1
+        # For each of the ordering parameters, build the ORDER BY clause of the SQL query
+        count = 0
+        for order_by, criteria in all_ordering.items():
+            for where, value in criteria.items():
+                # If there is a column we want to specify ordering for
+                if where is not None:
+                    # If this is our first column we are adding, we need the ORDER BY part, else add separating comma
+                    sql += ',' if count > 0 else ' ORDER BY'
+                    # If the boolean value for this column to be ordered is True...
+                    if value:
+                        # Add column name and ASC/DESC criteria
+                        sql += (' %s %s' % (where, order_by.upper()))
                     count += 1
         # After the SQL query has been formed, execute it
         return await self._execute_select(sql, parameters=qparams)
