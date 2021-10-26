@@ -63,7 +63,7 @@ class DataService:
         self.SQL_WITH_PAR_ATTACK = \
             'WITH %s(uid, name, tid, parent_tid, parent_name) AS (%s) ' % (FULL_ATTACK_INFO, self.SQL_PAR_ATTACK)
 
-    async def reload_database(self, schema_file=os.path.join('conf', 'schema.sql')):
+    async def reload_database(self, schema_file=os.path.join('threadapp', 'conf', 'schema.sql')):
         """
         Function to reinitialize the database with the packaged schema
         :param schema_file: SQL schema file to build database from
