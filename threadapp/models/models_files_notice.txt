@@ -1,0 +1,6 @@
+NOTICE: As required by the Apache License v2.0, this notice is to state the following files in this directory have been changed by Arachne Digital:
+
+* `attack_dict.json` > modified; directory-change
+* `model_dict.p` > (contents not modified;) directory-change
+
+To see their full history, please use `git log --follow <filename>` to view previous commits and additional contributors

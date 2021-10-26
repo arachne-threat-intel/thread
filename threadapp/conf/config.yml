@@ -1,5 +1,7 @@
 ---
 # NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital
+# This file has been moved into a different directory
+# To see its full history, please use `git log --follow <filename>` to view previous commits and additional contributors
 
 # The following fields must have a value.
 # If any of these fields are omitted at runtime, they will default to their original values.
