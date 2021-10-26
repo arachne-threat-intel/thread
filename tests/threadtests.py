@@ -1,7 +1,7 @@
 import os
 
-from threadapp.database.thread_sqlite3 import ThreadSQLite
-from threadapp.service.rest_svc import ReportStatus, UID as UID_KEY
+from threadcomponents.database.thread_sqlite3 import ThreadSQLite
+from threadcomponents.service.rest_svc import ReportStatus, UID as UID_KEY
 from unittest import IsolatedAsyncioTestCase
 from uuid import UUID
 
@@ -12,7 +12,7 @@ class TestDBSQL(IsolatedAsyncioTestCase):
     def setUpClass(cls):
         """Any setting-up before all the test methods."""
         cls.db = ThreadSQLite(os.path.join('tests', 'threadtest.db'))
-        schema_file = os.path.join('threadapp', 'conf', 'schema.sql')
+        schema_file = os.path.join('threadcomponents', 'conf', 'schema.sql')
         with open(schema_file) as schema_opened:
             cls.schema = schema_opened.read()
 
