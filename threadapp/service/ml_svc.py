@@ -89,7 +89,7 @@ class MLService:
     async def build_pickle_file(self, list_of_techs, techniques, true_negatives, force=False):
         """Returns the classification models for the data provided."""
         # Specify the location of the models file
-        dict_loc = os.path.join(self.dir_prefix, 'models', 'model_dict.p')
+        dict_loc = os.path.join(self.dir_prefix, 'threadapp', 'models', 'model_dict.p')
         # If we are not forcing the models to be rebuilt, obtain the previously used models
         if not force:
             model_dict = self.get_pre_saved_models(dict_loc)
