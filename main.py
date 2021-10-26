@@ -12,13 +12,13 @@ import sys
 import yaml
 
 from aiohttp import web
-from threadapp.database.dao import Dao, DB_POSTGRESQL, DB_SQLITE
-from threadapp.handlers.web_api import WebAPI
-from threadapp.service.data_svc import DataService
-from threadapp.service.ml_svc import MLService
-from threadapp.service.reg_svc import RegService
-from threadapp.service.rest_svc import RestService
-from threadapp.service.web_svc import WebService
+from threadcomponents.database.dao import Dao, DB_POSTGRESQL, DB_SQLITE
+from threadcomponents.handlers.web_api import WebAPI
+from threadcomponents.service.data_svc import DataService
+from threadcomponents.service.ml_svc import MLService
+from threadcomponents.service.reg_svc import RegService
+from threadcomponents.service.rest_svc import RestService
+from threadcomponents.service.web_svc import WebService
 
 # If calling Thread from outside the project directory, then we need to specify
 # a directory prefix (e.g. when Thread is a subdirectory)
@@ -117,7 +117,7 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
     logging.info('Welcome to Thread')
 
     # Read from config
-    with open(os.path.join(dir_prefix, 'threadapp', 'conf', 'config.yml')) as c:
+    with open(os.path.join(dir_prefix, 'threadcomponents', 'conf', 'config.yml')) as c:
         config = yaml.safe_load(c)
         is_local = config.get('run-local', True)
         db_conf = config.get('db-engine', DB_SQLITE)
@@ -129,7 +129,7 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
         max_tasks = config.get('max-analysis-tasks', 1)
         queue_limit = config.get('queue_limit', 0)
         json_file = config.get('json_file', None)
-        json_file_path = os.path.join(dir_prefix, 'threadapp', 'models', json_file) if json_file else None
+        json_file_path = os.path.join(dir_prefix, 'threadcomponents', 'models', json_file) if json_file else None
         attack_dict = None
     # Set the attack dictionary filepath if applicable
     if conf_build and taxii_local == OFFLINE_BUILD_SOURCE and json_file_path and os.path.isfile(json_file_path):
@@ -153,11 +153,11 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
     # Determine DB engine to use
     db_obj = None
     if db_conf == DB_SQLITE:
-        from threadapp.database.thread_sqlite3 import ThreadSQLite
-        db_obj = ThreadSQLite(os.path.join(dir_prefix, 'threadapp', 'database', 'thread.db'))
+        from threadcomponents.database.thread_sqlite3 import ThreadSQLite
+        db_obj = ThreadSQLite(os.path.join(dir_prefix, 'threadcomponents', 'database', 'thread.db'))
     elif db_conf == DB_POSTGRESQL:
         # Import here to avoid PostgreSQL requirements needed for non-PostgreSQL use
-        from threadapp.database.thread_postgresql import ThreadPostgreSQL
+        from threadcomponents.database.thread_postgresql import ThreadPostgreSQL
         db_obj = ThreadPostgreSQL()
 
     # Initialise DAO, start services and initiate main function
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     if args.get('build_db'):
         schema = args.get('schema')
         # Import here to avoid PostgreSQL requirements needed for non-PostgreSQL use
-        from threadapp.database.thread_postgresql import build_db as build_postgresql
+        from threadcomponents.database.thread_postgresql import build_db as build_postgresql
         build_postgresql() if schema is None else build_postgresql(schema)
     else:
         main()

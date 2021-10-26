@@ -21,7 +21,7 @@ def get_db_info():
     return username, password, host, port
 
 
-def build_db(schema=os.path.join('threadapp', 'conf', 'schema.sql')):
+def build_db(schema=os.path.join('threadcomponents', 'conf', 'schema.sql')):
     """The function to set up the Thread database (DB)."""
     # Begin by obtaining the text from the schema file
     with open(schema) as schema_opened:

@@ -54,7 +54,7 @@ class RestService:
         # A dictionary to keep track of report statuses we have seen
         self.seen_report_status = dict()
         # The offline attack dictionary TODO check and update differences from db (different attack names)
-        attack_dict_loc = os.path.join(dir_prefix, 'threadapp', 'models', 'attack_dict.json')
+        attack_dict_loc = os.path.join(dir_prefix, 'threadcomponents', 'models', 'attack_dict.json')
         with open(attack_dict_loc, 'r', encoding='utf_8') as attack_dict_f:
             self.json_tech = json.load(attack_dict_f)
 
