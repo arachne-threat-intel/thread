@@ -1,6 +1,6 @@
 __pycache__/
-# Local database file
-threadapp/database/thread.db
+# Local database files
+*.db
 # Pre-trained models
 threadapp/models/model_dict.p
 # Unit test generated files

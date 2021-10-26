@@ -7,7 +7,7 @@ Thread is a tool for analysts to map finished reports and articles to MITRE ATT&
 Thread was originally forked from TRAM when it was in its beta phase, and we wanted to build upon it. Therefore, further changes to the original TRAM repo may not be incorporated into Thread as the codebases have largely diverged. 
 
 ## Requirements
-- [python3](https://www.python.org/) (3.7+)
+- [Python 3](https://www.python.org/) (3.8+)
 - Google Chrome is our only supported/tested browser
 
 ## Installation
