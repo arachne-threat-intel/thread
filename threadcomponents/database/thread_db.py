@@ -135,8 +135,29 @@ class ThreadDB(ABC):
         """Method to run a constructed SQL SELECT query."""
         return await self._execute_select(sql, parameters=parameters, single_col=single_col)
 
+    @staticmethod
+    def _check_method_parameters(table, data, data_allowed_as_none=False, method_name='unspecified'):
+        """Function to check parameters passed to CRUD methods."""
+        # Check the table is a string
+        if type(table) != str:
+            raise TypeError('Non-string arg passed for table in ThreadDB.%s(): %s' % (method_name, str(table)))
+        # Proceed with checks if data is non-None but allowed to be so
+        if data_allowed_as_none and data is None:
+            return
+        # Check values passed to this method are dictionaries (column=value key-val pairs)
+        if type(data) != dict:
+            raise TypeError('Non-dictionary arg passed in ThreadDB.%s(table=%s): %s' % (method_name, table, str(data)))
+        # If the data is not allowed to be None (or empty), check data has been provided
+        if (not data_allowed_as_none) and (not len(data)):
+            raise ValueError('Non-empty-dictionary must be passed in ThreadDB.%s(table=%s)' % (method_name, table))
+
     async def get(self, table, equal=None, not_equal=None, order_by_asc=None, order_by_desc=None):
         """Method to return values from a db table optionally based on equals or not-equals criteria."""
+        # Check values passed to this method are valid
+        for param in [equal, not_equal, order_by_asc, order_by_desc]:
+            # Allow None values as we do checks for this but non-None values should be dictionaries
+            self._check_method_parameters(table, param, data_allowed_as_none=True, method_name='get')
+        # Proceed with method
         sql = 'SELECT * FROM %s' % table
         # Define all_params dictionary (for equal and not_equal to be None-checked and combined)
         # all_ordering dictionary (for ASC and DESC ordering combined) and qparams list
@@ -198,9 +219,8 @@ class ThreadDB(ABC):
 
     async def insert(self, table, data, return_sql=False):
         """Method to insert data into a table of the db."""
-        # If there's no data to return, exit method
-        if type(data) != dict:
-            return
+        # Check values passed to this method are valid
+        self._check_method_parameters(table, data, method_name='insert')
         # For the INSERT statement, construct the strings `col1, col2, ...` and `<query_param>, <query_param>, ...`
         columns = ', '.join(data.keys())
         temp = ['NULL' if v is None else self.query_param for v in data.values()]
@@ -217,9 +237,8 @@ class ThreadDB(ABC):
 
     async def insert_generate_uid(self, table, data, id_field='uid', return_sql=False):
         """Method to generate an ID value whilst inserting into db."""
-        # If there's no data to return, exit method
-        if type(data) != dict:
-            return
+        # Check values passed to this method are valid
+        self._check_method_parameters(table, data, method_name='insert_generate_uid')
         # Update the ID field in data to be a generated UID
         data[id_field] = str(uuid.uuid4())
         # Execute the insertion
@@ -229,9 +248,8 @@ class ThreadDB(ABC):
 
     async def insert_with_backup(self, table, data, id_field='uid'):
         """Function to insert data into its relevant table and its backup (*_initial) table."""
-        # If there's no data to return, exit method
-        if type(data) != dict:
-            return
+        # Check values passed to this method are valid
+        self._check_method_parameters(table, data, method_name='insert_with_backup')
         # Insert the data into the table and obtain the ID to return
         record_id = await self.insert_generate_uid(table, data, id_field=id_field)
         # Make a copy of the data to update the ID
@@ -244,12 +262,9 @@ class ThreadDB(ABC):
 
     async def update(self, table, where=None, data=None, return_sql=False):
         """Method to update rows from a table of the db."""
-        # If there is no data to update the table with, exit method
-        if data is None:
-            return None
-        # If no WHERE data is specified, default to an empty dictionary
-        if where is None:
-            where = {}
+        # Check values passed to this method are valid
+        self._check_method_parameters(table, data, method_name='update')
+        self._check_method_parameters(table, where, method_name='update')
         # The list of query parameters
         qparams = []
         # Our SQL statement and optional WHERE clause
@@ -293,12 +308,10 @@ class ThreadDB(ABC):
 
     async def delete(self, table, data, return_sql=False):
         """Method to delete rows from a table of the db."""
+        # Check values passed to this method are valid
+        self._check_method_parameters(table, data, method_name='delete')
         sql = 'DELETE FROM %s' % table
         qparams = []
-        # Prevent a whole table being cleared - no need for this functionality at time of writing
-        if not len(data):
-            logging.error('Attempting to delete all rows from table %s; this is not allowed.' % table)
-            return
         # Construct the WHERE clause using the data
         count = 0
         for k, v in data.items():
