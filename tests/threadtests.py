@@ -1,8 +1,12 @@
+import aiohttp_jinja2
 import asyncio
-import os
+import jinja2
 import logging
+import os
 import sqlite3
 
+from aiohttp import web
+from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 from contextlib import suppress
 from threadcomponents.database.dao import Dao
 from threadcomponents.database.thread_sqlite3 import ThreadSQLite
@@ -14,6 +18,7 @@ from threadcomponents.service.rest_svc import ReportStatus, RestService, UID as 
 from threadcomponents.service.web_svc import WebService
 from unittest import IsolatedAsyncioTestCase
 from uuid import UUID
+from urllib.parse import quote
 
 
 # A test suite for checking our SQL-generating code
@@ -262,7 +267,7 @@ class TestDBSQL(IsolatedAsyncioTestCase):
 
 
 # A test suite for checking report actions
-class TestReports(IsolatedAsyncioTestCase):
+class TestReports(AioHTTPTestCase):
     DB_TEST_FILE = os.path.join('tests', 'threadtestreport.db')
 
     @classmethod
@@ -293,7 +298,7 @@ class TestReports(IsolatedAsyncioTestCase):
             logging.warning('Test DB file %s could not be deleted; accumulated data in-between test runs expected.'
                             % cls.DB_TEST_FILE)
 
-    async def asyncSetUp(self):
+    async def setUpAsync(self):
         """Any setting-up before each test method."""
         # Build the database (can't run in setUpClass() as this is an async method)
         await self.db.build(self.schema)
@@ -308,6 +313,18 @@ class TestReports(IsolatedAsyncioTestCase):
                 await self.db.insert('attack_uids', attack)
         await self.web_api.pre_launch_init()
 
+    async def get_application(self):
+        """Overrides AioHTTPTestCase.get_application()."""
+        app = web.Application()
+        # Some of the routes we'll be testing
+        app.router.add_route('GET', self.web_svc.get_route(WebService.HOME_KEY), self.web_api.index)
+        app.router.add_route('GET', self.web_svc.get_route(WebService.EDIT_KEY), self.web_api.edit)
+        app.router.add_route('GET', self.web_svc.get_route(WebService.ABOUT_KEY), self.web_api.about)
+        app.router.add_route('*', self.web_svc.get_route(WebService.REST_KEY), self.web_api.rest_api)
+        aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(os.path.join('webapp', 'html')))
+        return app
+
+    @unittest_run_loop
     async def test_attack_list(self):
         """Function to test the attack list for the dropdown was created successfully."""
         # For our test attack data, we predict 2 will not be sub attacks (no Txx.xx TID) and 1 will be
@@ -321,6 +338,43 @@ class TestReports(IsolatedAsyncioTestCase):
         for attack_dict in predicted:
             self.assertTrue(attack_dict in result, msg='Attack %s was expected but not present.' % str(attack_dict))
 
+    @unittest_run_loop
+    async def test_about_page(self):
+        """Function to test the about page loads successfully."""
+        resp = await self.client.request('GET', '/about')
+        self.assertTrue(resp.status == 200, msg='About page failed to load successfully.')
+
+    @unittest_run_loop
+    async def test_home_page(self):
+        """Function to test the home page loads successfully."""
+        resp = await self.client.request('GET', '/')
+        self.assertTrue(resp.status == 200, msg='Home page failed to load successfully.')
+
+    @unittest_run_loop
+    async def test_edit_report_loads(self):
+        """Function to test loading an edit-report page is successful."""
+        # Insert a report
+        report_title = 'Will this load?'
+        report = dict(title=report_title, url='please.load', current_status=ReportStatus.IN_REVIEW.value)
+        await self.db.insert_generate_uid('reports', report)
+        # Check the report edit page loads
+        resp = await self.client.request('GET', '/edit/' + quote(report_title, safe=''))
+        self.assertTrue(resp.status == 200, msg='Edit-report page failed to load successfully.')
+
+    @unittest_run_loop
+    async def test_edit_queued_report_fails(self):
+        """Function to test loading an edit-report page for a queued report fails."""
+        # Insert a report
+        report_title = 'Queued-reports shall not pass!'
+        report = dict(title=report_title, url='dont.load', current_status=ReportStatus.QUEUE.value)
+        await self.db.insert_generate_uid('reports', report)
+        # Check the report edit page loads
+        resp = await self.client.request('GET', '/edit/' + quote(report_title, safe=''))
+        self.assertTrue(resp.status == 500, msg='Viewing an edit-queued-report page resulted in a non-500 response.')
+        text = await resp.text()
+        self.assertTrue(text == 'Invalid URL', msg='A different error appeared for an edit-queued-report page.')
+
+    @unittest_run_loop
     async def test_(self):
         """Function to test ."""
         pass
