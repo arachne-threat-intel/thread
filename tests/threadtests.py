@@ -1,21 +1,28 @@
+import asyncio
 import os
 import logging
 import sqlite3
 
+from threadcomponents.database.dao import Dao
 from threadcomponents.database.thread_sqlite3 import ThreadSQLite
-from threadcomponents.service.rest_svc import ReportStatus, UID as UID_KEY
+from threadcomponents.handlers.web_api import WebAPI
+from threadcomponents.service.data_svc import DataService
+from threadcomponents.service.ml_svc import MLService
+from threadcomponents.service.reg_svc import RegService
+from threadcomponents.service.rest_svc import ReportStatus, RestService, UID as UID_KEY
+from threadcomponents.service.web_svc import WebService
 from unittest import IsolatedAsyncioTestCase
 from uuid import UUID
-
-DB_TEST_FILE = os.path.join('tests', 'threadtest.db')
 
 
 # A test suite for checking our SQL-generating code
 class TestDBSQL(IsolatedAsyncioTestCase):
+    DB_TEST_FILE = os.path.join('tests', 'threadtestsql.db')
+
     @classmethod
     def setUpClass(cls):
         """Any setting-up before all the test methods."""
-        cls.db = ThreadSQLite(DB_TEST_FILE)
+        cls.db = ThreadSQLite(cls.DB_TEST_FILE)
         schema_file = os.path.join('threadcomponents', 'conf', 'schema.sql')
         with open(schema_file) as schema_opened:
             cls.schema = schema_opened.read()
@@ -25,10 +32,11 @@ class TestDBSQL(IsolatedAsyncioTestCase):
     def tearDownClass(cls):
         """Any tidying-up after all the test methods."""
         # Delete the database so a new DB file is used in next test-run
-        if os.path.isfile(DB_TEST_FILE):
-            os.remove(DB_TEST_FILE)
+        if os.path.isfile(cls.DB_TEST_FILE):
+            os.remove(cls.DB_TEST_FILE)
         else:
-            logging.warning('Local test DB could not be deleted; accumulated data in-between test runs expected.')
+            logging.warning('Test DB file %s could not be deleted; accumulated data in-between test runs expected.'
+                            % cls.DB_TEST_FILE)
 
     async def asyncSetUp(self):
         """Any setting-up before each test method."""
@@ -250,3 +258,47 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         # ValueError where WHERE-clause data is (a dictionary but) empty
         with self.assertRaises(ValueError):
             await self.db.delete('reports', dict())
+
+
+# A test suite for checking report actions
+class TestReports(IsolatedAsyncioTestCase):
+    DB_TEST_FILE = os.path.join('tests', 'threadtestreport.db')
+
+    @classmethod
+    def setUpClass(cls):
+        """Any setting-up before all the test methods."""
+        cls.db = ThreadSQLite(cls.DB_TEST_FILE)
+        schema_file = os.path.join('threadcomponents', 'conf', 'schema.sql')
+        with open(schema_file) as schema_opened:
+            cls.schema = schema_opened.read()
+        cls.backup_schema = cls.db.generate_copied_tables(cls.schema)
+        cls.dao = Dao(engine=cls.db)
+        cls.web_svc = WebService()
+        cls.reg_svc = RegService(dao=cls.dao)
+        cls.data_svc = DataService(dao=cls.dao, web_svc=cls.web_svc)
+        cls.ml_svc = MLService(web_svc=cls.web_svc, dao=cls.dao)
+        cls.rest_svc = RestService(cls.web_svc, cls.reg_svc, cls.data_svc, cls.ml_svc, cls.dao)
+        services = dict(dao=cls.dao, data_svc=cls.data_svc, ml_svc=cls.ml_svc, reg_svc=cls.reg_svc, web_svc=cls.web_svc,
+                        rest_svc=cls.rest_svc)
+        cls.web_api = WebAPI(services=services)
+
+    @classmethod
+    def tearDownClass(cls):
+        """Any tidying-up after all the test methods."""
+        # Delete the database so a new DB file is used in next test-run
+        if os.path.isfile(cls.DB_TEST_FILE):
+            os.remove(cls.DB_TEST_FILE)
+        else:
+            logging.warning('Test DB file %s could not be deleted; accumulated data in-between test runs expected.'
+                            % cls.DB_TEST_FILE)
+
+    async def asyncSetUp(self):
+        """Any setting-up before each test method."""
+        # Build the database (can't run in setUpClass() as this is an async method)
+        await self.db.build(self.schema)
+        await self.db.build(self.backup_schema)
+        await self.db.initialise_column_names()
+
+    async def test_(self):
+        """Function to test ."""
+        pass

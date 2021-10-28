@@ -49,7 +49,13 @@ class RestService:
         self.reg_svc = reg_svc
         self.is_local = self.web_svc.is_local
         self.queue_map = dict()  # map each user to their own queue
-        self.queue = asyncio.Queue()  # task queue
+        try:
+            self.queue = asyncio.Queue()  # task queue
+        except RuntimeError as e:  # a RuntimeError may occur if there is no event loop
+            logging.error('Encountered error %s; attempting to resolve by setting new event loop' % str(e))
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            self.queue = asyncio.Queue()
         self.current_tasks = []  # tasks that are currently being executed
         # A dictionary to keep track of report statuses we have seen
         self.seen_report_status = dict()

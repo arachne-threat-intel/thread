@@ -26,7 +26,7 @@ def sanitise_filename(filename=''):
 
 
 class WebAPI:
-    def __init__(self, services, js_src):
+    def __init__(self, services, js_src=None):
         self.dao = services.get('dao')
         self.data_svc = services['data_svc']
         self.web_svc = services['web_svc']
