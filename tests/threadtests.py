@@ -3,6 +3,7 @@ import os
 import logging
 import sqlite3
 
+from contextlib import suppress
 from threadcomponents.database.dao import Dao
 from threadcomponents.database.thread_sqlite3 import ThreadSQLite
 from threadcomponents.handlers.web_api import WebAPI
@@ -297,7 +298,28 @@ class TestReports(IsolatedAsyncioTestCase):
         # Build the database (can't run in setUpClass() as this is an async method)
         await self.db.build(self.schema)
         await self.db.build(self.backup_schema)
-        await self.db.initialise_column_names()
+        # Insert some attack data
+        attack_1 = dict(uid='f12345', description='Fire spell costing 4MP', tid='T1562', name='Fire')
+        attack_2 = dict(uid='f32451', description='Stronger Fire spell costing 16MP', tid='T1562.004', name='Firaga')
+        attack_3 = dict(uid='d99999', description='Absorbs HP', tid='T1029', name='Drain')
+        for attack in [attack_1, attack_2, attack_3]:
+            # Ignoring Integrity Error in case other test case already has inserted this data (causing duplicate UIDs)
+            with suppress(sqlite3.IntegrityError):
+                await self.db.insert('attack_uids', attack)
+        await self.web_api.pre_launch_init()
+
+    async def test_attack_list(self):
+        """Function to test the attack list for the dropdown was created successfully."""
+        # For our test attack data, we predict 2 will not be sub attacks (no Txx.xx TID) and 1 will be
+        predicted = [dict(uid='d99999', name='Drain', tid='T1029', parent_tid=None, parent_name=None),
+                     dict(uid='f12345', name='Fire', tid='T1562', parent_tid=None, parent_name=None),
+                     dict(uid='f32451', name='Firaga', tid='T1562.004', parent_tid='T1562', parent_name='Fire')]
+        # The generated dropdown list to check against our prediction
+        result = self.web_api.attack_dropdown_list
+        for attack_dict in result:
+            self.assertTrue(attack_dict in predicted, msg='Attack %s was present but not expected.' % str(attack_dict))
+        for attack_dict in predicted:
+            self.assertTrue(attack_dict in result, msg='Attack %s was expected but not present.' % str(attack_dict))
 
     async def test_(self):
         """Function to test ."""
