@@ -3,6 +3,7 @@ import asyncio
 import jinja2
 import logging
 import os
+import random
 import sqlite3
 
 from aiohttp import web
@@ -17,6 +18,7 @@ from threadcomponents.service.reg_svc import RegService
 from threadcomponents.service.rest_svc import ReportStatus, RestService, UID as UID_KEY
 from threadcomponents.service.web_svc import WebService
 from unittest import IsolatedAsyncioTestCase
+from unittest.mock import patch
 from uuid import UUID
 from urllib.parse import quote
 
@@ -287,6 +289,11 @@ class TestReports(AioHTTPTestCase):
         services = dict(dao=cls.dao, data_svc=cls.data_svc, ml_svc=cls.ml_svc, reg_svc=cls.reg_svc, web_svc=cls.web_svc,
                         rest_svc=cls.rest_svc)
         cls.web_api = WebAPI(services=services)
+        # Duplicate resources so we can test the queue limit without causing limit-exceeding test failures elsewhere
+        cls.rest_svc_with_limit = RestService(cls.web_svc, cls.reg_svc, cls.data_svc, cls.ml_svc, cls.dao,
+                                              queue_limit=random.randint(1, 20))
+        services.update(rest_svc=cls.rest_svc_with_limit)
+        cls.web_api_with_limit = WebAPI(services=services)
 
     @classmethod
     def tearDownClass(cls):
@@ -297,6 +304,10 @@ class TestReports(AioHTTPTestCase):
         else:
             logging.warning('Test DB file %s could not be deleted; accumulated data in-between test runs expected.'
                             % cls.DB_TEST_FILE)
+
+    async def blank_async_method(self):
+        """An empty async function to mock no behaviour for an async method (with matching arg-count)."""
+        return
 
     async def setUpAsync(self):
         """Any setting-up before each test method."""
@@ -311,7 +322,18 @@ class TestReports(AioHTTPTestCase):
             # Ignoring Integrity Error in case other test case already has inserted this data (causing duplicate UIDs)
             with suppress(sqlite3.IntegrityError):
                 await self.db.insert('attack_uids', attack)
-        await self.web_api.pre_launch_init()
+        # Carry out pre-launch tasks except for prepare_queue(): replace the call of this with our blank method
+        # We don't want multiple prepare_queue() calls so the queue does not accumulate between tests
+        with patch.object(RestService, 'prepare_queue', new=self.blank_async_method):
+            await self.web_api.pre_launch_init()
+            await self.web_api_with_limit.pre_launch_init()
+
+    def create_patch(self, **patch_kwargs):
+        """A helper method to create, start and schedule the end of a patch."""
+        patcher = patch.object(**patch_kwargs)
+        started_patch = patcher.start()
+        self.addCleanup(patcher.stop)
+        return started_patch
 
     async def get_application(self):
         """Overrides AioHTTPTestCase.get_application()."""
@@ -321,8 +343,24 @@ class TestReports(AioHTTPTestCase):
         app.router.add_route('GET', self.web_svc.get_route(WebService.EDIT_KEY), self.web_api.edit)
         app.router.add_route('GET', self.web_svc.get_route(WebService.ABOUT_KEY), self.web_api.about)
         app.router.add_route('*', self.web_svc.get_route(WebService.REST_KEY), self.web_api.rest_api)
+        # A different route for limit-testing
+        app.router.add_route('*', '/limit' + self.web_svc.get_route(WebService.REST_KEY),
+                             self.web_api_with_limit.rest_api)
         aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(os.path.join('webapp', 'html')))
         return app
+
+    def reset_queue(self, rest_svc=None):
+        """Function to reset the queue variables from a test RestService instance."""
+        # Default parameter for rest service if not provided
+        rest_svc = rest_svc or self.rest_svc
+        # Note all tasks in the queue object as done
+        with suppress(asyncio.QueueEmpty):
+            for _ in range(rest_svc.queue.qsize()):
+                rest_svc.queue.get_nowait()
+                rest_svc.queue.task_done()
+        # Reset the other variables
+        rest_svc.queue_map = dict()
+        rest_svc.clean_current_tasks()
 
     @unittest_run_loop
     async def test_attack_list(self):
@@ -402,6 +440,40 @@ class TestReports(AioHTTPTestCase):
         self.assertTrue(resp.status == 404, msg='Incorrect `index` parameter resulted in a non-404 response.')
         resp = await self.client.post('/rest', json=no_index_supplied)
         self.assertTrue(resp.status == 404, msg='Missing `index` parameter resulted in a non-404 response.')
+
+    @unittest_run_loop
+    async def test_queue_limit(self):
+        """Function to test the queue limit works correctly."""
+        # Given the randomised queue limit for this test, obtain it and create a limit-exceeding amount of data
+        limit = self.rest_svc_with_limit.QUEUE_LIMIT
+        titles = ['title%s' % x for x in range(limit + 1)]
+        urls = ['url%s' % x for x in range(limit + 1)]
+        data = dict(index='insert_report', url=urls, title=titles)
+        # Begin some patches
+        # We are not passing valid URLs; mock verifying the URLs to raise no errors
+        self.create_patch(target=WebService, attribute='verify_url', new=lambda d, url: None)
+        # Duplicate URL checks will raise an error with malformed URLS; mock this to raise no errors
+        self.create_patch(target=WebService, attribute='urls_match', new=lambda d, testing_url, matches_with: False)
+        # We don't want the queue to be checked after this test; mock this to do nothing
+        self.create_patch(target=RestService, attribute='check_queue', new=self.blank_async_method)
+
+        # Send off the limit-exceeding data
+        resp = await self.client.post('/limit/rest', json=data)
+        # Check for a positive response (as reports would have been submitted)
+        self.assertTrue(resp.status == 200, msg='Bulk-report submission resulted in a non-200 response.')
+        resp_json = await resp.json()
+        # Check that the user is told 1 report exceeded the limit and was not added to the queue
+        success, info, alert_user = resp_json.get('success'), resp_json.get('info'), resp_json.get('alert_user')
+        self.assertTrue(success, msg='Bulk-report submission was not flagged as successful.')
+        self.assertTrue(alert_user, msg='Bulk-report submission with exceeded-queue was not alerted to user.')
+        predicted = ('1 of %s report(s) not added to the queue' % (limit + 1) in info) and \
+                    ('1 exceeded queue limit' in info)
+        self.assertTrue(predicted, msg='Bulk-report submission with exceeded-queue message to user is different.')
+        # Check that the queue is filled to its limit
+        self.assertEqual(self.rest_svc_with_limit.queue.qsize(), self.rest_svc_with_limit.QUEUE_LIMIT,
+                         msg='Bulk-report submission with exceeded-queue resulted in an unfilled queue.')
+        # Tidy-up for this method: reset queue limit and queue
+        self.reset_queue(rest_svc=self.rest_svc_with_limit)
 
     @unittest_run_loop
     async def test_(self):
