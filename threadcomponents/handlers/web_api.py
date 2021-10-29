@@ -195,7 +195,7 @@ class WebAPI:
                 ))
             method = options[request.method][index]
         except KeyError:
-            return self.respond_error()
+            return web.json_response(None, status=404)
         output = await method(data)
         status = 200
         if output is not None and type(output) != dict:
