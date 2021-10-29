@@ -115,8 +115,8 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         expected = 'INSERT INTO reports (title, url, current_status, token) VALUES (?, ?, ?, NULL)'
         expected_params_len = 3
         # Test expectations are correct
-        self.assertEqual(expected, generated[0])
-        self.assertEqual(expected_params_len, len(generated[1]))
+        self.assertEqual(expected, generated[0], msg='SQL statement not generated as expected.')
+        self.assertEqual(expected_params_len, len(generated[1]), msg='SQL parameters not generated as expected.')
 
     async def test_insert_with_uid(self):
         """Function to test INSERT statements with generated UIDs are generated correctly."""
@@ -127,7 +127,7 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         # We are now expecting 4 parameters to be returned (as the UID has been generated)
         expected_params_len = 4
         # Test expectation is correct
-        self.assertEqual(expected_params_len, len(generated[1]))
+        self.assertEqual(expected_params_len, len(generated[1]), msg='SQL parameters not generated as expected.')
         # Test valid UUID has been attached to the data; raises ValueError if invalid UUID
         self.assertTrue(data[UID_KEY] in generated[1], msg='UID not passed to DB parameters.')
         UUID(data[UID_KEY])
@@ -341,13 +341,13 @@ class TestReports(AioHTTPTestCase):
     @unittest_run_loop
     async def test_about_page(self):
         """Function to test the about page loads successfully."""
-        resp = await self.client.request('GET', '/about')
+        resp = await self.client.get('/about')
         self.assertTrue(resp.status == 200, msg='About page failed to load successfully.')
 
     @unittest_run_loop
     async def test_home_page(self):
         """Function to test the home page loads successfully."""
-        resp = await self.client.request('GET', '/')
+        resp = await self.client.get('/')
         self.assertTrue(resp.status == 200, msg='Home page failed to load successfully.')
 
     @unittest_run_loop
@@ -358,7 +358,7 @@ class TestReports(AioHTTPTestCase):
         report = dict(title=report_title, url='please.load', current_status=ReportStatus.IN_REVIEW.value)
         await self.db.insert_generate_uid('reports', report)
         # Check the report edit page loads
-        resp = await self.client.request('GET', '/edit/' + quote(report_title, safe=''))
+        resp = await self.client.get('/edit/' + quote(report_title, safe=''))
         self.assertTrue(resp.status == 200, msg='Edit-report page failed to load successfully.')
 
     @unittest_run_loop
@@ -369,10 +369,39 @@ class TestReports(AioHTTPTestCase):
         report = dict(title=report_title, url='dont.load', current_status=ReportStatus.QUEUE.value)
         await self.db.insert_generate_uid('reports', report)
         # Check the report edit page loads
-        resp = await self.client.request('GET', '/edit/' + quote(report_title, safe=''))
+        resp = await self.client.get('/edit/' + quote(report_title, safe=''))
         self.assertTrue(resp.status == 500, msg='Viewing an edit-queued-report page resulted in a non-500 response.')
         text = await resp.text()
         self.assertTrue(text == 'Invalid URL', msg='A different error appeared for an edit-queued-report page.')
+
+    @unittest_run_loop
+    async def test_incorrect_submission(self):
+        """Function to test when a user makes a bad request to submit a report."""
+        # Request data to test: one with too many titles; another with too many URLs
+        test_data = [dict(index='insert_report', url=['twinkle.twinkle'], title=['Little Star', 'How I wonder?']),
+                     dict(index='insert_report', url=['twinkle.twinkle', 'how.i.wonder'], title=['Little Star'])]
+        # Same process for each item in test_data
+        for data in test_data:
+            # Check we receive an error response
+            resp = await self.client.post('/rest', json=data)
+            self.assertTrue(resp.status == 500, msg='Mismatched titles-URLs submission resulted in a non-500 response.')
+            # Check the user receives an error message
+            resp_json = await resp.json()
+            error_msg, alert_user = resp_json.get('error'), resp_json.get('alert_user')
+            predicted = 'Number of URLs and titles do not match, please insert same number of comma-separated items.'
+            self.assertEqual(error_msg, predicted, msg='Mismatched titles-URLs submission gives different error.')
+            self.assertTrue(alert_user, msg='Mismatched titles-URLs submission is not alerted to the user.')
+
+    @unittest_run_loop
+    async def test_incorrect_rest_endpoint(self):
+        """Function to test incorrect REST endpoints do not result in a server error."""
+        # Two examples of bad request data to test
+        invalid_index = dict(index='insert_report!!!', data='data.doesnt.matter')
+        no_index_supplied = dict(woohoo='send me!')
+        resp = await self.client.post('/rest', json=invalid_index)
+        self.assertTrue(resp.status == 404, msg='Incorrect `index` parameter resulted in a non-404 response.')
+        resp = await self.client.post('/rest', json=no_index_supplied)
+        self.assertTrue(resp.status == 404, msg='Missing `index` parameter resulted in a non-404 response.')
 
     @unittest_run_loop
     async def test_(self):

@@ -173,7 +173,7 @@ function submit_report(submitButton) {
   var titles = title.value.split(",");
   // Notify user that the number of URLs and titles aren't equal
   if (titles.length != urls.length) {
-    alert("Number of URLs and titles do not match, please insert same number of comma separated items.");
+    alert("Number of URLs and titles do not match, please insert same number of comma-separated items.");
   // Proceed with submitting if both fields are valid
   } else if (url.reportValidity() && title.reportValidity()) {
     submit({'index':'insert_report', 'url':urls, 'title':titles}, submitButton);

@@ -259,6 +259,10 @@ class RestService:
         error = await self.pre_insert_add_token(request, request_data=criteria, key='title')
         if error:
             return error
+        # Check there are enough titles to map to URLs
+        if len(criteria['title']) != len(criteria['url']):
+            mismatch_msg = 'Number of URLs and titles do not match, please insert same number of comma-separated items.'
+            return dict(error=mismatch_msg, alert_user=1)
         return await self._insert_batch_reports(criteria, len(criteria['title']), token=criteria.get('token'))
 
     async def insert_csv(self, request, criteria=None):
