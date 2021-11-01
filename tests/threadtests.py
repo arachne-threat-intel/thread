@@ -531,6 +531,9 @@ class TestReports(AioHTTPTestCase):
         report_db = await self.db.get('reports', equal=dict(uid=report_id))
         self.assertEqual(report_db[0].get('current_status'), ReportStatus.NEEDS_REVIEW.value,
                          msg='Analysed report was not moved to \'Needs Review\'.')
+        # Check the report did not error
+        self.assertEqual(report_db[0].get('error'), self.db.val_as_false,
+                         msg='Analysed report unexpectedly has its error flag as True.')
         # Check that two sentences for this report got added to the report sentences table and its backup
         sen_db = await self.db.get('report_sentences', equal=dict(report_uid=report_id))
         sen_db_backup = await self.db.get('report_sentences_initial', equal=dict(report_uid=report_id))
@@ -538,6 +541,218 @@ class TestReports(AioHTTPTestCase):
         self.assertEqual(len(sen_db_backup), 2, msg='Analysed report did not create 2 sentences in backup DB table.')
 
     @unittest_run_loop
-    async def test_(self):
-        """Function to test ."""
-        pass
+    async def test_start_analysis_error(self):
+        """Function to test the behaviour of start analysis when there is an error."""
+        report_id = str(uuid4())
+        # Submit and analyse a test report
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this',
+                                           current_status=ReportStatus.QUEUE.value), fail_map_html=True)
+        # Check in the DB that the status did not change
+        report_db = await self.db.get('reports', equal=dict(uid=report_id))
+        self.assertEqual(report_db[0].get('current_status'), ReportStatus.QUEUE.value,
+                         msg='Analysed report which errors had a different status than initial \'Queue\'.')
+        # Check the report has its error flagged
+        self.assertEqual(report_db[0].get('error'), self.db.val_as_true,
+                         msg='Analysed report which errors did not have its error flag as True.')
+
+    @unittest_run_loop
+    async def test_set_status(self):
+        """Function to test setting the status of a report."""
+        report_id, report_title = str(uuid4()), 'To Set or Not to Set'
+        # Submit and analyse a test report
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='analysing.this',
+                                           current_status=ReportStatus.QUEUE.value))
+        # Attempt to complete this newly-analysed report
+        data = dict(index='set_status', set_status=ReportStatus.COMPLETED.value, report_title=report_title)
+        resp = await self.client.post('/rest', json=data)
+        resp_json = await resp.json()
+        # Check an unsuccessful response was sent
+        error_msg, alert_user = resp_json.get('error'), resp_json.get('alert_user')
+        self.assertTrue(resp.status == 500, msg='Completing a report too early resulted in a non-500 response.')
+        self.assertTrue('unconfirmed for this report' in error_msg,
+                        msg='Error message for outstanding attacks in report is different than expected.')
+        self.assertEqual(alert_user, self.db.val_as_true, msg='User is not notified over unconfirmed attacks in report.')
+        # Delete the sentence that has an attack
+        await self.db.delete('report_sentences', dict(report_uid=report_id, found_status=self.db.val_as_true))
+        # Re-attempt setting the status
+        resp = await self.client.post('/rest', json=data)
+        # Check a successful response was sent
+        self.assertTrue(resp.status < 300, msg='Completing a report resulted in a non-200 response.')
+
+    @unittest_run_loop
+    async def test_revert_status(self):
+        """Function to test setting the status of a report back to its initial status of 'Queue'."""
+        report_id, report_title = str(uuid4()), 'To Set or Not to Set: The Sequel'
+        # Submit and analyse a test report
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='analysing.this',
+                                           current_status=ReportStatus.QUEUE.value))
+        # Attempt to revert the status for this newly-analysed report back into the queue
+        data = dict(index='set_status', set_status=ReportStatus.QUEUE.value, report_title=report_title)
+        resp = await self.client.post('/rest', json=data)
+        resp_json = await resp.json()
+        # Check an unsuccessful response was sent
+        error_msg = resp_json.get('error')
+        self.assertTrue(resp.status == 500, msg='Setting a report status to `Queue` resulted in a non-500 response.')
+        self.assertTrue(error_msg == 'Error setting status.', msg='A different error appeared for re-queueing a report.')
+
+    @unittest_run_loop
+    async def test_add_new_attack(self):
+        """Function to test adding a new attack to a sentence."""
+        report_id, attack_id = str(uuid4()), 'f12345'
+        # Submit and analyse a test report
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this',
+                                           current_status=ReportStatus.QUEUE.value))
+        # Get the report sentences for this report
+        sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id))
+        sen_id = None
+        for sen in sentences:
+            # Find the sentence that has no prior-attacks for this test
+            if sen.get('found_status') == self.db.val_as_false:
+                sen_id = sen.get('uid')
+        if not sen_id:
+            self.skipTest('Could not test adding an attack as report test sentences have attacks already.')
+        # Proceed to add an attack
+        data = dict(index='add_attack', sentence_id=sen_id, attack_uid=attack_id)
+        resp = await self.client.post('/rest', json=data)
+        self.assertTrue(resp.status < 300, msg='Adding an attack to a sentence resulted in a non-200 response.')
+        # Confirm this sentence is marked as a false negative (and not present in the other tables)
+        tps = await self.db.get('true_positives', equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        tns = await self.db.get('true_negatives', equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        fps = await self.db.get('false_positives', equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        fns = await self.db.get('false_negatives', equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        self.assertTrue(len(fns) == 1, msg='New, accepted attack did not appear as 1 record in false negatives table.')
+        self.assertTrue(len(tps) + len(tns) + len(fps) == 0,
+                        msg='New, accepted attack appeared incorrectly in other table(s) (not being false negatives).')
+
+    @unittest_run_loop
+    async def test_confirm_predicted_attack(self):
+        """Function to test confirming a predicted attack of a sentence."""
+        report_id, attack_id = str(uuid4()), 'd99999'
+        # Submit and analyse a test report
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this',
+                                           current_status=ReportStatus.QUEUE.value))
+        # Get the report sentences for this report
+        sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id))
+        sen_id = None
+        for sen in sentences:
+            # Find the sentence that has an attack for this test
+            if sen.get('found_status') == self.db.val_as_true:
+                sen_id = sen.get('uid')
+        if not sen_id:
+            self.skipTest('Could not test confirming an attack as report test sentences do not have attacks.')
+        # Proceed to confirm an attack
+        data = dict(index='add_attack', sentence_id=sen_id, attack_uid=attack_id)
+        resp = await self.client.post('/rest', json=data)
+        self.assertTrue(resp.status < 300, msg='Confirming an attack of a sentence resulted in a non-200 response.')
+        # Confirm this sentence is marked as a true positive (and not present in the other tables)
+        tps = await self.db.get('true_positives', equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        tns = await self.db.get('true_negatives', equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        fps = await self.db.get('false_positives', equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        fns = await self.db.get('false_negatives', equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        self.assertTrue(len(tps) == 1, msg='Confirmed attack did not appear as 1 record in true positives table.')
+        self.assertTrue(len(tns) + len(fps) + len(fns) == 0,
+                        msg='Confirmed attack appeared incorrectly in other table(s) (not being true positives).')
+
+    @unittest_run_loop
+    async def test_reject_attack(self):
+        """Function to test rejecting an attack to a sentence."""
+        report_id, attack_id = str(uuid4()), 'd99999'
+        # Submit and analyse a test report
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this',
+                                           current_status=ReportStatus.QUEUE.value))
+        # Get the report sentences for this report
+        sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id))
+        sen_id = None
+        for sen in sentences:
+            # Find the sentence that has an attack for this test
+            if sen.get('found_status') == self.db.val_as_true:
+                sen_id = sen.get('uid')
+        if not sen_id:
+            self.skipTest('Could not test rejecting an attack as report test sentences do not have attacks.')
+        # Proceed to reject an attack
+        data = dict(index='reject_attack', sentence_id=sen_id, attack_uid=attack_id)
+        resp = await self.client.post('/rest', json=data)
+        self.assertTrue(resp.status < 300, msg='Rejecting an attack of a sentence resulted in a non-200 response.')
+        # Confirm this sentence is marked as a false positive (and not present in the other tables)
+        tps = await self.db.get('true_positives', equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        tns = await self.db.get('true_negatives', equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        fps = await self.db.get('false_positives', equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        fns = await self.db.get('false_negatives', equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        self.assertTrue(len(fps) == 1, msg='Rejected attack did not appear as 1 record in false positives table.')
+        self.assertTrue(len(tps) + len(tns) + len(fns) == 0,
+                        msg='Rejected attack appeared incorrectly in other table(s) (not being false positives).')
+
+    @unittest_run_loop
+    async def test_get_sentence_info(self):
+        """Function to test obtaining the data for a report sentence."""
+        report_id = str(uuid4())
+        # Submit and analyse a test report
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this',
+                                           current_status=ReportStatus.QUEUE.value))
+        # Get the report sentences for this report
+        sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id))
+        sen_id = None
+        for sen in sentences:
+            # Find the sentence that has an attack for this test
+            if sen.get('found_status') == self.db.val_as_true:
+                sen_id = sen.get('uid')
+        if not sen_id:
+            self.skipTest('Could not test getting sentence data as report test sentences do not have attacks.')
+        # Obtain the sentence info
+        resp_context = await self.client.post('/rest', json=dict(index='sentence_context', sentence_id=sen_id))
+        resp_attacks = await self.client.post('/rest', json=dict(index='confirmed_attacks', sentence_id=sen_id))
+        resp_context_json = await resp_context.json()
+        resp_attacks_json = await resp_attacks.json()
+        # This sentence has 1 unconfirmed attack; check results reflect this
+        self.assertTrue(resp_context.status < 300, msg='Obtaining sentence data resulted in a non-200 response.')
+        self.assertTrue(resp_attacks.status < 300, msg='Obtaining sentence attack-data resulted in a non-200 response.')
+        self.assertEqual(resp_context_json[0].get('attack_uid'), 'd99999',
+                         msg='Predicted attack not associated with sentence as expected.')
+        self.assertEqual(len(resp_attacks_json), 0, msg='Confirmed attacks associated with sentence unexpectedly.')
+        # Confirm attack
+        await self.client.post('/rest', json=dict(index='add_attack', sentence_id=sen_id, attack_uid='d99999'))
+        # Confirm this doesn't change sentence context but changes confirmed attacks
+        resp_context = await self.client.post('/rest', json=dict(index='sentence_context', sentence_id=sen_id))
+        resp_attacks = await self.client.post('/rest', json=dict(index='confirmed_attacks', sentence_id=sen_id))
+        resp_context_json = await resp_context.json()
+        resp_attacks_json = await resp_attacks.json()
+        self.assertTrue(resp_context.status < 300, msg='Obtaining sentence data resulted in a non-200 response.')
+        self.assertTrue(resp_attacks.status < 300, msg='Obtaining sentence attack-data resulted in a non-200 response.')
+        self.assertEqual(resp_context_json[0].get('attack_uid'), 'd99999',
+                         msg='Confirmed attack not associated with sentence as expected.')
+        self.assertEqual(resp_attacks_json[0].get('uid'), 'd99999',
+                         msg='Confirmed attack not returned in confirmed attacks for sentence.')
+        self.assertTrue(len(resp_attacks_json) > 0, msg='No confirmed attacks appearing for sentence.')
+
+    @unittest_run_loop
+    async def test_rollback_report(self):
+        """Function to test functionality to rollback a report."""
+        report_id, report_title = str(uuid4()), 'Never Gonna Rollback This Up'
+        # Submit and analyse a test report
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='analysing.this',
+                                           current_status=ReportStatus.QUEUE.value))
+        # Get the report sentences for this report
+        sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id),
+                                      order_by_asc=dict(sen_index=1))
+        # Obtain one of the sentence IDs
+        sen_id = sentences[0].get('uid')
+        # Delete the sentence
+        data = dict(index='remove_sentence', sentence_id=sen_id)
+        await self.client.post('/rest', json=data)
+        # Confirm the sentence got deleted
+        new_sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id),
+                                          order_by_asc=dict(sen_index=1))
+        if len(sentences) - 1 != len(new_sentences) or new_sentences[0].get('uid') == sen_id:
+            self.skipTest('Could not test report rollback as removing a sentence did not work as expected.')
+        # Rollback the report
+        data = dict(index='rollback_report', report_title=report_title)
+        resp = await self.client.post('/rest', json=data)
+        self.assertTrue(resp.status < 300, msg='Report-rollback resulted in a non-200 response.')
+        # Check the DB that the number of sentences are the same
+        rollback_sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id),
+                                               order_by_asc=dict(sen_index=1))
+        self.assertEqual(len(sentences), len(rollback_sentences),
+                         msg='Report-rollback resulted in a different number of report sentences.')
+        # Check that the first sentence is the one we previously deleted
+        self.assertEqual(rollback_sentences[0].get('uid'), sen_id,
+                         msg='Report-rollback resulted in a different first sentence.')
