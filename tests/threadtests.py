@@ -18,8 +18,8 @@ from threadcomponents.service.reg_svc import RegService
 from threadcomponents.service.rest_svc import ReportStatus, RestService, UID as UID_KEY
 from threadcomponents.service.web_svc import WebService
 from unittest import IsolatedAsyncioTestCase
-from unittest.mock import patch
-from uuid import UUID
+from unittest.mock import MagicMock, patch
+from uuid import uuid4, UUID
 from urllib.parse import quote
 
 
@@ -496,6 +496,50 @@ class TestReports(AioHTTPTestCase):
             error_msg = resp_json.get('error')
             self.assertTrue(resp.status >= 400, msg='Malformed CSV data resulted in successful response.')
             self.assertTrue(predicted_msg in error_msg, msg='Malformed CSV error message formed incorrectly.')
+
+    async def submit_test_report(self, report, fail_map_html=False):
+        """A helper method to submit a test report and create some associated test-sentences."""
+        # Some test sentences and expected analysed html for them
+        sen1 = 'When Creating Test Data...'
+        sen2 = 'i. It can be quite draining'
+        html = [{'html': sen1, 'text': sen1, 'tag': 'p', 'ml_techniques_found': [], 'res_techniques_found': []},
+                {'html': sen2, 'text': sen2, 'tag': 'li', 'ml_techniques_found': ['Drain'], 'res_techniques_found': []}]
+        # The result of the mapping function (no html, no Article object)
+        map_result = None, None
+        if not fail_map_html:
+            # If we are not failing the mapping stage, mock the newspaper.Article for the mapping returned object
+            mocked_article = MagicMock()
+            mocked_article.text = '%s\n%s' % (sen1, sen2)
+            map_result = html, mocked_article
+        # Patches for when RestService.start_analysis() is called
+        self.create_patch(target=WebService, attribute='map_all_html', return_value=map_result)
+        self.create_patch(target=DataService, attribute='ml_reg_split', return_value=([], ['Fire', 'Firaga', 'Drain']))
+        self.create_patch(target=MLService, attribute='build_pickle_file', return_value=dict())
+        self.create_patch(target=MLService, attribute='analyze_html', return_value=html)
+
+        # Update relevant queue and insert report in DB as these tasks would have been done before submission
+        queue = self.rest_svc.get_queue_for_user()
+        queue.append(report['url'])
+        await self.db.insert('reports', report)
+        # Mock the analysis of the report
+        await self.rest_svc.start_analysis(criteria=report)
+
+    @unittest_run_loop
+    async def test_start_analysis_success(self):
+        """Function to test the behaviour of start analysis when successful."""
+        report_id = str(uuid4())
+        # Submit and analyse a test report
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this',
+                                           current_status=ReportStatus.QUEUE.value))
+        # Check in the DB that the status got updated
+        report_db = await self.db.get('reports', equal=dict(uid=report_id))
+        self.assertEqual(report_db[0].get('current_status'), ReportStatus.NEEDS_REVIEW.value,
+                         msg='Analysed report was not moved to \'Needs Review\'.')
+        # Check that two sentences for this report got added to the report sentences table and its backup
+        sen_db = await self.db.get('report_sentences', equal=dict(report_uid=report_id))
+        sen_db_backup = await self.db.get('report_sentences_initial', equal=dict(report_uid=report_id))
+        self.assertEqual(len(sen_db), 2, msg='Analysed report did not create 2 sentences in DB.')
+        self.assertEqual(len(sen_db_backup), 2, msg='Analysed report did not create 2 sentences in backup DB table.')
 
     @unittest_run_loop
     async def test_(self):
