@@ -31,6 +31,11 @@ It currently takes several minutes to analyse a report, so please do not leave t
 
 Configuration defaults can be changed [here](https://github.com/arachne-threat-intel/thread/wiki/Thread-Configuration)
 
+You are also welcome to check our test-suite via:
+```
+python -m unittest tests/threadtests.py
+```
+
 ## Shared vs. Local
 We are currently working on making Thread a live application where you can view your reports and those of others. You can currently use Thread as a local, single user application. 
 
