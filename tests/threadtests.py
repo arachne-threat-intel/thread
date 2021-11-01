@@ -476,6 +476,28 @@ class TestReports(AioHTTPTestCase):
         self.reset_queue(rest_svc=self.rest_svc_with_limit)
 
     @unittest_run_loop
+    async def test_malformed_csv(self):
+        """Function to test the behaviour of submitting a malformed CSV."""
+        # Test cases for malformed CSVs
+        wrong_columns = dict(file='titles,urls\nt1,url.1\nt2,url.2\n')
+        wrong_param = dict(data='title,url\nt1,url.1\nt2,url.2\n')
+        too_many_columns = dict(file='title,url,title\nt1,url.1,t1\nt2,url.2,t2\n')
+        urls_missing = dict(file='title,url\nt1,\nt2,\n')
+        # The test cases paired with expected error messages
+        tests = [(wrong_columns, 'Two columns have not been specified'), (wrong_param, 'Error inserting report(s)'),
+                 (too_many_columns, 'Two columns have not been specified'),
+                 (urls_missing, 'CSV is missing text in at least one row')]
+        for test_data, predicted_msg in tests:
+            # Call the CSV REST endpoint with the malformed data and check the response
+            data = dict(index='insert_csv')
+            data.update(test_data)
+            resp = await self.client.post('/rest', json=data)
+            resp_json = await resp.json()
+            error_msg = resp_json.get('error')
+            self.assertTrue(resp.status >= 400, msg='Malformed CSV data resulted in successful response.')
+            self.assertTrue(predicted_msg in error_msg, msg='Malformed CSV error message formed incorrectly.')
+
+    @unittest_run_loop
     async def test_(self):
         """Function to test ."""
         pass

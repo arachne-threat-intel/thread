@@ -388,8 +388,16 @@ class RestService:
         # Check that the new columns' length is exactly 2
         if len(new_columns) != 2:
             raise ValueError(columns_error)
-        # Return new df with renamed columns
-        return df.rename(columns=new_columns)
+        # Create a new df with renamed columns
+        new_df = df.rename(columns=new_columns)
+        # Validate each row has a value
+        for col in [title, URL]:
+            values = pd.Series(list(new_df[col].values))
+            # If any value in this column is not of type str (e.g. missing values become NaNs), raise an error
+            if (values.map(type) != str).any():
+                raise ValueError('Column `%s` in CSV is missing text in at least one row' % col)
+        # All previous checks passed: return the new df
+        return new_df
 
     async def check_queue(self):
         """
