@@ -305,10 +305,6 @@ class TestReports(AioHTTPTestCase):
             logging.warning('Test DB file %s could not be deleted; accumulated data in-between test runs expected.'
                             % cls.DB_TEST_FILE)
 
-    async def blank_async_method(self):
-        """An empty async function to mock no behaviour for an async method (with matching arg-count)."""
-        return
-
     async def setUpAsync(self):
         """Any setting-up before each test method."""
         # Build the database (can't run in setUpClass() as this is an async method)
@@ -324,7 +320,7 @@ class TestReports(AioHTTPTestCase):
                 await self.db.insert('attack_uids', attack)
         # Carry out pre-launch tasks except for prepare_queue(): replace the call of this with our blank method
         # We don't want multiple prepare_queue() calls so the queue does not accumulate between tests
-        with patch.object(RestService, 'prepare_queue', new=self.blank_async_method):
+        with patch.object(RestService, 'prepare_queue', return_value=None):
             await self.web_api.pre_launch_init()
             await self.web_api_with_limit.pre_launch_init()
 
@@ -451,11 +447,11 @@ class TestReports(AioHTTPTestCase):
         data = dict(index='insert_report', url=urls, title=titles)
         # Begin some patches
         # We are not passing valid URLs; mock verifying the URLs to raise no errors
-        self.create_patch(target=WebService, attribute='verify_url', new=lambda d, url: None)
+        self.create_patch(target=WebService, attribute='verify_url', return_value=None)
         # Duplicate URL checks will raise an error with malformed URLS; mock this to raise no errors
-        self.create_patch(target=WebService, attribute='urls_match', new=lambda d, testing_url, matches_with: False)
+        self.create_patch(target=WebService, attribute='urls_match', return_value=False)
         # We don't want the queue to be checked after this test; mock this to do nothing
-        self.create_patch(target=RestService, attribute='check_queue', new=self.blank_async_method)
+        self.create_patch(target=RestService, attribute='check_queue', return_value=None)
 
         # Send off the limit-exceeding data
         resp = await self.client.post('/limit/rest', json=data)
