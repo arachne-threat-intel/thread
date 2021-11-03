@@ -234,37 +234,37 @@ class TestDBSQL(IsolatedAsyncioTestCase):
     async def test_insert_with_no_data(self):
         """Function to test behaviour of INSERT statements with no values specified."""
         # TypeError where data to be inserted is None (not a dictionary)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError, msg='Expected TypeError over `None` value for report.'):
             await self.db.insert('reports', None)
         # ValueError where data to be inserted is (a dictionary but) empty
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError, msg='Expected ValueError over empty value for report.'):
             await self.db.insert('reports', dict())
 
     async def test_update_with_no_data(self):
         """Function to test behaviour of UPDATE statements with no SET clause specified."""
         # TypeError where data to be set is None (not a dictionary)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError, msg='Expected TypeError over `None` value for `data` parameter.'):
             await self.db.update('reports', where=dict(title='Nothing is True'), data=None)
         # ValueError where data to be set is (a dictionary but) empty
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError, msg='Expected ValueError over empty value for `data` parameter.'):
             await self.db.update('reports', where=dict(title='Everything is Permitted; Except This'), data=dict())
 
     async def test_update_with_no_where(self):
         """Function to test behaviour of UPDATE statements with no WHERE clause specified."""
         # TypeError where WHERE-clause data is None (not a dictionary)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError, msg='Expected TypeError over `None` value for `where` parameter.'):
             await self.db.update('reports', where=None, data=dict(title='One title'))
         # ValueError where WHERE-clause data is (a dictionary but) empty
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError, msg='Expected ValueError over empty value for `where` parameter.'):
             await self.db.update('reports', where=dict(), data=dict(title='To Rule Them All'))
 
     async def test_delete_with_no_where(self):
         """Function to test behaviour of DELETE statements with no WHERE clause specified."""
         # TypeError where WHERE-clause data is None (not a dictionary)
-        with self.assertRaises(TypeError):
+        with self.assertRaises(TypeError, msg='Expected TypeError over `None` value for report.'):
             await self.db.delete('reports', None)
         # ValueError where WHERE-clause data is (a dictionary but) empty
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError, msg='Expected ValueError over empty value for report.'):
             await self.db.delete('reports', dict())
 
 
