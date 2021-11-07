@@ -23,6 +23,15 @@ from uuid import uuid4, UUID
 from urllib.parse import quote
 
 
+def delete_db_file(file_path):
+    """Function to delete a local database test file."""
+    if file_path and os.path.isfile(file_path):
+        os.remove(file_path)
+    else:
+        logging.warning('Test DB file %s could not be deleted; accumulated data in-between test runs expected.'
+                        % file_path)
+
+
 # A test suite for checking our SQL-generating code
 class TestDBSQL(IsolatedAsyncioTestCase):
     DB_TEST_FILE = os.path.join('tests', 'threadtestsql.db')
@@ -40,11 +49,7 @@ class TestDBSQL(IsolatedAsyncioTestCase):
     def tearDownClass(cls):
         """Any tidying-up after all the test methods."""
         # Delete the database so a new DB file is used in next test-run
-        if os.path.isfile(cls.DB_TEST_FILE):
-            os.remove(cls.DB_TEST_FILE)
-        else:
-            logging.warning('Test DB file %s could not be deleted; accumulated data in-between test runs expected.'
-                            % cls.DB_TEST_FILE)
+        delete_db_file(cls.DB_TEST_FILE)
 
     async def asyncSetUp(self):
         """Any setting-up before each test method."""
@@ -64,10 +69,11 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         :param fail_msg: The message to report on test failure.
         **kwargs should match the kwargs of ThreadDB.get()
         """
-        # If we don't have a way to do the check, skip this test
+        # If we don't have a way to do the check, fail this test
         if not callable(found_check):
-            self.skipTest('%s: Not provided with method to check data is%s in table.' %
-                          (method_name, '' if expect_found else ' not'))
+            message = '%s: Not provided with method to check data is%s in table.' % \
+                      (method_name, '' if expect_found else ' not')
+            self.fail(message)
         # Prefix failure message with test-method calling this method
         fail_msg = '%s: %s' % (method_name, fail_msg if fail_msg else 'expected ' + str(expect_found))
         # Obtain the sentences for the report and initialise a 'found' flag
@@ -77,11 +83,9 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         for returned in results:
             if found_check(returned):
                 found = True
-        # Invoke appropriate assert method depending on whether we are expecting data to be found or not
-        if expect_found:
-            self.assertTrue(found, msg=fail_msg)
-        else:
-            self.assertFalse(found, msg=fail_msg)
+                break
+        # Check our expectations on whether the data is found or not
+        self.assertEqual(expect_found, found, msg=fail_msg)
 
     async def test_build(self):
         """Function to test the db built tables successfully."""
@@ -95,8 +99,8 @@ class TestDBSQL(IsolatedAsyncioTestCase):
             try:
                 results = await self.db.raw_select(sql % 'sqlite_master', single_col=True)
             except sqlite3.OperationalError:
-                # If this still fails, skip the test
-                self.skipTest('Unable to obtain table names from schema; raw_select() may be at fault.')
+                # If this still fails, fail the test
+                self.fail('Unable to obtain table names from schema; raw_select() may be at fault.')
         # The list of tables we are expecting to have been created
         expected = ['attack_uids', 'reports', 'report_sentences', 'true_positives', 'true_negatives', 'false_positives',
                     'false_negatives', 'regex_patterns', 'similar_words', 'report_sentence_hits', 'original_html',
@@ -138,11 +142,11 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         """Function to test inserted data can be updated successfully."""
         # A small function to check given a report-record, that it matches with an initial title defined in this method
         def pre_update_found(r):
-            return r.get('title') == initial_title
+            return r.get('title') == initial_title and r.get('uid') == report_id
 
         # A small function to check given a report-record, that it matches with an updated title defined in this method
         def post_update_found(r):
-            return r.get('title') == new_title
+            return r.get('title') == new_title and r.get('uid') == report_id
 
         # The test change we will be doing
         initial_title = 'There and Back Again'
@@ -158,7 +162,7 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         # Confirm the new_title does not appear as a report title yet
         rep_results = await self.db.get('reports', equal=dict(title=new_title))
         if rep_results:
-            self.skipTest('Could not test updating table as updated table already exists.')
+            self.skipTest('Could not test updating table as tested updates already exist pre-update.')
         # Update the report with the new title
         await self.db.update('reports', where=dict(uid=report_id), data=dict(title=new_title))
         # Confirm old report title is not found but new report title is found
@@ -197,7 +201,7 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         """Function to test inserting data with a backup works as expected."""
         # A small function to check given a sentence-record, that it matches with the sentence defined in this method
         def sentence_found(s):
-            return s.get('text') == sentence
+            return s.get('text') == sentence and s.get('uid') == sen_id
         # Insert a report
         report = dict(title='Return of the Phyrexian Obliterator', url='trampled.oops',
                       current_status=ReportStatus.QUEUE.value)
@@ -212,7 +216,7 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         sentence = 'Behold blessed perfection.'
         data = dict(report_uid=report_id, text=sentence, html='<p>%s</p>' % sentence, sen_index=0,
                     found_status=self.db.val_as_false)
-        await self.db.insert_with_backup('report_sentences', data)
+        sen_id = await self.db.insert_with_backup('report_sentences', data)
         # The kwargs for check_data_appeared_in_table() which are the same for all checks
         checking_args = dict(method_name='test_insert_with_backup', found_check=sentence_found,
                              equal=dict(report_uid=report_id))
@@ -299,11 +303,7 @@ class TestReports(AioHTTPTestCase):
     def tearDownClass(cls):
         """Any tidying-up after all the test methods."""
         # Delete the database so a new DB file is used in next test-run
-        if os.path.isfile(cls.DB_TEST_FILE):
-            os.remove(cls.DB_TEST_FILE)
-        else:
-            logging.warning('Test DB file %s could not be deleted; accumulated data in-between test runs expected.'
-                            % cls.DB_TEST_FILE)
+        delete_db_file(cls.DB_TEST_FILE)
 
     async def setUpAsync(self):
         """Any setting-up before each test method."""
@@ -720,9 +720,9 @@ class TestReports(AioHTTPTestCase):
         self.assertTrue(resp_attacks.status < 300, msg='Obtaining sentence attack-data resulted in a non-200 response.')
         self.assertEqual(resp_context_json[0].get('attack_uid'), 'd99999',
                          msg='Confirmed attack not associated with sentence as expected.')
+        self.assertTrue(len(resp_attacks_json) > 0, msg='No confirmed attacks appearing for sentence.')
         self.assertEqual(resp_attacks_json[0].get('uid'), 'd99999',
                          msg='Confirmed attack not returned in confirmed attacks for sentence.')
-        self.assertTrue(len(resp_attacks_json) > 0, msg='No confirmed attacks appearing for sentence.')
 
     @unittest_run_loop
     async def test_rollback_report(self):
@@ -743,7 +743,7 @@ class TestReports(AioHTTPTestCase):
         new_sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id),
                                           order_by_asc=dict(sen_index=1))
         if len(sentences) - 1 != len(new_sentences) or new_sentences[0].get('uid') == sen_id:
-            self.skipTest('Could not test report rollback as removing a sentence did not work as expected.')
+            self.fail('Could not test report rollback as removing a sentence did not work as expected.')
         # Rollback the report
         data = dict(index='rollback_report', report_title=report_title)
         resp = await self.client.post('/rest', json=data)
