@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       # We're testing Python versions 3.8+
       matrix:
-        python-version: [3.8, 3.9, 3.10]
+        python-version: ["3.8", "3.9", "3.10"]
 
     # Four steps: set-up Python, install dependencies, run linter, run tests
     steps:
