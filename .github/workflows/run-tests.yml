@@ -1,0 +1,46 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# Further docs here: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
+
+# The name of this workflow
+name: Test-suite
+
+# We want this to occur for new commits on `main` and any PRs targeting `main`
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# The actual jobs of this workflow
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      # Don't fail-fast: i.e. let all other jobs continue if one fails
+      fail-fast: false
+      # We're testing Python versions 3.8+
+      matrix:
+        python-version: [3.8, 3.9, 3.10]
+
+    # Four steps: set-up Python, install dependencies, run linter, run tests
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip setuptools wheel
+        python -m pip install flake8
+        pip install -r requirements.txt
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Run the tests
+      run: |
+        python -m unittest tests/threadtests.py
