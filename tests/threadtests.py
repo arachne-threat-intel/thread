@@ -7,7 +7,7 @@ import random
 import sqlite3
 
 from aiohttp import web
-from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
+from aiohttp.test_utils import AioHTTPTestCase
 from contextlib import suppress
 from threadcomponents.database.dao import Dao
 from threadcomponents.database.thread_sqlite3 import ThreadSQLite
@@ -91,7 +91,6 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         """Function to test the db built tables successfully."""
         # SQLite-specific query to obtain table names
         sql = 'SELECT name FROM %s WHERE type = \'table\';'
-        results = []
         try:
             results = await self.db.raw_select(sql % 'sqlite_schema', single_col=True)
         except sqlite3.OperationalError:
@@ -323,6 +322,7 @@ class TestReports(AioHTTPTestCase):
         with patch.object(RestService, 'prepare_queue', return_value=None):
             await self.web_api.pre_launch_init()
             await self.web_api_with_limit.pre_launch_init()
+        await super().setUpAsync()
 
     def create_patch(self, **patch_kwargs):
         """A helper method to create, start and schedule the end of a patch."""
@@ -358,7 +358,6 @@ class TestReports(AioHTTPTestCase):
         rest_svc.queue_map = dict()
         rest_svc.clean_current_tasks()
 
-    @unittest_run_loop
     async def test_attack_list(self):
         """Function to test the attack list for the dropdown was created successfully."""
         # For our test attack data, we predict 2 will not be sub attacks (no Txx.xx TID) and 1 will be
@@ -372,19 +371,16 @@ class TestReports(AioHTTPTestCase):
         for attack_dict in predicted:
             self.assertTrue(attack_dict in result, msg='Attack %s was expected but not present.' % str(attack_dict))
 
-    @unittest_run_loop
     async def test_about_page(self):
         """Function to test the about page loads successfully."""
         resp = await self.client.get('/about')
         self.assertTrue(resp.status == 200, msg='About page failed to load successfully.')
 
-    @unittest_run_loop
     async def test_home_page(self):
         """Function to test the home page loads successfully."""
         resp = await self.client.get('/')
         self.assertTrue(resp.status == 200, msg='Home page failed to load successfully.')
 
-    @unittest_run_loop
     async def test_edit_report_loads(self):
         """Function to test loading an edit-report page is successful."""
         # Insert a report
@@ -395,7 +391,6 @@ class TestReports(AioHTTPTestCase):
         resp = await self.client.get('/edit/' + quote(report_title, safe=''))
         self.assertTrue(resp.status == 200, msg='Edit-report page failed to load successfully.')
 
-    @unittest_run_loop
     async def test_edit_queued_report_fails(self):
         """Function to test loading an edit-report page for a queued report fails."""
         # Insert a report
@@ -408,7 +403,6 @@ class TestReports(AioHTTPTestCase):
         text = await resp.text()
         self.assertTrue(text == 'Invalid URL', msg='A different error appeared for an edit-queued-report page.')
 
-    @unittest_run_loop
     async def test_incorrect_submission(self):
         """Function to test when a user makes a bad request to submit a report."""
         # Request data to test: one with too many titles; another with too many URLs
@@ -426,7 +420,6 @@ class TestReports(AioHTTPTestCase):
             self.assertEqual(error_msg, predicted, msg='Mismatched titles-URLs submission gives different error.')
             self.assertTrue(alert_user, msg='Mismatched titles-URLs submission is not alerted to the user.')
 
-    @unittest_run_loop
     async def test_incorrect_rest_endpoint(self):
         """Function to test incorrect REST endpoints do not result in a server error."""
         # Two examples of bad request data to test
@@ -437,7 +430,6 @@ class TestReports(AioHTTPTestCase):
         resp = await self.client.post('/rest', json=no_index_supplied)
         self.assertTrue(resp.status == 404, msg='Missing `index` parameter resulted in a non-404 response.')
 
-    @unittest_run_loop
     async def test_queue_limit(self):
         """Function to test the queue limit works correctly."""
         # Given the randomised queue limit for this test, obtain it and create a limit-exceeding amount of data
@@ -471,7 +463,6 @@ class TestReports(AioHTTPTestCase):
         # Tidy-up for this method: reset queue limit and queue
         self.reset_queue(rest_svc=self.rest_svc_with_limit)
 
-    @unittest_run_loop
     async def test_malformed_csv(self):
         """Function to test the behaviour of submitting a malformed CSV."""
         # Test cases for malformed CSVs
@@ -520,7 +511,6 @@ class TestReports(AioHTTPTestCase):
         # Mock the analysis of the report
         await self.rest_svc.start_analysis(criteria=report)
 
-    @unittest_run_loop
     async def test_start_analysis_success(self):
         """Function to test the behaviour of start analysis when successful."""
         report_id = str(uuid4())
@@ -540,7 +530,6 @@ class TestReports(AioHTTPTestCase):
         self.assertEqual(len(sen_db), 2, msg='Analysed report did not create 2 sentences in DB.')
         self.assertEqual(len(sen_db_backup), 2, msg='Analysed report did not create 2 sentences in backup DB table.')
 
-    @unittest_run_loop
     async def test_start_analysis_error(self):
         """Function to test the behaviour of start analysis when there is an error."""
         report_id = str(uuid4())
@@ -555,7 +544,6 @@ class TestReports(AioHTTPTestCase):
         self.assertEqual(report_db[0].get('error'), self.db.val_as_true,
                          msg='Analysed report which errors did not have its error flag as True.')
 
-    @unittest_run_loop
     async def test_set_status(self):
         """Function to test setting the status of a report."""
         report_id, report_title = str(uuid4()), 'To Set or Not to Set'
@@ -579,7 +567,6 @@ class TestReports(AioHTTPTestCase):
         # Check a successful response was sent
         self.assertTrue(resp.status < 300, msg='Completing a report resulted in a non-200 response.')
 
-    @unittest_run_loop
     async def test_revert_status(self):
         """Function to test setting the status of a report back to its initial status of 'Queue'."""
         report_id, report_title = str(uuid4()), 'To Set or Not to Set: The Sequel'
@@ -595,7 +582,6 @@ class TestReports(AioHTTPTestCase):
         self.assertTrue(resp.status == 500, msg='Setting a report status to `Queue` resulted in a non-500 response.')
         self.assertTrue(error_msg == 'Error setting status.', msg='A different error appeared for re-queueing a report.')
 
-    @unittest_run_loop
     async def test_add_new_attack(self):
         """Function to test adding a new attack to a sentence."""
         report_id, attack_id = str(uuid4()), 'f12345'
@@ -624,7 +610,6 @@ class TestReports(AioHTTPTestCase):
         self.assertTrue(len(tps) + len(tns) + len(fps) == 0,
                         msg='New, accepted attack appeared incorrectly in other table(s) (not being false negatives).')
 
-    @unittest_run_loop
     async def test_confirm_predicted_attack(self):
         """Function to test confirming a predicted attack of a sentence."""
         report_id, attack_id = str(uuid4()), 'd99999'
@@ -653,7 +638,6 @@ class TestReports(AioHTTPTestCase):
         self.assertTrue(len(tns) + len(fps) + len(fns) == 0,
                         msg='Confirmed attack appeared incorrectly in other table(s) (not being true positives).')
 
-    @unittest_run_loop
     async def test_reject_attack(self):
         """Function to test rejecting an attack to a sentence."""
         report_id, attack_id = str(uuid4()), 'd99999'
@@ -682,7 +666,6 @@ class TestReports(AioHTTPTestCase):
         self.assertTrue(len(tps) + len(tns) + len(fns) == 0,
                         msg='Rejected attack appeared incorrectly in other table(s) (not being false positives).')
 
-    @unittest_run_loop
     async def test_get_sentence_info(self):
         """Function to test obtaining the data for a report sentence."""
         report_id = str(uuid4())
@@ -724,7 +707,6 @@ class TestReports(AioHTTPTestCase):
         self.assertEqual(resp_attacks_json[0].get('uid'), 'd99999',
                          msg='Confirmed attack not returned in confirmed attacks for sentence.')
 
-    @unittest_run_loop
     async def test_rollback_report(self):
         """Function to test functionality to rollback a report."""
         report_id, report_title = str(uuid4()), 'Never Gonna Rollback This Up'
