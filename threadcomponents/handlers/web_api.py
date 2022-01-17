@@ -211,7 +211,7 @@ class WebAPI:
     @template('columns.html')
     async def edit(self, request):
         """
-        Function to edit report
+        Function to load a report for editing
         :param request: The title of the report information
         :return: dictionary of report data
         """
@@ -228,7 +228,7 @@ class WebAPI:
         except (KeyError, IndexError):
             return self.respond_error(message='Invalid URL')
         # Found a valid report, check if protected by token
-        await self.web_svc.action_allowed(request, 'edit', context=dict(report=report[0]))
+        await self.web_svc.action_allowed(request, 'view', context=dict(report=report[0]))
         # A queued report would pass the above check but be blank; raise an error instead
         if report[0]['current_status'] == self.report_statuses.QUEUE.value:
             return self.respond_error(message='Invalid URL')
