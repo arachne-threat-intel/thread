@@ -175,7 +175,7 @@ class DataService:
         :return: nil
         """
         cur_uids = await self.get_technique_uids()
-        logging.debug('[#] {} Existing items in the DB'.format(len(cur_uids)))
+        logging.info('[#] {} Existing items in the DB'.format(len(cur_uids)))
         with open(buildfile, 'r') as infile:
             attack_dict = json.load(infile)
             loaded_items = {}
@@ -212,10 +212,10 @@ class DataService:
                                     loaded_items[item['target_ref']]['example_uses'].append(normalized_example)
                                 else:
                                     logging.critical('[!] Found target_ref not in loaded data: {}'.format(item['target_ref']))
-        logging.debug("[#] {} Techniques found in input file".format(len(loaded_items)))
+        logging.info("[#] {} Techniques found in input file".format(len(loaded_items)))
         # Deduplicate input data from existing items in the DB
         to_add = {x: y for x, y in loaded_items.items() if x not in cur_uids}
-        logging.debug('[#] {} Techniques found that are not in the existing database'.format(len(to_add)))
+        logging.info('[#] {} Techniques found that are not in the existing database'.format(len(to_add)))
         for k, v in to_add.items():
             await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v.get('description', NO_DESC)),
                                                       tid=v['id'], name=v['name']))
