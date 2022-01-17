@@ -113,7 +113,7 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
     global data_svc, dir_prefix, ml_svc, rest_svc, web_svc, website_handler
 
     dir_prefix = directory_prefix
-    logging.getLogger().setLevel('DEBUG')
+    logging.getLogger().setLevel(logging.INFO)
     logging.info('Welcome to Thread')
 
     # Read from config
@@ -133,7 +133,7 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
         attack_dict = None
     # Set the attack dictionary filepath if applicable
     if conf_build and taxii_local == OFFLINE_BUILD_SOURCE and json_file_path and os.path.isfile(json_file_path):
-        logging.debug('Will build model from static file')
+        logging.info('Will build model from static file')
         attack_dict = os.path.abspath(json_file_path)
     # Check int parameters are ints
     int_error = '%s config set incorrectly: expected a number'
