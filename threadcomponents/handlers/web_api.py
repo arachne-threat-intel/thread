@@ -239,11 +239,17 @@ class WebAPI:
         final_html = await self.web_svc.build_final_html(original_html, sentences)
         pdf_link = self.web_svc.get_route(self.web_svc.EXPORT_PDF_KEY, param=title_quoted)
         nav_link = self.web_svc.get_route(self.web_svc.EXPORT_NAV_KEY, param=title_quoted)
+        # Add some help-text
+        help_text = None
+        if report[0]['token']:
+            help_text = 'This is a token-protected report. If this page becomes unresponsive, please refresh or ' \
+                        'visit the homepage to check your session has not expired.'
         # Update overall template data and return
         template_data.update(
             file=report_title, title=report[0]['title'], title_quoted=title_quoted, final_html=final_html,
             sentences=sentences, attack_uids=self.attack_dropdown_list, original_html=original_html, pdf_link=pdf_link,
-            nav_link=nav_link, completed=int(report[0]['current_status'] == self.report_statuses.COMPLETED.value)
+            nav_link=nav_link, completed=int(report[0]['current_status'] == self.report_statuses.COMPLETED.value),
+            help_text=help_text
         )
         return template_data
 
