@@ -39,6 +39,9 @@
   </div>
   <div class="col col-sm-4 ">
     <div class='missingTechniquesView' id='sentenceContextSection'>
+      {% if help_text %}{# Add any help-text to the side-panel of the report (so it is always visible) #}
+        <span><b>{{help_text}}</b></span><hr>
+      {% endif %}
       {% if completed == 0 %}
         <span class='spanMissingTechniqueView'>Techniques Found</span>
         <br><br>
