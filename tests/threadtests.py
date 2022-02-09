@@ -399,9 +399,7 @@ class TestReports(AioHTTPTestCase):
         await self.db.insert_generate_uid('reports', report)
         # Check the report edit page loads
         resp = await self.client.get('/edit/' + quote(report_title, safe=''))
-        self.assertTrue(resp.status == 500, msg='Viewing an edit-queued-report page resulted in a non-500 response.')
-        text = await resp.text()
-        self.assertTrue(text == 'Invalid URL', msg='A different error appeared for an edit-queued-report page.')
+        self.assertTrue(resp.status == 404, msg='Viewing an edit-queued-report page resulted in a non-404 response.')
 
     async def test_incorrect_submission(self):
         """Function to test when a user makes a bad request to submit a report."""
