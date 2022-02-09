@@ -54,14 +54,6 @@ class WebAPI:
         # We want column names ready
         await self.dao.db.initialise_column_names()
 
-    @staticmethod
-    def respond_error(message=None):
-        """Function to produce an error JSON response."""
-        if message is None:
-            return web.json_response(None, status=500)
-        else:
-            return web.json_response(text=message, status=500)
-
     async def add_base_page_data(self, request, data=None):
         """Function to add the base page data to context data given a request."""
         # If there is no data dictionary to update, there is nothing to do
@@ -224,14 +216,15 @@ class WebAPI:
         report = await self.dao.get('reports', dict(title=report_title))
         try:
             # Ensure a valid report title has been passed in the request
-            report_id = report[0]['uid']
+            report_id, report_status = report[0]['uid'], report[0]['current_status']
         except (KeyError, IndexError):
-            return self.respond_error(message='Invalid URL')
+            raise web.HTTPNotFound()
         # Found a valid report, check if protected by token
         await self.web_svc.action_allowed(request, 'view', context=dict(report=report[0]))
         # A queued report would pass the above check but be blank; raise an error instead
-        if report[0]['current_status'] == self.report_statuses.QUEUE.value:
-            return self.respond_error(message='Invalid URL')
+        if report_status not in [self.report_statuses.NEEDS_REVIEW.value, self.report_statuses.IN_REVIEW.value,
+                                 self.report_statuses.COMPLETED.value]:
+            raise web.HTTPNotFound()
         # Proceed to gather the data for the template
         sentences = await self.data_svc.get_report_sentences(report_id)
         original_html = await self.dao.get('original_html', equal=dict(report_uid=report_id),
@@ -248,8 +241,7 @@ class WebAPI:
         template_data.update(
             file=report_title, title=report[0]['title'], title_quoted=title_quoted, final_html=final_html,
             sentences=sentences, attack_uids=self.attack_dropdown_list, original_html=original_html, pdf_link=pdf_link,
-            nav_link=nav_link, completed=int(report[0]['current_status'] == self.report_statuses.COMPLETED.value),
-            help_text=help_text
+            nav_link=nav_link, completed=int(report_status == self.report_statuses.COMPLETED.value), help_text=help_text
         )
         return template_data
 
@@ -266,13 +258,13 @@ class WebAPI:
             # Ensure a valid report title has been passed in the request
             report_id, report_status = report[0]['uid'], report[0]['current_status']
         except (KeyError, IndexError):
-            return self.respond_error()
+            raise web.HTTPNotFound()
         # Found a valid report, check if protected by token
         await self.web_svc.action_allowed(request, 'nav-export', context=dict(report=report[0]))
         # A queued report would pass the above checks but be blank; raise an error instead
         if report_status not in [self.report_statuses.NEEDS_REVIEW.value, self.report_statuses.IN_REVIEW.value,
                                  self.report_statuses.COMPLETED.value]:
-            return self.respond_error()
+            raise web.HTTPNotFound()
 
         # Create the layer name and description
         enterprise_layer_description = f"Enterprise techniques used by '{report_title}', ATT&CK"
@@ -313,13 +305,13 @@ class WebAPI:
             # Ensure a valid report title has been passed in the request
             report_id, report_status, report_url = report[0]['uid'], report[0]['current_status'], report[0]['url']
         except (KeyError, IndexError):
-            return self.respond_error()
+            raise web.HTTPNotFound()
         # Found a valid report, check if protected by token
         await self.web_svc.action_allowed(request, 'pdf-export', context=dict(report=report[0]))
         # A queued report would pass the above checks but be blank; raise an error instead
         if report_status not in [self.report_statuses.NEEDS_REVIEW.value, self.report_statuses.IN_REVIEW.value,
                                  self.report_statuses.COMPLETED.value]:
-            return self.respond_error()
+            raise web.HTTPNotFound()
         # Continue with the method and retrieve the report's sentences
         sentences = await self.data_svc.get_report_sentences_with_attacks(report_id=report_id)
 
