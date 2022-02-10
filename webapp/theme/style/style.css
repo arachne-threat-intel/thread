@@ -8,13 +8,7 @@ html {
 body {
   min-height: 100%;
   color:#000000;
-  font-family: 'Roboto-Regular', sans-serif;
-}
-h1 {
-  font-family: 'Roboto-Regular', sans-serif;
-}
-h2 {
-  font-family: 'Roboto-Light', sans-serif;
+  font-family: 'Exo', sans-serif;
 }
 
 .thread-header {
@@ -71,7 +65,6 @@ footer .twitter-btn { float: right; }
 }
 #navbarCollapse .nav-tabs .nav-link {
   color: white;
-  font-family: 'Roboto-Light', sans-serif;
 }
 #navbarCollapse .nav-tabs .nav-link:focus,
 #navbarCollapse .nav-tabs .nav-link.active {
