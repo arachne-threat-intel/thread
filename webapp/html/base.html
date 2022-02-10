@@ -11,6 +11,9 @@
     <title>Thread{% if title %} | {{title}}{% endif %}</title>
     <!-- JS dependencies finishing with the Thread-specific script (basics.js) and stylesheet -->
     {% if js_src_online %}
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link  rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo:wght@300&display=swap">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" integrity="sha512-GQGU0fMMi238uA+a/bdWJfpUGKUkBdgfFdgBm72SUQ6BeyWjoY/ton0tEjH+OSH9iP4Dfh+7HM0I9f5eR0L/4w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.18/css/bootstrap-select.min.css" integrity="sha512-ARJR74swou2y0Q2V9k0GbzQ/5vJ2RBSoCWokg4zkfM29Fb3vZEQyv0iWBMW/yvKgyHSR/7D64pFMmU8nYmbRkg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -39,7 +42,7 @@
   <body>
     <header class='pb-5'>
       <nav class='navbar navbar-expand-lg navbar-dark fixed-top border-bottom thread-navbar'>
-        <a class='navbar-brand' href='{{home_url}}'><h1 class="thread-header lead text-white">Thread</h1></a>
+        <a class='navbar-brand' href='{{home_url}}'><h1 class="display-6 thread-header lead text-white">Thread</h1></a>
         <button class='navbar-toggler' type='button' data-toggle='collapse' data-target='#navbarCollapse'
                 data-bs-toggle='collapse' data-bs-target='#navbarCollapse'
                 aria-controls='navbarCollapse' aria-expanded='false' aria-label='Toggle navigation'>
@@ -54,7 +57,7 @@
             </li>
             <li class="nav-item"><a href='{{home_url}}' class="nav-link"><b>Home</b></a></li>
             <li class="nav-item"><a href='{{about_url}}' class="nav-link"><b>About</b></a></li>
-            <li class="nav-item"><a href="/" target="_blank" class="nav-link"><b>Arachne</b></a></li>
+            <li class="nav-item"><a href="https://arachne.digital" target="_blank" class="nav-link"><b>Arachne</b></a></li>
           </ul>
         </div>
       </nav>
@@ -67,7 +70,8 @@
         {% if not is_local and not hide_cookie_notice %}
           <div class="alert alert-info alert-dismissible fade show cookie-alert" role="alert">
             We use strictly necessary cookies whilst you are here. These are to enable the website to work and cannot be
-            disabled.<br>To read more about what this means, please see <b>Arachne's Privacy Policy</b>.
+            disabled.<br>To read more about what this means, please see
+            <a href="https://arachne.digital/privacy-policy" target="_blank"><b>Arachne's Privacy Policy</b></a>.
             <form action="{{cookie_url}}" method="GET">{# Empty form so the button fires a REST request #}
               <button type="submit" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </form>
