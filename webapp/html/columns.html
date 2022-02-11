@@ -1,6 +1,18 @@
 {# NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital #}
 
 {% extends 'base.html' %}
+
+{% block head %}
+{{ super() }}
+{% if js_src_online %}{# Edit-report page is the only page which uses pdfmake so import here #}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.4/pdfmake.min.js" integrity="sha512-vCaf5rysVLu1/zVMefJew+IjqlQibggltPWqeo96XsdyJ4ihR3eEDV1oU60afiRXTGf8DqKUjLs2Q99HCbnjAw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.4/vfs_fonts.min.js" integrity="sha512-BDZ+kFMtxV2ljEa7OWUu0wuay/PAsJ2yeRsBegaSgdUhqIno33xmD9v3m+a2M3Bdn5xbtJtsJ9sSULmNBjCgYw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+{% else %}
+  <script src="{{static_url}}scripts/pdfmake.min.js"></script>
+  <script src="{{static_url}}scripts/vfs_fonts.js"></script>
+{% endif %}
+{% endblock %}
+
 {% block content %}
 
 <br>
