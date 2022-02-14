@@ -13,15 +13,15 @@ var clickedClass = "report-sentence-clicked";
 var delSenBtn = "#delSenBtn";
 var missingTechBtn = "#missingTechBtn";
 // The URL for the rest requests
-var restUrl = $('script#basicsScript').data('rest-url');
+var restUrl = $("script#basicsScript").data("rest-url");
 // If this script is being run locally
-var isLocal = $('script#basicsScript').data('run-local');
+var isLocal = $("script#basicsScript").data("run-local");
 // External-font-loading: pdfMake-config and boolean to represent if we loaded the font
 var exoConfig = {
-  normal: 'Exo-Light.ttf',
-  bold: 'Exo-Bold.ttf',
-  italics: 'Exo-Italic.ttf',
-  bolditalics: 'Exo-BoldItalic.ttf'
+  normal: "Exo-Light.ttf",
+  bold: "Exo-Bold.ttf",
+  italics: "Exo-Italic.ttf",
+  bolditalics: "Exo-BoldItalic.ttf"
 };
 var exoFontReady = false;
 
@@ -29,7 +29,7 @@ function restRequest(type, data, callback=null, url=restUrl) {
   $.ajax({
     url: url,
     type: type,
-    contentType: 'application/json',
+    contentType: "application/json",
     data: JSON.stringify(data),
     success: function(data, textStatus, xhr) {
       if (xhr?.responseJSON?.alert_user && xhr?.responseJSON?.info) {
@@ -95,7 +95,7 @@ function remove_sentence() {
     // selectedSentence.scrollIntoView({block: "center", inline: "center"});
     // Prepare the first three words of the sentence as a reminder to the user of the sentence that is selected
     sen_text = selectedSentence.innerText;
-    truncated = sen_text.split(' ').slice(0,3).join(' ');
+    truncated = sen_text.split(" ").slice(0,3).join(" ");
     // Add trailing ellipsis if the sentence has more than three words
     truncated += (truncated == sen_text) ? "" : "...";
     truncated = truncated.trim();
@@ -125,35 +125,35 @@ function remove_sentence() {
     $(missingTechBtn).prop("disabled", true);
     $(delSenBtn).prop("disabled", true);
     // Send off request to delete from the db
-    restRequest('POST', {'index':'remove_sentence', 'sentence_id': sentence_id});
+    restRequest("POST", {"index":"remove_sentence", "sentence_id": sentence_id});
   }
 }
 
 function acceptAttack(id, attack_uid) {
-  restRequest('POST', {'index':'add_attack', 'sentence_id': id, 'attack_uid': attack_uid});
+  restRequest("POST", {"index":"add_attack", "sentence_id": id, "attack_uid": attack_uid});
   sentenceContext(id, attack_uid);
 }
 
 function rejectAttack(id, attack_uid) {
-  restRequest('POST', {'index':'reject_attack', 'sentence_id': id, 'attack_uid': attack_uid});
+  restRequest("POST", {"index":"reject_attack", "sentence_id": id, "attack_uid": attack_uid});
   sentenceContext(id, attack_uid);
 }
 
 function deleteReport(reportTitle) {
-  if (confirm('Are you sure you want to delete this report?')) {
-    restRequest('POST', {'index': 'delete_report', 'report_title': reportTitle}, page_refresh);
+  if (confirm("Are you sure you want to delete this report?")) {
+    restRequest("POST", {"index": "delete_report", "report_title": reportTitle}, page_refresh);
   }
 }
 
 function rollbackReport(reportTitle) {
-  if (confirm('Are you sure you want to rollback this report to NEEDS REVIEW?')) {
-    restRequest('POST', {'index': 'rollback_report', 'report_title': reportTitle}, page_refresh);
+  if (confirm("Are you sure you want to rollback this report to NEEDS REVIEW?")) {
+    restRequest("POST", {"index": "rollback_report", "report_title": reportTitle}, page_refresh);
   }
 }
 
 function finish_analysis(reportTitle) {
-  if (confirm('Are you sure you are finished with this report?')) {
-    restRequest('POST', {'index':'set_status', 'set_status': 'completed', 'report_title': reportTitle}, page_refresh);
+  if (confirm("Are you sure you are finished with this report?")) {
+    restRequest("POST", {"index":"set_status", "set_status": "completed", "report_title": reportTitle}, page_refresh);
   }
 }
 
@@ -170,7 +170,7 @@ function submit(data, submitButton) {
     // Update request-data with token
     data.token = $(tokenFieldID).val();
   }
-  restRequest('POST', data, page_refresh);
+  restRequest("POST", data, page_refresh);
 }
 
 function submit_report(submitButton) {
@@ -184,7 +184,7 @@ function submit_report(submitButton) {
     alert("Number of URLs and titles do not match, please insert same number of comma-separated items.");
   // Proceed with submitting if both fields are valid
   } else if (url.reportValidity() && title.reportValidity()) {
-    submit({'index':'insert_report', 'url':urls, 'title':titles}, submitButton);
+    submit({"index":"insert_report", "url":urls, "title":titles}, submitButton);
   }
 }
 
@@ -200,7 +200,7 @@ function upload_file(uploadButton) {
     var reader = new FileReader();
     reader.readAsText(file, "UTF-8");
     reader.onload = function(evt) {
-      submit({'index': 'insert_csv', 'file': evt.target.result}, uploadButton);
+      submit({"index": "insert_csv", "file": evt.target.result}, uploadButton);
     }
     reader.onerror = function(evt) {
       alert("Error reading file");
@@ -234,9 +234,9 @@ function savedAlert() {
 
  function autoHeight() {
   if ($("html").height() < $(window).height()) {
-    $("footer").addClass('sticky-footer');
+    $("footer").addClass("sticky-footer");
   } else {
-    $("footer").removeClass('sticky-footer');
+    $("footer").removeClass("sticky-footer");
   }
 }
 
@@ -244,8 +244,8 @@ function sentenceContext(data) {
   // Update selected sentence global variable
   sentence_id = data;
   // Fire off requests to get info on this sentence
-  restRequest('POST', {'index':'sentence_context', 'sentence_id': data}, updateSentenceContext);
-  restRequest('POST', {'index':'confirmed_attacks', 'sentence_id': data}, updateConfirmedContext);
+  restRequest("POST", {"index":"sentence_context", "sentence_id": data}, updateSentenceContext);
+  restRequest("POST", {"index":"confirmed_attacks", "sentence_id": data}, updateConfirmedContext);
 }
 
 function updateSentenceContext(data) {
@@ -271,10 +271,10 @@ function updateSentenceContext(data) {
             // Prefix the name with the parent-technique (if it is a sub-technique), else just print the name
             + (op.attack_parent_name ? `${op.attack_parent_name}: ${op.attack_technique_name}` : op.attack_technique_name)
             + "</a></td>";
-      td2 = `<td><button class='btn btn-success' onclick='acceptAttack("${op.sentence_id}", "${op.attack_uid}")'>Accept</button></td>`;
-      td3 = `<td><button class='btn btn-danger' onclick='rejectAttack("${op.sentence_id}", "${op.attack_uid}")'>Reject</button></td>`;
+      td2 = `<td><button class="btn btn-success" onclick="acceptAttack('${op.sentence_id}', '${op.attack_uid}')">Accept</button></td>`;
+      td3 = `<td><button class="btn btn-danger" onclick="rejectAttack('${op.sentence_id}', '${op.attack_uid}')">Reject</button></td>`;
       tmp = `<tr id="sentence-tid${op.attack_uid.substr(op.attack_uid.length - 4)}">${td1}${td2}${td3}</tr>`;
-      $("#tableSentenceInfo").find('tbody').append(tmp);
+      $("#tableSentenceInfo").find("tbody").append(tmp);
     });
   // Else this sentence doesn't have attack data
   } else {
@@ -305,7 +305,7 @@ function updateConfirmedContext(data) {
     // Prefix the name with the parent-technique (if it is a sub-technique), else just print the name
     td1 = "<td>" + (op.parent_name ? `${op.parent_name}: ${op.name}` : op.name) + "</td>"
     tmp = "<tr>" + td1 + "</tr>"
-    $("#confirmedSentenceInfo").find('tbody').append(tmp);
+    $("#confirmedSentenceInfo").find("tbody").append(tmp);
   });
 }
 
@@ -369,12 +369,12 @@ function downloadLayer(data) {
   // Encode updated json as a uri component
   var dataStr = "text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(json));
   // Create temporary DOM element with attribute values needed to perform the download
-  var a = document.createElement('a');
-  a.href = 'data:' + dataStr;
+  var a = document.createElement("a");
+  a.href = "data:" + dataStr;
   a.download = filename;
-  a.innerHTML = 'download JSON';
+  a.innerHTML = "download JSON";
   // Add the temporary element to the DOM
-  var container = document.getElementById('dropdownMenu');
+  var container = document.getElementById("dropdownMenu");
   container.appendChild(a);
   // Download the JSON document
   a.click();
@@ -387,14 +387,14 @@ function viewLayer(data) {
 }
 
 function divSentenceReload() {
-  $('#sentenceContextSection').load(document.URL +  ' #sentenceContextSection');
+  $("#sentenceContextSection").load(document.URL +  " #sentenceContextSection");
 }
 
 function autoHeight() {
   if ($("html").height() < $(window).height()) {
-    $("footer").addClass('sticky-footer');
+    $("footer").addClass("sticky-footer");
   } else {
-    $("footer").removeClass('sticky-footer');
+    $("footer").removeClass("sticky-footer");
   }
 }
 
