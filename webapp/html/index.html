@@ -142,7 +142,7 @@
                           {% endif %}
                           <p>
                           <p class="card-text">{{report.title}}</p>{# Display the report title #}
-                          <a href="{{report.url}}" class="btn btn-sm btn-outline-secondary">Source</a>{# All reports have a source URL #}
+                          <a href="{{report.url}}" target="_blank" class="btn btn-sm btn-outline-secondary">Source</a>{# All reports have a source URL #}
                           {% if value.analysis_button %}{# Display analyse button if applicable #}
                             <a href="{{report.link}}" class="btn btn-sm btn-outline-secondary">{{value.analysis_button}}</a>
                           {% endif %}

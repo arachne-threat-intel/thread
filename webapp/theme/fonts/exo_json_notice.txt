@@ -1,0 +1,9 @@
+As accompanying comments to the file `exo.json`, this is to state how that file was built.
+
+- pdfmake requires its `vfs_fonts.js` to be updated for custom fonts
+- Exo was downloaded here: https://fonts.google.com/specimen/Exo
+  - The Exo directory has been included (as it was downloaded) in this repository to include its README and license
+- The JSON was built where each font-file's value was converted via the command `base64 -w 0 <Exo-font-filename>.ttf > <temp-txt-filename>.txt`
+- The command was taken from the pdfmake docs: https://pdfmake.github.io/docs/0.1/fonts/custom-fonts-client-side/vfs/shell/
+- The parameter `-w 0` is needed to not introduce line breaks
+- The use of these fonts is then handled by webapp/theme/scripts/basics.js (methods `importFont()` and `downloadPDF()`)
