@@ -1,4 +1,4 @@
-As accompanying comments to the file `exo.json`, this is to state how that file was built.
+As accompanying comments to the file `arachne_vfs.json`, this is to state how that file was built.
 
 - pdfmake requires its `vfs_fonts.js` to be updated for custom fonts
 - Exo was downloaded here: https://fonts.google.com/specimen/Exo
@@ -7,3 +7,4 @@ As accompanying comments to the file `exo.json`, this is to state how that file 
 - The command was taken from the pdfmake docs: https://pdfmake.github.io/docs/0.1/fonts/custom-fonts-client-side/vfs/shell/
 - The parameter `-w 0` is needed to not introduce line breaks
 - The use of these fonts is then handled by webapp/theme/scripts/basics.js (methods `importFont()` and `downloadPDF()`)
+- The JSON also includes the Arachne logo as the pdfMake docs state its VFS can also include images
