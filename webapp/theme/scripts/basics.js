@@ -310,12 +310,14 @@ function updateConfirmedContext(data) {
 }
 
 function importFont() {
-  // Obtain the filepath of the JSON for the font
-  var exoPath = $("script#exoFontJson").data("json-path");
+  // Obtain the filepath of the JSON containing the font
+  var vfsPath = $("script#arachneVfsJson").data("json-path");
   // If we have a filepath...
-  if (exoPath) {
+  if (vfsPath) {
     // Obtain the JSON
-    $.getJSON(exoPath, function(data) {
+    $.getJSON(vfsPath, function(data) {
+      // Ensure that pdfMake has a VFS ready
+      pdfMake.vfs = pdfMake.vfs || {};
       // Update pdfMake's VFS with the JSON we just retrieved
       Object.assign(pdfMake.vfs, data);
       // Obtain the font .ttf names from what is currently in pdfMake's VFS
@@ -337,17 +339,25 @@ function downloadPDF(data) {
   if (!exoFontReady) {
     importFont();
   }
+  // Check if we have a logo; if so, add the logo to the PDF
+  var imageFilename = "Arachne-Logo.png";
+  var imageEncoded = pdfMake.vfs[imageFilename];
+  if (imageEncoded) {
+    data["background"] = function(currentPage, pageSize) {
+      return {image: imageFilename, width: 50, absolutePosition: {x: pageSize.width-70, y: pageSize.height-60}};
+    };
+  }
   // If the font is ready to use...
   if (exoFontReady) {
     // Update the default-font and pass it into the createPdf() font parameter
-    data['defaultStyle'] = {font: 'Exo'};
+    data["defaultStyle"] = {font: "Exo"};
     generatedPDF = pdfMake.createPdf(data, null, {Exo: exoConfig});
   } else {
     // If the font was not ready, create the PDF with pdfMake's defaults
     generatedPDF = pdfMake.createPdf(data);
   }
   // Finish the method by downloading the generated PDF
-  generatedPDF.download(data['info']['title']);
+  generatedPDF.download(data["info"]["title"]);
 }
 
 function downloadLayer(data) {
