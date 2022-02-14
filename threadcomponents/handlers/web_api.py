@@ -8,6 +8,7 @@ import logging
 from aiohttp.web_exceptions import HTTPException
 from aiohttp_jinja2 import template, web
 from aiohttp_session import get_session
+from datetime import datetime
 from urllib.parse import quote
 
 # The config options to load JS dependencies
@@ -40,6 +41,7 @@ class WebAPI:
                                    home_url=self.web_svc.get_route(self.web_svc.HOME_KEY),
                                    rest_url=self.web_svc.get_route(self.web_svc.REST_KEY),
                                    static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY),
+                                   current_year=datetime.now().strftime('%Y'),
                                    js_src_online=js_src_config == ONLINE_JS_SRC, is_local=self.is_local)
         self.attack_dropdown_list = []
 
