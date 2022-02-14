@@ -11,16 +11,16 @@
   <script src="{{static_url}}scripts/pdfmake.min.js"></script>
   <script src="{{static_url}}scripts/vfs_fonts.js"></script>
 {% endif %}
+<script id="exoFontJson" data-json-path="{{static_url}}fonts/exo.json"></script>
 {% endblock %}
 
 {% block content %}
-
 <br>
 <h3 class="display-4 text-center">{{ file }}</h3>
 
 <div class="row justify-content-center pb-3">
   <div class="col-md-auto">
-    <button onclick="$.getJSON('{{pdf_link}}', (x) => {pdfMake.createPdf(x).download(x['info']['title']);})" class="btn btn-md btn-outline-secondary">Export PDF</button>
+    <button onclick="$.getJSON('{{pdf_link}}', (x) => {downloadPDF(x);})" class="btn btn-md btn-outline-secondary">Export PDF</button>
   </div>
   <div class="col-md-auto">
     <button class="btn btn-md btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Export Navigator JSON</button>

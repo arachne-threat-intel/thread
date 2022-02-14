@@ -16,6 +16,14 @@ var missingTechBtn = "#missingTechBtn";
 var restUrl = $('script#basicsScript').data('rest-url');
 // If this script is being run locally
 var isLocal = $('script#basicsScript').data('run-local');
+// External-font-loading: pdfMake-config and boolean to represent if we loaded the font
+var exoConfig = {
+  normal: 'Exo-Light.ttf',
+  bold: 'Exo-Bold.ttf',
+  italics: 'Exo-Italic.ttf',
+  bolditalics: 'Exo-BoldItalic.ttf'
+};
+var exoFontReady = false;
 
 function restRequest(type, data, callback=null, url=restUrl) {
   $.ajax({
@@ -301,6 +309,47 @@ function updateConfirmedContext(data) {
   });
 }
 
+function importFont() {
+  // Obtain the filepath of the JSON for the font
+  var exoPath = $("script#exoFontJson").data("json-path");
+  // If we have a filepath...
+  if (exoPath) {
+    // Obtain the JSON
+    $.getJSON(exoPath, function(data) {
+      // Update pdfMake's VFS with the JSON we just retrieved
+      Object.assign(pdfMake.vfs, data);
+      // Obtain the font .ttf names from what is currently in pdfMake's VFS
+      var currentFonts = Object.keys(pdfMake.vfs);
+      // Obtain the font .ttf names from what we specified in the config global variable
+      var specifiedFonts = Object.values(exoConfig);
+      // If all .ttf filenames that we are specifying in our config is in the pdfMake VFS...
+      if (specifiedFonts.every(val => currentFonts.includes(val))) {
+        // Then the font is now ready to use
+        exoFontReady = true;
+      }
+    });
+  }
+}
+
+function downloadPDF(data) {
+  var generatedPDF;
+  // If the font is not ready, try to import it again
+  if (!exoFontReady) {
+    importFont();
+  }
+  // If the font is ready to use...
+  if (exoFontReady) {
+    // Update the default-font and pass it into the createPdf() font parameter
+    data['defaultStyle'] = {font: 'Exo'};
+    generatedPDF = pdfMake.createPdf(data, null, {Exo: exoConfig});
+  } else {
+    // If the font was not ready, create the PDF with pdfMake's defaults
+    generatedPDF = pdfMake.createPdf(data);
+  }
+  // Finish the method by downloading the generated PDF
+  generatedPDF.download(data['info']['title']);
+}
+
 function downloadLayer(data) {
   // Create the name of the JSON download file from the name of the report
   var json = JSON.parse(data)
@@ -339,32 +388,23 @@ function autoHeight() {
   }
 }
 
- // onDocumentReady function bind
-$(document).ready(function() {
-  $("header").css("height", $(".navbar").outerHeight());
-  autoHeight();
-});
-
-// Add event listener for DEL button keypress if not added already
-if (!document.delListener) {
-  document.addEventListener("keydown", function(event) {
-    // Check the button pressed
-    if (event.key === "Delete") {
-      // Check if there is a delete-sentence button on the page and if it is enabled
-      if ($(delSenBtn).length && !$(delSenBtn).prop("disabled")) {
-        // Prompt user if they want to delete this sentence
-        remove_sentence();
+function addDeleteListener() {
+  // Add event listener for DEL button keypress if not added already
+  if (!document.delListener) {
+    document.addEventListener("keydown", function(event) {
+      // Check the button pressed
+      if (event.key === "Delete") {
+        // Check if there is a delete-sentence button on the page and if it is enabled
+        if ($(delSenBtn).length && !$(delSenBtn).prop("disabled")) {
+          // Prompt user if they want to delete this sentence
+          remove_sentence();
+        }
       }
-    }
-  });
-  // Update flag so this is not added again
-  document.delListener = true;
+    });
+    // Update flag so this is not added again
+    document.delListener = true;
+  }
 }
-
-// onResize bind of the function
-$(window).resize(function() {
-  autoHeight();
-});
 
 function addMissingTechnique() {
   // If an image is currently not highlighted (don't imply images can be mapped to attacks)
@@ -409,3 +449,15 @@ function tokenFieldCheck(field) {
     $(checkboxDivID).prop("hidden", hasValue);
   }
 }
+
+// onDocumentReady function bind
+$(document).ready(function() {
+  $("header").css("height", $(".navbar").outerHeight());
+  autoHeight();
+  // onResize bind of the function
+  $(window).resize(function() {
+    autoHeight();
+  });
+  addDeleteListener();
+  importFont();
+});
