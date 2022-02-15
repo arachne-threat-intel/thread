@@ -38,21 +38,19 @@
                       <div class="card shadow-sm" id="{{key}}-{{report.title_quoted}}">
                         <div class="card-body">
                           {% if report.error %}{# Display error icon if applicable #}
-                            <a data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top"
+                            <a data-bs-toggle="tooltip" data-bs-placement="top"
                                title="{% if value.error_msg %}{{value.error_msg}}{% else %}Error{% endif %}">
                               <span class="fas fa-exclamation glyphicon glyphicon-exclamation-sign error-icon"></span>
                             </a>
                           {% endif %}
                           {% if value.allow_delete or report.error %}{# Display button to delete report if allowed #}
-                            <a data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top"
-                               title="Delete this report."
+                            <a data-bs-toggle="tooltip" data-bs-placement="top" title="Delete this report."
                                onclick="deleteReport('{{report.title_quoted}}')">
                                <span class="fas fa-trash-alt glyphicon glyphicon-trash btn-sm btn-outline-danger float-right report-action"></span>
                             </a>
                           {% endif %}
                           {% if value.allow_rollback %}{# Display button to rollback report if allowed #}
-                            <a data-toggle="tooltip" data-bs-toggle="tooltip" data-placement="top" data-bs-placement="top"
-                               title="Rollback report to NEEDS REVIEW."
+                            <a data-bs-toggle="tooltip" data-bs-placement="top" title="Rollback report to NEEDS REVIEW."
                                onclick="rollbackReport('{{report.title_quoted}}')">
                                <span class="fas fa-undo-alt glyphicon glyphicon-refresh btn-sm float-right report-action"></span>
                             </a>
