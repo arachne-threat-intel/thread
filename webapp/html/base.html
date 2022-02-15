@@ -1,12 +1,12 @@
 {# NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital #}
 
 <!DOCTYPE html>
-<html lang='en'>
+<html lang="en">
   <head>
     {% block head %}
-    <meta charset='utf-8'>
+    <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <link rel='icon' href='{{static_url}}images/arachne_favicon.png'>
+    <link rel="icon" href="{{static_url}}images/arachne_favicon.png">
 
     <title>Thread{% if title %} | {{title}}{% endif %}</title>
     <!-- JS dependencies finishing with the Thread-specific script (basics.js) and stylesheet -->
@@ -21,47 +21,47 @@
       <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js" integrity="sha512-pax4MlgXjHEPfCwcJLQhigY7+N8rt6bVvWLFyUMuxShv170X53TRzGPmPkZmGBhk+jikR8WBM4yl7A9WMHHqvg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.14.0-beta2/js/bootstrap-select.min.js" integrity="sha512-FHZVRMUW9FsXobt+ONiix6Z0tIkxvQfxtCSirkKc5Sb4TKHmqq1dZa8DphF0XqKb3ldLu/wgMa8mT6uXiLlRlw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     {% else %}
-      <link rel='stylesheet' href='{{static_url}}style/fonts.css'/>
-      <link rel='stylesheet' href='{{static_url}}style/bootstrap-v5.0.2/bootstrap.min.css'/>
-      <link rel='stylesheet' href='{{static_url}}style/bootstrap-glyphicon.min.css'/>
-      <link rel='stylesheet' href='{{static_url}}style/bootstrap-select.min.css'/>
+      <link rel="stylesheet" href="{{static_url}}style/fonts.css"/>
+      <link rel="stylesheet" href="{{static_url}}style/bootstrap-v5.0.2/bootstrap.min.css"/>
+      <link rel="stylesheet" href="{{static_url}}style/bootstrap-glyphicon.min.css"/>
+      <link rel="stylesheet" href="{{static_url}}style/bootstrap-select.min.css"/>
       <script src="{{static_url}}scripts/jquery-3.3.1.min.js"></script>
       <script src="{{static_url}}scripts/bootstrap-v5.0.2/bootstrap.bundle.min.js"></script>
       <script src="{{static_url}}scripts/bootstrap-select.min.js"></script>
       <script src="{{static_url}}scripts/kanban.js"></script>
     {% endif %}
-    <link href='{{static_url}}style/style.css' rel='stylesheet' type='text/css'/>
+    <link rel="stylesheet" href="{{static_url}}style/style.css"/>
     <script id="basicsScript" src="{{static_url}}scripts/basics.js" data-rest-url="{{rest_url}}" data-run-local="{{is_local|int}}"></script>
     {% endblock %}
   </head>
 
   <body>
-    <header class='pb-5'>
-      <nav class='navbar navbar-expand-lg navbar-dark fixed-top border-bottom thread-navbar'>
-        <a class='navbar-brand' href='{{home_url}}'><h1 class="display-6 thread-header lead text-white">Thread</h1></a>
-        <button class='navbar-toggler' type='button' data-bs-toggle='collapse' data-bs-target='#navbarCollapse'
-                aria-controls='navbarCollapse' aria-expanded='false' aria-label='Toggle navigation'>
-          <span class='navbar-toggler-icon'></span>
+    <header class="pb-5">
+      <nav class="navbar navbar-expand-lg navbar-dark fixed-top border-bottom thread-navbar">
+        <a class="navbar-brand" href="{{home_url}}"><h1 class="display-6 thread-header lead text-white">Thread</h1></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
+                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
         </button>
-        <div class='collapse navbar-collapse' id='navbarCollapse'>
-          <ul class='nav nav-tabs ms-auto'>
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+          <ul class="nav nav-tabs ms-auto">
             <li class="nav-item">
-              <a href='https://github.com/arachne-threat-intel/thread' target="_blank" class="nav-link">
+              <a href="https://github.com/arachne-threat-intel/thread" target="_blank" class="nav-link">
                 <i class="fab fa-github fa-lg glyphicon glyphicon-download-alt"></i>
               </a>
             </li>
-            <li class="nav-item"><a href='{{home_url}}' class="nav-link"><b>Home</b></a></li>
-            <li class="nav-item"><a href='{{about_url}}' class="nav-link"><b>About</b></a></li>
+            <li class="nav-item"><a href="{{home_url}}" class="nav-link"><b>Home</b></a></li>
+            <li class="nav-item"><a href="{{about_url}}" class="nav-link"><b>About</b></a></li>
             <li class="nav-item"><a href="https://arachne.digital" target="_blank" class="nav-link"><b>Arachne</b></a></li>
           </ul>
         </div>
       </nav>
     </header>
 
-    <div id='content'>{% block content %} {% endblock %}</div>
+    <div id="content">{% block content %} {% endblock %}</div>
     <footer class="footer p-3 thread-navbar">
       <div class="text-center text-white-50">
-        <p>© 2021{% if current_year %}-{{current_year}}{% endif %} Arachne Digital</p>
+        <p>© {{ current_year|default("2021") }} Arachne Digital</p>
         {% if not is_local and not hide_cookie_notice %}
           <div class="alert alert-info alert-dismissible fade show cookie-alert" role="alert">
             We use strictly necessary cookies whilst you are here. These are to enable the website to work and cannot be

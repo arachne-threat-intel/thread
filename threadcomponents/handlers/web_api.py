@@ -318,6 +318,8 @@ class WebAPI:
         sentences = await self.data_svc.get_report_sentences_with_attacks(report_id=report_id)
 
         dd = dict()
+        # Default background which will be replaced by logo via client-side
+        dd['background'] = 'Report by Arachne Digital'
         dd['content'] = []
         # The styles for this pdf - hyperlink styling needed to be added manually
         dd['styles'] = dict(header=dict(fontSize=25, bold=True, alignment='center'), bold=dict(bold=True),
