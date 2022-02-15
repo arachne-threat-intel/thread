@@ -1,0 +1,23 @@
+@font-face {
+  font-family: 'Exo';
+  src: url(../fonts/Exo/static/Exo-Light.ttf);
+}
+
+@font-face {
+  font-family: 'Exo';
+  font-style: italic;
+  src: url(../fonts/Exo/static/Exo-Italic.ttf);
+}
+
+@font-face {
+  font-family: 'Exo';
+  font-weight: bold;
+  src: url(../fonts/Exo/static/Exo-Bold.ttf);
+}
+
+@font-face {
+  font-family: 'Exo';
+  font-style: italic;
+  font-weight: bold;
+  src: url(../fonts/Exo/static/Exo-BoldItalic.ttf);
+}
