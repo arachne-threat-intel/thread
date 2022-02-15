@@ -1,0 +1,6 @@
+NOTICE: As required by the Apache License v2.0, this notice is to state the directory '/style' has been changed by Arachne Digital:
+
+* `bootstrap-select.css` > deleted in favour of a more recent and minified version: `bootstrap-select.min.css`
+* Various Bootstrap-css files deleted in favour of a more recent Bootstrap version: now in its own subdirectory
+
+Details of the commit (where these deletions took place) can be found here: https://github.com/arachne-threat-intel/thread/commit/c72c3ea
