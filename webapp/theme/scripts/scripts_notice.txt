@@ -1,0 +1,7 @@
+NOTICE: As required by the Apache License v2.0, this notice is to state the directory '/scripts' has been changed by Arachne Digital:
+
+* `bootstrap-select.js` > deleted in favour of a more recent and minified version: `bootstrap-select.min.js`
+* Various Bootstrap-js files deleted in favour of a more recent Bootstrap version: now in its own subdirectory
+* Popper-js files deleted in favour of using the bundled Bootstrap distribution (which includes Popper)
+
+Details of the commit (where these deletions took place) can be found here: https://github.com/arachne-threat-intel/thread/commit/c72c3ea
