@@ -1,0 +1,24 @@
+{% if not is_local %}{# Display fields for token-protection and non-token-use confirmation #}
+  {% with %}
+    {% if is_csv %}{# Determine an attribute suffix to distinguish when these fields are in the CSV tab or not #}
+      {% set attr_suffix = "CSV" %}
+    {% else %}
+      {% set attr_suffix = "" %}
+    {% endif %}
+    {# Include the input box to enter a Thread token #}
+    <div class="form-group">
+      <label for="reportToken{{attr_suffix}}">Thread Token</label>
+      <input type="text" class="form-control" id="reportToken{{attr_suffix}}" placeholder="Token for private report(s)"
+             onchange="tokenFieldCheck(this)" data-paired-checkbox="#publicReportCheck{{attr_suffix}}"
+             value="{% if token %}{{token}}{% endif %}">
+    </div>
+    {# Include the checkbox to acknowledge a public-report submission #}
+    <div id="publicReportConf{{attr_suffix}}" {% if token %}hidden{% endif %}>
+      <div class="form-group d-flex">
+        <input type="checkbox" id="publicReportCheck{{attr_suffix}}"
+               data-parent-div="#publicReportConf{{attr_suffix}}" {% if not token %}required{% endif %}>
+        <label for="publicReportCheck{{attr_suffix}}"><small>I confirm I am making the report(s) created from this submission <b>public</b>.</small></label>
+      </div>
+    </div>
+  {% endwith %}
+{% endif %}
