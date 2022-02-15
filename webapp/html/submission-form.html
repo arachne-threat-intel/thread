@@ -1,49 +1,61 @@
-<h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-2">
-  <span><b>Enter New Report(s)</b></span>
-</h6>
-{# The two tabs for report submissions: URLs and CSVs #}
-<ul class="nav nav-tabs" id="submitTabs" role="tablist">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active" id="url-tab" data-bs-toggle="tab" data-bs-target="#url-div" data-toggle="tab"
-            data-target="#url-div" type="button" role="tab" aria-controls="url-div" aria-selected="true">URL(s)
-    </button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="csv-tab" data-bs-toggle="tab" data-bs-target="#csv-div" type="button" data-toggle="tab"
-            data-target="#csv-div" role="tab" aria-controls="csv-div" aria-selected="false">CSV
-    </button>
-  </li>
-</ul>
-{# The content underneath a selected tab; default selected tab is URL report submissions #}
-<div class="tab-content" id="submitTabForms">{# Wrapper-div to include content for all forms underneath the tabs #}
-  <div class="tab-pane fade show active" id="url-div" role="tabpanel" aria-labelledby="url-tab">{# First tab: URLs #}
-    <form>
-      <div class="form-group">
-        <label for="url">Insert URL(s)</label>
-        <input type="url" class="form-control" id="url" onchange="prefixHttp(this)" placeholder="Enter URL(s) (comma separated)" required>
+<div class="accordion" id="submitReportAccordion">
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="submitReportHeader">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+              data-bs-target="#submitReportForm" aria-expanded="false" aria-controls="submitReportForm">
+        <b>Enter New Report(s)</b>
+      </button>
+    </h2>
+    <div id="submitReportForm" class="accordion-collapse collapse" aria-labelledby="submitReportHeader"
+         data-bs-parent="#submitReportAccordion">
+      <div class="accordion-body">
+        {# The two tabs for report submissions: URLs and CSVs #}
+        <ul class="nav nav-tabs" id="submitTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="url-tab" data-bs-toggle="tab" data-bs-target="#url-div" type="button"
+                    role="tab" aria-controls="url-div" aria-selected="true">URL(s)
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="csv-tab" data-bs-toggle="tab" data-bs-target="#csv-div" type="button"
+                    role="tab" aria-controls="csv-div" aria-selected="false">CSV
+            </button>
+          </li>
+        </ul>
+        {# The content underneath a selected tab; default selected tab is URL report submissions #}
+        <div class="tab-content" id="submitTabForms">{# Wrapper-div to include content for all forms underneath the tabs #}
+          <div class="tab-pane fade show active" id="url-div" role="tabpanel" aria-labelledby="url-tab">{# First tab: URLs #}
+            <form>
+              <div class="form-group">
+                <label for="url">Insert URL(s)</label>
+                <input type="url" class="form-control" id="url" onchange="prefixHttp(this)" placeholder="Enter URL(s) (comma separated)" required>
+              </div>
+              <div class="form-group">
+                <label for="title">Insert Title(s)</label>
+                <input type="text" class="form-control" id="title" placeholder="Enter the article title(s) (comma separated)" required>
+              </div>
+              {% with is_csv = false %}{% include "submission-arachne-fields.html" %}{% endwith %}
+              <button type="button" onclick="submit_report(this)" class="btn btn-primary" data-token-field-id="#reportToken">Submit</button>
+            </form>
+          </div>
+          <div class="tab-pane fade" id="csv-div" role="tabpanel" aria-labelledby="csv-tab">{# Next tab: CSVs #}
+            <form>
+              <div>
+                <a class="">{# Give random/empty class so that bootstrap's css selector a:not([class]) does not match #}
+                  <i class="fas fa-paperclip" aria-hidden="true"></i>
+                  <input type="file" id="csv_file" accept=".csv" required>
+                </a>
+              </div>
+              {% with is_csv = true %}{% include "submission-arachne-fields.html" %}{% endwith %}
+              <button type="button" onclick="upload_file(this)" class="btn btn-primary" data-token-field-id="#reportTokenCSV">Upload CSV File</button>
+            </form>
+          </div>
+        </div>
+        {% if queue_set %}{# Display queue-message if a queue is set #}
+          <hr>
+          <small>Any reports which exceed the Queue limit will be dropped.</small>
+        {% endif %}
       </div>
-      <div class="form-group">
-        <label for="title">Insert Title(s)</label>
-        <input type="text" class="form-control" id="title" placeholder="Enter the article title(s) (comma separated)" required>
-      </div>
-      {% with is_csv = false %}{% include "submission-arachne-fields.html" %}{% endwith %}
-      <button type="button" onclick="submit_report(this)" class="btn btn-primary" data-token-field-id="#reportToken">Submit</button>
-    </form>
-  </div>
-  <div class="tab-pane fade" id="csv-div" role="tabpanel" aria-labelledby="csv-tab">{# Next tab: CSVs #}
-    <form>
-      <div>
-        <a class="">{# Give random/empty class so that bootstrap's css selector a:not([class]) does not match #}
-          <i class="fas fa-paperclip" aria-hidden="true"></i>
-          <input type="file" id="csv_file" accept=".csv" required>
-        </a>
-      </div>
-      {% with is_csv = true %}{% include "submission-arachne-fields.html" %}{% endwith %}
-      <button type="button" onclick="upload_file(this)" class="btn btn-primary" data-token-field-id="#reportTokenCSV">Upload CSV File</button>
-    </form>
+    </div>
   </div>
 </div>
-{% if queue_set %}{# Display queue-message if a queue is set #}
-  <hr>
-  <small>Any reports which exceed the Queue limit will be dropped.</small>
-{% endif %}
