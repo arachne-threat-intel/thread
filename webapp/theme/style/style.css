@@ -294,7 +294,7 @@ table {
   cursor: pointer;
 }
 
-#publicReportCheck, #publicReportCheckCSV {
+input[type="checkbox"].report-submission-checkbox {
   margin: 0.2rem;
   margin-top: 0.3rem;
 }

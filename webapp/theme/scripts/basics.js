@@ -163,8 +163,10 @@ function submit(data, submitButton) {
     // IDs of fields related to input of Thread token
     var tokenFieldID = $(submitButton).data("token-field-id");
     var checkboxID = $(tokenFieldID).data("paired-checkbox");
+    var consentCheckboxID = $(tokenFieldID).data("paired-consent-checkbox-id");
     // Check confirmation checkbox
-    if (!document.getElementById(checkboxID.replace("#", "")).reportValidity()) {
+    if (!document.getElementById(checkboxID.replace("#", "")).reportValidity()
+        || !document.getElementById(consentCheckboxID).reportValidity()) {
       return;
     }
     // Update request-data with token

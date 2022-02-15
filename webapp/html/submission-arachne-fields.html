@@ -10,15 +10,29 @@
       <label for="reportToken{{attr_suffix}}">Thread Token</label>
       <input type="text" class="form-control" id="reportToken{{attr_suffix}}" placeholder="Token for private report(s)"
              onchange="tokenFieldCheck(this)" data-paired-checkbox="#publicReportCheck{{attr_suffix}}"
+             data-paired-consent-checkbox-id="userConsentCheck{{attr_suffix}}"
              value="{% if token %}{{token}}{% endif %}">
     </div>
     {# Include the checkbox to acknowledge a public-report submission #}
     <div id="publicReportConf{{attr_suffix}}" {% if token %}hidden{% endif %}>
+      {# Need to have wrapper-div as .d-flex has !important display style so will clash with hidden property #}
       <div class="form-group d-flex">
-        <input type="checkbox" id="publicReportCheck{{attr_suffix}}"
+        <input type="checkbox" id="publicReportCheck{{attr_suffix}}" class="report-submission-checkbox"
                data-parent-div="#publicReportConf{{attr_suffix}}" {% if not token %}required{% endif %}>
-        <label for="publicReportCheck{{attr_suffix}}"><small>I confirm I am making the report(s) created from this submission <b>public</b>.</small></label>
+        <label for="publicReportCheck{{attr_suffix}}">
+          <small>I confirm I am making the report(s) created from this submission <b>public</b>.</small>
+        </label>
       </div>
+    </div>
+    {# Include the checkbox to confirm user-consent #}
+    <div class="form-group d-flex">
+      <input type="checkbox" id="userConsentCheck{{attr_suffix}}" class="report-submission-checkbox" required>
+      <label for="userConsentCheck{{attr_suffix}}">
+        <small>I consent to giving the information (in this submission) freely to Arachne Digital; I confirm that I have
+          the legal right to provide this information; and I acknowledge that the information will be viewable by Arachne
+          Digital and its customers.
+        </small>
+      </label>
     </div>
   {% endwith %}
 {% endif %}
