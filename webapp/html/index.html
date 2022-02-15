@@ -4,8 +4,8 @@
 {% block content %}
   <div class="container-fluid">
     <div class="row">
-      <nav class="col-md-2 d-none d-md-block bg-light sidebar">
-        {% if not is_local %}{# Display 'Viewing: username or Public' #}
+      {% if not is_local %}{# Display 'Viewing: username or Public' #}
+        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
           <div>
             <h6>
               <span><b>Viewing: {% if username %}{{username}}{% else %}Public{% endif %}</b></span>
@@ -22,11 +22,10 @@
               </form>
             {% endif %}
           </div>
-          <hr>
-        {% endif %}
+        </nav>
+      {% endif %}
+      <main role="main" class="ml-sm-auto px-4 {% if not is_local %}col-md-9 col-lg-10{% endif %}">
         {% include "submission-form.html" %}{# Add report-submission forms #}
-      </nav>
-      <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
         <div class="row flex-row flex-sm-nowrap py-3">
           {% for key, value in reports_by_status.items() %}{# Loop through each report status #}
             <div class="col">
