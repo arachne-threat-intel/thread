@@ -6,17 +6,19 @@
       {% set attr_suffix = "" %}
     {% endif %}
     {# Include the input box to enter a Thread token #}
-    <div class="form-group">
-      <label for="reportToken{{attr_suffix}}">Thread Token</label>
-      <input type="text" class="form-control" id="reportToken{{attr_suffix}}" placeholder="Token for private report(s)"
-             onchange="tokenFieldCheck(this)" data-paired-checkbox="#publicReportCheck{{attr_suffix}}"
-             data-paired-consent-checkbox-id="userConsentCheck{{attr_suffix}}"
-             value="{% if token %}{{token}}{% endif %}">
+    <div class="row">
+      <label for="reportToken{{attr_suffix}}" class="col-sm-2 col-form-label">Thread Token</label>
+      <div class="col-sm-10">
+        <input type="text" class="form-control" id="reportToken{{attr_suffix}}" placeholder="Token for private report(s)"
+               onchange="tokenFieldCheck(this)" data-paired-checkbox="#publicReportCheck{{attr_suffix}}"
+               data-paired-consent-checkbox-id="userConsentCheck{{attr_suffix}}"
+               value="{% if token %}{{token}}{% endif %}">
+      </div>
     </div>
     {# Include the checkbox to acknowledge a public-report submission #}
     <div id="publicReportConf{{attr_suffix}}" {% if token %}hidden{% endif %}>
       {# Need to have wrapper-div as .d-flex has !important display style so will clash with hidden property #}
-      <div class="form-group d-flex">
+      <div class="d-flex">
         <input type="checkbox" id="publicReportCheck{{attr_suffix}}" class="report-submission-checkbox"
                data-parent-div="#publicReportConf{{attr_suffix}}" {% if not token %}required{% endif %}>
         <label for="publicReportCheck{{attr_suffix}}">
@@ -25,7 +27,7 @@
       </div>
     </div>
     {# Include the checkbox to confirm user-consent #}
-    <div class="form-group d-flex">
+    <div class="d-flex">
       <input type="checkbox" id="userConsentCheck{{attr_suffix}}" class="report-submission-checkbox" required>
       <label for="userConsentCheck{{attr_suffix}}">
         <small>I consent to giving the information (in this submission) freely to Arachne Digital; I confirm that I have
