@@ -77,6 +77,11 @@ class RestService:
             self.queue_map[token] = []
         return self.queue_map[token]
 
+    def remove_report_from_queue_map(self, report):
+        """Function to remove given report from internal queue-map."""
+        queue = self.get_queue_for_user(token=report.get('token'))
+        queue.remove(report[URL])
+
     def clean_current_tasks(self):
         """Function to remove finished tasks from the current_tasks list."""
         for task in range(len(self.current_tasks)):  # check resources for finished tasks
@@ -438,6 +443,7 @@ class RestService:
         if original_html is None and newspaper_article is None:
             logging.error('Skipping report; could not download url ' + criteria[URL])
             await self.dao.update('reports', where=dict(uid=report_id), data=dict(error=self.dao.db_true_val))
+            self.remove_report_from_queue_map(criteria)
             return
 
         html_data = newspaper_article.text.replace('\n', '<br>')
@@ -475,8 +481,7 @@ class RestService:
         await self.dao.update('reports', where=dict(uid=report_id),
                               data=dict(current_status=ReportStatus.NEEDS_REVIEW.value))
         # Update the relevant queue for this user
-        queue = self.get_queue_for_user(token=criteria.get('token'))
-        queue.remove(criteria[URL])
+        self.remove_report_from_queue_map(criteria)
         logging.info('Finished analysing report ' + report_id)
 
     async def add_attack(self, request, criteria=None):
