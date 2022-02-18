@@ -10,7 +10,6 @@ import pandas as pd
 import re
 
 from aiohttp import web
-from contextlib import suppress
 from enum import Enum, unique
 from functools import partial
 from io import StringIO
@@ -173,15 +172,7 @@ class RestService:
             sen_id = criteria['sentence_id']
         except (KeyError, TypeError):
             return default_error
-        # Determine if sentence or image
-        sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
-        img_dict = await self.dao.get('original_html', dict(uid=sen_id))
-        # Get the report ID from either
-        report_id = None
-        with suppress(KeyError, IndexError):
-            report_id = sentence_dict[0]['report_uid']
-        with suppress(KeyError, IndexError):
-            report_id = img_dict[0]['report_uid']
+        report_id = await self.data_svc.get_report_id_from_sentence_id(sentence_id=sen_id)
         # Use this report ID to check permissions, determine its status and if we can continue
         await self.check_report_permission(request, report_id=report_id, action='delete-sentence')
         if not await self.check_report_status_multiple(
@@ -225,6 +216,7 @@ class RestService:
             await self.dao.update(
                 'reports', where=dict(uid=report_id),
                 data=dict(current_status=ReportStatus.NEEDS_REVIEW.value, error=self.dao.db_false_val))
+            self.seen_report_status[report_id] = ReportStatus.NEEDS_REVIEW.value
             return REST_SUCCESS
         else:
             # If unsuccessful: log this, change report status back to what it was and add error flag
@@ -248,11 +240,8 @@ class RestService:
             sen_id = request_data['sentence_id']
         except (KeyError, TypeError):
             raise web.HTTPBadRequest()
-        # Get the report sentence information for the sentence id
-        sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
-        try:
-            report_id = sentence_dict[0]['report_uid']
-        except (KeyError, IndexError):  # No valid sentence
+        report_id = await self.data_svc.get_report_id_from_sentence_id(sentence_id=sen_id)
+        if not report_id:
             raise web.HTTPBadRequest()
         # No further checks if local
         if self.is_local:
