@@ -22,6 +22,8 @@ from urllib.parse import urlparse
 
 # Abbreviated words for sentence-splitting
 ABBREVIATIONS = {'dr', 'vs', 'mr', 'mrs', 'ms', 'prof', 'inc', 'fig', 'e.g', 'i.e', 'u.s'}
+# Blocked image types
+BLOCKED_IMG_TYPES = {'gif', 'apng', 'webp', 'avif', 'mng', 'flif'}
 
 
 class WebService:
@@ -135,6 +137,9 @@ class WebService:
                             source = cur_img['src']
                         # All img tags should have a src attribute. In case this one doesn't, there is no image to save
                         except KeyError:
+                            continue
+                        # If no source was obtained or this image is a blocked filetype: continue
+                        if not source or any(source.lower().endswith(img_type) for img_type in BLOCKED_IMG_TYPES):
                             continue
                         img_dict = await self._match_and_construct_img(images, source)
                         if source not in seen_images:

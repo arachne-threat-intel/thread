@@ -7,6 +7,7 @@ import re
 import json
 import logging
 
+from contextlib import suppress
 from stix2 import TAXIICollectionSource, Filter
 from urllib.parse import quote
 
@@ -271,6 +272,21 @@ class DataService:
     async def get_technique_uids(self):
         """A function to obtain the list of attack IDs from the db."""
         return await self.dao.get_column_as_list(table='attack_uids', column='uid')
+
+    async def get_report_id_from_sentence_id(self, sentence_id=None):
+        """Function to retrieve the report ID from a sentence ID."""
+        if not sentence_id:
+            return None
+        # Determine if sentence or image
+        sentence_dict = await self.dao.get('report_sentences', dict(uid=sentence_id))
+        img_dict = await self.dao.get('original_html', dict(uid=sentence_id))
+        # Get the report ID from either
+        report_id = None
+        with suppress(KeyError, IndexError):
+            report_id = sentence_dict[0]['report_uid']
+        with suppress(KeyError, IndexError):
+            report_id = img_dict[0]['report_uid']
+        return report_id
 
     async def get_confirmed_attacks_for_sentence(self, sentence_id=''):
         """Function to retrieve confirmed-attack data for a sentence."""
