@@ -49,7 +49,8 @@ class WebAPI:
         """Function to call any required methods before the app is initialised and launched."""
         # We want nltk packs downloaded before startup; not run concurrently with startup
         await self.ml_svc.check_nltk_packs()
-        # Before the app starts up, prepare the queue of reports
+        # Before the app starts up, prepare the queue of reports and class-variables
+        await self.rest_svc.initialise_lists()
         await self.rest_svc.prepare_queue()
         # We want the list of attacks ready before the app starts
         self.attack_dropdown_list = await self.data_svc.get_techniques(get_parent_info=True)
