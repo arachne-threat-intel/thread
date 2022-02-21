@@ -35,17 +35,19 @@
   <div class="col reportSentencesDiv">
     {% for elmt in final_html %}
       {% if elmt.tag == 'img' %}
-        <img src="{{elmt.text}}" id="img{{elmt.uid}}" class="reportImage" onclick="sentenceContext('{{elmt.uid}}')"> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
-      {% elif elmt.tag == 'header' %}
-        <h3>{{elmt.text}}</h3>
-      {% elif elmt.tag == 'li' and elmt.found_status %}
-        <li class="elmtRelated{{elmt.uid}}"><span class="bg-warning report-sentence" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
-      {% elif elmt.tag == 'li' %}
-        <li class="elmtRelated{{elmt.uid}}"><span id="elmt{{elmt.uid}}" class="report-sentence" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span></li> <br class="elmtRelated{{elmt.uid}}">
-      {% elif elmt.found_status %}
-        <span class="bg-warning report-sentence" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
+        <img src="{{elmt.text}}" id="img{{elmt.uid}}" class="reportImage" onclick="sentenceContext('{{elmt.uid}}')">
       {% else %}
-        <span class="report-sentence" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">{{elmt.text}}</span> <br class="elmtRelated{{elmt.uid}}"><br class="elmtRelated{{elmt.uid}}">
+        {% if elmt.tag == 'li' %}<li class="elmtRelated{{elmt.uid}}">{% endif %}
+        {% if elmt.tag == 'header' %}<h3 class="elmtRelated{{elmt.uid}}">{% endif %}
+        <span class="report-sentence {% if elmt.found_status %}bg-warning{% endif %}" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">
+          {{elmt.text}}
+        </span>
+        {% if elmt.tag == 'header' %}</h3>{% endif %}
+        {% if elmt.tag == 'li' %}</li>{% endif %}
+      {% endif %}
+      <br class="elmtRelated{{elmt.uid}}">{# Initial space to separate sentences #}
+      {% if elmt.tag != 'li' and elmt.tag != 'header' %}{# Non-li's and non-headers need extra spacing #}
+        <br class="elmtRelated{{elmt.uid}}">
       {% endif %}
     {% endfor %}
   </div>

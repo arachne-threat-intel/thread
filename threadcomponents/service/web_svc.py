@@ -174,7 +174,7 @@ class WebService:
         seen_sentence_idxs = set()
         # Iterate through each html element to match it to its sentence and build final html
         for element in original_html:
-            if element['tag'] == 'img' or element['tag'] == 'header':
+            if element['tag'] == 'img':
                 final_element = await self._build_final_image_dict(element)
                 final_html.append(final_element)
                 # This isn't a sentence but reflect something has been added to final_html by adding -1
