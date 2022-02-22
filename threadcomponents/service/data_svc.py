@@ -84,8 +84,8 @@ class DataService:
 
     async def insert_attack_stix_data(self):
         """
-        Function to pull stix/taxii information and insert in to the local db
-        :return: status code
+        Function to retrieve ATT&CK data and insert it into the DB.
+        Further reading on approach: https://github.com/arachne-threat-intel/thread/pull/27#issuecomment-1047456689
         """
         logging.info('Downloading ATT&CK data from STIX/TAXII...')
         attack = {}
