@@ -4,19 +4,13 @@
 
 import os
 import re
+import requests
 import json
 import logging
 
 from contextlib import suppress
-from stix2 import TAXIICollectionSource, Filter
+from stix2 import Filter, MemoryStore
 from urllib.parse import quote
-
-try:
-    # This is the appropriate import for taxii-client v2.x; this might fail in older taxii-client versions
-    from taxii2client.v20 import Collection
-except ModuleNotFoundError:
-    # The original import statement used in case of error
-    from taxii2client import Collection
 
 # Text to set on attack descriptions where this originally was not set
 NO_DESC = 'No description provided'
@@ -82,20 +76,22 @@ class DataService:
         await self.dao.build(schema)
         await self.dao.build(copied_tables_schema)
 
-    async def insert_attack_stix_data(self):
+    async def insert_attack_data(self):
         """
         Function to retrieve ATT&CK data and insert it into the DB.
         Further reading on approach: https://github.com/arachne-threat-intel/thread/pull/27#issuecomment-1047456689
         """
-        logging.info('Downloading ATT&CK data from STIX/TAXII...')
+        logging.info('Downloading ATT&CK data from GitHub repo `mitre-attack/attack-stix-data`...')
         attack = {}
-        collection = Collection("https://cti-taxii.mitre.org/stix/collections/95ecc380-afe9-11e4-9b6c-751b66dd541e/")
-        tc_source = TAXIICollectionSource(collection)
+        domain = "enterprise-attack"
+        github_url = f"https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/{domain}/{domain}.json"
+        stix_json = requests.get(github_url).json()
+        ms = MemoryStore(stix_data=stix_json["objects"])
         filter_objs = {"techniques": Filter("type", "=", "attack-pattern"),
                        "groups": Filter("type", "=", "intrusion-set"), "malware": Filter("type", "=", "malware"),
                        "tools": Filter("type", "=", "tool"), "relationships": Filter("type", "=", "relationship")}
         for key in filter_objs:
-            attack[key] = tc_source.query(filter_objs[key])
+            attack[key] = ms.query(filter_objs[key])
         references = {}
 
         # add all of the patterns and dictionary keys/values for each technique and software

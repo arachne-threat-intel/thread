@@ -40,7 +40,7 @@ async def background_tasks(taxii_local=ONLINE_BUILD_SOURCE, build=False, json_fi
         await data_svc.reload_database()
         if taxii_local == ONLINE_BUILD_SOURCE:
             try:
-                await data_svc.insert_attack_stix_data()
+                await data_svc.insert_attack_data()
             except Exception as exc:
                 logging.critical('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
                                  'COULD NOT CONNECT TO TAXII SERVERS: {}\nPLEASE UTILIZE THE OFFLINE CAPABILITY FLAG '
