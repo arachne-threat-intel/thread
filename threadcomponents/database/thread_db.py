@@ -112,7 +112,7 @@ class ThreadDB(ABC):
         pass
 
     @abstractmethod
-    async def _execute_select(self, sql, parameters=None, single_col=False):
+    async def _execute_select(self, sql, parameters=None, single_col=False, on_fetch=None):
         """Method to connect to the db and execute an SQL SELECT query."""
         pass
 
@@ -203,6 +203,30 @@ class ThreadDB(ABC):
     async def get_column_as_list(self, table, column):
         """Method to return a column from a db table as a list."""
         return await self.raw_select('SELECT %s FROM %s' % (column, table), single_col=True)
+
+    async def get_dict_value_as_key(self, table, column_key, columns):
+        """Method to return a dictionary of results where the key is a column's value.
+           Ideally, we'd want to use Pivot tables, but you need to know the column-values in advance."""
+        def on_fetch(results):
+            # Use the column-value as the key rather than the column-name
+            converted = dict()
+            for ix in results:
+                temp_dict = dict(ix)
+                temp_key = temp_dict.pop(column_key)
+                converted[temp_key] = temp_dict
+            return converted
+        # We currently don't have a use-case for this and other clauses (WHERE, etc) so leaving as-is for now
+        sql = 'SELECT %s FROM ' + table
+        # Insert the columns in the SQL statement depending on its type
+        # Need to add the column-key to the query, so we get the values for that column
+        if isinstance(columns, str):
+            sql = sql % (columns + ', ' + column_key)
+        elif isinstance(columns, list):
+            columns.append(column_key)
+            sql = sql % ', '.join(columns)
+        else:
+            raise TypeError('Argument `columns` should be str or list.')
+        return await self._execute_select(sql, on_fetch=on_fetch)
 
     async def initialise_column_names(self):
         """Method to initialise the map used to store column names for the db tables."""

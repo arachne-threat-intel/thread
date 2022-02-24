@@ -134,7 +134,8 @@ class DataService:
         attack_data = references
         logging.info("Finished...now creating the database.")
 
-        cur_uids = await self.get_technique_uids()
+        cur_attacks = await self.dao.get_dict_value_as_key('attack_uids', 'uid', 'name')
+        cur_uids = list(cur_attacks.keys())
         for k, v in attack_data.items():
             if k not in cur_uids:
                 await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v.get('description', NO_DESC)),

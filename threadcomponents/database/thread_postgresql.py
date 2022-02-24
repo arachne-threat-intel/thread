@@ -142,7 +142,7 @@ class ThreadPostgreSQL(ThreadDB):
             return [desc[0] for desc in cursor.description]
         return self._connection_wrapper(cursor_select, cursor_factory=psycopg2.extras.DictCursor)
 
-    async def _execute_select(self, sql, parameters=None, single_col=False):
+    async def _execute_select(self, sql, parameters=None, single_col=False, on_fetch=None):
         """Implements ThreadDB._execute_select()"""
         def cursor_select(cursor):
             # Execute the SQL query with parameters or not
@@ -152,7 +152,10 @@ class ThreadPostgreSQL(ThreadDB):
                 cursor.execute(sql, parameters)
             # Return the rows as dictionaries
             rows = cursor.fetchall()
-            return [dict(ix) for ix in rows]
+            if callable(on_fetch):
+                return on_fetch(rows)
+            else:
+                return [dict(ix) for ix in rows]
         return self._connection_wrapper(cursor_select, cursor_factory=psycopg2.extras.DictCursor)
 
     async def _execute_insert(self, sql, data):
