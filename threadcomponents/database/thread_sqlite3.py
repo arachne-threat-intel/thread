@@ -42,8 +42,10 @@ class ThreadSQLite(ThreadDB):
             # Return the column names from the cursor description
             return [desc[0] for desc in cursor.description]
 
-    async def _execute_select(self, sql, parameters=None, single_col=False):
+    async def _execute_select(self, sql, parameters=None, single_col=False, on_fetch=None):
         """Implements ThreadDB._execute_select()"""
+        if single_col and on_fetch:
+            raise ValueError('Cannot request single-column and on_fetch transformations to be used at the same time.')
         with sqlite3.connect(self.database) as conn:
             conn.execute(ENABLE_FOREIGN_KEYS)
             # If we are returning a single column, we just want to retrieve the first part of the row (row[0])
@@ -56,8 +58,11 @@ class ThreadSQLite(ThreadDB):
             else:
                 cursor.execute(sql, parameters)
             rows = cursor.fetchall()
-            # Return the data as-is if returning a single column, else return the rows as dictionaries
-            return rows if single_col else [dict(ix) for ix in rows]
+            if callable(on_fetch):
+                return on_fetch(rows)
+            else:
+                # Return the data as-is if returning a single column, else return the rows as dictionaries
+                return rows if single_col else [dict(ix) for ix in rows]
 
     async def _execute_insert(self, sql, data):
         """Implements ThreadDB._execute_insert()"""
