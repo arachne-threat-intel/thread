@@ -135,7 +135,10 @@ class DataService:
         logging.info("Finished...now creating the database.")
 
         cur_attacks = await self.dao.get_dict_value_as_key('attack_uids', 'uid', 'name')
-        cur_uids = list(cur_attacks.keys())
+        cur_uids = set(cur_attacks.keys())
+        retrieved_uids = set(attack_data.keys())
+        added_attacks = retrieved_uids - cur_uids
+        inactive_attacks = cur_uids - retrieved_uids
         for k, v in attack_data.items():
             if k not in cur_uids:
                 await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v.get('description', NO_DESC)),
@@ -164,6 +167,12 @@ class DataService:
                     [await self.dao.insert_generate_uid('true_positives',
                                                         dict(attack_uid=k, true_positive=defang_text(x)))
                      for x in v['example_uses']]
+            else:
+                # If the attack is already in the DB, check the name hasn't changed; update if so
+                retrieved_name = (attack_data.get(k, dict())).get('name')
+                current_name = (cur_attacks.get(k, dict())).get('name')
+                if retrieved_name and (retrieved_name != current_name):
+                    await self.dao.update('attack_uids', where=dict(uid=k), data=dict(name=retrieved_name))
         logging.info('[!] DB Item Count: {}'.format(len(await self.dao.get('attack_uids'))))
 
     async def insert_attack_json_data(self, buildfile):
