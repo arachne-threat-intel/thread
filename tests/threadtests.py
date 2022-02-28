@@ -297,6 +297,8 @@ class TestReports(AioHTTPTestCase):
                                               queue_limit=random.randint(1, 20))
         services.update(rest_svc=cls.rest_svc_with_limit)
         cls.web_api_with_limit = WebAPI(services=services)
+        # Some test-attack data
+        cls.attacks = dict(d99999='Drain', f12345='Fire', f32451='Firaga')
 
     @classmethod
     def tearDownClass(cls):
@@ -310,9 +312,10 @@ class TestReports(AioHTTPTestCase):
         await self.db.build(self.schema)
         await self.db.build(self.backup_schema)
         # Insert some attack data
-        attack_1 = dict(uid='f12345', description='Fire spell costing 4MP', tid='T1562', name='Fire')
-        attack_2 = dict(uid='f32451', description='Stronger Fire spell costing 16MP', tid='T1562.004', name='Firaga')
-        attack_3 = dict(uid='d99999', description='Absorbs HP', tid='T1029', name='Drain')
+        a1_name, a2_name, a3_name = self.attacks.get('f12345'), self.attacks.get('f32451'), self.attacks.get('d99999')
+        attack_1 = dict(uid='f12345', description='Fire spell costing 4MP', tid='T1562', name=a1_name)
+        attack_2 = dict(uid='f32451', description='Stronger Fire spell costing 16MP', tid='T1562.004', name=a2_name)
+        attack_3 = dict(uid='d99999', description='Absorbs HP', tid='T1029', name=a3_name)
         for attack in [attack_1, attack_2, attack_3]:
             # Ignoring Integrity Error in case other test case already has inserted this data (causing duplicate UIDs)
             with suppress(sqlite3.IntegrityError):
@@ -488,7 +491,8 @@ class TestReports(AioHTTPTestCase):
         sen1 = 'When Creating Test Data...'
         sen2 = 'i. It can be quite draining'
         html = [{'html': sen1, 'text': sen1, 'tag': 'p', 'ml_techniques_found': [], 'res_techniques_found': []},
-                {'html': sen2, 'text': sen2, 'tag': 'li', 'ml_techniques_found': ['Drain'], 'res_techniques_found': []}]
+                {'html': sen2, 'text': sen2, 'tag': 'li', 'ml_techniques_found': [('d99999', 'Drain')],
+                 'res_techniques_found': []}]
         # The result of the mapping function (no html, no Article object)
         map_result = None, None
         if not fail_map_html:
@@ -498,7 +502,7 @@ class TestReports(AioHTTPTestCase):
             map_result = html, mocked_article
         # Patches for when RestService.start_analysis() is called
         self.create_patch(target=WebService, attribute='map_all_html', return_value=map_result)
-        self.create_patch(target=DataService, attribute='ml_reg_split', return_value=([], ['Fire', 'Firaga', 'Drain']))
+        self.create_patch(target=DataService, attribute='ml_reg_split', return_value=([], list(self.attacks.items())))
         self.create_patch(target=MLService, attribute='build_pickle_file', return_value=dict())
         self.create_patch(target=MLService, attribute='analyze_html', return_value=html)
 

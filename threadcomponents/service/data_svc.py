@@ -173,6 +173,15 @@ class DataService:
                 current_name = (cur_attacks.get(k, dict())).get('name')
                 if retrieved_name and (retrieved_name != current_name):
                     await self.dao.update('attack_uids', where=dict(uid=k), data=dict(name=retrieved_name))
+                    # Update the similar-words table if we're updating the attack-entry
+                    for name in [retrieved_name, current_name]:
+                        if name:  # proceed if there is a value
+                            # Check an attack doesn't already have a similar-word with this name
+                            db_criteria = dict(attack_uid=k, similar_word=name)
+                            stored = await self.dao.get('similar_words', equal=db_criteria)
+                            # If not, update the attack's similar-words to include this name
+                            if not stored:
+                                await self.dao.insert_generate_uid('similar_words', db_criteria)
         logging.info('[!] DB Item Count: {}'.format(len(await self.dao.get('attack_uids'))))
 
     async def insert_attack_json_data(self, buildfile):
@@ -447,7 +456,7 @@ class DataService:
         for k, v in techniques.items():
             try:
                 if len(v['example_uses']) > 8:
-                    list_of_techs.append(v['name'])
+                    list_of_techs.append((v['id'], v['name']))
                 else:
                     list_of_legacy.append(v['id'])
             except:

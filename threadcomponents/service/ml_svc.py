@@ -23,14 +23,14 @@ class MLService:
         self.dao = dao
         self.dir_prefix = dir_prefix
 
-    async def build_models(self, tech_name, techniques, true_negatives):
+    async def build_models(self, tech_id, tech_name, techniques, true_negatives):
         """Function to build Logistic Regression Classification models based off of the examples provided."""
         lst1, lst2, false_list, sampling = [], [], [], []
         getuid = ''
         len_truelabels = 0
 
         for k, v in techniques.items():
-            if v['name'] == tech_name:
+            if v['id'] == tech_id:
                 for i in v['example_uses']:
                     lst1.append(await self.web_svc.tokenize(i))
                     lst2.append(True)
@@ -75,7 +75,7 @@ class MLService:
         logreg = LogisticRegression(max_iter=2500, solver='lbfgs')
         logreg.fit(X_train, y_train)
 
-        logging.info('{} - {}'.format(tech_name, logreg.score(X_test, y_test)))
+        logging.info('{}, {} - {}'.format(tech_id, tech_name, logreg.score(X_test, y_test)))
         return (cv, logreg)
 
     async def analyze_document(self, cv, logreg, sentences):
@@ -104,10 +104,10 @@ class MLService:
         count = 1
         logging.info('Building Classification Models.. This could take anywhere from ~30-60+ minutes. '
                      'Please do not close terminal.')
-        for i in list_of_techs:
+        for tech_id, tech_name in list_of_techs:
             logging.info('[#] Building.... {}/{}'.format(count, total))
             count += 1
-            model_dict[i] = await self.build_models(i, techniques, true_negatives)
+            model_dict[tech_id] = await self.build_models(tech_id, tech_name, techniques, true_negatives)
         logging.info('[#] Saving models to pickled file: ' + os.path.basename(dict_loc))
         # Save the newly-built models
         with open(dict_loc, 'wb') as saved_dict:
@@ -142,13 +142,13 @@ class MLService:
         return None
 
     async def analyze_html(self, list_of_techs, model_dict, list_of_sentences):
-        for i in list_of_techs:
+        for tech_id, tech_name in list_of_techs:
             # If an older model_dict has been loaded, its keys may be out of sync with list_of_techs
             try:
-                cv, logreg = model_dict[i]
+                cv, logreg = model_dict[tech_id]
             except KeyError:  # Report to user if a model can't be retrieved
-                logging.warning('Technique \'' + i + '\' has no model to analyse with. You can try deleting/moving '
-                                                     'models/model_dict.p to trigger re-build of models.')
+                logging.warning('Technique `' + tech_id + ', ' + tech_name + '` has no model to analyse with. '
+                                + 'You can try deleting/moving models/model_dict.p to trigger re-build of models.')
                 # Skip this technique and move onto the next one
                 continue
             final_df = await self.analyze_document(cv, logreg, list_of_sentences)
@@ -156,7 +156,7 @@ class MLService:
             for vals in final_df['category']:
                 await asyncio.sleep(0.001)
                 if vals == True:
-                    list_of_sentences[count]['ml_techniques_found'].append(i)
+                    list_of_sentences[count]['ml_techniques_found'].append((tech_id, tech_name))
                 count += 1
         return list_of_sentences
 
@@ -164,22 +164,22 @@ class MLService:
         sentence_id = await self.dao.insert_with_backup(
             'report_sentences', dict(report_uid=report_id, text=sentence['text'], html=sentence['html'],
                                      sen_index=sentence_index, found_status=self.dao.db_true_val))
-        for technique in sentence['ml_techniques_found']:
-            attack_uid = await self.dao.get('attack_uids', dict(name=technique))
-            # If the attack cannot be found via the 'name' column, try the 'tid' column
+        for technique_tid, technique_name in sentence['ml_techniques_found']:
+            attack_uid = await self.dao.get('attack_uids', dict(tid=technique_tid))
+            # If the attack cannot be found via the 'tid' column, try the 'name' column
             if not attack_uid:
-                attack_uid = await self.dao.get('attack_uids', dict(tid=technique))
+                attack_uid = await self.dao.get('attack_uids', dict(name=technique_name))
             # If the attack has still not been retrieved, try searching the similar_words table
             if not attack_uid:
-                similar_word = await self.dao.get('similar_words', dict(similar_word=technique))
+                similar_word = await self.dao.get('similar_words', dict(similar_word=technique_name))
                 # If a similar word was found, use its attack_uid to lookup the attack_uids table
                 if similar_word and similar_word[0] and similar_word[0]['attack_uid']:
                     attack_uid = await self.dao.get('attack_uids', dict(uid=similar_word[0]['attack_uid']))
             # If the attack has still not been retrieved, report to user that this cannot be saved against the sentence
             if not attack_uid:
-                logging.warning(' '.join(('Sentence ID:', str(sentence_id), 'ML Technique:', technique, '- Technique '
-                                          + 'could not be retrieved from the database; cannot save this technique\'s '
-                                            'association with the sentence.')))
+                logging.warning(' '.join(('Sentence ID:', str(sentence_id), 'ML Technique:', technique_tid,
+                                          technique_name, '- Technique could not be retrieved from the database; '
+                                          + 'cannot save this technique\'s association with the sentence.')))
                 # Skip this technique and continue with the next one
                 continue
             attack_technique = attack_uid[0]['uid']
