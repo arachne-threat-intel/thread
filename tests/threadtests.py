@@ -503,7 +503,7 @@ class TestReports(AioHTTPTestCase):
         # Patches for when RestService.start_analysis() is called
         self.create_patch(target=WebService, attribute='map_all_html', return_value=map_result)
         self.create_patch(target=DataService, attribute='ml_reg_split', return_value=([], list(self.attacks.items())))
-        self.create_patch(target=MLService, attribute='build_pickle_file', return_value=dict())
+        self.create_patch(target=MLService, attribute='build_pickle_file', return_value=(False, dict()))
         self.create_patch(target=MLService, attribute='analyze_html', return_value=html)
 
         # Update relevant queue and insert report in DB as these tasks would have been done before submission

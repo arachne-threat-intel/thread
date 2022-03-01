@@ -40,11 +40,11 @@ async def background_tasks(taxii_local=ONLINE_BUILD_SOURCE, build=False, json_fi
         await data_svc.reload_database()
         if taxii_local == ONLINE_BUILD_SOURCE:
             try:
-                await data_svc.insert_attack_data()
+                await rest_svc.insert_attack_data()
             except Exception as exc:
                 logging.critical('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-                                 'COULD NOT CONNECT TO TAXII SERVERS: {}\nPLEASE UTILIZE THE OFFLINE CAPABILITY FLAG '
-                                 '"-FF" FOR OFFLINE DATABASE BUILDING\n'
+                                 'COULD NOT CONNECT TO TAXII SERVERS: {}\nPLEASE UPDATE CONFIG `taxii-local` '
+                                 'FOR OFFLINE DATABASE BUILDING\n'
                                  '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'.format(exc))
                 sys.exit()
         elif taxii_local == OFFLINE_BUILD_SOURCE and json_file:
@@ -124,7 +124,7 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
         conf_build = config.get('build', True)
         host = config.get('host', '0.0.0.0')
         port = config.get('port', 9999)
-        taxii_local = config.get('taxii-local', 'taxii-server')
+        taxii_local = config.get('taxii-local', ONLINE_BUILD_SOURCE)
         js_src = config.get('js-libraries', 'js-online-src')
         max_tasks = config.get('max-analysis-tasks', 1)
         queue_limit = config.get('queue_limit', 0)

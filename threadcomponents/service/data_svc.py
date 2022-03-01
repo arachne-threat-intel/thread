@@ -139,6 +139,7 @@ class DataService:
         retrieved_uids = set(attack_data.keys())
         added_attacks = retrieved_uids - cur_uids
         inactive_attacks = cur_uids - retrieved_uids
+        name_changes = []
         for k, v in attack_data.items():
             if k not in cur_uids:
                 await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v.get('description', NO_DESC)),
@@ -173,6 +174,7 @@ class DataService:
                 current_name = (cur_attacks.get(k, dict())).get('name')
                 if retrieved_name and (retrieved_name != current_name):
                     await self.dao.update('attack_uids', where=dict(uid=k), data=dict(name=retrieved_name))
+                    name_changes.append((k, retrieved_name, current_name))
                     # Update the similar-words table if we're updating the attack-entry
                     for name in [retrieved_name, current_name]:
                         if name:  # proceed if there is a value
@@ -183,6 +185,7 @@ class DataService:
                             if not stored:
                                 await self.dao.insert_generate_uid('similar_words', db_criteria)
         logging.info('[!] DB Item Count: {}'.format(len(await self.dao.get('attack_uids'))))
+        return added_attacks, inactive_attacks, name_changes
 
     async def insert_attack_json_data(self, buildfile):
         """
@@ -451,7 +454,7 @@ class DataService:
         else:
             return title
 
-    async def ml_reg_split(self, techniques):
+    def ml_reg_split(self, techniques):
         list_of_legacy, list_of_techs = [], []
         for k, v in techniques.items():
             try:

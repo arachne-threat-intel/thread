@@ -22,8 +22,10 @@ class MLService:
         self.web_svc = web_svc
         self.dao = dao
         self.dir_prefix = dir_prefix
+        # Specify the location of the models file
+        self.dict_loc = os.path.join(self.dir_prefix, 'threadcomponents', 'models', 'model_dict.p')
 
-    async def build_models(self, tech_id, tech_name, techniques, true_negatives):
+    async def build_models(self, tech_id, tech_name, techniques, true_negatives=None):
         """Function to build Logistic Regression Classification models based off of the examples provided."""
         lst1, lst2, false_list, sampling = [], [], [], []
         getuid = ''
@@ -88,16 +90,16 @@ class MLService:
         df2['category'] = y_pred.tolist()
         return df2
 
-    async def build_pickle_file(self, list_of_techs, techniques, true_negatives, force=False):
+    async def build_pickle_file(self, list_of_techs, techniques, force=False):
         """Returns the classification models for the data provided."""
-        # Specify the location of the models file
-        dict_loc = os.path.join(self.dir_prefix, 'threadcomponents', 'models', 'model_dict.p')
+        # Have the models been rebuilt on calling this method?
+        rebuilt = False
         # If we are not forcing the models to be rebuilt, obtain the previously used models
         if not force:
-            model_dict = self.get_pre_saved_models(dict_loc)
+            model_dict = self.get_pre_saved_models()
             # If the models were obtained successfully, return them
             if model_dict:
-                return model_dict
+                return rebuilt, model_dict
         # Else proceed with building the models
         model_dict = {}
         total = len(list_of_techs)
@@ -107,17 +109,32 @@ class MLService:
         for tech_id, tech_name in list_of_techs:
             logging.info('[#] Building.... {}/{}'.format(count, total))
             count += 1
-            model_dict[tech_id] = await self.build_models(tech_id, tech_name, techniques, true_negatives)
-        logging.info('[#] Saving models to pickled file: ' + os.path.basename(dict_loc))
+            model_dict[tech_id] = await self.build_models(tech_id, tech_name, techniques)
+        rebuilt = True
+        logging.info('[#] Saving models to pickled file: ' + os.path.basename(self.dict_loc))
         # Save the newly-built models
-        with open(dict_loc, 'wb') as saved_dict:
+        with open(self.dict_loc, 'wb') as saved_dict:
             pickle.dump(model_dict, saved_dict)
         logging.info('[#] Finished saving models.')
-        return model_dict
+        return rebuilt, model_dict
 
-    @staticmethod
-    def get_pre_saved_models(dictionary_location):
+    async def update_pickle_file(self, new_techs, list_of_techs, techniques):
+        """Updates the current classification models with the new attacks."""
+        # We are adding attacks and names are only used for logging: here, we don't have the names so use a desc string
+        attack_name = 'New attack added'
+        rebuilt, current_dict = await self.build_pickle_file(list_of_techs, techniques)
+        if rebuilt:
+            return  # models and pickle file include new attacks
+        # If we retrieved the current models and they were not rebuilt, add the new attack-models to the pickle file
+        for tech in new_techs:
+            current_dict[tech] = await self.build_models(tech, attack_name, techniques)
+        with open(self.dict_loc, 'wb') as saved_dict:
+            pickle.dump(current_dict, saved_dict)
+
+    def get_pre_saved_models(self, dictionary_location=None):
         """Function to retrieve previously-saved models via pickle."""
+        if not dictionary_location:
+            dictionary_location = self.dict_loc
         # Check the given location is a valid filepath
         if os.path.isfile(dictionary_location):
             logging.info('[#] Loading models from pickled file: ' + os.path.basename(dictionary_location))

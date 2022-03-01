@@ -47,6 +47,7 @@ class RestService:
         self.ml_svc = ml_svc
         self.reg_svc = reg_svc
         self.is_local = self.web_svc.is_local
+        self.update_attacks = False
         self.queue_map = dict()  # map each user to their own queue
         try:
             self.queue = asyncio.Queue()  # task queue
@@ -58,15 +59,28 @@ class RestService:
         self.current_tasks = []  # tasks that are currently being executed
         # A dictionary to keep track of report statuses we have seen
         self.seen_report_status = dict()
-        # The offline attack dictionary TODO check and update differences from db (different attack names)
-        attack_dict_loc = os.path.join(dir_prefix, 'threadcomponents', 'models', 'attack_dict.json')
-        with open(attack_dict_loc, 'r', encoding='utf_8') as attack_dict_f:
-            self.json_tech = json.load(attack_dict_f)
-        self.list_of_legacy, self.list_of_techs = [], []
+        # The offline attack dictionary
+        self.attack_dict_loc = os.path.join(dir_prefix, 'threadcomponents', 'models', 'attack_dict.json')
+        self.json_tech, self.list_of_legacy, self.list_of_techs = {}, [], []
+        self.set_internal_attack_data()
 
-    async def initialise_lists(self):
-        """Function to initialise internal lists."""
-        self.list_of_legacy, self.list_of_techs = await self.data_svc.ml_reg_split(self.json_tech)
+    def set_internal_attack_data(self):
+        """Function to set the class variables holding attack data."""
+        with open(self.attack_dict_loc, 'r', encoding='utf_8') as attack_dict_f:
+            self.json_tech = json.load(attack_dict_f)
+        self.list_of_legacy, self.list_of_techs = self.data_svc.ml_reg_split(self.json_tech)
+
+    async def insert_attack_data(self):
+        """Function to fetch and update the attack data."""
+        added_attacks, inactive_attacks, name_changes = await self.data_svc.insert_attack_data()
+        if added_attacks:
+            logging.info('Consider adding example uses for %s to %s' % (', '.join(added_attacks), self.attack_dict_loc))
+        if name_changes:
+            logging.info('The following name changes have occurred in the DB but not in %s' % self.attack_dict_loc)
+            for tech_id, new_name, old_name in name_changes:
+                logging.info('%s: %s (previously `%s`)' % (tech_id, new_name, old_name))
+        # If we have fetched attack data online, set our flag to update this data regularly
+        self.update_attacks = True
 
     @staticmethod
     def get_status_enum():
@@ -443,10 +457,9 @@ class RestService:
         html_data = newspaper_article.text.replace('\n', '<br>')
         article = dict(title=criteria['title'], html_text=html_data)
 
-        true_negatives = await self.ml_svc.get_true_negs()
         # Here we build the sentence dictionary
         html_sentences = self.web_svc.tokenize_sentence(article['html_text'])
-        model_dict = await self.ml_svc.build_pickle_file(self.list_of_techs, self.json_tech, true_negatives)
+        rebuilt, model_dict = await self.ml_svc.build_pickle_file(self.list_of_techs, self.json_tech)
 
         ml_analyzed_html = await self.ml_svc.analyze_html(self.list_of_techs, model_dict, html_sentences)
         regex_patterns = await self.dao.get('regex_patterns')
