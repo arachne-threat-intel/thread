@@ -505,6 +505,10 @@ class RestService:
                                                           attack_id=attack_id, attack_dict=attack_dict)
         if checks is not None:
             return checks
+        a_name, tid, inactive = attack_dict[0]['name'], attack_dict[0]['tid'], attack_dict[0]['inactive']
+        if inactive:
+            return dict(error="%s, '%s' is not in the current Att%%ck framework. " % (tid, a_name) +
+                              'Please contact us if this is incorrect.', alert_user=1)
         # Get the sentence to insert by removing html markup
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
         # A flag to determine if the model initially predicted this attack for this sentence
@@ -528,9 +532,8 @@ class RestService:
             # Insert new row in the report_sentence_hits database table to indicate a new confirmed technique
             # This is needed to ensure that requests to get all confirmed techniques works correctly
             sql_commands.append(await self.dao.insert_generate_uid(
-                'report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id, attack_tid=attack_dict[0]['tid'],
-                                             attack_technique_name=attack_dict[0]['name'],
-                                             report_uid=sentence_dict[0]['report_uid'],
+                'report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id, attack_tid=tid,
+                                             attack_technique_name=a_name, report_uid=sentence_dict[0]['report_uid'],
                                              confirmed=self.dao.db_true_val), return_sql=True))
         # As this will now be either a true positive or false negative, ensure it is not a false positive too
         sql_commands.append(await self.dao.delete('false_positives', dict(sentence_id=sen_id, attack_uid=attack_id),

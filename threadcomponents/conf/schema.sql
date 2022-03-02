@@ -4,6 +4,8 @@
 
 CREATE TABLE IF NOT EXISTS attack_uids (
     uid VARCHAR(60) PRIMARY KEY,
+    -- If this is an old attack (currently not in the Mitre Att&ck framework)
+    inactive BOOLEAN DEFAULT 0,
     -- Attack description
     description TEXT,
     -- Attack ID in the form of T<Number>

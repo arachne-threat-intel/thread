@@ -352,7 +352,7 @@ class WebAPI:
             if sen_id not in seen_sentences:
                 dd['content'].append(sen_text)
                 seen_sentences.add(sen_id)
-            if sentence['attack_tid'] and sentence['active_hit']:
+            if sentence['attack_tid'] and sentence['active_hit'] and not sentence['inactive_attack']:
                 # Append any attack for this sentence to the table; prefix parent-tech for any sub-technique
                 tech_name, parent_tech = sentence['attack_technique_name'], sentence.get('attack_parent_name')
                 tech_name = "%s: %s" % (parent_tech, tech_name) if parent_tech else tech_name

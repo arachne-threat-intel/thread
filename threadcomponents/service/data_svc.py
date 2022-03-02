@@ -39,6 +39,7 @@ class DataService:
         str_pos = self.dao.db_func(self.dao.db.FUNC_STR_POS)
         # SQL query to obtain attack records where sub-techniques are returned with their parent-technique info
         # Currently omits 'description' as it is large and is not used in the front-end (this can be added here though)
+        # Also omits any 'inactive' attacks
         self.SQL_PAR_ATTACK = (
             # Use a temporary table 'parent_tids' to return attacks which are sub-techniques (i.e. tid is Txxx.xx)
             # Use the substring method to save in the parent_tid column as the Txxx part of the tid (without the .xx)
@@ -46,16 +47,18 @@ class DataService:
             "(SELECT uid, name, tid, SUBSTR(tid, 0, %s(tid, '.'))" % str_pos + " "
             # %% in LIKE because % messes up parameters in psycopg (https://github.com/psycopg/psycopg2/issues/827)
             # LIKE '%.%' = '%%.%%' so this does not affect other DB engines
-            "FROM attack_uids WHERE tid LIKE '%%.%%') "
+            "FROM attack_uids WHERE tid LIKE '%%.%%' AND " + ("inactive = %s" % self.dao.db_false_val) + ") "
             # With parent_tids, select all fields from it and the name of the parent_tid from the attack_uids table
             # Need to use `AS parent_name` to not confuse it with parent_tids.name
             # Using an INNER JOIN because we only care about returning sub-techniques here
             "SELECT parent_tids.*, attack_uids.name AS parent_name FROM "
-            "(attack_uids INNER JOIN parent_tids ON attack_uids.tid = parent_tids.parent_tid) "
+            "(attack_uids INNER JOIN parent_tids ON attack_uids.tid = parent_tids.parent_tid) " +
+            "WHERE attack_uids.inactive = %s" % self.dao.db_false_val + " "
             # Union the sub-tech query with one for all other techniques (where the tid does not contain a '.')
             # Need to pass in two NULLs so the number of columns for the UNION is the same
             # (and parent_name & parent_tid doesn't exist for these techniques which are not sub-techniques)
-            "UNION SELECT uid, name, tid, NULL, NULL FROM attack_uids WHERE tid NOT LIKE '%%.%%'")
+            "UNION SELECT uid, name, tid, NULL, NULL FROM attack_uids WHERE tid NOT LIKE '%%.%%' " +
+            "AND inactive = %s" % self.dao.db_false_val)
         # A prefix SQL statement to use with queries that want the full attack info
         self.SQL_WITH_PAR_ATTACK = \
             'WITH %s(uid, name, tid, parent_tid, parent_name) AS (%s) ' % (FULL_ATTACK_INFO, self.SQL_PAR_ATTACK)
@@ -134,7 +137,7 @@ class DataService:
         attack_data = references
         logging.info("Finished...now creating the database.")
 
-        cur_attacks = await self.dao.get_dict_value_as_key('attack_uids', 'uid', 'name')
+        cur_attacks = await self.dao.get_dict_value_as_key('attack_uids', 'uid', ['name', 'inactive'])
         cur_uids = set(cur_attacks.keys())
         retrieved_uids = set(attack_data.keys())
         added_attacks = retrieved_uids - cur_uids
@@ -171,7 +174,8 @@ class DataService:
             else:
                 # If the attack is already in the DB, check the name hasn't changed; update if so
                 retrieved_name = (attack_data.get(k, dict())).get('name')
-                current_name = (cur_attacks.get(k, dict())).get('name')
+                current_attack_data = cur_attacks.get(k, dict())
+                current_name = current_attack_data.get('name')
                 if retrieved_name and (retrieved_name != current_name):
                     await self.dao.update('attack_uids', where=dict(uid=k), data=dict(name=retrieved_name))
                     name_changes.append((k, retrieved_name, current_name))
@@ -184,6 +188,9 @@ class DataService:
                             # If not, update the attack's similar-words to include this name
                             if not stored:
                                 await self.dao.insert_generate_uid('similar_words', db_criteria)
+                # Confirm this attack is considered active
+                if current_attack_data.get('inactive'):
+                    await self.dao.update('attack_uids', where=dict(uid=k), data=dict(inactive=self.dao.db_false_val))
         logging.info('[!] DB Item Count: {}'.format(len(await self.dao.get('attack_uids'))))
         return added_attacks, inactive_attacks, name_changes
 
@@ -193,7 +200,7 @@ class DataService:
         :param buildfile: Enterprise attack json file to build from
         :return: nil
         """
-        cur_uids = await self.get_technique_uids()
+        cur_uids = await self.dao.get_column_as_list(table='attack_uids', column='uid')
         logging.info('[#] {} Existing items in the DB'.format(len(cur_uids)))
         with open(buildfile, 'r') as infile:
             attack_dict = json.load(infile)
@@ -268,12 +275,16 @@ class DataService:
             # The relevant report-sentence fields we want
             "SELECT report_sentences.*, report_sentence_hits.attack_tid, report_sentence_hits.attack_technique_name, "
             # We want to add any sub-technique's parent-technique name
-            "report_sentence_hits.active_hit, " + FULL_ATTACK_INFO + ".parent_name AS attack_parent_name "
+            "report_sentence_hits.active_hit, " + FULL_ATTACK_INFO + ".parent_name AS attack_parent_name, "
+            # LEFT (not INNER) JOINS with FULL_ATTACK_INFO may have 'inactive' data; return 'inactive' from attack_uids
+            "attack_uids.inactive AS inactive_attack "
             # The first join for the report data; LEFT OUTER JOIN because we want all report sentences
-            "FROM ((report_sentences LEFT OUTER JOIN report_sentence_hits "
+            "FROM (((report_sentences LEFT OUTER JOIN report_sentence_hits "
             "ON report_sentences.uid = report_sentence_hits.sentence_id) "
             # A second join for the full attack table; still using a LEFT JOIN
             "LEFT JOIN " + FULL_ATTACK_INFO + " ON " + FULL_ATTACK_INFO + ".uid = report_sentence_hits.attack_uid)"
+            # FULL_ATTACK_INFO omits 'inactive' flag; join so we have this info
+            "LEFT JOIN attack_uids ON report_sentence_hits.attack_uid = attack_uids.uid)"
             # Finish with the WHERE clause stating which report this is for
             "WHERE report_sentences.report_uid = %s" % self.dao.db_qparam + " "
             # Need to order by for JOIN query (otherwise sentences can be out of order if attacks are updated)
@@ -283,13 +294,9 @@ class DataService:
     async def get_techniques(self, get_parent_info=False):
         # If we are not getting the parent-attack info (for sub-techniques), then return all results as normal
         if not get_parent_info:
-            return await self.dao.get('attack_uids')
+            return await self.dao.get('attack_uids', equal=dict(inactive=self.dao.db_false_val))
         # Else run the SQL query which returns the parent info
         return await self.dao.raw_select(self.SQL_PAR_ATTACK)
-
-    async def get_technique_uids(self):
-        """A function to obtain the list of attack IDs from the db."""
-        return await self.dao.get_column_as_list(table='attack_uids', column='uid')
 
     async def get_report_id_from_sentence_id(self, sentence_id=None):
         """Function to retrieve the report ID from a sentence ID."""

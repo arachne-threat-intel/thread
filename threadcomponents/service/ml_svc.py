@@ -202,6 +202,7 @@ class MLService:
             attack_technique = attack_uid[0]['uid']
             attack_technique_name = '{} (m)'.format(attack_uid[0]['name'])
             attack_tid = attack_uid[0]['tid']
+            # Allow 'inactive' attacks to be recorded: they will be filtered out when viewing/exporting a report
             await self.dao.insert_with_backup(
                 'report_sentence_hits',
                 dict(sentence_id=sentence_id, attack_uid=attack_technique, attack_technique_name=attack_technique_name,
