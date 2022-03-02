@@ -167,53 +167,43 @@ class WebService:
         return results, a
 
     async def build_final_html(self, original_html, sentences):
+        """Function to merge and return html and sentence data for outputting a report: html and sentences should be
+        in order of elem_index and sen_index respectively."""
         final_html = []
-        # A list where final_html_sentence_idxs[x] = y means final_html[x] contains data for sentences[y]
-        final_html_sentence_idxs = []
-        # Set for all the sentence index positions we have added to final_html
-        seen_sentence_idxs = set()
-        # Iterate through each html element to match it to its sentence and build final html
+        # The index we are up to for iterating the html list
+        latest_html_idx = 0
+        # The images added to the final-merged-html
+        added_image_ids = set()
+        # Looping through each sentence...
+        for sentence_data in sentences:
+            found_sentence = False  # flag to track if found in html-list
+            final_html_subset = []  # temp-list that may be added to final_html
+            temp_added_image_ids = set()  # temp-set of images potentially added to final_html
+            # Loop through html-list from last-matching position
+            for e_idx, element in enumerate(original_html[latest_html_idx:]):
+                # If there is an image, add it to temp-lists to potentially be added
+                if element['tag'] == 'img' and element['uid'] not in added_image_ids:
+                    final_html_subset.append(self._build_final_image_dict(element))
+                    temp_added_image_ids.add(element['uid'])
+                # If we found the sentence, complete the temp-list with this sentence and break from this loop
+                elif sentence_data['html'] in element['text']:
+                    final_html_subset.append(self._build_final_html_text(sentence_data, element['tag']))
+                    latest_html_idx = latest_html_idx + e_idx
+                    found_sentence = True
+                    break
+            # If the sentence was found, the temp list can be added to the final list; update added_image_ids too
+            if found_sentence:
+                final_html += final_html_subset
+                added_image_ids.update(temp_added_image_ids)
+            # If the sentence was not found, add it as a <p> to final list to preserve order of the sentences
+            # Disregard any images (in final_html_subset) as this may be out of order
+            else:
+                final_html.append(self._build_final_html_text(sentence_data, 'p'))
+        # Just in case we missed any images, add them at the end
         for element in original_html:
-            if element['tag'] == 'img':
-                final_element = await self._build_final_image_dict(element)
-                final_html.append(final_element)
-                # This isn't a sentence but reflect something has been added to final_html by adding -1
-                final_html_sentence_idxs.append(-1)
-                continue
-            # element is a full html element, can contain multiple lines
-            # separate by each sentence
-            html_sentences = self.tokenizer_sen.tokenize(element['text'])
-            for single_sentence in html_sentences:
-                # Use first few words to find matches amongst the sentences list
-                words = single_sentence.split(' ')
-                hint = words[0] + ' ' + words[1] + ' ' + words[2] if len(words) > 2 else words[0]
-                # Iterate through sentences to find if the hint is in it and the sentence is one not added before
-                for s_idx, sentence in enumerate(sentences):
-                    if hint in sentence['text'] and s_idx not in seen_sentence_idxs:
-                        final_element = self._build_final_html_text(sentence, single_sentence, element['tag'])
-                        final_html.append(final_element)
-                        # Make note of the index position in sentences has been added to final_html
-                        final_html_sentence_idxs.append(s_idx)
-                        seen_sentence_idxs.add(s_idx)
-                        break
-        # Before finishing, we can add any missing sentences
-        # All possible sentence index positions
-        all_sentence_idxs = set(range(len(sentences)))
-        # Missing position positions = all minus seen
-        missing_sentence_idxs = sorted(all_sentence_idxs - seen_sentence_idxs)
-        # Go through each missing index position
-        for sen_idx in missing_sentence_idxs:
-            try:
-                # Get the position in final_html of sentences[sen_idx-1] and +1 to add after previous sentence
-                insert_pos = final_html_sentence_idxs.index(max(0, sen_idx - 1)) + 1
-            except ValueError:  # case where missing sentence is first sentence so we'll insert at index 0
-                insert_pos = 0
-            # Build element dictionary for this sentence
-            missing_elem = self._build_final_html_text(sentences[sen_idx], sentences[sen_idx]['text'], 'p')
-            # Insert it into final_html
-            final_html[insert_pos:0] = [missing_elem]
-            # Update corresponding final_html_sentence_idxs to state where this sen_idx now is
-            final_html_sentence_idxs[insert_pos:0] = [sen_idx]
+            if element['tag'] == 'img' and element['uid'] not in added_image_ids:
+                final_html.append(self._build_final_image_dict(element))
+                added_image_ids.add(element['uid'])
         return final_html
 
     def tokenize_sentence(self, data):
@@ -354,7 +344,7 @@ class WebService:
             raise ValueError(url_error)
 
     @staticmethod
-    async def _build_final_image_dict(element):
+    def _build_final_image_dict(element):
         final_element = dict()
         final_element['uid'] = element['uid']
         final_element['text'] = element['text']
@@ -362,12 +352,11 @@ class WebService:
         final_element['found_status'] = element['found_status']
         return final_element
 
-
     @staticmethod
-    def _build_final_html_text(sentence, single_sentence, tag):
+    def _build_final_html_text(sentence, tag):
         final_element = dict()
         final_element['uid'] = sentence['uid']
-        final_element['text'] = single_sentence
+        final_element['text'] = sentence['text']
         final_element['tag'] = tag
         final_element['found_status'] = sentence['found_status']
         return final_element
