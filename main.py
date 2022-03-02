@@ -12,6 +12,7 @@ import sys
 import yaml
 
 from aiohttp import web
+from datetime import date
 from threadcomponents.database.dao import Dao, DB_POSTGRESQL, DB_SQLITE
 from threadcomponents.handlers.web_api import WebAPI
 from threadcomponents.service.data_svc import DataService
@@ -26,6 +27,30 @@ dir_prefix = ''
 # The types of sources for building the database
 ONLINE_BUILD_SOURCE = 'taxii-server'
 OFFLINE_BUILD_SOURCE = 'local-json'
+# Have we scheduled the attack-data-update function?
+ATTACK_DATA_UPDATES_SCHEDULED = True
+
+
+async def repeat(interval, func, *args, **kwargs):
+    """Run a function (func) every interval seconds. Credit to https://stackoverflow.com/a/55505152"""
+    if not callable(func):
+        raise TypeError('Function is not callable.')
+    while True:
+        await asyncio.gather(func(*args, **kwargs), asyncio.sleep(interval))
+
+
+async def update_attack_data_scheduler():
+    """Function to schedule and execute the monthly updates of the attack data."""
+    global ATTACK_DATA_UPDATES_SCHEDULED
+    # If this method has just been scheduled, we don't want to run it because we've done updates recently
+    if ATTACK_DATA_UPDATES_SCHEDULED:
+        ATTACK_DATA_UPDATES_SCHEDULED = False
+        return
+    # Check if we are at the beginning of the month, if so, it's time for updates
+    day_today = date.today().day
+    if day_today != 1:
+        return
+    await website_handler.fetch_and_update_attack_data()
 
 
 async def background_tasks(taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=None):
@@ -47,6 +72,12 @@ async def background_tasks(taxii_local=ONLINE_BUILD_SOURCE, build=False, json_fi
                                  'FOR OFFLINE DATABASE BUILDING\n'
                                  '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'.format(exc))
                 sys.exit()
+            try:
+                # Schedule the function to update the attack-data (check daily if it is time to do so)
+                update_attack_task = asyncio.ensure_future(repeat(86400, update_attack_data_scheduler))
+                await update_attack_task
+            except Exception as exc:
+                logging.error('Could not schedule repeated executions of attack-update function: {}'.format(exc))
         elif taxii_local == OFFLINE_BUILD_SOURCE and json_file:
             await data_svc.insert_attack_json_data(json_file)
 
@@ -178,10 +209,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Launch the Thread webapp.')
     parser.add_argument('--build-db', action='store_true', help='builds the (PostgreSQL) database')
     parser.add_argument('--schema', help='the schema file to use if --build-db option is used')
-    args = vars(parser.parse_args())
+    given_args = vars(parser.parse_args())
 
-    if args.get('build_db'):
-        schema = args.get('schema')
+    if given_args.get('build_db'):
+        schema = given_args.get('schema')
         # Import here to avoid PostgreSQL requirements needed for non-PostgreSQL use
         from threadcomponents.database.thread_postgresql import build_db as build_postgresql
         build_postgresql() if schema is None else build_postgresql(schema)

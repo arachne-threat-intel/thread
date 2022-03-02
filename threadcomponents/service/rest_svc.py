@@ -47,7 +47,6 @@ class RestService:
         self.ml_svc = ml_svc
         self.reg_svc = reg_svc
         self.is_local = self.web_svc.is_local
-        self.update_attacks = False
         self.queue_map = dict()  # map each user to their own queue
         try:
             self.queue = asyncio.Queue()  # task queue
@@ -72,15 +71,21 @@ class RestService:
 
     async def insert_attack_data(self):
         """Function to fetch and update the attack data."""
+        # Did updates occur?
+        updates = False
+        # The output of the attack-data-updates from data_svc
         added_attacks, inactive_attacks, name_changes = await self.data_svc.insert_attack_data()
+        # If new attacks were added...
         if added_attacks:
+            updates = True
             logging.info('Consider adding example uses for %s to %s' % (', '.join(added_attacks), self.attack_dict_loc))
+        # If attacks were renamed...
         if name_changes:
+            updates = True
             logging.info('The following name changes have occurred in the DB but not in %s' % self.attack_dict_loc)
             for tech_id, new_name, old_name in name_changes:
                 logging.info('%s: %s (previously `%s`)' % (tech_id, new_name, old_name))
-        # If we have fetched attack data online, set our flag to update this data regularly
-        self.update_attacks = True
+        return updates
 
     @staticmethod
     def get_status_enum():

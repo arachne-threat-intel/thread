@@ -290,7 +290,7 @@ table {
   cursor: help;
 }
 
-.report-action {
+.report-action, .dropdown-item {
   cursor: pointer;
 }
 

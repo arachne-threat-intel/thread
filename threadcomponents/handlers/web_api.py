@@ -45,6 +45,10 @@ class WebAPI:
                                    js_src_online=js_src_config == ONLINE_JS_SRC, is_local=self.is_local)
         self.attack_dropdown_list = []
 
+    async def set_attack_dropdown_list(self):
+        """Function to set the attack-dropdown-list used to add/reject attacks in a report."""
+        self.attack_dropdown_list = await self.data_svc.get_techniques(get_parent_info=True)
+
     async def pre_launch_init(self):
         """Function to call any required methods before the app is initialised and launched."""
         # We want nltk packs downloaded before startup; not run concurrently with startup
@@ -52,9 +56,16 @@ class WebAPI:
         # Before the app starts up, prepare the queue of reports
         await self.rest_svc.prepare_queue()
         # We want the list of attacks ready before the app starts
-        self.attack_dropdown_list = await self.data_svc.get_techniques(get_parent_info=True)
+        await self.set_attack_dropdown_list()
         # We want column names ready
         await self.dao.db.initialise_column_names()
+
+    async def fetch_and_update_attack_data(self):
+        """Function to fetch and update the attack data."""
+        # If updates occurred when fetching the attack-data, we need to update the dropdown list
+        updates = await self.rest_svc.insert_attack_data()
+        if updates:
+            await self.set_attack_dropdown_list()
 
     async def add_base_page_data(self, request, data=None):
         """Function to add the base page data to context data given a request."""
