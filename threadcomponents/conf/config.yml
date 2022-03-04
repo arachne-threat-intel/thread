@@ -29,7 +29,14 @@ max-analysis-tasks: 1
 # The following fields are optional - please check comments for behaviour when omitted.
 
 # The JSON file containing attack data; ensure file is in /models directory
-# MUST BE SET if taxii-local = 'local-json'
-json_file: enterprise-attack.json
+# If taxii-local = 'local-json', the database will import this data.
+# Regardless, the models will use any examples (field, 'example_uses') for attacks from this file (or our default).
+json_file: attack_dict.json
+# If taxii-local = 'taxii-server', this determines if you want the file `json_file` to be updated with the server-data.
+# If you do not use version-control (e.g. Git), we recommend you keep a backup of your file if you turn this setting on.
+update_json_file: False
+# Does your file `json_file` have each variable on a new line? If so, set the indent here; no indent means contents
+# - if `update_json_file` is True - condense to 1 line. For readability, we recommend a value of at least 2.
+json_file_indent: 2
 # The maximum number of reports allowed in the queue; for no limit, remove this field or set value x < 1
 queue_limit: 20

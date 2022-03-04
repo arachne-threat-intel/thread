@@ -164,6 +164,8 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
         max_tasks = config.get('max-analysis-tasks', 1)
         queue_limit = config.get('queue_limit', 0)
         json_file = config.get('json_file', None)
+        update_json_file = config.get('update_json_file', False)
+        json_file_indent = config.get('json_file_indent', 2)
         json_file_path = os.path.join(dir_prefix, 'threadcomponents', 'models', json_file) if json_file else None
         attack_dict = None
     # Set the attack dictionary filepath if applicable
@@ -185,6 +187,10 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
         int(port)
     except ValueError:
         raise ValueError(int_error % 'port')
+    try:
+        int(json_file_indent)
+    except ValueError:
+        raise ValueError(int_error % 'json_file_indent')
     # Determine DB engine to use
     db_obj = None
     if db_conf == DB_SQLITE:
@@ -201,8 +207,9 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
     reg_svc = RegService(dao=dao)
     data_svc = DataService(dao=dao, web_svc=web_svc, dir_prefix=dir_prefix)
     ml_svc = MLService(web_svc=web_svc, dao=dao, dir_prefix=dir_prefix)
+    attack_file_settings = dict(filepath=json_file_path, update=update_json_file, indent=json_file_indent)
     rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix=dir_prefix, queue_limit=queue_limit,
-                           max_tasks=max_tasks)
+                           max_tasks=max_tasks, attack_file_settings=attack_file_settings)
     services = dict(dao=dao, data_svc=data_svc, ml_svc=ml_svc, reg_svc=reg_svc, web_svc=web_svc, rest_svc=rest_svc)
     website_handler = WebAPI(services=services, js_src=js_src)
     start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict, app_setup_func=app_setup_func)
