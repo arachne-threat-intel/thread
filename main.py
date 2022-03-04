@@ -12,7 +12,7 @@ import sys
 import yaml
 
 from aiohttp import web
-from datetime import date
+from datetime import datetime
 from threadcomponents.database.dao import Dao, DB_POSTGRESQL, DB_SQLITE
 from threadcomponents.handlers.web_api import WebAPI
 from threadcomponents.service.data_svc import DataService
@@ -28,7 +28,7 @@ dir_prefix = ''
 ONLINE_BUILD_SOURCE = 'taxii-server'
 OFFLINE_BUILD_SOURCE = 'local-json'
 # Have we scheduled the attack-data-update function?
-ATTACK_DATA_UPDATES_SCHEDULED = True
+ATTACK_DATA_UPDATES_SCHEDULED = False
 
 
 async def repeat(interval, func, *args, **kwargs):
@@ -43,13 +43,17 @@ async def update_attack_data_scheduler():
     """Function to schedule and execute the monthly updates of the attack data."""
     global ATTACK_DATA_UPDATES_SCHEDULED
     # If this method has just been scheduled, we don't want to run it because we've done updates recently
-    if ATTACK_DATA_UPDATES_SCHEDULED:
-        ATTACK_DATA_UPDATES_SCHEDULED = False
+    if not ATTACK_DATA_UPDATES_SCHEDULED:
+        ATTACK_DATA_UPDATES_SCHEDULED = True
         return
-    # Check if we are at the beginning of the month, if so, it's time for updates
-    day_today = date.today().day
-    if day_today != 1:
+    # Check if we are at the beginning of the month, if so, it's the right day for updates
+    today = datetime.now()
+    if today.month != 1:
         return
+    # Pick a quiet/suitable time to do the update (early in the next morning)
+    update_datetime = datetime(today.year, today.month, today.day + 1, 1, 0, 0)
+    update_time_diff = update_datetime - today
+    await asyncio.sleep(update_time_diff.seconds)
     await website_handler.fetch_and_update_attack_data()
 
 
