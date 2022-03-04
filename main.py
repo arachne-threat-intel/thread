@@ -48,7 +48,7 @@ async def update_attack_data_scheduler():
         return
     # Check if we are at the beginning of the month, if so, it's the right day for updates
     today = datetime.now()
-    if today.month != 1:
+    if today.day != 1:
         return
     # Pick a quiet/suitable time to do the update (early in the next morning)
     update_datetime = datetime(today.year, today.month, today.day + 1, 1, 0, 0)
