@@ -33,7 +33,7 @@ Configuration defaults can be changed [here](https://github.com/arachne-threat-i
 
 You are also welcome to check our test-suite via:
 ```
-python -m unittest tests/threadtests.py
+python -m unittest discover tests/
 ```
 
 ## Shared vs. Local
