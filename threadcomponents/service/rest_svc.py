@@ -38,7 +38,8 @@ class ReportStatus(Enum):
 
 
 class RestService:
-    def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix='', queue_limit=None, max_tasks=1):
+    def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix='', queue_limit=None, max_tasks=1,
+                 attack_file_settings=None):
         self.MAX_TASKS = max_tasks
         self.QUEUE_LIMIT = queue_limit
         self.dao = dao
@@ -59,20 +60,25 @@ class RestService:
         # A dictionary to keep track of report statuses we have seen
         self.seen_report_status = dict()
         # The offline attack dictionary
-        self.attack_dict_loc = os.path.join(dir_prefix, 'threadcomponents', 'models', 'attack_dict.json')
+        attack_file_settings = attack_file_settings or dict()
+        default_attack_filepath = os.path.join(dir_prefix, 'threadcomponents', 'models', 'attack_dict.json')
+        self.attack_dict_loc = attack_file_settings.get('filepath', default_attack_filepath)
         self.json_tech, self.list_of_legacy, self.list_of_techs = {}, [], []
+        self.update_attack_file = attack_file_settings.get('update', False)  # Are we updating this file periodically?
+        self.attack_file_indent = attack_file_settings.get('indent', 2)
         self.set_internal_attack_data()
 
-    def set_internal_attack_data(self):
+    def set_internal_attack_data(self, load_attack_dict=True):
         """Function to set the class variables holding attack data."""
-        with open(self.attack_dict_loc, 'r', encoding='utf_8') as attack_dict_f:
-            self.json_tech = json.load(attack_dict_f)
+        if load_attack_dict:
+            with open(self.attack_dict_loc, 'r', encoding='utf_8') as attack_dict_f:
+                self.json_tech = json.load(attack_dict_f)
         self.list_of_legacy, self.list_of_techs = self.data_svc.ml_reg_split(self.json_tech)
 
     async def insert_attack_data(self):
         """Function to fetch and update the attack data."""
-        # Did updates occur?
-        updates = False
+        # Did DB-updates occur? Or updates to our internal json-tech dictionary?
+        updates, updated_json_tech = False, False
         # The output of the attack-data-updates from data_svc
         added_attacks, inactive_attacks, name_changes = await self.data_svc.insert_attack_data()
         # If new attacks were added...
@@ -82,9 +88,34 @@ class RestService:
         # If attacks were renamed...
         if name_changes:
             updates = True
-            logging.info('The following name changes have occurred in the DB but not in %s' % self.attack_dict_loc)
-            for tech_id, new_name, old_name in name_changes:
-                logging.info('%s: %s (previously `%s`)' % (tech_id, new_name, old_name))
+            # Update the json-tech for each attack with a new name
+            for tech_id, new_name, old_db_name in name_changes:
+                current_entry = self.json_tech.get(tech_id)
+                if current_entry:
+                    # Update the name if the name is different to the json-tech's entry
+                    current_entry_name = current_entry.get('name')
+                    if current_entry_name != new_name:
+                        self.json_tech[tech_id]['name'] = new_name
+                        updated_json_tech = True
+                    # Update similar-words with the old and new names for this attack
+                    similar_words = current_entry.get('similar_words', [])
+                    for name in [new_name, old_db_name, current_entry_name]:
+                        if name not in similar_words:
+                            similar_words.append(name)
+                            updated_json_tech = True
+                    self.json_tech[tech_id]['similar_words'] = similar_words
+        # If the json-tech dictionary was updated...
+        if updated_json_tech:
+            # Ensure any lists dependent on json-tech are updated
+            self.set_internal_attack_data(load_attack_dict=False)
+            # Update the file it came from if boolean is set
+            if self.update_attack_file:
+                with open(self.attack_dict_loc, 'w', encoding='utf-8') as json_file_opened:
+                    json.dump(self.json_tech, json_file_opened, ensure_ascii=False, indent=self.attack_file_indent)
+            else:  # else log the name-changes
+                logging.info('The following name changes have occurred in the DB but not in %s' % self.attack_dict_loc)
+                for tech_id, new_name, old_db_name in name_changes:
+                    logging.info('%s: %s (previously `%s`)' % (tech_id, new_name, old_db_name))
         return updates
 
     @staticmethod
