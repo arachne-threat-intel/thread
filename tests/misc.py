@@ -1,6 +1,8 @@
 import logging
 import os
 
+SCHEMA_FILE = os.path.join('threadcomponents', 'conf', 'schema.sql')
+
 
 def delete_db_file(file_path):
     """Function to delete a local database test file."""

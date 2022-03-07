@@ -1,129 +1,15 @@
-import aiohttp_jinja2
-import asyncio
-import jinja2
 import os
-import random
-import sqlite3
 
-from aiohttp import web
-from aiohttp.test_utils import AioHTTPTestCase
-from contextlib import suppress
-from tests.misc import delete_db_file
-from threadcomponents.database.dao import Dao
-from threadcomponents.database.thread_sqlite3 import ThreadSQLite
-from threadcomponents.handlers.web_api import WebAPI
-from threadcomponents.service.data_svc import DataService
-from threadcomponents.service.ml_svc import MLService
-from threadcomponents.service.reg_svc import RegService
+from tests.thread_app_test import ThreadAppTest
 from threadcomponents.service.rest_svc import ReportStatus, RestService, UID as UID_KEY
 from threadcomponents.service.web_svc import WebService
-from unittest.mock import MagicMock, patch
 from uuid import uuid4
 from urllib.parse import quote
 
 
-class TestReports(AioHTTPTestCase):
+class TestReports(ThreadAppTest):
     """A test suite for checking report actions."""
     DB_TEST_FILE = os.path.join('tests', 'threadtestreport.db')
-
-    @classmethod
-    def setUpClass(cls):
-        """Any setting-up before all the test methods."""
-        cls.db = ThreadSQLite(cls.DB_TEST_FILE)
-        schema_file = os.path.join('threadcomponents', 'conf', 'schema.sql')
-        with open(schema_file) as schema_opened:
-            cls.schema = schema_opened.read()
-        cls.backup_schema = cls.db.generate_copied_tables(cls.schema)
-        cls.dao = Dao(engine=cls.db)
-        cls.web_svc = WebService()
-        cls.reg_svc = RegService(dao=cls.dao)
-        cls.data_svc = DataService(dao=cls.dao, web_svc=cls.web_svc)
-        cls.ml_svc = MLService(web_svc=cls.web_svc, dao=cls.dao)
-        cls.rest_svc = RestService(cls.web_svc, cls.reg_svc, cls.data_svc, cls.ml_svc, cls.dao)
-        services = dict(dao=cls.dao, data_svc=cls.data_svc, ml_svc=cls.ml_svc, reg_svc=cls.reg_svc, web_svc=cls.web_svc,
-                        rest_svc=cls.rest_svc)
-        cls.web_api = WebAPI(services=services)
-        # Duplicate resources so we can test the queue limit without causing limit-exceeding test failures elsewhere
-        cls.rest_svc_with_limit = RestService(cls.web_svc, cls.reg_svc, cls.data_svc, cls.ml_svc, cls.dao,
-                                              queue_limit=random.randint(1, 20))
-        services.update(rest_svc=cls.rest_svc_with_limit)
-        cls.web_api_with_limit = WebAPI(services=services)
-        # Some test-attack data
-        cls.attacks = dict(d99999='Drain', f12345='Fire', f32451='Firaga')
-
-    @classmethod
-    def tearDownClass(cls):
-        """Any tidying-up after all the test methods."""
-        # Delete the database so a new DB file is used in next test-run
-        delete_db_file(cls.DB_TEST_FILE)
-
-    async def setUpAsync(self):
-        """Any setting-up before each test method."""
-        # Build the database (can't run in setUpClass() as this is an async method)
-        await self.db.build(self.schema)
-        await self.db.build(self.backup_schema)
-        # Insert some attack data
-        a1_name, a2_name, a3_name = self.attacks.get('f12345'), self.attacks.get('f32451'), self.attacks.get('d99999')
-        attack_1 = dict(uid='f12345', description='Fire spell costing 4MP', tid='T1562', name=a1_name)
-        attack_2 = dict(uid='f32451', description='Stronger Fire spell costing 16MP', tid='T1562.004', name=a2_name)
-        attack_3 = dict(uid='d99999', description='Absorbs HP', tid='T1029', name=a3_name)
-        for attack in [attack_1, attack_2, attack_3]:
-            # Ignoring Integrity Error in case other test case already has inserted this data (causing duplicate UIDs)
-            with suppress(sqlite3.IntegrityError):
-                await self.db.insert('attack_uids', attack)
-        # Carry out pre-launch tasks except for prepare_queue(): replace the call of this to return (and do) nothing
-        # We don't want multiple prepare_queue() calls so the queue does not accumulate between tests
-        with patch.object(RestService, 'prepare_queue', return_value=None):
-            await self.web_api.pre_launch_init()
-            await self.web_api_with_limit.pre_launch_init()
-        await super().setUpAsync()
-
-    def create_patch(self, **patch_kwargs):
-        """A helper method to create, start and schedule the end of a patch."""
-        patcher = patch.object(**patch_kwargs)
-        started_patch = patcher.start()
-        self.addCleanup(patcher.stop)
-        return started_patch
-
-    async def get_application(self):
-        """Overrides AioHTTPTestCase.get_application()."""
-        app = web.Application()
-        # Some of the routes we'll be testing
-        app.router.add_route('GET', self.web_svc.get_route(WebService.HOME_KEY), self.web_api.index)
-        app.router.add_route('GET', self.web_svc.get_route(WebService.EDIT_KEY), self.web_api.edit)
-        app.router.add_route('GET', self.web_svc.get_route(WebService.ABOUT_KEY), self.web_api.about)
-        app.router.add_route('*', self.web_svc.get_route(WebService.REST_KEY), self.web_api.rest_api)
-        # A different route for limit-testing
-        app.router.add_route('*', '/limit' + self.web_svc.get_route(WebService.REST_KEY),
-                             self.web_api_with_limit.rest_api)
-        aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(os.path.join('webapp', 'html')))
-        return app
-
-    def reset_queue(self, rest_svc=None):
-        """Function to reset the queue variables from a test RestService instance."""
-        # Default parameter for rest service if not provided
-        rest_svc = rest_svc or self.rest_svc
-        # Note all tasks in the queue object as done
-        with suppress(asyncio.QueueEmpty):
-            for _ in range(rest_svc.queue.qsize()):
-                rest_svc.queue.get_nowait()
-                rest_svc.queue.task_done()
-        # Reset the other variables
-        rest_svc.queue_map = dict()
-        rest_svc.clean_current_tasks()
-
-    async def test_attack_list(self):
-        """Function to test the attack list for the dropdown was created successfully."""
-        # For our test attack data, we predict 2 will not be sub attacks (no Txx.xx TID) and 1 will be
-        predicted = [dict(uid='d99999', name='Drain', tid='T1029', parent_tid=None, parent_name=None),
-                     dict(uid='f12345', name='Fire', tid='T1562', parent_tid=None, parent_name=None),
-                     dict(uid='f32451', name='Firaga', tid='T1562.004', parent_tid='T1562', parent_name='Fire')]
-        # The generated dropdown list to check against our prediction
-        result = self.web_api.attack_dropdown_list
-        for attack_dict in result:
-            self.assertTrue(attack_dict in predicted, msg='Attack %s was present but not expected.' % str(attack_dict))
-        for attack_dict in predicted:
-            self.assertTrue(attack_dict in result, msg='Attack %s was expected but not present.' % str(attack_dict))
 
     async def test_about_page(self):
         """Function to test the about page loads successfully."""
@@ -236,34 +122,6 @@ class TestReports(AioHTTPTestCase):
             self.assertTrue(resp.status >= 400, msg='Malformed CSV data resulted in successful response.')
             self.assertTrue(predicted_msg in error_msg, msg='Malformed CSV error message formed incorrectly.')
 
-    async def submit_test_report(self, report, fail_map_html=False):
-        """A helper method to submit a test report and create some associated test-sentences."""
-        # Some test sentences and expected analysed html for them
-        sen1 = 'When Creating Test Data...'
-        sen2 = 'i. It can be quite draining'
-        html = [{'html': sen1, 'text': sen1, 'tag': 'p', 'ml_techniques_found': [], 'res_techniques_found': []},
-                {'html': sen2, 'text': sen2, 'tag': 'li', 'ml_techniques_found': [('d99999', 'Drain')],
-                 'res_techniques_found': []}]
-        # The result of the mapping function (no html, no Article object)
-        map_result = None, None
-        if not fail_map_html:
-            # If we are not failing the mapping stage, mock the newspaper.Article for the mapping returned object
-            mocked_article = MagicMock()
-            mocked_article.text = '%s\n%s' % (sen1, sen2)
-            map_result = html, mocked_article
-        # Patches for when RestService.start_analysis() is called
-        self.create_patch(target=WebService, attribute='map_all_html', return_value=map_result)
-        self.create_patch(target=DataService, attribute='ml_reg_split', return_value=([], list(self.attacks.items())))
-        self.create_patch(target=MLService, attribute='build_pickle_file', return_value=(False, dict()))
-        self.create_patch(target=MLService, attribute='analyze_html', return_value=html)
-
-        # Update relevant queue and insert report in DB as these tasks would have been done before submission
-        queue = self.rest_svc.get_queue_for_user()
-        queue.append(report['url'])
-        await self.db.insert('reports', report)
-        # Mock the analysis of the report
-        await self.rest_svc.start_analysis(criteria=report)
-
     async def test_start_analysis_success(self):
         """Function to test the behaviour of start analysis when successful."""
         report_id = str(uuid4())
@@ -362,6 +220,25 @@ class TestReports(AioHTTPTestCase):
         self.assertTrue(len(fns) == 1, msg='New, accepted attack did not appear as 1 record in false negatives table.')
         self.assertTrue(len(tps) + len(tns) + len(fps) == 0,
                         msg='New, accepted attack appeared incorrectly in other table(s) (not being false negatives).')
+
+    async def test_add_invalid_attack(self):
+        """Function to test adding an invalid attack to a sentence."""
+        report_id, attack_id = str(uuid4()), 's00001'
+        # Submit and analyse a test report
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this',
+                                           current_status=ReportStatus.QUEUE.value))
+        # Pick any sentence from this report
+        sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id))
+        sen_id = sentences[0][UID_KEY]
+        # Proceed to add an attack
+        data = dict(index='add_attack', sentence_id=sen_id, attack_uid=attack_id)
+        resp = await self.client.post('/rest', json=data)
+        resp_json = await resp.json()
+        # Check an unsuccessful response was sent
+        error_msg = resp_json.get('error')
+        self.assertTrue(resp.status == 500, msg='Adding an invalid attack resulted in a non-500 response.')
+        self.assertTrue("'requiem' is not in the current Att%ck framework" in error_msg,
+                        msg='A different error appeared for adding an invalid attack to a report-sentence.')
 
     async def test_confirm_predicted_attack(self):
         """Function to test confirming a predicted attack of a sentence."""
