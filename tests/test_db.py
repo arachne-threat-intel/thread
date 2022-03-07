@@ -2,7 +2,7 @@ import logging
 import os
 import sqlite3
 
-from tests.misc import delete_db_file
+from tests.misc import delete_db_file, SCHEMA_FILE
 from threadcomponents.database.thread_sqlite3 import ThreadSQLite
 from threadcomponents.service.rest_svc import ReportStatus, UID as UID_KEY
 from unittest import IsolatedAsyncioTestCase
@@ -17,8 +17,7 @@ class TestDBSQL(IsolatedAsyncioTestCase):
     def setUpClass(cls):
         """Any setting-up before all the test methods."""
         cls.db = ThreadSQLite(cls.DB_TEST_FILE)
-        schema_file = os.path.join('threadcomponents', 'conf', 'schema.sql')
-        with open(schema_file) as schema_opened:
+        with open(SCHEMA_FILE) as schema_opened:
             cls.schema = schema_opened.read()
         cls.backup_schema = cls.db.generate_copied_tables(cls.schema)
 

@@ -18,6 +18,13 @@ NO_DESC = 'No description provided'
 FULL_ATTACK_INFO = 'full_attack_info'
 
 
+def fetch_attack_data():
+    """Function to fetch the latest Att%ck data."""
+    url = 'https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/' \
+          'enterprise-attack.json'
+    return requests.get(url).json()
+
+
 def defang_text(text):
     """
     Function to normalize quoted data to be sql compliant
@@ -86,9 +93,7 @@ class DataService:
         """
         logging.info('Downloading ATT&CK data from GitHub repo `mitre-attack/attack-stix-data`...')
         attack = {}
-        domain = "enterprise-attack"
-        github_url = f"https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/{domain}/{domain}.json"
-        stix_json = requests.get(github_url).json()
+        stix_json = fetch_attack_data()
         ms = MemoryStore(stix_data=stix_json["objects"])
         filter_objs = {"techniques": Filter("type", "=", "attack-pattern"),
                        "groups": Filter("type", "=", "intrusion-set"), "malware": Filter("type", "=", "malware"),
