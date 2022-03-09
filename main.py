@@ -69,7 +69,7 @@ async def background_tasks(taxii_local=ONLINE_BUILD_SOURCE, build=False, json_fi
         await data_svc.reload_database()
         if taxii_local == ONLINE_BUILD_SOURCE:
             try:
-                await rest_svc.insert_attack_data()
+                await rest_svc.fetch_and_update_attack_data()
             except Exception as exc:
                 logging.critical('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
                                  'COULD NOT CONNECT TO TAXII SERVERS: {}\nPLEASE UPDATE CONFIG `taxii-local` '

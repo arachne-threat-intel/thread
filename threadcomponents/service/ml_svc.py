@@ -25,7 +25,7 @@ class MLService:
         # Specify the location of the models file
         self.dict_loc = os.path.join(self.dir_prefix, 'threadcomponents', 'models', 'model_dict.p')
 
-    async def build_models(self, tech_id, tech_name, techniques, true_negatives=None):
+    async def build_models(self, tech_id, tech_name, techniques):
         """Function to build Logistic Regression Classification models based off of the examples provided."""
         lst1, lst2, false_list, sampling = [], [], [], []
         getuid = ''
@@ -51,12 +51,8 @@ class MLService:
         # use this for determining how many labels to use for classifier's negative class
         kval = int((len_truelabels * 10))
 
-        # Make first half random set of true negatives that have no relation/label to ANY technique
+        # Add true/positive labels for OTHER techniques (false for given tech_id), use list obtained from above
         # Need if-checks because an empty list will cause an error with random.choices()
-        if true_negatives:
-            sampling.extend(random.choices(true_negatives, k=kval))
-
-        # Do second random half set, these are true/positive labels for OTHER techniques, use list obtained from above
         if false_list:
             sampling.extend(random.choices(false_list, k=kval))
 
@@ -207,13 +203,6 @@ class MLService:
                 'report_sentence_hits',
                 dict(sentence_id=sentence_id, attack_uid=attack_technique, attack_technique_name=attack_technique_name,
                      report_uid=report_id, attack_tid=attack_tid, initial_model_match=self.dao.db_true_val))
-
-    async def get_true_negs(self):
-        true_negs = await self.dao.get('true_negatives')
-        true_negatives = []
-        for i in true_negs:
-            true_negatives.append(i['sentence'])
-        return true_negatives
 
     async def combine_ml_reg(self, ml_analyzed_html, reg_analyzed_html):
         analyzed_html = []

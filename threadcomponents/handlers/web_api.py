@@ -63,7 +63,7 @@ class WebAPI:
     async def fetch_and_update_attack_data(self):
         """Function to fetch and update the attack data."""
         # If updates occurred when fetching the attack-data, we need to update the dropdown list
-        updates = await self.rest_svc.insert_attack_data()
+        updates = await self.rest_svc.fetch_and_update_attack_data()
         if updates:
             await self.set_attack_dropdown_list()
 
