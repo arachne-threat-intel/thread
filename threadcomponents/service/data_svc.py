@@ -86,7 +86,7 @@ class DataService:
         await self.dao.build(schema)
         await self.dao.build(copied_tables_schema)
 
-    async def insert_attack_data(self):
+    async def fetch_and_update_attack_data(self):
         """
         Function to retrieve ATT&CK data and insert it into the DB.
         Further reading on approach: https://github.com/arachne-threat-intel/thread/pull/27#issuecomment-1047456689

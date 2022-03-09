@@ -75,12 +75,12 @@ class RestService:
                 self.json_tech = json.load(attack_dict_f)
         self.list_of_legacy, self.list_of_techs = self.data_svc.ml_reg_split(self.json_tech)
 
-    async def insert_attack_data(self):
+    async def fetch_and_update_attack_data(self):
         """Function to fetch and update the attack data."""
         # Did DB-updates occur? Or updates to our internal json-tech dictionary?
         updates, updated_json_tech = False, False
         # The output of the attack-data-updates from data_svc
-        added_attacks, inactive_attacks, name_changes = await self.data_svc.insert_attack_data()
+        added_attacks, inactive_attacks, name_changes = await self.data_svc.fetch_and_update_attack_data()
         # If new attacks were added...
         if added_attacks:
             updates = True
