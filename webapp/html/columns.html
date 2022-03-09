@@ -56,22 +56,27 @@
       {% if help_text %}{# Add any help-text to the side-panel of the report (so it is always visible) #}
         <span><b>{{help_text}}</b></span><hr>
       {% endif %}
-      {% if completed == 0 %}
-        <span class='spanMissingTechniqueView'>Techniques Found</span>
+      {% if completed %}{# Completed reports: display message on what user can still do #}
+        <span>
+          This is a <b>completed</b> report. You can still click on the sentences to view confirmed techniques.
+          You can also click the <b>Export PDF</b> button to generate a PDF of this completed report.
+        </span>
+        <hr>
+      {% else %}{# Incomplete reports: display 'Techniques Found' panel to approve/reject attacks #}
+        <span class='spanMissingTechniqueView'><b>Techniques Found</b></span>
         <br><br>
         <div id="sentenceInformation">
           <table id="tableSentenceInfo" class="table"><tbody></tbody></table>
         </div>
-        <br><br>
       {% endif %}
-      <span class='spanMissingTechniqueView'>Confirmed Techniques</span>
+      <span class='spanMissingTechniqueView'><b>Confirmed Techniques</b></span>
       <br><br>
       <div id="confirmedsentenceInformation">
         <table id="confirmedSentenceInfo" class="table"><tbody></tbody></table>
       </div>
-      <hr><br><br>
-      {% if completed == 0 %}
-        <span class='spanAddMissingTechnique'>Add A Missing Technique</span>
+      <hr>
+      {% if completed == 0 %}{# Incomplete reports: display option to add missing attacks; delete sentences; and complete report #}
+        <span class='spanAddMissingTechnique'><b>Add A Missing Technique</b></span>
         <br><br>
         <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true" data-size="5"
                 data-live-search="true" title="Select a technique">
