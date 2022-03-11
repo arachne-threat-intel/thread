@@ -6,43 +6,49 @@
 <div id="aboutInfo">
 
 <p>
-  Thread is a tool for analysts to map finished reports and articles to <a href="https://attack.mitre.org" target="_blank">MITRE ATT&CK®</a>. If you are running Thread via our Arachne website, your reports will be visible to others. You can view our GitHub repo to download this version of Thread, set it up, and use locally to ensure all your reports stay only on your machine.
+  Thread is a tool for analysts to map finished reports and articles to <a href="https://attack.mitre.org" target="_blank">MITRE ATT&CK®</a>. If you are running Thread via our Arachne website, your reports will be visible to others. You can view our GitHub repo to download this version of Thread, set it up, and use it locally to ensure all your reports stay only on your machine.
 </p>
 
 <h3>Submitting a Report</h3>
 <p>
-On Thread's homepage, enter a web page URL (sorry no PDFs yet) to a report to be processed. It takes a few minutes to analyse a report, so please do not leave the page while it processes.
+On Thread's homepage, enter a web page URL (sorry no PDFs yet) to process it and begin a report based on it. It takes a few minutes to analyse a URL, this is dependent on the amount of text found from the URL. You are advised to periodically check if your submission is still in the queue.
 </p>
 
 <p>
-Note: If you see an error in the queue, this means the website did not like us trying to scrape it, or something on the site could not be parsed. We are looking into this issue and hope to have a fix soon.
+If you see an error in the queue, this means the website did not like us trying to scrape it, or something on the site could not be parsed. We will periodically check for these errors and work on improvements to the submission process.
 </p>
 
 <p>
-  When the report is ready, a new card will appear. Each card will have two buttons:
+  When the URL has been processed and its report is ready, a new card will appear (in the <b>Needs Review</b> column). Each card will have two buttons:
   <ul style="list-style-type:none;">
     <li><b>Source</b>: this links back to original URL where the report originated from</li>
     <li><b>Analyse</b>: this button links to the Thread-analysed report </li>
   </ul>
+  You will also have the option to delete reports that 1. are not in the queue or 2. those in the queue that have an error.
 </p>
 
-<h3>Analyzing a Report</h3>
+<h3>Analysing a Report</h3>
 
 <p>
-  Thread's prediction model will try its best to find ATT&CK techniques in the report, but since our current data set is very limited, our models are not 100% accurate, so the tool requires an analyst to review and refine the technique prediction.
+  Thread's prediction model will try its best to find ATT&CK techniques in the report, but since our current data set is very limited, our models are not 100% accurate, so the tool requires you to review and refine the technique prediction.
 </p>
 <p>
+  When you click on a sentence in the report, you can do the following:
   <ul style="list-style-type:none;">
-    <li><b>Accepting</b> a technique means the correct technique is in the selected highlighted sentence. That sentence and technique will go to the <b>"True Positives"</b> table in the database (if this is not a missing technique you have introduced).</li>
-    <li><b>Rejecting</b> a technique means the technique is not in the highlighted sentence. That sentence and technique goes to the <b>"False Positives"</b> table in the database (again, if this is not a missing technique you have introduced).</li>
-    <li><b>Add a Missing Technique</b> allows users to manually add any techniques that were missed in highlighted or un-highlighted sentences. Click the grey button and start typing in the technique you want to map, and click it when it appears. When a missing technique is added, it will be put in the <b>"False Negatives"</b> table of the database (if this is not a technique you initially rejected).</li>
+    <li><b>Accept</b> a technique: the correct technique is in the selected sentence. That sentence and technique will be considered a <b>true positive</b> (if this is not a missing technique you have introduced).</li>
+    <li><b>Reject</b> a technique: the technique is not in the selected sentence. That sentence and technique will be considered a <b>false positive</b> (again, if this is not a missing technique you have introduced).</li>
+    <li><b>Add a Missing Technique</b>: allows you to manually add any techniques that were missed in the selected sentence. Select the missing technique from the provided searchable-dropdown. You can repeat this for numerous missing techniques. When one is added, this is considered a <b>false negative</b> (if this is not a technique you initially rejected).</li>
   </ul>
-  The new data and corresponding tables can then be used to rebuild the models. As more data is fed to the tool and is analyst-reviewed, the rebuilt models are expected to become more accurate with these predictions.
+  As more data is fed to the tool and is reviewed, any rebuilt models are expected to become more accurate with these predictions.
+</p>
+
+<p>
+  If you have made changes you are not happy with and cannot undo easily (e.g. deleted a sentence), you can rollback a report via the homepage (found in the <b>In Review</b> column).
 </p>
 
 <h3>Exporting a Report</h3>
 <p>
-  Once an analyst has reviewed the entire report, Thread’s results can now be exported as a PDF by clicking the <b>“Export PDF”</b> button on the top centre of the page. Exporting will create a PDF containing a raw text version of the report, and a table with the ATT&CK technique and its corresponding sentence.
+  Once you have reviewed the entire report, Thread’s results can be exported as a PDF by clicking the <b>Export PDF</b> button on the top centre of the page. This will create a PDF containing a raw text version of the report, and a table with the ATT&CK technique and its corresponding sentence. This can be done for all reports out of the queue but those not in the <b>Completed</b> column will be considered draft reports.
 </p>
 <br>
 
