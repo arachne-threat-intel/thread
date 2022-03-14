@@ -303,6 +303,10 @@ input[type="checkbox"].report-submission-checkbox {
   margin-top: 1rem;
 }
 
+#csvHelpAlert {
+  max-width: 40rem;
+}
+
 /* about.html */
 
 #aboutInfo {
