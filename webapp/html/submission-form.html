@@ -43,6 +43,14 @@
             </form>
           </div>
           <div class="tab-pane fade" id="csv-div" role="tabpanel" aria-labelledby="csv-tab">{# Next tab: CSVs #}
+            {# Display some helper text before the submission form #}
+            <div id="csvHelpAlert" class="mt-3 alert alert-primary d-flex align-items-center" role="alert">
+              <i class="pe-3 fas fa-info-circle glyphicon glyphicon-info-sign"></i>
+              <small>
+                Please ensure CSVs define two columns - Title and URL - and contain at least one URL:<br><br>
+                title,url<br>&lt;title of first URL&gt;,&lt;first URL&gt;
+              </small>
+            </div>
             <form>
               <div>
                 <a class="">{# Give random/empty class so that bootstrap's css selector a:not([class]) does not match #}
