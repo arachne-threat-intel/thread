@@ -41,23 +41,6 @@ class TestReports(ThreadAppTest):
         resp = await self.client.get('/edit/' + quote(report_title, safe=''))
         self.assertTrue(resp.status == 404, msg='Viewing an edit-queued-report page resulted in a non-404 response.')
 
-    async def test_incorrect_submission(self):
-        """Function to test when a user makes a bad request to submit a report."""
-        # Request data to test: one with too many titles; another with too many URLs
-        test_data = [dict(index='insert_report', url=['twinkle.twinkle'], title=['Little Star', 'How I wonder?']),
-                     dict(index='insert_report', url=['twinkle.twinkle', 'how.i.wonder'], title=['Little Star'])]
-        # Same process for each item in test_data
-        for data in test_data:
-            # Check we receive an error response
-            resp = await self.client.post('/rest', json=data)
-            self.assertTrue(resp.status == 500, msg='Mismatched titles-URLs submission resulted in a non-500 response.')
-            # Check the user receives an error message
-            resp_json = await resp.json()
-            error_msg, alert_user = resp_json.get('error'), resp_json.get('alert_user')
-            predicted = 'Number of URLs and titles do not match, please insert same number of comma-separated items.'
-            self.assertEqual(error_msg, predicted, msg='Mismatched titles-URLs submission gives different error.')
-            self.assertTrue(alert_user, msg='Mismatched titles-URLs submission is not alerted to the user.')
-
     async def test_incorrect_rest_endpoint(self):
         """Function to test incorrect REST endpoints do not result in a server error."""
         # Two examples of bad request data to test
@@ -72,9 +55,12 @@ class TestReports(ThreadAppTest):
         """Function to test the queue limit works correctly."""
         # Given the randomised queue limit for this test, obtain it and create a limit-exceeding amount of data
         limit = self.rest_svc_with_limit.QUEUE_LIMIT
-        titles = ['title%s' % x for x in range(limit + 1)]
-        urls = ['url%s' % x for x in range(limit + 1)]
-        data = dict(index='insert_report', url=urls, title=titles)
+        # Populate some test reports that will exceed the queue's limit
+        csv_str = 'title,url\n'
+        for n in range(limit + 1):
+            title, url = ('title%s' % n), ('url%s' % n)
+            csv_str = csv_str + title + ',' + url + '\n'
+        data = dict(index='insert_csv', file=csv_str)
         # Begin some patches
         # We are not passing valid URLs; mock verifying the URLs to raise no errors
         self.create_patch(target=WebService, attribute='verify_url', return_value=None)
@@ -107,10 +93,11 @@ class TestReports(ThreadAppTest):
         wrong_columns = dict(file='titles,urls\nt1,url.1\nt2,url.2\n')
         wrong_param = dict(data='title,url\nt1,url.1\nt2,url.2\n')
         too_many_columns = dict(file='title,url,title\nt1,url.1,t1\nt2,url.2,t2\n')
+        uneven_columns = dict(file='title,url\nt1,url.1\nt2,url.2,url.3\n')
         urls_missing = dict(file='title,url\nt1,\nt2,\n')
         # The test cases paired with expected error messages
         tests = [(wrong_columns, 'Two columns have not been specified'), (wrong_param, 'Error inserting report(s)'),
-                 (too_many_columns, 'Two columns have not been specified'),
+                 (too_many_columns, 'Two columns have not been specified'), (uneven_columns, 'Could not parse file'),
                  (urls_missing, 'CSV is missing text in at least one row')]
         for test_data, predicted_msg in tests:
             # Call the CSV REST endpoint with the malformed data and check the response
