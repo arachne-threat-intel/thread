@@ -2,15 +2,18 @@
   {% with %}
     {% if is_csv %}{# Determine an attribute suffix to distinguish when these fields are in the CSV tab or not #}
       {% set attr_suffix = "CSV" %}
+      {% set plural_suffix = "(s)" %}
     {% else %}
       {% set attr_suffix = "" %}
+      {% set plural_suffix = "" %}
     {% endif %}
     {# Include the input box to enter a Thread token #}
     <div class="row">
       <label for="reportToken{{attr_suffix}}" class="col-sm-2 col-form-label">Thread Token</label>
       <div class="col-sm-10">
-        <input type="text" class="form-control" id="reportToken{{attr_suffix}}" placeholder="Token for private report(s)"
-               onchange="tokenFieldCheck(this)" data-paired-checkbox="#publicReportCheck{{attr_suffix}}"
+        <input type="text" class="form-control" id="reportToken{{attr_suffix}}" onchange="tokenFieldCheck(this)"
+               placeholder="Token for private report{{plural_suffix}}"
+               data-paired-checkbox="#publicReportCheck{{attr_suffix}}"
                data-paired-consent-checkbox-id="userConsentCheck{{attr_suffix}}"
                value="{% if token %}{{token}}{% endif %}">
       </div>
@@ -22,7 +25,7 @@
         <input type="checkbox" id="publicReportCheck{{attr_suffix}}" class="report-submission-checkbox"
                data-parent-div="#publicReportConf{{attr_suffix}}" {% if not token %}required{% endif %}>
         <label for="publicReportCheck{{attr_suffix}}">
-          <small>I confirm I am making the report(s) created from this submission <b>public</b>.</small>
+          <small>I confirm I am making the report{{plural_suffix}} created from this submission <b>public</b>.</small>
         </label>
       </div>
     </div>
