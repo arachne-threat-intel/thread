@@ -52,28 +52,24 @@ function page_refresh() {
 }
 
 function prefixHttp(urlInput) {
-  // Obtain the current urls for this input box and loop through them
+  // Obtain the current url for this input box
   var initialInput = urlInput.value;
-  var urls = initialInput?.split(",") || [];
+  var url = initialInput || "";
+  url = url.trim();
+  // Flag to track if we updated the url value
   var updateUrl = false;
-  for (let i = 0; i < urls.length; i++) {
-    // Trim url and check if not empty
-    let url = urls[i]?.trim();
-    // Skip if there is no url
-    if (!url) {
-      continue;
-    }
-    // Proceed to prefix with http if http(s) has not been specified
-    if(!(/^https?:\/\//i.test(url))){
-      url = "http://" + url;
-      updateUrl = true;
-    }
-    // Update urls list with current url
-    urls[i] = url;
+  // If there is no url, there is nothing to add a prefix to
+  if (!url) {
+      return;
   }
+  // Proceed to prefix with http if http(s) has not been specified
+  if(!(/^https?:\/\//i.test(url))){
+    url = "http://" + url;
+    updateUrl = true;
+  }
+  // If we updated the url, update the input box
   if (updateUrl) {
-    // Rejoin elements and update input
-    urlInput.value = urls.join(", ");
+    urlInput.value = url;
     // Revert to initial value if invalid
     if (!urlInput.reportValidity()) {
       urlInput.value = initialInput;
@@ -178,15 +174,10 @@ function submit(data, submitButton) {
 function submit_report(submitButton) {
   // The URL and title field values comma-separated
   var url = document.getElementById("url");
-  var urls = url.value.split(",");
   var title = document.getElementById("title");
-  var titles = title.value.split(",");
-  // Notify user that the number of URLs and titles aren't equal
-  if (titles.length != urls.length) {
-    alert("Number of URLs and titles do not match, please insert same number of comma-separated items.");
   // Proceed with submitting if both fields are valid
-  } else if (url.reportValidity() && title.reportValidity()) {
-    submit({"index":"insert_report", "url":urls, "title":titles}, submitButton);
+  if (url.reportValidity() && title.reportValidity()) {
+    submit({"index":"insert_report", "url":url.value, "title":title.value}, submitButton);
   }
 }
 
@@ -205,7 +196,8 @@ function upload_file(uploadButton) {
       submit({"index": "insert_csv", "file": evt.target.result}, uploadButton);
     }
     reader.onerror = function(evt) {
-      alert("Error reading file");
+      alert("Error reading file; this could be because of file-permissions or the file recently being changed. "
+            + "Please refresh the page and try again.");
     }
   }
 }
