@@ -310,9 +310,14 @@ class RestService:
         error = await self.pre_insert_add_token(request, request_data=criteria, key='title')
         if error:
             return error
-        # Place title and URL in list to be compatible with _insert_batch_reports()
-        criteria['title'] = [criteria.get('title', '')]
-        criteria[URL] = [criteria.get(URL, '')]
+        # For both the title and url...
+        for column in ['title', URL]:
+            # Obtain the value from the request; return an error if an argument is missing
+            value = str(criteria.get(column, '')).strip()
+            if not value:
+                return dict(error='Missing value for %s.' % column, alert_user=1)
+            # Place title and URL in list to be compatible with _insert_batch_reports()
+            criteria[column] = [value]
         return await self._insert_batch_reports(criteria, 1, token=criteria.get('token'))
 
     async def insert_csv(self, request, criteria=None):
@@ -440,11 +445,13 @@ class RestService:
             raise ValueError(columns_error)
         # Create a new df with renamed columns
         new_df = df.rename(columns=new_columns)
+        # Tidy up the values before further checks
+        new_df = new_df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
         # Validate each row has a value
         for col in [title, URL]:
             values = pd.Series(list(new_df[col].values))
-            # If any value in this column is not of type str (e.g. missing values become NaNs), raise an error
-            if (values.map(type) != str).any():
+            # If any value in this column is an empty string or not a string (missing values become NaNs), raise error
+            if (values.map(type) != str).any() or (values.map(len) == 0).any():
                 raise ValueError('Column `%s` in CSV is missing text in at least one row' % col)
         # All previous checks passed: return the new df
         return new_df

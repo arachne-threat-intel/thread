@@ -115,6 +115,15 @@ class ThreadAppTest(AioHTTPTestCase):
         rest_svc.queue_map = dict()
         rest_svc.clean_current_tasks()
 
+    async def patches_on_insert(self):
+        """A helper method to set up patches when an insert_* rest endpoint is tested."""
+        # We are not passing valid URLs; mock verifying the URLs to raise no errors
+        self.create_patch(target=WebService, attribute='verify_url', return_value=None)
+        # Duplicate URL checks will raise an error with malformed URLS; mock this to raise no errors
+        self.create_patch(target=WebService, attribute='urls_match', return_value=False)
+        # We don't want the queue to be checked after this test; mock this to return (and do) nothing
+        self.create_patch(target=RestService, attribute='check_queue', return_value=None)
+
     async def submit_test_report(self, report, fail_map_html=False):
         """A helper method to submit a test report and create some associated test-sentences."""
         # Some test sentences and expected analysed html for them
