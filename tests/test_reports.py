@@ -1,8 +1,7 @@
 import os
 
 from tests.thread_app_test import ThreadAppTest
-from threadcomponents.service.rest_svc import ReportStatus, RestService, UID as UID_KEY
-from threadcomponents.service.web_svc import WebService
+from threadcomponents.service.rest_svc import ReportStatus, UID as UID_KEY
 from uuid import uuid4
 from urllib.parse import quote
 
@@ -51,6 +50,26 @@ class TestReports(ThreadAppTest):
         resp = await self.client.post('/rest', json=no_index_supplied)
         self.assertTrue(resp.status == 404, msg='Missing `index` parameter resulted in a non-404 response.')
 
+    async def test_update_queue(self):
+        """Function to test the queue is updated with a single submission."""
+        # Request data to test
+        test_data = dict(index='insert_report', url='twinkle.twinkle', title='Little Star')
+        # Check internal queues before submission
+        q1 = self.rest_svc.queue
+        q2 = self.rest_svc.queue_map
+        initial_queue_size_1 = q1.qsize()
+        initial_queue_size_2 = len(q2.get('public', []))
+        # Begin relevant patches
+        await self.patches_on_insert()
+        # Check submitting a single report is successful
+        resp = await self.client.post('/rest', json=test_data)
+        self.assertTrue(resp.status < 300, msg='A single report submission resulted in a non-200 response.')
+        # Check the internal queues after this submission
+        new_queue_size_1 = q1.qsize()
+        new_queue_size_2 = len(q2.get('public', []))
+        self.assertEqual(new_queue_size_1, initial_queue_size_1 + 1, msg='rest_svc.queue updated incorrectly.')
+        self.assertEqual(new_queue_size_2, initial_queue_size_2 + 1, msg='rest_svc.queue_map updated incorrectly.')
+
     async def test_queue_limit(self):
         """Function to test the queue limit works correctly."""
         # Given the randomised queue limit for this test, obtain it and create a limit-exceeding amount of data
@@ -61,13 +80,8 @@ class TestReports(ThreadAppTest):
             title, url = ('title%s' % n), ('url%s' % n)
             csv_str = csv_str + title + ',' + url + '\n'
         data = dict(index='insert_csv', file=csv_str)
-        # Begin some patches
-        # We are not passing valid URLs; mock verifying the URLs to raise no errors
-        self.create_patch(target=WebService, attribute='verify_url', return_value=None)
-        # Duplicate URL checks will raise an error with malformed URLS; mock this to raise no errors
-        self.create_patch(target=WebService, attribute='urls_match', return_value=False)
-        # We don't want the queue to be checked after this test; mock this to return (and do) nothing
-        self.create_patch(target=RestService, attribute='check_queue', return_value=None)
+        # Begin relevant patches
+        await self.patches_on_insert()
 
         # Send off the limit-exceeding data
         resp = await self.client.post('/limit/rest', json=data)
@@ -95,10 +109,12 @@ class TestReports(ThreadAppTest):
         too_many_columns = dict(file='title,url,title\nt1,url.1,t1\nt2,url.2,t2\n')
         uneven_columns = dict(file='title,url\nt1,url.1\nt2,url.2,url.3\n')
         urls_missing = dict(file='title,url\nt1,\nt2,\n')
+        empty_val = dict(file='title,url\n    ,url.1\nt2,url.2\n')
         # The test cases paired with expected error messages
-        tests = [(wrong_columns, 'Two columns have not been specified'), (wrong_param, 'Error inserting report(s)'),
-                 (too_many_columns, 'Two columns have not been specified'), (uneven_columns, 'Could not parse file'),
-                 (urls_missing, 'CSV is missing text in at least one row')]
+        col_error = 'Two columns have not been specified'
+        missing_text = 'CSV is missing text in at least one row'
+        tests = [(wrong_columns, col_error), (too_many_columns, col_error), (wrong_param, 'Error inserting report(s)'),
+                 (uneven_columns, 'Could not parse file'), (urls_missing, missing_text), (empty_val, missing_text)]
         for test_data, predicted_msg in tests:
             # Call the CSV REST endpoint with the malformed data and check the response
             data = dict(index='insert_csv')
@@ -108,6 +124,24 @@ class TestReports(ThreadAppTest):
             error_msg = resp_json.get('error')
             self.assertTrue(resp.status >= 400, msg='Malformed CSV data resulted in successful response.')
             self.assertTrue(predicted_msg in error_msg, msg='Malformed CSV error message formed incorrectly.')
+
+    async def test_empty_parameters(self):
+        """Function to test the behaviour of submitting a report with empty parameters."""
+        # Request data to test
+        full_test_data = dict(index='insert_report', url='twinkle.twinkle.2', title='How I Wonder')
+        # Begin relevant patches
+        await self.patches_on_insert()
+        for argument in ['url', 'title']:
+            # Replace parameter with empty string
+            test_data = dict(full_test_data)
+            test_data[argument] = '    '
+            # Submit the report and test outcome
+            resp = await self.client.post('/rest', json=test_data)
+            resp_json = await resp.json()
+            error_msg = resp_json.get('error')
+            predicted_msg = 'Missing value for %s.' % argument
+            self.assertTrue(resp.status >= 400, msg='Empty %s resulted in successful response.' % argument)
+            self.assertTrue(predicted_msg in error_msg, msg='Error message formed incorrectly for empty %s.' % argument)
 
     async def test_start_analysis_success(self):
         """Function to test the behaviour of start analysis when successful."""
