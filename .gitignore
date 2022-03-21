@@ -1,6 +1,7 @@
 __pycache__/
 # Local database files
 *.db
+*.db-journal
 # Pre-trained models
 threadcomponents/models/model_dict.p
 # Unit test generated files
