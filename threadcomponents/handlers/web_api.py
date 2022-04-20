@@ -357,10 +357,15 @@ class WebAPI:
         dd['content'].append(dict(text='URL:', style='bold'))  # State report's source
         dd['content'].append(dict(text=report_url, style='url'))
         dd['content'].append(dict(text='\n'))  # Blank line after URL
+        # Add info-text for live version (explaining why no text is shown)
+        if not self.is_local:
+            dd['content'].append("This article's text has been removed due to copyright.\n"
+                                 "Please refer to the URL to see the article this report is based on.\n\n")
         seen_sentences = set()  # set to prevent duplicate sentences being exported
         for sentence in sentences:
             sen_id, sen_text = sentence['uid'], sentence['text']
-            if sen_id not in seen_sentences:
+            # Add the article text to the PDF for local-use only
+            if self.is_local and (sen_id not in seen_sentences):
                 dd['content'].append(sen_text)
                 seen_sentences.add(sen_id)
             if sentence['attack_tid'] and sentence['active_hit'] and not sentence['inactive_attack']:
