@@ -90,6 +90,19 @@ class WebService:
             logging.error('Misconfigured app: permission_checker() error: ' + str(e))
             return False
 
+    def url_allowed(self, request, url):
+        """Function to check a URL is allowed to be submitted."""
+        if self.is_local:
+            # A URL-checker is not implemented for local-use so allow the action
+            return True
+        try:
+            # Attempt to use app's method to check URL; log if this couldn't be done
+            return request.app.url_checker(url)
+        except (TypeError, AttributeError) as e:
+            logging.error('Misconfigured app: url_checker() error: ' + str(e))
+            # SystemError makes more sense but we are listening for ValueErrors
+            raise ValueError('Apologies, this URL could not be processed at this time, please contact us.')
+
     async def get_current_token(self, request):
         """Function to obtain the current user-token given a request."""
         if self.is_local:
@@ -318,25 +331,26 @@ class WebService:
         # but leaving as this for now
         return False
 
-    def verify_url(self, url=''):
+    def verify_url(self, request, url=''):
         """Function to check a URL can be parsed. Returns None if successful."""
         url_error = 'Unable to parse URL %s' % url
         # Check the url can be parsed by the urllib module
         try:
             parsed_url = urlparse(url)
             # Allow the url if it has a scheme and hostname
-            allow_url = all([parsed_url.scheme, parsed_url.netloc, parsed_url.hostname])
+            accept_url = all([parsed_url.scheme, parsed_url.netloc, parsed_url.hostname])
         except ValueError:  # Raise an error if the url could not be parsed
             raise ValueError(url_error)
-        if not allow_url:  # Raise an error if the url could be parsed but does not have sufficient components
+        if not accept_url:  # Raise an error if the url could be parsed but does not have sufficient components
             raise ValueError(url_error)
-        # Check a request-response can be retrieved from this url
         try:
+            # Check the URL is allowed
+            self.url_allowed(request, url)
+            # Check a request-response can be retrieved from this url
             self.get_response_from_url(url, log_errors=False, allow_error=False)
         except requests.exceptions.ConnectionError:
             raise ValueError(url_error)
         # Check the url does not contain an IP address
-        # TODO later expand to include our domain name isn't parsed_url.hostname
         created_ip = None
         with suppress(ValueError):
             created_ip = ip_address(parsed_url.hostname)

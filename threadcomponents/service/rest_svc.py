@@ -318,7 +318,7 @@ class RestService:
                 return dict(error='Missing value for %s.' % column, alert_user=1)
             # Place title and URL in list to be compatible with _insert_batch_reports()
             criteria[column] = [value]
-        return await self._insert_batch_reports(criteria, 1, token=criteria.get('token'))
+        return await self._insert_batch_reports(request, criteria, 1, token=criteria.get('token'))
 
     async def insert_csv(self, request, criteria=None):
         # Check for errors whilst updating request data with token (if applicable)
@@ -329,7 +329,7 @@ class RestService:
             df = self.verify_csv(criteria['file'])
         except (TypeError, ValueError) as e:  # Any errors occurring from the csv-checks
             return dict(error=str(e), alert_user=1)
-        return await self._insert_batch_reports(df, df.shape[0], token=criteria.get('token'))
+        return await self._insert_batch_reports(request, df, df.shape[0], token=criteria.get('token'))
 
     async def pre_insert_add_token(self, request, request_data=None, key=None):
         """Function to check sent request data before inserting reports and return an error if there was an issue."""
@@ -357,7 +357,7 @@ class RestService:
             request_data.update(token=None)
         return None
 
-    async def _insert_batch_reports(self, batch, row_count, token=None):
+    async def _insert_batch_reports(self, request, batch, row_count, token=None):
         # Possible responses to the request
         default_error, success = dict(error='Error inserting report(s).'), REST_SUCCESS.copy()
         # Different counts for different reasons why reports are not queued
@@ -378,7 +378,7 @@ class RestService:
                 # Enforce http on urls that do not begin with http(s)
                 prefix_check = re.match('^https?://', url, re.IGNORECASE)
                 url = 'http://' + url if prefix_check is None else url
-                self.web_svc.verify_url(url=url)
+                self.web_svc.verify_url(request, url=url)
             # Raised if verify_url() fails
             except ValueError as ve:
                 return dict(error=str(ve), alert_user=1)
