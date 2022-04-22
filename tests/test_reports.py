@@ -10,16 +10,6 @@ class TestReports(ThreadAppTest):
     """A test suite for checking report actions."""
     DB_TEST_FILE = os.path.join('tests', 'threadtestreport.db')
 
-    async def test_about_page(self):
-        """Function to test the about page loads successfully."""
-        resp = await self.client.get('/about')
-        self.assertTrue(resp.status == 200, msg='About page failed to load successfully.')
-
-    async def test_home_page(self):
-        """Function to test the home page loads successfully."""
-        resp = await self.client.get('/')
-        self.assertTrue(resp.status == 200, msg='Home page failed to load successfully.')
-
     async def test_edit_report_loads(self):
         """Function to test loading an edit-report page is successful."""
         # Insert a report
