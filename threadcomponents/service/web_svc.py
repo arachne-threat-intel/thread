@@ -30,6 +30,7 @@ class WebService:
     # Static class variables for the keys in app_routes
     HOME_KEY, COOKIE_KEY, EDIT_KEY, ABOUT_KEY, REST_KEY = 'home', 'cookies', 'edit', 'about', 'rest'
     EXPORT_PDF_KEY, EXPORT_NAV_KEY, STATIC_KEY = 'export_pdf', 'export_nav', 'static'
+    COPYRIGHT_KEY = 'copyright_compliance'
     REPORT_PARAM = 'file'
 
     def __init__(self, route_prefix=None, is_local=True):
@@ -53,6 +54,7 @@ class WebService:
             self.ABOUT_KEY: route_prefix + '/about', self.REST_KEY: route_prefix + '/rest',
             self.EXPORT_PDF_KEY: route_prefix + '/export/pdf/{%s}' % self.REPORT_PARAM,
             self.EXPORT_NAV_KEY: route_prefix + '/export/nav/{%s}' % self.REPORT_PARAM,
+            self.COPYRIGHT_KEY: route_prefix + '/copyright-compliance',
             self.STATIC_KEY: route_prefix + '/theme/'
         }
 

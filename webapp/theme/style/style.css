@@ -309,10 +309,11 @@ input[type="checkbox"].report-submission-checkbox {
 
 /* about.html */
 
-#aboutInfo {
-  margin-left: 50px;
-  margin-right: 50px;
-  margin-top: 50px
+#aboutInfo, #copyrightInfo {
+  margin-left: 3rem;
+  margin-right: 3rem;
+  margin-top: 3rem;
+  padding-bottom: 2rem;
 }
 
 /* columns.html */
