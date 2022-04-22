@@ -39,6 +39,7 @@ class WebAPI:
         js_src_config = js_src if js_src in [ONLINE_JS_SRC, OFFLINE_JS_SRC] else ONLINE_JS_SRC
         self.BASE_PAGE_DATA = dict(about_url=self.web_svc.get_route(self.web_svc.ABOUT_KEY),
                                    home_url=self.web_svc.get_route(self.web_svc.HOME_KEY),
+                                   copyright_url=self.web_svc.get_route(self.web_svc.COPYRIGHT_KEY),
                                    rest_url=self.web_svc.get_route(self.web_svc.REST_KEY),
                                    static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY),
                                    current_year=datetime.now().strftime('%Y'),
@@ -121,6 +122,12 @@ class WebAPI:
     @template('about.html')
     async def about(self, request):
         page_data = dict(title='About')
+        await self.add_base_page_data(request, data=page_data)
+        return page_data
+
+    @template('copyright-compliance.html')
+    async def copyright_compliance(self, request):
+        page_data = dict(title='Copyright Compliance')
         await self.add_base_page_data(request, data=page_data)
         return page_data
 

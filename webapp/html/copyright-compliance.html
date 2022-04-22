@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div id="copyrightInfo">
+  <p>
+    Using Thread involves submitting website links for analysis. Arachne Digital has to comply with a website's Terms
+    of Use. Whilst we respect article authors and website owners wanting to protect their work, this restriction slows
+    security research and ultimately impedes people trying to protect themselves and their organisations.
+  </p>
+  {% if is_local %}
+    <p>
+      As you are using Thread locally - independent of Arachne Digital's servers - we have not restricted which websites
+      you can submit to create a report. However, we do advise you before making submissions to <b>check the Terms of
+      Use of websites you are going to submit</b> to this local version of Thread.
+    </p>
+  {% else %}
+    <p>
+      If you have found a report in Thread which violates the copyright for your work, please contact us (via the
+      details from our <a href="{{about_url}}">About</a> page) with the Thread-report URL and the URL of your website's
+      Terms of Use for us to investigate.
+    </p>
+    <p>
+      You may have encountered website URLs which we have prevented you from submitting to Thread to comply with that
+      website's copyright. If you want the ability to analyse pages from such websites with Thread, please copy and
+      paste the below text into an email and send it to the website owner. Should the website owner contact us and
+      consent to Thread scraping their site, we'll lift the block.
+    </p>
+    <hr>
+    <p>
+      Dear &lt;name&gt;,
+    </p>
+    <p>
+      I'm trying to use a tool called Thread (https://www.arachne.digital/thread) to analyse information on your website
+      against MITRE ATT&CK®, however your Terms of Use state that your site - &lt;URL blocked by Thread&gt; - cannot be
+      scraped. I ask that you please grant an exception to Thread for the purposes of research.
+    </p>
+    <p>
+      Thread is a free open source tool built by Arachne Digital to support security professionals. Arachne Digital
+      does aggregate the analysis and offers a paid threat intelligence feed separate from Thread, but no scraped
+      information appears in the separate paid threat intelligence feed. Your information is not sold.
+    </p>
+    <p>
+      Thread scrapes information from websites and outputs a PDF file that lists all the TTPs (tactics, techniques, and
+      procedures) found in the free text on that site. Thread appropriately cites where the information came from and
+      does not reproduce the text from the site other than single sentences against each TTP found, to reference where
+      that TTP was found. Feel free to try out Thread for yourself.
+    </p>
+    <p>
+      If you allow Thread to scrape your site, you'll be supporting security research and promoting the useful content
+      on your site, since documents produced by Thread cite the original source. You may even have cyber threat analysts
+      on staff that find Thread useful.
+    </p>
+    <p>
+      Please email Arachne Digital on contact[at]arachne[dot]digital if you consent to Thread scraping your website.
+    </p>
+    <p>
+      &lt;Your sign-off&gt;
+    </p>
+  {% endif %}
+</div>
+
+{% endblock %}
