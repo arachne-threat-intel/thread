@@ -1707,9 +1707,10 @@
     "description": "Binaries signed with trusted digital certificates can execute on Windows systems protected by digital signature validation. Several Microsoft signed binaries that are default on Windows installations can be used to proxy execution of other files. This behavior may be abused by adversaries to execute malicious files that could bypass application whitelisting and signature validation on systems. This technique accounts for proxy execution methods that are not already accounted for within the existing techniques.\n\n### Mavinject.exe\nMavinject.exe is a Windows utility that allows for code execution. Mavinject can be used to input a DLL into a running process. (Citation: Twitter gN3mes1s Status Update MavInject32)\n\n\"C:\\Program Files\\Common Files\\microsoft shared\\ClickToRun\\MavInject32.exe\" <PID> /INJECTRUNNING <PATH DLL>\nC:\\Windows\\system32\\mavinject.exe <PID> /INJECTRUNNING <PATH DLL>\n\n### SyncAppvPublishingServer.exe\nSyncAppvPublishingServer.exe can be used to run powershell scripts without executing powershell.exe. (Citation: Twitter monoxgas Status Update SyncAppvPublishingServer)\n\nSeveral others binaries exist that may be used to perform similar behavior. (Citation: GitHub Ultimate AppLocker Bypass List)",
     "example_uses": [],
     "id": "T1218",
-    "name": "Signed Binary Proxy Execution",
+    "name": "System Binary Proxy Execution",
     "similar_words": [
-      "Signed Binary Proxy Execution"
+      "Signed Binary Proxy Execution",
+      "System Binary Proxy Execution"
     ]
   },
   "attack-pattern--45d84c8b-c1e2-474d-a14d-69b5de0a2bc0": {
@@ -4702,9 +4703,10 @@
       "is known to contain functionality that enables targeting of smart card technologies to proxy authentication for connections to restricted network resources using detected hardware tokens."
     ],
     "id": "T1111",
-    "name": "Two-Factor Authentication Interception",
+    "name": "Multi-Factor Authentication Interception",
     "similar_words": [
-      "Two-Factor Authentication Interception"
+      "Two-Factor Authentication Interception",
+      "Multi-Factor Authentication Interception"
     ]
   },
   "attack-pattern--dd901512-6e37-4155-943b-453e3777b125": {
@@ -4811,9 +4813,10 @@
       "actors use the Hunter tool to conduct network service discovery for vulnerable systems."
     ],
     "id": "T1046",
-    "name": "Network Service Scanning",
+    "name": "Network Service Discovery",
     "similar_words": [
-      "Network Service Scanning"
+      "Network Service Scanning",
+      "Network Service Discovery"
     ]
   },
   "attack-pattern--e6415f09-df0e-48de-9aba-928c902b7549": {
@@ -5186,9 +5189,10 @@
       "has used PubPrn.vbs within execution scripts to execute malware, possibly bypassing defenses."
     ],
     "id": "T1216",
-    "name": "Signed Script Proxy Execution",
+    "name": "System Script Proxy Execution",
     "similar_words": [
-      "Signed Script Proxy Execution"
+      "Signed Script Proxy Execution",
+      "System Script Proxy Execution"
     ]
   },
   "attack-pattern--f72eb8a8-cd4c-461d-a814-3f862befbf00": {
@@ -7878,11 +7882,12 @@
   },
   "tool--cf23bf4a-e003-4116-bbae-1ea6c558d565": {
     "id": "S0095",
-    "name": "FTP",
+    "name": "ftp",
     "examples": [],
     "similar_words": [
       "FTP",
-      "ftp.exe"
+      "ftp.exe",
+      "ftp"
     ],
     "description": "[FTP](https://attack.mitre.org/software/S0095) is a utility commonly available with operating systems to transfer information over the File Transfer Protocol (FTP). Adversaries can use it to transfer other tools onto a system or to exfiltrate data. (Citation: Wikipedia FTP)",
     "example_uses": []
