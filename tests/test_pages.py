@@ -16,8 +16,3 @@ class TestPages(ThreadAppTest):
         """Function to test the home page loads successfully."""
         resp = await self.client.get('/')
         self.assertTrue(resp.status == 200, msg='Home page failed to load successfully.')
-
-    async def test_copyright_compliance_page(self):
-        """Function to test the copyright-compliance page loads successfully."""
-        resp = await self.client.get('/copyright-compliance')
-        self.assertTrue(resp.status == 200, msg='The copyright-compliance page failed to load successfully.')
