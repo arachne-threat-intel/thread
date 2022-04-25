@@ -48,15 +48,17 @@ class WebService:
             # If we have a route prefix, update the prefix and home_route variables
             route_prefix = '/' + route_prefix_param
             home_route = route_prefix
-        return {
+        routes = {
             self.HOME_KEY: home_route, self.COOKIE_KEY: route_prefix + '/cookies',
             self.EDIT_KEY: route_prefix + '/edit/{%s}' % self.REPORT_PARAM,
             self.ABOUT_KEY: route_prefix + '/about', self.REST_KEY: route_prefix + '/rest',
             self.EXPORT_PDF_KEY: route_prefix + '/export/pdf/{%s}' % self.REPORT_PARAM,
             self.EXPORT_NAV_KEY: route_prefix + '/export/nav/{%s}' % self.REPORT_PARAM,
-            self.COPYRIGHT_KEY: route_prefix + '/copyright-compliance',
             self.STATIC_KEY: route_prefix + '/theme/'
         }
+        if not self.is_local:
+            routes.update({self.COPYRIGHT_KEY: route_prefix + '/copyright-compliance'})
+        return routes
 
     def get_route(self, route_key, param=None):
         """Function to get one of the web app's routes with the option of a parameter to be placed in the link."""
