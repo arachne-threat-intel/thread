@@ -361,13 +361,10 @@ class WebAPI:
         # Add the text to the document
         dd['content'].append(dict(text=title, style='header'))  # begin with title of document
         dd['content'].append(dict(text='\n'))  # Blank line after title
+        dd['content'].append(dict(text='Original work at the below link\n\n', style='sub_header'))
         dd['content'].append(dict(text='URL:', style='bold'))  # State report's source
         dd['content'].append(dict(text=report_url, style='url'))
         dd['content'].append(dict(text='\n'))  # Blank line after URL
-        # Add info-text for live version (explaining why no text is shown)
-        if not self.is_local:
-            dd['content'].append("This article's text has been removed due to copyright.\n"
-                                 "Please refer to the URL to see the article this report is based on.\n\n")
         seen_sentences = set()  # set to prevent duplicate sentences being exported
         for sentence in sentences:
             sen_id, sen_text = sentence['uid'], sentence['text']
