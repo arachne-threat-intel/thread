@@ -47,7 +47,7 @@ python -m unittest discover tests/
 ## Submitting a Report
 On Thread's homepage, enter a web page URL (sorry no PDFs yet) to process it and begin a report based on it. It takes a few minutes to analyse a URL, this is dependent on the amount of text found from the URL. You are advised to periodically check if your submission is still in the queue.
 
-If you see an error in the queue, this means the website did not like us trying to scrape it, or something on the site could not be parsed. We will periodically check for these errors and work on improvements to the submission process.
+If you see an error in the queue, this means the website did not like us trying to fetch its contents, or something on the site could not be parsed. We will periodically check for these errors and work on improvements to the submission process.
 
 When the URL has been processed and its report is ready, a new card will appear (in the **Needs Review** column). Each card will have two buttons:
 - **Source**: this links back to original URL where the report originated from

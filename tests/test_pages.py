@@ -16,3 +16,8 @@ class TestPages(ThreadAppTest):
         """Function to test the home page loads successfully."""
         resp = await self.client.get('/')
         self.assertTrue(resp.status == 200, msg='Home page failed to load successfully.')
+
+    async def test_how_it_works_page(self):
+        """Function to test the How Thread Works page loads successfully."""
+        resp = await self.client.get('/how-thread-works')
+        self.assertTrue(resp.status == 200, msg='How Thread Works page failed to load successfully.')

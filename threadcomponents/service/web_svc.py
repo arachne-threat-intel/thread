@@ -30,7 +30,7 @@ class WebService:
     # Static class variables for the keys in app_routes
     HOME_KEY, COOKIE_KEY, EDIT_KEY, ABOUT_KEY, REST_KEY = 'home', 'cookies', 'edit', 'about', 'rest'
     EXPORT_PDF_KEY, EXPORT_NAV_KEY, STATIC_KEY = 'export_pdf', 'export_nav', 'static'
-    COPYRIGHT_KEY = 'copyright_compliance'
+    HOW_IT_WORKS_KEY, WHAT_TO_SUBMIT_KEY = 'how_it_works', 'what_to_submit'
     REPORT_PARAM = 'file'
 
     def __init__(self, route_prefix=None, is_local=True):
@@ -54,10 +54,11 @@ class WebService:
             self.ABOUT_KEY: route_prefix + '/about', self.REST_KEY: route_prefix + '/rest',
             self.EXPORT_PDF_KEY: route_prefix + '/export/pdf/{%s}' % self.REPORT_PARAM,
             self.EXPORT_NAV_KEY: route_prefix + '/export/nav/{%s}' % self.REPORT_PARAM,
+            self.HOW_IT_WORKS_KEY: route_prefix + '/how-thread-works',
             self.STATIC_KEY: route_prefix + '/theme/'
         }
         if not self.is_local:
-            routes.update({self.COPYRIGHT_KEY: route_prefix + '/copyright-compliance'})
+            routes.update({self.WHAT_TO_SUBMIT_KEY: route_prefix + '/what-to-submit'})
         return routes
 
     def get_route(self, route_key, param=None):
@@ -94,14 +95,14 @@ class WebService:
             logging.error('Misconfigured app: permission_checker() error: ' + str(e))
             return False
 
-    def url_allowed(self, request, url):
+    async def url_allowed(self, request, url):
         """Function to check a URL is allowed to be submitted."""
         if self.is_local:
             # A URL-checker is not implemented for local-use so allow the action
             return True
         try:
             # Attempt to use app's method to check URL; log if this couldn't be done
-            return request.app.url_checker(url)
+            return await request.app.url_checker(request, url)
         except (TypeError, AttributeError) as e:
             logging.error('Misconfigured app: url_checker() error: ' + str(e))
             # SystemError makes more sense but we are listening for ValueErrors
@@ -335,7 +336,7 @@ class WebService:
         # but leaving as this for now
         return False
 
-    def verify_url(self, request, url=''):
+    async def verify_url(self, request, url=''):
         """Function to check a URL can be parsed. Returns None if successful."""
         url_error = 'Unable to parse URL %s' % url
         # Check the url can be parsed by the urllib module
@@ -349,7 +350,7 @@ class WebService:
             raise ValueError(url_error)
         try:
             # Check the URL is allowed
-            self.url_allowed(request, url)
+            await self.url_allowed(request, url)
             # Check a request-response can be retrieved from this url
             self.get_response_from_url(url, log_errors=False, allow_error=False)
         except requests.exceptions.ConnectionError:

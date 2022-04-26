@@ -106,12 +106,13 @@ async def init(host, port, app_setup_func=None):
     app.router.add_route('GET', web_svc.get_route(WebService.HOME_KEY), website_handler.index)
     app.router.add_route('GET', web_svc.get_route(WebService.EDIT_KEY), website_handler.edit)
     app.router.add_route('GET', web_svc.get_route(WebService.ABOUT_KEY), website_handler.about)
+    app.router.add_route('GET', web_svc.get_route(WebService.HOW_IT_WORKS_KEY), website_handler.how_it_works)
     app.router.add_route('*', web_svc.get_route(WebService.REST_KEY), website_handler.rest_api)
     app.router.add_route('GET', web_svc.get_route(WebService.EXPORT_PDF_KEY), website_handler.pdf_export)
     app.router.add_route('GET', web_svc.get_route(WebService.EXPORT_NAV_KEY), website_handler.nav_export)
     app.router.add_route('GET', web_svc.get_route(WebService.COOKIE_KEY), website_handler.accept_cookies)
     if not web_svc.is_local:
-        app.router.add_route('GET', web_svc.get_route(WebService.COPYRIGHT_KEY), website_handler.copyright_compliance)
+        app.router.add_route('GET', web_svc.get_route(WebService.WHAT_TO_SUBMIT_KEY), website_handler.what_to_submit)
     app.router.add_static(web_svc.get_route(WebService.STATIC_KEY), os.path.join(webapp_dir, 'theme'))
 
     # If extra app-setup is required, do this
