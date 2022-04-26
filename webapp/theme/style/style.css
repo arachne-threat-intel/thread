@@ -316,6 +316,10 @@ input[type="checkbox"].report-submission-checkbox {
   padding-bottom: 2rem;
 }
 
+.emailContent {
+  font-style: italic;
+}
+
 /* columns.html */
 
 .reportSentencesDiv {
