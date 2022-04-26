@@ -39,7 +39,8 @@ class WebAPI:
         js_src_config = js_src if js_src in [ONLINE_JS_SRC, OFFLINE_JS_SRC] else ONLINE_JS_SRC
         self.BASE_PAGE_DATA = dict(about_url=self.web_svc.get_route(self.web_svc.ABOUT_KEY),
                                    home_url=self.web_svc.get_route(self.web_svc.HOME_KEY),
-                                   copyright_url=self.web_svc.get_route(self.web_svc.COPYRIGHT_KEY),
+                                   how_it_works_url=self.web_svc.get_route(self.web_svc.HOW_IT_WORKS_KEY),
+                                   what_to_submit_url=self.web_svc.get_route(self.web_svc.WHAT_TO_SUBMIT_KEY),
                                    rest_url=self.web_svc.get_route(self.web_svc.REST_KEY),
                                    static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY),
                                    current_year=datetime.now().strftime('%Y'),
@@ -125,9 +126,15 @@ class WebAPI:
         await self.add_base_page_data(request, data=page_data)
         return page_data
 
-    @template('copyright-compliance.html')
-    async def copyright_compliance(self, request):
-        page_data = dict(title='Copyright Compliance')
+    @template('what-to-submit.html')
+    async def what_to_submit(self, request):
+        page_data = dict(title='What Can I Submit?')
+        await self.add_base_page_data(request, data=page_data)
+        return page_data
+
+    @template('how-it-works.html')
+    async def how_it_works(self, request):
+        page_data = dict(title='How Thread Works')
         await self.add_base_page_data(request, data=page_data)
         return page_data
 
@@ -348,19 +355,18 @@ class WebAPI:
         dd['info']['title'] = sanitise_filename(title)
         dd['info']['creator'] = report_url
 
-        # Extra content if this report hasn't been completed: highlight it's a draft
-        if report_status != self.report_statuses.COMPLETED.value:
-            dd['content'].append(dict(text='DRAFT: Please note this report is still being analysed. '
-                                           'Techniques listed here may change later on.', style='sub_header'))
-            dd['content'].append(dict(text='\n'))  # Blank line before report's title
-            dd['watermark'] = dict(text='DRAFT', opacity=0.3, bold=True, angle=70)
-
         # Table for found attacks
         table = {'body': []}
         table['body'].append(['ID', 'Name', 'Identified Sentence'])
         # Add the text to the document
         dd['content'].append(dict(text=title, style='header'))  # begin with title of document
         dd['content'].append(dict(text='\n'))  # Blank line after title
+        # Extra content if this report hasn't been completed: highlight it's a draft
+        if report_status != self.report_statuses.COMPLETED.value:
+            dd['content'].append(dict(text='DRAFT: Please note this report is still being analysed. '
+                                           'Techniques listed here may change later on.', style='sub_header'))
+            dd['content'].append(dict(text='\n'))  # Blank line before report's URL
+            dd['watermark'] = dict(text='DRAFT', opacity=0.3, bold=True, angle=70)
         dd['content'].append(dict(text='Original work at the below link\n\n', style='sub_header'))
         dd['content'].append(dict(text='URL:', style='bold'))  # State report's source
         dd['content'].append(dict(text=report_url, style='url'))

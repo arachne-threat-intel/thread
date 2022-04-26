@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="threadTextPage">
+  <p>
+    Thread receives a website URL as input from you to create a report for you based on that URL. After your submission,
+    the URLs and their corresponding titles are placed in Thread's queue. When one of these URLs is picked off the queue,
+    Thread uses an open-source library (Newspaper) to retrieve the contents of the website. Sometimes images are
+    retrieved too but Thread focuses on the text it can retrieve from a URL (which is why you may have encountered
+    errors when submitting some URLs).
+  </p>
+  <p>
+    With the text from a URL, this is then fed into machine learning (ML) models. These models have been trained with
+    data to detect what tactics, techniques, and procedures (TTP) a sentence contains. Over time, we plan to improve
+    the data the ML models learn from for better TTP predictions in sentences. As for now, after the ML models have done
+    initial TTP predictions - mapping a sentence from the URL-text with a TTP - your report moves out of the queue and
+    is ready for you to review.
+  </p>
+  <p>
+    If you are a website owner and you do not want us to fetch the contents of your site, you can email Arachne
+    Digital via contact[at]arachne[dot]digital.
+  </p>
+</div>
+
+{% endblock %}

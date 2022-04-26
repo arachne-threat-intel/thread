@@ -307,9 +307,9 @@ input[type="checkbox"].report-submission-checkbox {
   max-width: 40rem;
 }
 
-/* about.html */
+/* Text pages */
 
-#aboutInfo, #copyrightInfo {
+.threadTextPage {
   margin-left: 3rem;
   margin-right: 3rem;
   margin-top: 3rem;

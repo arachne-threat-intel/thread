@@ -95,6 +95,7 @@ class ThreadAppTest(AioHTTPTestCase):
         app.router.add_route('GET', self.web_svc.get_route(WebService.HOME_KEY), self.web_api.index)
         app.router.add_route('GET', self.web_svc.get_route(WebService.EDIT_KEY), self.web_api.edit)
         app.router.add_route('GET', self.web_svc.get_route(WebService.ABOUT_KEY), self.web_api.about)
+        app.router.add_route('GET', self.web_svc.get_route(WebService.HOW_IT_WORKS_KEY), self.web_api.how_it_works)
         app.router.add_route('*', self.web_svc.get_route(WebService.REST_KEY), self.web_api.rest_api)
         # A different route for limit-testing
         app.router.add_route('*', '/limit' + self.web_svc.get_route(WebService.REST_KEY),
