@@ -62,7 +62,7 @@ class ThreadAppTest(AioHTTPTestCase):
         """Any setting-up before each test method."""
         # Build the database (can't run in setUpClass() as this is an async method)
         await self.db.build(self.schema)
-        await self.db.build(self.backup_schema)
+        await self.db.build(self.backup_schema, is_partial=True)
         # Insert some attack data
         a1_name, a2_name, a3_name = self.attacks.get('f12345'), self.attacks.get('f32451'), self.attacks.get('d99999')
         a4_name = self.attacks.get('s00001')

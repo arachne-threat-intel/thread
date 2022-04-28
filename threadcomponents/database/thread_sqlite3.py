@@ -21,10 +21,16 @@ class ThreadSQLite(ThreadDB):
         # '?' is the query parameter: https://docs.python.org/3/library/sqlite3.html#sqlite3-placeholders
         return '?'
 
-    async def build(self, schema):
+    async def build(self, schema, is_partial=False):
         """Implements ThreadDB.build()"""
         # Ensure the foreign-keys line is prepended to the schema
         schema = ENABLE_FOREIGN_KEYS + '\n' + schema
+        try:
+            # sqlite3 does not support date fields (see 2.2. here: https://www.sqlite.org/datatype3.html)
+            schema = self.add_column_to_schema(schema, 'reports', 'expires_on TEXT')
+        except ValueError as e:
+            if not is_partial:
+                raise e
         try:  # Execute the schema's SQL statements
             with sqlite3.connect(self.database) as conn:
                 cursor = conn.cursor()

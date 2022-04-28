@@ -30,8 +30,8 @@ class Dao:
     def db_func(self, func_key, *args):
         return self.db.get_function_name(func_key, *args)
 
-    async def build(self, schema):
-        await self.db.build(schema)
+    async def build(self, schema, is_partial=False):
+        await self.db.build(schema, is_partial=is_partial)
 
     def generate_copied_tables(self, schema):
         return self.db.generate_copied_tables(schema)

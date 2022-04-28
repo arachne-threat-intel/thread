@@ -84,7 +84,7 @@ class DataService:
         copied_tables_schema = self.dao.generate_copied_tables(schema=schema)
         # Proceed to build both schemas
         await self.dao.build(schema)
-        await self.dao.build(copied_tables_schema)
+        await self.dao.build(copied_tables_schema, is_partial=True)
 
     async def fetch_and_update_attack_data(self):
         """

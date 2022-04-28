@@ -31,7 +31,7 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         """Any setting-up before each test method."""
         # Build the database (can't run in setUpClass() as this is an async method)
         await self.db.build(self.schema)
-        await self.db.build(self.backup_schema)
+        await self.db.build(self.backup_schema, is_partial=True)
         await self.db.initialise_column_names()
 
     async def check_data_appeared_in_table(self, table, method_name='unspecified', found_check=None, expect_found=True,
