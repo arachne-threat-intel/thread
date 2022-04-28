@@ -106,7 +106,7 @@ class ThreadPostgreSQL(ThreadDB):
         """Overrides ThreadDB.val_as_false"""
         return 'FALSE'
 
-    async def build(self, schema):
+    async def build(self, schema, is_partial=False):
         """Implements ThreadDB.build()"""
         logging.warning('Re-building the database cannot be done when config \'db-engine\' is \'postgresql\'. '
                         'Please run `main.py --build-db` separately instead.')

@@ -5,6 +5,27 @@ from abc import ABC, abstractmethod
 
 BACKUP_TABLE_SUFFIX = '_initial'
 TABLES_WITH_BACKUPS = ['report_sentences', 'report_sentence_hits', 'original_html']
+# The beginning and end strings of an SQL create statement
+CREATE_BEGIN, CREATE_END = 'CREATE TABLE IF NOT EXISTS', ');'
+
+
+def find_create_statement_in_schema(schema, table):
+    """Helper-method to return the start and end positions of an SQL create statement in a given schema."""
+    try:
+        start_pos = schema.index('%s %s' % (CREATE_BEGIN, table))
+    # Start-position not found
+    except ValueError as e:
+        logging.error('Table `%s` missing: given schema has different or missing CREATE statement.' % table)
+        raise e
+    # Given a starting position, find where the table's create statement finishes
+    try:
+        end_pos = schema[start_pos:].index(CREATE_END)
+    # End-position not found
+    except ValueError as e:
+        logging.error('SQL error: could not find closing `%s` for table `%s` in schema.' % (CREATE_END, table))
+        raise e
+    # End position is offset by the start_pos (because index() was called from start_pos)
+    return start_pos, (start_pos + end_pos)
 
 
 class ThreadDB(ABC):
@@ -66,32 +87,25 @@ class ThreadDB(ABC):
             return func_name
 
     @staticmethod
+    def add_column_to_schema(schema, table, column):
+        """Function to add a column to a table in a schema and return the new schema."""
+        # First, find the create-table SQL statements
+        start_pos, end_pos = find_create_statement_in_schema(schema, table)
+        # Then insert the new column statement just before the end of the create-table SQL statement
+        return schema[:end_pos] + ', ' + column + schema[end_pos:]
+
+    @staticmethod
     def generate_copied_tables(schema=''):
         """Function to return a new schema that has copied structures of report-sentence tables from a given schema."""
         # The new schema to build on and return
         new_schema = ''
-        # The beginning and end strings of a create SQL statement
-        create_begin, create_end = 'CREATE TABLE IF NOT EXISTS', ');'
         # For each table that we are copying the structure of...
         for table in TABLES_WITH_BACKUPS:
-            # Attempt to find the beginning of the create statement for this table in the schema
-            try:
-                start_pos = schema.index('%s %s' % (create_begin, table))
-            # If it fails, log this and skip to the next table
-            except ValueError:
-                logging.error('Copy table `%s` failed: given schema has different or missing CREATE statement.' % table)
-                continue
-            # Given a starting position, find where the table's create statement finishes
-            try:
-                end_pos = schema[start_pos:].index(create_end)
-            # If it fails, log this and skip to the next table
-            except ValueError:
-                logging.error('Copy table `%s` failed: could not find closing `%s` in schema.' % (table, create_end))
-                continue
+            # Obtain the start and end positions of the SQL create statement for this table
+            start_pos, end_pos = find_create_statement_in_schema(schema, table)
             # We can now isolate just the create statement for this table
-            # End position is offset by the start_pos (because index() was called from start_pos)
-            # + len(create_end) because we need to include the end of the creation string itself (i.e. include ');' )
-            create_statement = schema[start_pos:(start_pos + end_pos + len(create_end))]
+            # end_pos + len(CREATE_END) to include the end of the creation string itself (i.e. include ');' )
+            create_statement = schema[start_pos:(end_pos + len(CREATE_END))]
             # Add the create statement for this table to the new schema
             new_schema += '\n\n' + create_statement
         # Now that the new schema has the tables we want copied, replace mention of the table name with '<name>_initial'
@@ -102,7 +116,7 @@ class ThreadDB(ABC):
         return new_schema.strip()
 
     @abstractmethod
-    async def build(self, schema):
+    async def build(self, schema, is_partial=False):
         """Method to build the db given a schema."""
         pass
 
