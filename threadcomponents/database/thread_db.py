@@ -9,20 +9,23 @@ TABLES_WITH_BACKUPS = ['report_sentences', 'report_sentence_hits', 'original_htm
 CREATE_BEGIN, CREATE_END = 'CREATE TABLE IF NOT EXISTS', ');'
 
 
-def find_create_statement_in_schema(schema, table):
+def find_create_statement_in_schema(schema, table, log_error=True):
     """Helper-method to return the start and end positions of an SQL create statement in a given schema."""
     try:
         start_pos = schema.index('%s %s' % (CREATE_BEGIN, table))
+    # On errors when positions cannot be found, log the error (if we want to) and then raise the error
     # Start-position not found
     except ValueError as e:
-        logging.error('Table `%s` missing: given schema has different or missing CREATE statement.' % table)
+        if log_error:
+            logging.error('Table `%s` missing: given schema has different or missing CREATE statement.' % table)
         raise e
     # Given a starting position, find where the table's create statement finishes
     try:
         end_pos = schema[start_pos:].index(CREATE_END)
     # End-position not found
     except ValueError as e:
-        logging.error('SQL error: could not find closing `%s` for table `%s` in schema.' % (CREATE_END, table))
+        if log_error:
+            logging.error('SQL error: could not find closing `%s` for table `%s` in schema.' % (CREATE_END, table))
         raise e
     # End position is offset by the start_pos (because index() was called from start_pos)
     return start_pos, (start_pos + end_pos)
@@ -87,10 +90,10 @@ class ThreadDB(ABC):
             return func_name
 
     @staticmethod
-    def add_column_to_schema(schema, table, column):
+    def add_column_to_schema(schema, table, column, log_error=True):
         """Function to add a column to a table in a schema and return the new schema."""
         # First, find the create-table SQL statements
-        start_pos, end_pos = find_create_statement_in_schema(schema, table)
+        start_pos, end_pos = find_create_statement_in_schema(schema, table, log_error=log_error)
         # Then insert the new column statement just before the end of the create-table SQL statement
         return schema[:end_pos] + ', ' + column + schema[end_pos:]
 
