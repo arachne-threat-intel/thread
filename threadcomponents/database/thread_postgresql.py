@@ -35,7 +35,7 @@ def build_db(schema=os.path.join('threadcomponents', 'conf', 'schema.sql')):
     copied_tables_schema = ThreadDB.generate_copied_tables(schema=schema_text)
     # Proceed to build both schemas
     _create_tables(username, password, host, port, schema=schema_text)
-    _create_tables(username, password, host, port, schema=copied_tables_schema)
+    _create_tables(username, password, host, port, schema=copied_tables_schema, is_partial=True)
     print('Build scripts completed; don\'t forget to GRANT permissions to less-privileged users where applicable.')
 
 
@@ -61,12 +61,19 @@ def _create_db(username, password, host, port):
             connection.close()
 
 
-def _create_tables(username, password, host, port, schema=''):
+def _create_tables(username, password, host, port, schema='', is_partial=False):
     """The function to create the tables in the Thread DB on the server."""
     # Booleans are not integers in PostgreSQL; replace any default boolean integers with True/False
     boolean_default = 'BOOLEAN DEFAULT'
     schema = schema.replace('%s 1' % boolean_default, '%s TRUE' % boolean_default)
     schema = schema.replace('%s 0' % boolean_default, '%s FALSE' % boolean_default)
+    try:
+        # Add expiry field - we only want to log an error if we are building the full schema
+        schema = ThreadDB.add_column_to_schema(schema, 'reports', 'expires_on TIMESTAMP', log_error=(not is_partial))
+    except ValueError as e:
+        # Partial-schemas (e.g. backup tables) will most likely raise an error so ignore these
+        if not is_partial:
+            raise e
     connection = None
     try:
         # Set up a connection to the specified database
