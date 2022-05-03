@@ -12,7 +12,9 @@ ENABLE_FOREIGN_KEYS = 'PRAGMA foreign_keys = ON;'
 
 class ThreadSQLite(ThreadDB):
     def __init__(self, database):
-        super().__init__()
+        function_name_map = dict()
+        function_name_map[self.FUNC_TIME_NOW] = 'DATETIME'
+        super().__init__(mapped_functions=function_name_map)
         self.database = database
 
     @property

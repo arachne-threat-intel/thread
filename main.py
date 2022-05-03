@@ -76,12 +76,6 @@ async def background_tasks(taxii_local=ONLINE_BUILD_SOURCE, build=False, json_fi
                                  'FOR OFFLINE DATABASE BUILDING\n'
                                  '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'.format(exc))
                 sys.exit()
-            try:
-                # Schedule the function to update the attack-data (check daily if it is time to do so)
-                update_attack_task = asyncio.ensure_future(repeat(86400, update_attack_data_scheduler))
-                await update_attack_task
-            except Exception as exc:
-                logging.error('Could not schedule repeated executions of attack-update function: {}'.format(exc))
         elif taxii_local == OFFLINE_BUILD_SOURCE and json_file:
             await data_svc.insert_attack_json_data(json_file)
 
@@ -141,6 +135,12 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
     loop = asyncio.get_event_loop()
     loop.create_task(background_tasks(taxii_local=taxii_local, build=build, json_file=json_file))
     loop.run_until_complete(init(host, port, app_setup_func=app_setup_func))
+    if taxii_local == ONLINE_BUILD_SOURCE:
+        # Schedule the function to update the attack-data (check daily if it is time to do so)
+        asyncio.ensure_future(repeat(86400, update_attack_data_scheduler))
+    if not web_svc.is_local:
+        # Schedule the function to tidy up reports
+        asyncio.ensure_future(repeat(86400, data_svc.remove_expired_reports))
     try:
         loop.run_forever()
     except KeyboardInterrupt:

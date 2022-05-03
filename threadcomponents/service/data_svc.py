@@ -391,6 +391,15 @@ class DataService:
         # Run the above query and return its results
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
 
+    async def remove_expired_reports(self):
+        """Function to delete expired reports."""
+        # The query below uses a timestamp function which differs across DB engines; obtain the correct one
+        time_now = self.dao.db_func(self.dao.db.FUNC_TIME_NOW) + '()'
+        # Expired reports are where its timestamp is behind the current time (hence less-than)
+        # TODO just testing with SELECT for now - change this
+        query = 'SELECT * FROM reports WHERE expires_on < %s' % time_now
+        await self.dao.raw_select(query)
+
     async def rollback_report(self, report_id=''):
         """Function to rollback a report to its initial state."""
         # The list of SQL statements to run for this operation
