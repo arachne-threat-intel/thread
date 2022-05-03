@@ -10,6 +10,7 @@ import pandas as pd
 import re
 
 from aiohttp import web
+from datetime import datetime, timedelta
 from enum import Enum, unique
 from functools import partial
 from io import StringIO
@@ -527,9 +528,12 @@ class RestService:
                                 found_status=self.dao.db_false_val)
             await self.dao.insert_with_backup('original_html', html_element)
 
+        # The report is about to be moved out of the queue, prepare its expiry date (now + 1 day)
+        expiry_date = datetime.now() + timedelta(days=1)
+        expiry_date_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S')
         # Update card to reflect the end of queue
         await self.dao.update('reports', where=dict(uid=report_id),
-                              data=dict(current_status=ReportStatus.NEEDS_REVIEW.value))
+                              data=dict(current_status=ReportStatus.NEEDS_REVIEW.value, expires_on=expiry_date_str))
         # Update the relevant queue for this user
         self.remove_report_from_queue_map(criteria)
         logging.info('Finished analysing report ' + report_id)
