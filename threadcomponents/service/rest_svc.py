@@ -75,7 +75,7 @@ class RestService:
                 self.json_tech = json.load(attack_dict_f)
         self.list_of_legacy, self.list_of_techs = self.data_svc.ml_reg_split(self.json_tech)
 
-    async def fetch_and_update_attack_data(self):
+    async def fetch_and_update_attack_data(self, is_startup=False):
         """Function to fetch and update the attack data."""
         # Did DB-updates occur? Or updates to our internal json-tech dictionary?
         updates, updated_json_tech = False, False
@@ -84,7 +84,9 @@ class RestService:
         # If new attacks were added...
         if added_attacks:
             updates = True
-            logging.info('Consider adding example uses for %s to %s' % (', '.join(added_attacks), self.attack_dict_loc))
+            # We only want to list added attacks after startup because during startup may lead to logging a long list
+            if not is_startup:
+                logging.info('Consider adding example uses for %s to %s' % (', '.join(added_attacks), self.attack_dict_loc))
         # If attacks were renamed...
         if name_changes:
             updates = True

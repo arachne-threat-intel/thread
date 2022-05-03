@@ -2026,9 +2026,10 @@
       "can perform browser pivoting and inject into a user's browser to inherit cookies, authenticated HTTP sessions, and client SSL certificates."
     ],
     "id": "T1185",
-    "name": "Man in the Browser",
+    "name": "Browser Session Hijacking",
     "similar_words": [
-      "Man in the Browser"
+      "Man in the Browser",
+      "Browser Session Hijacking"
     ]
   },
   "attack-pattern--54a649ff-439a-41a4-9856-8d144a2551ba": {

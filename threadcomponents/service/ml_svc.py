@@ -156,6 +156,8 @@ class MLService:
 
     async def analyze_html(self, list_of_techs, model_dict, list_of_sentences):
         for tech_id, tech_name in list_of_techs:
+            # If this loop takes long, the below logging-statement will help track progress
+            # logging.info('%s/%s tech analysed' % (list_of_techs.index((tech_id, tech_name)), len(list_of_techs)))
             # If an older model_dict has been loaded, its keys may be out of sync with list_of_techs
             try:
                 cv, logreg = model_dict[tech_id]
