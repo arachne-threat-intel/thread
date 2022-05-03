@@ -35,6 +35,7 @@ class ThreadDB(ABC):
     """A base class for DB tasks (where the SQL statements are the same across DB engines)."""
     # Constants to track which SQL functions have different names (between different DB engines)
     FUNC_STR_POS = 'string_pos'
+    FUNC_TIME_NOW = 'time_now'
 
     def __init__(self, mapped_functions=None):
         # The map to keep track of SQL functions
