@@ -69,7 +69,8 @@ def _create_tables(username, password, host, port, schema='', is_partial=False):
     schema = schema.replace('%s 0' % boolean_default, '%s FALSE' % boolean_default)
     try:
         # Add expiry field - we only want to log an error if we are building the full schema
-        schema = ThreadDB.add_column_to_schema(schema, 'reports', 'expires_on TIMESTAMP', log_error=(not is_partial))
+        schema = ThreadDB.add_column_to_schema(schema, 'reports', 'expires_on TIMESTAMP WITH TIME ZONE',
+                                               log_error=(not is_partial))
     except ValueError as e:
         # Partial-schemas (e.g. backup tables) will most likely raise an error so ignore these
         if not is_partial:
