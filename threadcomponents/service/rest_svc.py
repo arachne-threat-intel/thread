@@ -528,12 +528,15 @@ class RestService:
                                 found_status=self.dao.db_false_val)
             await self.dao.insert_with_backup('original_html', html_element)
 
-        # The report is about to be moved out of the queue, prepare its expiry date (now + 1 day)
-        expiry_date = datetime.now() + timedelta(days=1)
-        expiry_date_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S')
+        # The report is about to be moved out of the queue
+        update_data = dict(current_status=ReportStatus.NEEDS_REVIEW.value)
+        if not self.is_local:
+            # Prepare its expiry date (now + 1 week)
+            expiry_date = datetime.now() + timedelta(weeks=1)
+            expiry_date_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S')
+            update_data.update(dict(expires_on=expiry_date_str))
         # Update card to reflect the end of queue
-        await self.dao.update('reports', where=dict(uid=report_id),
-                              data=dict(current_status=ReportStatus.NEEDS_REVIEW.value, expires_on=expiry_date_str))
+        await self.dao.update('reports', where=dict(uid=report_id), data=update_data)
         # Update the relevant queue for this user
         self.remove_report_from_queue_map(criteria)
         logging.info('Finished analysing report ' + report_id)

@@ -294,6 +294,11 @@ table {
   cursor: pointer;
 }
 
+/* Use this class for anchor elements with tooltips rather than .disabled */
+.report-disable {
+  cursor: not-allowed !important;
+}
+
 input[type="checkbox"].report-submission-checkbox {
   margin: 0.2rem;
   margin-top: 0.3rem;

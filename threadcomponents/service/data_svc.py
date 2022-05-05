@@ -9,6 +9,7 @@ import json
 import logging
 
 from contextlib import suppress
+from datetime import datetime
 from stix2 import Filter, MemoryStore
 from urllib.parse import quote
 
@@ -268,6 +269,12 @@ class DataService:
             del report['uid']  # Prevent ID reaching request-response
             title_quoted = quote(report['title'], safe='')
             edit_link = self.web_svc.get_route(self.web_svc.EDIT_KEY, param=title_quoted)
+            # Format dates if applicable
+            expires_on = report.get('expires_on', '')
+            if isinstance(expires_on, datetime):
+                # Replace the expiry date with a formatted string
+                is_expired = expires_on < datetime.now(tz=expires_on.tzinfo)
+                report.update(dict(expires_on=expires_on.strftime('%Y-%m-%d %H:%M %Z'), is_expired=is_expired))
             report.update(dict(link=edit_link, title_quoted=title_quoted))
         return reports
 
@@ -396,16 +403,18 @@ class DataService:
         # The query below uses a timestamp function which differs across DB engines; obtain the correct one
         time_now = self.dao.db_func(self.dao.db.FUNC_TIME_NOW) + '()'
         # Expired reports are where its timestamp is behind the current time (hence less-than)
-        # TODO just testing with SELECT for now - change this
-        query = 'SELECT * FROM reports WHERE expires_on < %s' % time_now
-        await self.dao.raw_select(query)
+        query = 'DELETE FROM reports WHERE expires_on < %s' % time_now
+        await self.dao.run_sql_list(sql_list=[(query,)])
 
-    async def is_report_expired(self, report_id=''):
-        """Given a report ID, returns whether it is an expired report."""
+    async def get_report_by_title(self, report_title='', add_expiry_bool=True):
+        """Given a report title, returns matching report records."""
+        # If we are not adding an expiry boolean, we can do a get() like normal
+        if not add_expiry_bool:
+            return await self.dao.get('reports', dict(title=report_title))
         # Similar to remove_expired_reports() above, get the appropriate time-function and execute a query
         time_now = self.dao.db_func(self.dao.db.FUNC_TIME_NOW) + '()'
-        query = 'SELECT * FROM reports WHERE expires_on < %s AND uid = %s' % (time_now, self.dao.db_qparam)
-        return bool(await self.dao.raw_select(query, parameters=tuple([report_id])))
+        query = 'SELECT *, expires_on < %s AS is_expired FROM reports WHERE title = %s' % (time_now, self.dao.db_qparam)
+        return await self.dao.raw_select(query, parameters=tuple([report_title]))
 
     async def rollback_report(self, report_id=''):
         """Function to rollback a report to its initial state."""

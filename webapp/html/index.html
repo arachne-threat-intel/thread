@@ -56,11 +56,23 @@
                                <span class="fas fa-undo-alt glyphicon glyphicon-refresh btn-sm float-right report-action"></span>
                             </a>
                           {% endif %}
+                          {% if value.display_expiry and not is_local %}{# Display report-expiry date if applicable #}
+                            <a data-bs-toggle="tooltip" data-bs-placement="top"
+                               title="Report expiry date: {{ report.expires_on|default('a week from its analysis') }}">
+                               <span class="fa-regular fa-clock btn-sm float-right"></span>
+                            </a>
+                          {% endif %}
                           <p>
                           <p class="card-text">{{report.title}}</p>{# Display the report title #}
                           <a href="{{report.url}}" target="_blank" class="btn btn-sm btn-outline-secondary">Source</a>{# All reports have a source URL #}
                           {% if value.analysis_button %}{# Display analyse button if applicable #}
-                            <a href="{{report.link}}" class="btn btn-sm btn-outline-secondary">{{value.analysis_button}}</a>
+                            {% if report.is_expired and not is_local %}{# Disable analyse button if report has expired #}
+                              <a class="btn btn-sm btn-outline-secondary report-disable"
+                                 data-bs-toggle="tooltip" data-bs-placement="top" title="This report has expired">
+                            {% else %}
+                              <a href="{{report.link}}" class="btn btn-sm btn-outline-secondary">
+                            {% endif %}
+                            {{value.analysis_button}}</a>
                           {% endif %}
                         </div>
                       </div>
