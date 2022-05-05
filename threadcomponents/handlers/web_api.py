@@ -156,7 +156,7 @@ class WebAPI:
             is_complete_status = status.value == self.report_statuses.COMPLETED.value
             # Properties for all statuses when displayed on the index page
             page_data[status.value] = \
-                dict(display_name=status.display_name, allow_delete=True,
+                dict(display_name=status.display_name, allow_delete=True, display_expiry=True,
                      error_msg='Sorry, an error occurred with this report and may appear different than intended.',
                      analysis_button='View Analysis' if is_complete_status else 'Analyse')
             # If the status is 'queue', obtain errored reports separately so we can provide info without these
@@ -174,8 +174,9 @@ class WebAPI:
                     page_data[status.value]['display_name'] += ' (%s/%s)' % queue_ratio
                     # Also add a fuller sentence describing the fraction
                     page_data[status.value]['column_info'] = '%s report(s) pending in Queue out of MAX %s' % queue_ratio
-                # Queued reports can't be deleted (unless errored)
+                # Queued reports can't be deleted (unless errored) nor have an expiry date
                 page_data[status.value]['allow_delete'] = False
+                page_data[status.value]['display_expiry'] = False
                 # There is no analysis button for queued reports
                 del page_data[status.value]['analysis_button']
                 # Queued reports with errors have an error because the contents can't be viewed: update error message
@@ -240,7 +241,7 @@ class WebAPI:
         # The 'file' property is already unquoted despite a quoted string used in the URL
         report_title = request.match_info.get(self.web_svc.REPORT_PARAM)
         title_quoted = quote(report_title, safe='')
-        report = await self.dao.get('reports', dict(title=report_title))
+        report = await self.data_svc.get_report_by_title(report_title=report_title, add_expiry_bool=(not self.is_local))
         try:
             # Ensure a valid report title has been passed in the request
             report_id, report_status = report[0]['uid'], report[0]['current_status']
@@ -251,6 +252,10 @@ class WebAPI:
         # A queued report would pass the above check but be blank; raise an error instead
         if report_status not in [self.report_statuses.NEEDS_REVIEW.value, self.report_statuses.IN_REVIEW.value,
                                  self.report_statuses.COMPLETED.value]:
+            raise web.HTTPNotFound()
+        # Check if this is an expired report
+        is_expired = report[0].get('is_expired')
+        if is_expired and not self.is_local:
             raise web.HTTPNotFound()
         # Proceed to gather the data for the template
         sentences = await self.data_svc.get_report_sentences(report_id)
