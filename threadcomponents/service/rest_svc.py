@@ -192,7 +192,13 @@ class RestService:
             if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
                 return default_error
             # Finally, update the status
-            await self.dao.update('reports', where=dict(uid=report_id), data=dict(current_status=new_status))
+            update_data = dict(current_status=new_status)
+            if not self.is_local:
+                # Prepare its expiry date (now + 1 day from completion)
+                expiry_date = datetime.now() + timedelta(days=1)
+                expiry_date_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S')
+                update_data.update(dict(expires_on=expiry_date_str))
+            await self.dao.update('reports', where=dict(uid=report_id), data=update_data)
             self.seen_report_status[report_id] = new_status
             return REST_SUCCESS
         else:
