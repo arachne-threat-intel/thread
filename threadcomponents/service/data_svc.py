@@ -416,6 +416,15 @@ class DataService:
         query = 'SELECT *, expires_on < %s AS is_expired FROM reports WHERE title = %s' % (time_now, self.dao.db_qparam)
         return await self.dao.raw_select(query, parameters=tuple([report_title]))
 
+    async def get_report_by_id(self, report_id='', add_expiry_bool=True):
+        """Given a report ID, returns matching report records."""
+        # Similar structure to get_report_by_title()
+        if not add_expiry_bool:
+            return await self.dao.get('reports', dict(uid=report_id))
+        time_now = self.dao.db_func(self.dao.db.FUNC_TIME_NOW) + '()'
+        query = 'SELECT *, expires_on < %s AS is_expired FROM reports WHERE uid = %s' % (time_now, self.dao.db_qparam)
+        return await self.dao.raw_select(query, parameters=tuple([report_id]))
+
     async def rollback_report(self, report_id=''):
         """Function to rollback a report to its initial state."""
         # The list of SQL statements to run for this operation

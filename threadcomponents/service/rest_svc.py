@@ -170,7 +170,8 @@ class RestService:
             return default_error
         # Get the report data from the provided report title
         try:
-            report_dict = await self.dao.get('reports', dict(title=unquote(report_title)))
+            report_dict = await self.data_svc.get_report_by_title(report_title=unquote(report_title),
+                                                                  add_expiry_bool=(not self.is_local))
         except TypeError:  # Thrown when unquote() receives a non-string type
             return default_error
         try:
@@ -206,7 +207,8 @@ class RestService:
             return default_error
         # Get the report data from the provided report title
         try:
-            report = await self.dao.get('reports', dict(title=unquote(report_title)))
+            report = await self.data_svc.get_report_by_title(report_title=unquote(report_title),
+                                                             add_expiry_bool=(not self.is_local))
         except TypeError:  # Thrown when unquote() receives a non-string type
             return default_error
         try:
@@ -253,7 +255,8 @@ class RestService:
             return default_error
         # Get the report data from the provided report title
         try:
-            report = await self.dao.get('reports', dict(title=unquote(report_title)))
+            report = await self.data_svc.get_report_by_title(report_title=unquote(report_title),
+                                                             add_expiry_bool=(not self.is_local))
         except TypeError:  # Thrown when unquote() receives a non-string type
             return default_error
         try:
@@ -705,7 +708,7 @@ class RestService:
         if not report_id:
             raise web.HTTPBadRequest()
         # Obtain the report from the db
-        report = await self.dao.get('reports', dict(uid=report_id))
+        report = await self.data_svc.get_report_by_id(report_id=report_id, add_expiry_bool=(not self.is_local))
         try:
             report[0]['uid']
         except (KeyError, IndexError):
