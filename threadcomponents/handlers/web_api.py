@@ -253,10 +253,6 @@ class WebAPI:
         if report_status not in [self.report_statuses.NEEDS_REVIEW.value, self.report_statuses.IN_REVIEW.value,
                                  self.report_statuses.COMPLETED.value]:
             raise web.HTTPNotFound()
-        # Check if this is an expired report
-        is_expired = report[0].get('is_expired')
-        if is_expired and not self.is_local:
-            raise web.HTTPNotFound()
         # Proceed to gather the data for the template
         sentences = await self.data_svc.get_report_sentences(report_id)
         original_html = await self.dao.get('original_html', equal=dict(report_uid=report_id),
@@ -285,7 +281,7 @@ class WebAPI:
         """        
         # Get the report from the database
         report_title = request.match_info.get(self.web_svc.REPORT_PARAM)
-        report = await self.dao.get('reports', dict(title=report_title))
+        report = await self.data_svc.get_report_by_title(report_title=report_title, add_expiry_bool=(not self.is_local))
         try:
             # Ensure a valid report title has been passed in the request
             report_id, report_status = report[0]['uid'], report[0]['current_status']
@@ -332,7 +328,7 @@ class WebAPI:
         """
         # Get the report and its sentences
         title = request.match_info.get(self.web_svc.REPORT_PARAM)
-        report = await self.dao.get('reports', dict(title=title))
+        report = await self.data_svc.get_report_by_title(report_title=title, add_expiry_bool=(not self.is_local))
         try:
             # Ensure a valid report title has been passed in the request
             report_id, report_status, report_url = report[0]['uid'], report[0]['current_status'], report[0]['url']

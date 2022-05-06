@@ -9,6 +9,7 @@ import nltk
 import re
 import requests
 
+from aiohttp import web
 from aiohttp_security import authorized_userid
 from bs4 import BeautifulSoup
 from contextlib import suppress
@@ -93,7 +94,7 @@ class WebService:
             return await request.app.permission_checker(request, action, context)
         except (TypeError, AttributeError) as e:
             logging.error('Misconfigured app: permission_checker() error: ' + str(e))
-            return False
+            raise web.HTTPInternalServerError()
 
     async def url_allowed(self, request, url):
         """Function to check a URL is allowed to be submitted."""
