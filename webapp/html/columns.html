@@ -62,6 +62,10 @@
           You can also click the <b>Export PDF</b> button to generate a PDF of this completed report.
         </span>
         <hr>
+          {% if not is_local %}{# Notice about expiry-date #}
+            <span><b>Completed reports will expire 24 hours after completion.</b></span>
+            <hr>
+          {% endif %}
       {% else %}{# Incomplete reports: display 'Techniques Found' panel to approve/reject attacks #}
         <span class='spanMissingTechniqueView'><b>Techniques Found</b></span>
         <br><br>
