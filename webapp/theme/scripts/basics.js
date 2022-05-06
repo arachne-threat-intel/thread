@@ -120,6 +120,8 @@ function remove_sentence() {
     // Disable further actions until another item is selected
     $(missingTechBtn).prop("disabled", true);
     $(delSenBtn).prop("disabled", true);
+    // Reset any 'Techniques Found' list
+    $("#tableSentenceInfo tr").remove();
     // Send off request to delete from the db
     restRequest("POST", {"index":"remove_sentence", "sentence_id": sentence_id});
   }
@@ -148,7 +150,11 @@ function rollbackReport(reportTitle) {
 }
 
 function finish_analysis(reportTitle) {
-  if (confirm("Are you sure you are finished with this report?")) {
+  var msg = "Are you sure you are finished with this report?";
+  if (!isLocal) {
+    msg += "\n\nOnce this report is finalised, it will be deleted from Thread after 24 hours.";
+  }
+  if (confirm(msg)) {
     restRequest("POST", {"index":"set_status", "set_status": "completed", "report_title": reportTitle}, page_refresh);
   }
 }
