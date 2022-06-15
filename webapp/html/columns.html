@@ -83,7 +83,7 @@
         <span class='spanAddMissingTechnique'><b>Add A Missing Technique</b></span>
         <br><br>
         <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true" data-size="5"
-                data-live-search="true" title="Select a technique">
+                data-live-search="true" data-width="100%" title="Select a technique">
           {% for tech in attack_uids %}
             {% if tech.parent_name %}
               <option class="missingTechOpt" style="overflow: auto" value="{{tech.uid}}"

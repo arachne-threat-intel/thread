@@ -261,6 +261,10 @@ table {
   padding: 10px;
 }
 
+select#missingTechniqueSelect ~ div.dropdown-menu {
+  width: 100%;
+}
+
 .report_view {
   margin-right:100px;
   margin-left:100px;
@@ -332,11 +336,6 @@ input[type="checkbox"].report-submission-checkbox {
   margin-left: 3rem;
   padding-top: 10px;
   word-break: break-word;
-}
-
-.missingTechOpt {
-  width: 100%;
-  max-width: 350px;
 }
 
 .reportImage {
