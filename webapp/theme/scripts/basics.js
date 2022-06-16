@@ -5,7 +5,7 @@ var sentence_id = 0;
 // A temporarily highlighted sentence
 var tempHighlighted = undefined;
 // The classes used for highlighting a sentence or image
-var highlightClass = "bg-warning";
+var highlightClass = "highlight-sentence";
 var highlightClassImg = "imgHighlight";
 // The class used when a sentence is clicked
 var clickedClass = "report-sentence-clicked";
