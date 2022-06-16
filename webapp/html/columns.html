@@ -24,9 +24,9 @@
   </div>
   <div class="col-md-auto">
     <button class="btn btn-md btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Export Navigator JSON</button>
-    <div class="dropdown-menu" id="dropdownMenu" aria-labelledby="dropdownMenuButton">
+    <div class="dropdown-menu bg-dark" id="dropdownMenu" aria-labelledby="dropdownMenuButton">
       <h6 class="dropdown-header">Enterprise Layer</h6>
-      <a class="dropdown-item" onclick="$.getJSON('{{nav_link}}', (x) => {downloadLayer(x);})">download</a>
+      <a class="dropdown-item text-white" onclick="$.getJSON('{{nav_link}}', (x) => {downloadLayer(x);})">download</a>
     </div>
   </div>
 </div>
@@ -39,7 +39,7 @@
       {% else %}
         {% if elmt.tag == 'li' %}<li class="elmtRelated{{elmt.uid}}">{% endif %}
         {% if elmt.tag == 'header' %}<h3 class="elmtRelated{{elmt.uid}}">{% endif %}
-        <span class="report-sentence {% if elmt.found_status %}bg-warning{% endif %}" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">
+        <span class="report-sentence {% if elmt.found_status %}highlight-sentence{% endif %}" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">
           {{elmt.text}}
         </span>
         {% if elmt.tag == 'header' %}</h3>{% endif %}
@@ -52,7 +52,7 @@
     {% endfor %}
   </div>
   <div class="col col-sm-4 ">
-    <div class='missingTechniquesView' id='sentenceContextSection'>
+    <div class="missingTechniquesView bg-dark" id="sentenceContextSection">
       {% if help_text %}{# Add any help-text to the side-panel of the report (so it is always visible) #}
         <span><b>{{help_text}}</b></span><hr>
       {% endif %}

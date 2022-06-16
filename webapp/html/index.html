@@ -4,7 +4,7 @@
 {% block content %}
   <div class="container-fluid">
     <div class="row">
-      <nav class="col-md-2 col-lg-2 d-md-block bg-light sidebar">
+      <nav class="col-md-2 col-lg-2 d-md-block sidebar">
         {% if not is_local %}{# Display 'Viewing: username or Public' #}
           <div>
             <h6>
@@ -31,56 +31,54 @@
         <div class="row flex-row flex-sm-nowrap py-3">
           {% for key, value in reports_by_status.items() %}{# Loop through each report status #}
             <div class="col">
-              <div class="card bg-light status-column">
+              <div class="card status-column bg-dark">
                 <div id={{key}} class="card-body">
-                  <h6 class="card-title text-uppercase text-truncate py-2">{{value.display_name}}</h6>{# Header for status #}
-                  <div class="items border border-light">
-                    {% for report in value.reports %}{# Display the reports in a column for this status #}
-                      <div class="card shadow-sm" id="{{key}}-{{report.title_quoted}}">
-                        <div class="card-body">
-                          {% if report.error %}{# Display error icon if applicable #}
-                            <a data-bs-toggle="tooltip" data-bs-placement="top"
-                               title="{% if value.error_msg %}{{value.error_msg}}{% else %}Error{% endif %}">
-                              <span class="fas fa-exclamation glyphicon glyphicon-exclamation-sign error-icon"></span>
-                            </a>
+                  <h6 class="card-title text-uppercase text-white text-truncate py-2">{{value.display_name}}</h6>{# Header for status #}
+                  {% for report in value.reports %}{# Display the reports in a column for this status #}
+                    <div class="card shadow-sm bg-dark report-card" id="{{key}}-{{report.title_quoted}}">
+                      <div class="card-body">
+                        {% if report.error %}{# Display error icon if applicable #}
+                          <a data-bs-toggle="tooltip" data-bs-placement="top"
+                             title="{% if value.error_msg %}{{value.error_msg}}{% else %}Error{% endif %}">
+                            <span class="fas fa-exclamation glyphicon glyphicon-exclamation-sign error-icon"></span>
+                          </a>
+                        {% endif %}
+                        {% if value.allow_delete or report.error %}{# Display button to delete report if allowed #}
+                          <a data-bs-toggle="tooltip" data-bs-placement="top" title="Delete this report."
+                             onclick="deleteReport('{{report.title_quoted}}')">
+                             <span class="fas fa-trash-alt glyphicon glyphicon-trash btn-sm btn-outline-danger float-right report-action"></span>
+                          </a>
+                        {% endif %}
+                        {% if value.allow_rollback %}{# Display button to rollback report if allowed #}
+                          <a data-bs-toggle="tooltip" data-bs-placement="top" title="Rollback report to NEEDS REVIEW."
+                             onclick="rollbackReport('{{report.title_quoted}}')">
+                             <span class="fas fa-undo-alt glyphicon glyphicon-refresh btn-sm float-right report-action"></span>
+                          </a>
+                        {% endif %}
+                        {% if value.display_expiry and not is_local %}{# Display report-expiry date if applicable #}
+                          <a data-bs-toggle="tooltip" data-bs-placement="top"
+                             title="Report expiry date: {{ report.expires_on|default('a week from its analysis') }}">
+                             <span class="fa-regular fa-clock btn-sm float-right"></span>
+                          </a>
+                        {% endif %}
+                        <p>
+                        <p class="card-text">{{report.title}}</p>{# Display the report title #}
+                        <a href="{{report.url}}" target="_blank" class="btn btn-sm btn-outline-secondary">Source</a>{# All reports have a source URL #}
+                        {% if value.analysis_button %}{# Display analyse button if applicable #}
+                          {% if report.is_expired and not is_local %}{# Disable analyse button if report has expired #}
+                            <a class="btn btn-sm btn-outline-secondary report-disable"
+                               data-bs-toggle="tooltip" data-bs-placement="top" title="This report has expired">
+                          {% else %}
+                            <a href="{{report.link}}" class="btn btn-sm btn-outline-secondary">
                           {% endif %}
-                          {% if value.allow_delete or report.error %}{# Display button to delete report if allowed #}
-                            <a data-bs-toggle="tooltip" data-bs-placement="top" title="Delete this report."
-                               onclick="deleteReport('{{report.title_quoted}}')">
-                               <span class="fas fa-trash-alt glyphicon glyphicon-trash btn-sm btn-outline-danger float-right report-action"></span>
-                            </a>
-                          {% endif %}
-                          {% if value.allow_rollback %}{# Display button to rollback report if allowed #}
-                            <a data-bs-toggle="tooltip" data-bs-placement="top" title="Rollback report to NEEDS REVIEW."
-                               onclick="rollbackReport('{{report.title_quoted}}')">
-                               <span class="fas fa-undo-alt glyphicon glyphicon-refresh btn-sm float-right report-action"></span>
-                            </a>
-                          {% endif %}
-                          {% if value.display_expiry and not is_local %}{# Display report-expiry date if applicable #}
-                            <a data-bs-toggle="tooltip" data-bs-placement="top"
-                               title="Report expiry date: {{ report.expires_on|default('a week from its analysis') }}">
-                               <span class="fa-regular fa-clock btn-sm float-right"></span>
-                            </a>
-                          {% endif %}
-                          <p>
-                          <p class="card-text">{{report.title}}</p>{# Display the report title #}
-                          <a href="{{report.url}}" target="_blank" class="btn btn-sm btn-outline-secondary">Source</a>{# All reports have a source URL #}
-                          {% if value.analysis_button %}{# Display analyse button if applicable #}
-                            {% if report.is_expired and not is_local %}{# Disable analyse button if report has expired #}
-                              <a class="btn btn-sm btn-outline-secondary report-disable"
-                                 data-bs-toggle="tooltip" data-bs-placement="top" title="This report has expired">
-                            {% else %}
-                              <a href="{{report.link}}" class="btn btn-sm btn-outline-secondary">
-                            {% endif %}
-                            {{value.analysis_button}}</a>
-                          {% endif %}
-                        </div>
+                          {{value.analysis_button}}</a>
+                        {% endif %}
                       </div>
-                    {% endfor %}
-                    {% if value.column_info %}
-                      <small>{{value.column_info}}</small>
-                    {% endif %}
-                  </div>
+                    </div>
+                  {% endfor %}
+                  {% if value.column_info %}
+                    <small>{{value.column_info}}</small>
+                  {% endif %}
                 </div>
               </div>
             </div>

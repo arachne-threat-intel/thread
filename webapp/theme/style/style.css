@@ -7,7 +7,6 @@ html {
 
 body {
   min-height: 100%;
-  color:#000000;
   font-family: 'Exo', sans-serif;
 }
 
@@ -298,6 +297,18 @@ select#missingTechniqueSelect ~ div.dropdown-menu {
   cursor: pointer;
 }
 
+.card {
+  border-color: inherit;
+}
+
+.report-card {
+  margin-top: .5rem;
+}
+
+.accordion-button.bg-dark {
+  --bs-bg-opacity: .4;
+}
+
 /* Use this class for anchor elements with tooltips rather than .disabled */
 .report-disable {
   cursor: not-allowed !important;
@@ -351,8 +362,12 @@ input[type="checkbox"].report-submission-checkbox {
   cursor: pointer;
 }
 
+.highlight-sentence {
+  background-color: #66666e;
+}
+
 .report-sentence:hover {
-  background-color: #ffffbd;
+  background-color: #8b8a9c;
 }
 
 .report-sentence-clicked {
