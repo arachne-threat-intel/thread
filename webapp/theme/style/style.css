@@ -309,6 +309,10 @@ select#missingTechniqueSelect ~ div.dropdown-menu {
   --bs-bg-opacity: .4;
 }
 
+div#submitReportForm .nav-link:not(.active) {
+  color: white;
+}
+
 /* Use this class for anchor elements with tooltips rather than .disabled */
 .report-disable {
   cursor: not-allowed !important;
