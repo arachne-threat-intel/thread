@@ -52,7 +52,7 @@ class WebService:
         routes = {
             self.HOME_KEY: home_route, self.COOKIE_KEY: route_prefix + '/cookies',
             self.EDIT_KEY: route_prefix + '/edit/{%s}' % self.REPORT_PARAM,
-            self.ABOUT_KEY: route_prefix + '/about', self.REST_KEY: route_prefix + '/rest',
+            self.ABOUT_KEY: route_prefix + '/using-thread', self.REST_KEY: route_prefix + '/rest',
             self.EXPORT_PDF_KEY: route_prefix + '/export/pdf/{%s}' % self.REPORT_PARAM,
             self.EXPORT_NAV_KEY: route_prefix + '/export/nav/{%s}' % self.REPORT_PARAM,
             self.HOW_IT_WORKS_KEY: route_prefix + '/how-thread-works',

@@ -122,7 +122,7 @@ class WebAPI:
 
     @template('about.html')
     async def about(self, request):
-        page_data = dict(title='About')
+        page_data = dict(title='Using Thread')
         await self.add_base_page_data(request, data=page_data)
         return page_data
 
