@@ -163,7 +163,7 @@ class ThreadAppTest(AioHTTPTestCase):
             new_attack_list.append(dict(
                 type='attack-pattern', modified='2022-03-7T00:00:00.000Z', name=attack.get('name', 'No name'),
                 created='2001-07-19T00:00:00.000Z', id=attack.get('uid', random.randint(0, 999999999)),
-                revoked=True, spec_version='2.1', description=attack.get('description', NO_DESC),
+                spec_version='2.1', description=attack.get('description', NO_DESC),
                 external_references=[
                     {'url': 'https://attack.mitre.org/techniques/' + tid,
                      'external_id': tid, 'source_name': 'mitre-attack'}
