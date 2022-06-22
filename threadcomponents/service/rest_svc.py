@@ -141,9 +141,11 @@ class RestService:
 
     def clean_current_tasks(self):
         """Function to remove finished tasks from the current_tasks list."""
-        for task in range(len(self.current_tasks)):  # check resources for finished tasks
-            if self.current_tasks[task].done():
-                del self.current_tasks[task]  # delete finished tasks
+        temp_current_tasks = []
+        for job in self.current_tasks:  # check resources for finished tasks
+            if not job.done():
+                temp_current_tasks.append(job)  # keep incomplete tasks
+        self.current_tasks = temp_current_tasks
 
     async def prepare_queue(self):
         """Function to add to the queue any reports left from a previous session."""
