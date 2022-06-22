@@ -26,6 +26,11 @@ def fetch_attack_data():
     return requests.get(url).json()
 
 
+def attack_data_check(attack_data):
+    """Function to check given a single attack data, whether it should be skipped."""
+    return attack_data.get('x_mitre_deprecated') or attack_data.get('revoked')
+
+
 def defang_text(text):
     """
     Function to normalize quoted data to be sql compliant
@@ -95,28 +100,34 @@ class DataService:
         logging.info('Downloading ATT&CK data from GitHub repo `mitre-attack/attack-stix-data`...')
         attack = {}
         stix_json = fetch_attack_data()
-        ms = MemoryStore(stix_data=stix_json["objects"])
-        filter_objs = {"techniques": Filter("type", "=", "attack-pattern"),
-                       "groups": Filter("type", "=", "intrusion-set"), "malware": Filter("type", "=", "malware"),
-                       "tools": Filter("type", "=", "tool"), "relationships": Filter("type", "=", "relationship")}
+        ms = MemoryStore(stix_data=stix_json['objects'])
+        filter_objs = {'techniques': Filter('type', '=', 'attack-pattern'),
+                       'groups': Filter('type', '=', 'intrusion-set'), 'malware': Filter('type', '=', 'malware'),
+                       'tools': Filter('type', '=', 'tool'), 'relationships': Filter('type', '=', 'relationship')}
         for key in filter_objs:
+            # Could pass [filter_objs[key], Filter('x_mitre_deprecated', '!=', True), Filter('revoked', '!=', True)]
+            # But numbers are not adding up when ('=', False) are used
             attack[key] = ms.query(filter_objs[key])
         references = {}
 
         # add all of the patterns and dictionary keys/values for each technique and software
-        for i in attack["techniques"]:
-            references[i["id"]] = {"name": i["name"], "id": i["external_references"][0]["external_id"],
-                                   "example_uses": [],
-                                   "description": i.get('description', NO_DESC).replace('<code>', '').replace(
+        for i in attack['techniques']:
+            if attack_data_check(i):
+                continue
+            references[i['id']] = {'name': i['name'], 'id': i['external_references'][0]['external_id'],
+                                   'example_uses': [],
+                                   'description': i.get('description', NO_DESC).replace('<code>', '').replace(
                                        '</code>', '').replace('\n', '').encode('ascii', 'ignore').decode('ascii'),
-                                   "similar_words": [i["name"]]}
+                                   'similar_words': [i['name']]}
 
-        for i in attack["relationships"]:
-            if i["relationship_type"] == 'uses':
-                if 'attack-pattern' in i["target_ref"]:
+        for i in attack['relationships']:
+            if attack_data_check(i):
+                continue
+            if i['relationship_type'] == 'uses':
+                if ('attack-pattern' in i['target_ref']) and (i['target_ref'] in references):
                     use = i.get('description', NO_DESC)
                     # remove unnecessary strings, fix unicode errors
-                    use = use.replace('<code>', '').replace('</code>', '').replace('"', "").replace(',', '').replace(
+                    use = use.replace('<code>', '').replace('</code>', '').replace('"', '').replace(',', '').replace(
                         '\t', '').replace('  ', ' ').replace('\n', '').encode('ascii', 'ignore').decode('ascii')
                     find_pattern = re.compile('\[.*?\]\(.*?\)')  # get rid of att&ck reference (name)[link to site]
                     m = find_pattern.findall(use)
@@ -128,20 +139,23 @@ class DataService:
                             elif use[0] == ' ':
                                 use = use[1:]
                     # combine all the examples to one list
-                    references[i["target_ref"]]["example_uses"].append(use)
+                    references[i['target_ref']]['example_uses'].append(use)
 
-        for i in attack["malware"]:
-            if 'description' not in i:  # some software do not have description, example: darkmoon https://attack.mitre.org/software/S0209
+        for i in attack['malware']:
+            # some software do not have description, example: darkmoon https://attack.mitre.org/software/S0209
+            if ('description' not in i) or attack_data_check(i):
                 continue
             else:
-                references[i["id"]] = {"id": i['id'], "name": i["name"], "description": i["description"],
-                                       "examples": [], "example_uses": [], "similar_words": [i["name"]]}
-        for i in attack["tools"]:
-            references[i["id"]] = {"id": i['id'], "name": i["name"], "description": i.get('description', NO_DESC),
-                                   "examples": [], "example_uses": [], "similar_words": [i["name"]]}
+                references[i['id']] = {'id': i['id'], 'name': i['name'], 'description': i['description'],
+                                       'examples': [], 'example_uses': [], 'similar_words': [i['name']]}
+        for i in attack['tools']:
+            if attack_data_check(i):
+                continue
+            references[i['id']] = {'id': i['id'], 'name': i['name'], 'description': i.get('description', NO_DESC),
+                                   'examples': [], 'example_uses': [], 'similar_words': [i['name']]}
 
         attack_data = references
-        logging.info("Finished...now creating the database.")
+        logging.info('Finished...now creating the database.')
 
         cur_attacks = await self.dao.get_dict_value_as_key('attack_uids', 'uid', ['name', 'inactive'])
         cur_uids = set(cur_attacks.keys())
