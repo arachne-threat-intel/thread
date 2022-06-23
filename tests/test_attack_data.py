@@ -10,9 +10,9 @@ class TestAttackData(ThreadAppTest):
     async def test_attack_list(self):
         """Function to test the attack list for the dropdown was created successfully."""
         # For our test attack data, we predict 2 will not be sub attacks (no Txx.xx TID) and 1 will be
-        predicted = [dict(uid='d99999', name='Drain', tid='T1029', parent_tid=None, parent_name=None),
-                     dict(uid='f12345', name='Fire', tid='T1562', parent_tid=None, parent_name=None),
-                     dict(uid='f32451', name='Firaga', tid='T1562.004', parent_tid='T1562', parent_name='Fire')]
+        predicted = [dict(uid='d99999', name='Drain', tid='T1029', inactive=0, parent_tid=None, parent_name=None),
+                     dict(uid='f12345', name='Fire', tid='T1562', inactive=0, parent_tid=None, parent_name=None),
+                     dict(uid='f32451', name='Firaga', tid='T1562.004', inactive=0, parent_tid='T1562', parent_name='Fire')]
         # The generated dropdown list to check against our prediction
         result = self.web_api.attack_dropdown_list
         for attack_dict in predicted:
@@ -36,7 +36,7 @@ class TestAttackData(ThreadAppTest):
         attacks = await self.db.get('attack_uids')
         # Tweak original attack-dict to be how they would be in the db and dropdown-list before assertions
         in_db = dict(new_attack, inactive=0)
-        in_dropdown_list = dict(new_attack, parent_tid=None, parent_name=None)
+        in_dropdown_list = dict(new_attack, inactive=0, parent_tid=None, parent_name=None)
         in_dropdown_list.pop('description')
         self.assertTrue(in_db in attacks, 'New attack did not appear in database.')
         self.assertTrue(in_dropdown_list in self.web_api.attack_dropdown_list,
