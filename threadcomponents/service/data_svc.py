@@ -26,9 +26,29 @@ def fetch_attack_data():
     return requests.get(url).json()
 
 
-def attack_data_check(attack_data):
+def attack_data_reject(attack_data):
     """Function to check given a single attack data, whether it should be skipped."""
     return attack_data.get('x_mitre_deprecated') or attack_data.get('revoked')
+
+
+def attack_data_get_tid(attack_data):
+    """Function that, given a single attack data, retrieves its TID."""
+    # Obtain the ID of the attack in case we need to use this instead of a TID
+    data_id = attack_data['id']
+    # We cannot find the TID if there are no external references
+    external_refs = attack_data.get('external_references')
+    if not external_refs:
+        return data_id
+    # For each external reference, check the URL is the Mitre Att&ck page; if it is, retrieve the TID
+    # (Can't check by source_name as this can be 'mitre-attack', 'mitre-mobile-attack', or possibly other variations)
+    tid = None
+    for ref in external_refs:
+        source = ref.get('url', '')
+        if not (source.startswith('https://attack.mitre.org/') or source.startswith('http://attack.mitre.org/')):
+            continue
+        tid = ref.get('external_id')
+        break
+    return tid or data_id
 
 
 def defang_text(text):
@@ -52,29 +72,33 @@ class DataService:
         str_pos = self.dao.db_func(self.dao.db.FUNC_STR_POS)
         # SQL query to obtain attack records where sub-techniques are returned with their parent-technique info
         # Currently omits 'description' as it is large and is not used in the front-end (this can be added here though)
-        # Also omits any 'inactive' attacks
-        self.SQL_PAR_ATTACK = (
+        sql_par_attack_base = (
             # Use a temporary table 'parent_tids' to return attacks which are sub-techniques (i.e. tid is Txxx.xx)
             # Use the substring method to save in the parent_tid column as the Txxx part of the tid (without the .xx)
-            "WITH parent_tids(uid, name, tid, parent_tid) AS "
-            "(SELECT uid, name, tid, SUBSTR(tid, 0, %s(tid, '.'))" % str_pos + " "
+            "WITH parent_tids(uid, name, tid, inactive, parent_tid) AS "
+            "(SELECT uid, name, tid, inactive, SUBSTR(tid, 0, %s(tid, '.'))" % str_pos + " "
             # %% in LIKE because % messes up parameters in psycopg (https://github.com/psycopg/psycopg2/issues/827)
             # LIKE '%.%' = '%%.%%' so this does not affect other DB engines
-            "FROM attack_uids WHERE tid LIKE '%%.%%' AND " + ("inactive = %s" % self.dao.db_false_val) + ") "
+            "FROM attack_uids WHERE tid LIKE '%%.%%'{inactive_AND}) "
             # With parent_tids, select all fields from it and the name of the parent_tid from the attack_uids table
             # Need to use `AS parent_name` to not confuse it with parent_tids.name
             # Using an INNER JOIN because we only care about returning sub-techniques here
             "SELECT parent_tids.*, attack_uids.name AS parent_name FROM "
-            "(attack_uids INNER JOIN parent_tids ON attack_uids.tid = parent_tids.parent_tid) " +
-            "WHERE attack_uids.inactive = %s" % self.dao.db_false_val + " "
+            "(attack_uids INNER JOIN parent_tids ON attack_uids.tid = parent_tids.parent_tid){inactive_WHERE} "
             # Union the sub-tech query with one for all other techniques (where the tid does not contain a '.')
             # Need to pass in two NULLs so the number of columns for the UNION is the same
             # (and parent_name & parent_tid doesn't exist for these techniques which are not sub-techniques)
-            "UNION SELECT uid, name, tid, NULL, NULL FROM attack_uids WHERE tid NOT LIKE '%%.%%' " +
-            "AND inactive = %s" % self.dao.db_false_val)
+            "UNION SELECT uid, name, tid, inactive, NULL, NULL FROM attack_uids WHERE tid NOT LIKE '%%.%%'{inactive_AND}")
+        # Use this query to omit any 'inactive' attacks
+        exc_inactive = 'inactive = %s' % self.dao.db_false_val
+        with_par_attack = 'WITH %s(uid, name, tid, inactive, parent_tid, parent_name) AS (%s) ' % (FULL_ATTACK_INFO, '%s')
+        self.SQL_PAR_ATTACK = sql_par_attack_base.format(inactive_AND=' AND ' + exc_inactive,
+                                                         inactive_WHERE=' WHERE attack_uids.' + exc_inactive)
         # A prefix SQL statement to use with queries that want the full attack info
-        self.SQL_WITH_PAR_ATTACK = \
-            'WITH %s(uid, name, tid, parent_tid, parent_name) AS (%s) ' % (FULL_ATTACK_INFO, self.SQL_PAR_ATTACK)
+        self.SQL_WITH_PAR_ATTACK = with_par_attack % self.SQL_PAR_ATTACK
+        # A version of the above queries that includes inactive attacks
+        self.SQL_PAR_ATTACK_INC_INACTIVE = sql_par_attack_base.format(inactive_AND='', inactive_WHERE='')
+        self.SQL_WITH_PAR_ATTACK_INC_INACTIVE = with_par_attack % self.SQL_PAR_ATTACK_INC_INACTIVE
 
     async def reload_database(self, schema_file=os.path.join('threadcomponents', 'conf', 'schema.sql')):
         """
@@ -112,16 +136,15 @@ class DataService:
 
         # add all of the patterns and dictionary keys/values for each technique and software
         for i in attack['techniques']:
-            if attack_data_check(i):
+            if attack_data_reject(i):
                 continue
-            references[i['id']] = {'name': i['name'], 'id': i['external_references'][0]['external_id'],
-                                   'example_uses': [],
+            references[i['id']] = {'name': i['name'], 'tid': attack_data_get_tid(i), 'example_uses': [],
                                    'description': i.get('description', NO_DESC).replace('<code>', '').replace(
                                        '</code>', '').replace('\n', '').encode('ascii', 'ignore').decode('ascii'),
                                    'similar_words': [i['name']]}
 
         for i in attack['relationships']:
-            if attack_data_check(i):
+            if attack_data_reject(i):
                 continue
             if i['relationship_type'] == 'uses':
                 if ('attack-pattern' in i['target_ref']) and (i['target_ref'] in references):
@@ -143,15 +166,17 @@ class DataService:
 
         for i in attack['malware']:
             # some software do not have description, example: darkmoon https://attack.mitre.org/software/S0209
-            if ('description' not in i) or attack_data_check(i):
+            if ('description' not in i) or attack_data_reject(i):
                 continue
             else:
-                references[i['id']] = {'id': i['id'], 'name': i['name'], 'description': i['description'],
+                references[i['id']] = {'tid': attack_data_get_tid(i), 'name': i['name'],
+                                       'description': i.get('description', NO_DESC),
                                        'examples': [], 'example_uses': [], 'similar_words': [i['name']]}
         for i in attack['tools']:
-            if attack_data_check(i):
+            if attack_data_reject(i):
                 continue
-            references[i['id']] = {'id': i['id'], 'name': i['name'], 'description': i.get('description', NO_DESC),
+            references[i['id']] = {'tid': attack_data_get_tid(i), 'name': i['name'],
+                                   'description': i.get('description', NO_DESC),
                                    'examples': [], 'example_uses': [], 'similar_words': [i['name']]}
 
         attack_data = references
@@ -161,14 +186,13 @@ class DataService:
         cur_uids = set(cur_attacks.keys())
         retrieved_uids = set(attack_data.keys())
         added_attacks = retrieved_uids - cur_uids
-        inactive_attacks = cur_uids - retrieved_uids
         name_changes = []
         for k, v in attack_data.items():
             # If this loop takes long, the below logging-statement will help track progress
             # logging.info('Processing attack %s of %s.' % (list(attack_data.keys()).index(k) + 1, len(attack_data)))
             if k not in cur_uids:
                 await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v.get('description', NO_DESC)),
-                                                          tid=v['id'], name=v['name']))
+                                                          tid=v['tid'], name=v['name']))
                 if 'regex_patterns' in v:
                     [await self.dao.insert_generate_uid('regex_patterns',
                                                         dict(attack_uid=k, regex_pattern=defang_text(x)))
@@ -213,6 +237,13 @@ class DataService:
                 # Confirm this attack is considered active
                 if current_attack_data.get('inactive'):
                     await self.dao.update('attack_uids', where=dict(uid=k), data=dict(inactive=self.dao.db_false_val))
+        # Inactive attack IDs have been calculated by using what is in the database currently
+        # Update the database entries to be inactive if not already flagged as such
+        already_inactive = await self.dao.raw_select(
+            ('SELECT uid FROM attack_uids WHERE inactive = %s' % self.dao.db_true_val), single_col=True)
+        inactive_attacks = (cur_uids - retrieved_uids) - set(already_inactive)
+        for inactive_id in inactive_attacks:
+            await self.dao.update('attack_uids', where=dict(uid=inactive_id), data=dict(inactive=self.dao.db_true_val))
         logging.info('[!] DB Item Count: {}'.format(len(await self.dao.get('attack_uids'))))
         return added_attacks, inactive_attacks, name_changes
 
@@ -345,7 +376,7 @@ class DataService:
         """Function to retrieve confirmed-attack data for a sentence."""
         select_join_query = (
             # Select all columns from the full attack info table
-            self.SQL_WITH_PAR_ATTACK + "SELECT " + FULL_ATTACK_INFO + ".* "
+            self.SQL_WITH_PAR_ATTACK_INC_INACTIVE + "SELECT " + FULL_ATTACK_INFO + ".* "
             # Use an INNER JOIN on full_attack_info and report_sentence_hits (to get the intersection of attacks)
             "FROM (" + FULL_ATTACK_INFO + " INNER JOIN report_sentence_hits ON " + FULL_ATTACK_INFO +
             ".uid = report_sentence_hits.attack_uid) "
@@ -397,12 +428,12 @@ class DataService:
         """Function to retrieve active sentence hits (and ignoring historic ones, e.g. a model's initial prediction)."""
         select_join_query = (
             # Using the temporary table with parent-technique info
-            self.SQL_WITH_PAR_ATTACK +
+            self.SQL_WITH_PAR_ATTACK_INC_INACTIVE +
             # The relevant fields we want from report_sentence_hits
             "SELECT report_sentence_hits.sentence_id, report_sentence_hits.attack_uid, "
             "report_sentence_hits.attack_tid, report_sentence_hits.attack_technique_name, "
             # We want to add any sub-technique's parent-technique name
-            + FULL_ATTACK_INFO + ".parent_name AS attack_parent_name "
+            + FULL_ATTACK_INFO + ".parent_name AS attack_parent_name, " + FULL_ATTACK_INFO + ".inactive "
             # As we are querying two tables, state the FROM clause is an INNER JOIN on the two
             "FROM (" + FULL_ATTACK_INFO + " INNER JOIN report_sentence_hits ON " + FULL_ATTACK_INFO +
             ".uid = report_sentence_hits.attack_uid) "

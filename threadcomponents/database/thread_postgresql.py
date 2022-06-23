@@ -164,7 +164,8 @@ class ThreadPostgreSQL(ThreadDB):
             if callable(on_fetch):
                 return on_fetch(rows)
             else:
-                return [dict(ix) for ix in rows]
+                # psycopg2.extras.DictRow can be accessed with [int]; do so if not returning dictionary objects
+                return [ix[0] for ix in rows] if single_col else [dict(ix) for ix in rows]
         return self._connection_wrapper(cursor_select, cursor_factory=psycopg2.extras.DictCursor)
 
     async def _execute_insert(self, sql, data):

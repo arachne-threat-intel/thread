@@ -61,8 +61,8 @@ class Dao:
     async def delete(self, table, data, return_sql=False):
         return await self.db.delete(table, data, return_sql=return_sql)
         
-    async def raw_select(self, query, parameters=None):
-        return await self.db.raw_select(query, parameters=parameters)
+    async def raw_select(self, query, parameters=None, single_col=False):
+        return await self.db.raw_select(query, parameters=parameters, single_col=single_col)
 
     async def run_sql_list(self, sql_list=None, return_success=True):
         return await self.db.run_sql_list(sql_list=sql_list, return_success=return_success)
