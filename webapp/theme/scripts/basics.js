@@ -266,8 +266,10 @@ function updateSentenceContext(data) {
     // Highlight to the user this sentence has been clicked
     $("#elmt" + sentence_id).addClass(clickedClass);
     $.each(data, function(index, op) {
-      // For the href, replace any '.' in the TID with a '/' as that is the URL format for sub-techniques
-      td1 = "<td><a href=https://attack.mitre.org/techniques/" + op.attack_tid.replace(".", "/") + " target=_blank>"
+      // Before the attack-name, flag if deprecated/revoked
+      td1 = "<td>" + (op.inactive ? "<b>!</b> " : "")
+            // For the href, replace any '.' in the TID with a '/' as that is the URL format for sub-techniques
+            + "<a href=https://attack.mitre.org/techniques/" + op.attack_tid.replace(".", "/") + " target=_blank>"
             // Prefix the name with the parent-technique (if it is a sub-technique), else just print the name
             + (op.attack_parent_name ? `${op.attack_parent_name}: ${op.attack_technique_name}` : op.attack_technique_name)
             + "</a></td>";
@@ -302,9 +304,11 @@ function updateSentenceContext(data) {
 function updateConfirmedContext(data) {
   $("#confirmedSentenceInfo tr").remove();
   $.each(data, function(index, op) {
-    // Prefix the name with the parent-technique (if it is a sub-technique), else just print the name
-    td1 = "<td>" + (op.parent_name ? `${op.parent_name}: ${op.name}` : op.name) + "</td>"
-    tmp = "<tr>" + td1 + "</tr>"
+    // Before the attack-name, flag if deprecated/revoked
+    td1 = "<td>" + (op.inactive ? "<b>!</b> " : "")
+          // Prefix the name with the parent-technique (if it is a sub-technique), else just print the name
+          + (op.parent_name ? `${op.parent_name}: ${op.name}` : op.name) + "</td>";
+    tmp = "<tr>" + td1 + "</tr>";
     $("#confirmedSentenceInfo").find("tbody").append(tmp);
   });
 }

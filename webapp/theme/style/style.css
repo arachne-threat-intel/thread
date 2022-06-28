@@ -309,7 +309,7 @@ select#missingTechniqueSelect ~ div.dropdown-menu {
   --bs-bg-opacity: .4;
 }
 
-div#submitReportForm .nav-link:not(.active), #confirmedSentenceInfo {
+div#submitReportForm .nav-link:not(.active), #confirmedSentenceInfo, #tableSentenceInfo {
   color: white;
 }
 
