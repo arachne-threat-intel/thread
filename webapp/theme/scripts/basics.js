@@ -266,10 +266,13 @@ function updateSentenceContext(data) {
     // Highlight to the user this sentence has been clicked
     $("#elmt" + sentence_id).addClass(clickedClass);
     $.each(data, function(index, op) {
+      // Is this a technique or software URL?
+      var opAttack = op.attack_uid || "";
+      var opAttackURL = (opAttack.startsWith("malware") || opAttack.startsWith("tool")) ? "software" : "techniques";
       // Before the attack-name, flag if deprecated/revoked
-      td1 = "<td>" + (op.inactive ? "<b>!</b> " : "")
+      td1 = "<td>" + (op.inactive ? "<b>!</b> " : "") + "<a href=https://attack.mitre.org/"
             // For the href, replace any '.' in the TID with a '/' as that is the URL format for sub-techniques
-            + "<a href=https://attack.mitre.org/techniques/" + op.attack_tid.replace(".", "/") + " target=_blank>"
+            + opAttackURL + "/" + op.attack_tid.replace(".", "/") + " target=_blank>"
             // Prefix the name with the parent-technique (if it is a sub-technique), else just print the name
             + (op.attack_parent_name ? `${op.attack_parent_name}: ${op.attack_technique_name}` : op.attack_technique_name)
             + "</a></td>";

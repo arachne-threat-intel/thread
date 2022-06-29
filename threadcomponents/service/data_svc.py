@@ -182,7 +182,7 @@ class DataService:
         attack_data = references
         logging.info('Finished...now creating the database.')
 
-        cur_attacks = await self.dao.get_dict_value_as_key('attack_uids', 'uid', ['name', 'inactive'])
+        cur_attacks = (await self.dao.get_dict_value_as_key('attack_uids', 'uid', ['name', 'inactive'])) or dict()
         cur_uids = set(cur_attacks.keys())
         retrieved_uids = set(attack_data.keys())
         added_attacks = retrieved_uids - cur_uids
