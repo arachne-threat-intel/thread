@@ -392,6 +392,9 @@ class RestService:
                 # Enforce http on urls that do not begin with http(s)
                 prefix_check = re.match('^https?://', url, re.IGNORECASE)
                 url = 'http://' + url if prefix_check is None else url
+                # Drop fragments
+                if '#' in url:
+                    url = url[:url.index('#')]
                 await self.web_svc.verify_url(request, url=url)
             # Raised if verify_url() fails
             except ValueError as ve:
