@@ -10,9 +10,11 @@ import pandas as pd
 import re
 
 from aiohttp import web
+from contextlib import suppress
 from datetime import datetime, timedelta
 from enum import Enum, unique
 from functools import partial
+from htmldate import find_date
 from io import StringIO
 from urllib.parse import unquote
 
@@ -515,6 +517,9 @@ class RestService:
 
         html_data = newspaper_article.text.replace('\n', '<br>')
         article = dict(title=criteria['title'], html_text=html_data)
+        # Obtain the article date if possible
+        with suppress(ValueError):
+            article_date = find_date(criteria[URL])
 
         # Here we build the sentence dictionary
         html_sentences = self.web_svc.tokenize_sentence(article['html_text'])
@@ -544,6 +549,9 @@ class RestService:
 
         # The report is about to be moved out of the queue
         update_data = dict(current_status=ReportStatus.NEEDS_REVIEW.value)
+        # Save the article-date if we have one
+        if article_date:
+            update_data.update(dict(start_date=article_date, end_date=article_date))
         if not self.is_local:
             # Prepare its expiry date (now + 1 week)
             expiry_date = datetime.now() + timedelta(weeks=1)

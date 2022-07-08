@@ -30,7 +30,10 @@ class ThreadSQLite(ThreadDB):
         try:
             # sqlite3 does not support date fields (see 2.2. here: https://www.sqlite.org/datatype3.html)
             # We only want to log an error if we are building the full schema
-            schema = self.add_column_to_schema(schema, 'reports', 'expires_on TEXT', log_error=(not is_partial))
+            schema_kwargs = dict(log_error=(not is_partial))
+            schema = self.add_column_to_schema(schema, 'reports', 'expires_on TEXT', **schema_kwargs)
+            schema = self.add_column_to_schema(schema, 'reports', 'start_date TEXT', **schema_kwargs)
+            schema = self.add_column_to_schema(schema, 'reports', 'end_date TEXT', **schema_kwargs)
         except ValueError as e:
             # Partial-schemas (e.g. backup tables) will most likely raise an error so ignore these
             if not is_partial:
