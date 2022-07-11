@@ -272,7 +272,7 @@ class WebAPI:
             nav_link=nav_link, completed=int(report_status == self.report_statuses.COMPLETED.value), help_text=help_text
         )
         # Prepare the date fields to be interpreted by the front-end
-        for report_date in ['start_date', 'end_date']:
+        for report_date in ['date_written', 'start_date', 'end_date']:
             saved_date = report[0].get(report_date)
             if isinstance(saved_date, datetime):  # don't pass datetime objects; convert to string
                 saved_date = saved_date.strftime('%Y-%m-%d')
