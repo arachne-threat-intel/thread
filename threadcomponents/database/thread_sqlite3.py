@@ -32,6 +32,7 @@ class ThreadSQLite(ThreadDB):
             # We only want to log an error if we are building the full schema
             schema_kwargs = dict(log_error=(not is_partial))
             schema = self.add_column_to_schema(schema, 'reports', 'expires_on TEXT', **schema_kwargs)
+            schema = self.add_column_to_schema(schema, 'reports', 'date_written TEXT', **schema_kwargs)
             schema = self.add_column_to_schema(schema, 'reports', 'start_date TEXT', **schema_kwargs)
             schema = self.add_column_to_schema(schema, 'reports', 'end_date TEXT', **schema_kwargs)
         except ValueError as e:

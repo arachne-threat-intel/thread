@@ -551,7 +551,7 @@ class RestService:
         update_data = dict(current_status=ReportStatus.NEEDS_REVIEW.value)
         # Save the article-date if we have one
         if article_date:
-            update_data.update(dict(start_date=article_date, end_date=article_date))
+            update_data.update(dict(date_written=article_date))
         if not self.is_local:
             # Prepare its expiry date (now + 1 week)
             expiry_date = datetime.now() + timedelta(weeks=1)

@@ -72,6 +72,7 @@ def _create_tables(username, password, host, port, schema='', is_partial=False):
         schema_kwargs = dict(log_error=(not is_partial))
         # Add expiry field and date fields
         schema = ThreadDB.add_column_to_schema(schema, 'reports', 'expires_on TIMESTAMP WITH TIME ZONE', **schema_kwargs)
+        schema = ThreadDB.add_column_to_schema(schema, 'reports', 'date_written TIMESTAMP WITH TIME ZONE', **schema_kwargs)
         schema = ThreadDB.add_column_to_schema(schema, 'reports', 'start_date TIMESTAMP WITH TIME ZONE', **schema_kwargs)
         schema = ThreadDB.add_column_to_schema(schema, 'reports', 'end_date TIMESTAMP WITH TIME ZONE', **schema_kwargs)
     except ValueError as e:
