@@ -520,6 +520,11 @@ class RestService:
         # Obtain the article date if possible
         with suppress(ValueError):
             article_date = find_date(criteria[URL])
+        # Check any obtained date is a sensible value to store in the database
+        try:
+            self.check_input_date(article_date)
+        except (TypeError, ValueError):
+            article_date = None
 
         # Here we build the sentence dictionary
         html_sentences = self.web_svc.tokenize_sentence(article['html_text'])
@@ -787,3 +792,16 @@ class RestService:
             return True  # Report status matches
         # Report status is not a match
         return False
+
+    @staticmethod
+    def check_input_date(date_str):
+        """Function to check given a date string, it is in an acceptable format and range to be saved."""
+        # Convert the given date into a datetime object to be able to do comparisons
+        given_date = datetime.strptime(date_str, '%Y-%m-%d')
+        # Establish the min and max date ranges we want dates to fall in
+        date_now = datetime.now()
+        max_date = datetime(date_now.year + 5, month=date_now.month, day=date_now.day, tzinfo=date_now.tzinfo)
+        min_date = datetime(1970, month=1, day=1, tzinfo=date_now.tzinfo)
+        # Raise a ValueError if the given date is not in this range
+        if not (min_date < given_date < max_date):
+            raise ValueError('Date `%s` outside permitted range.' % date_str)
