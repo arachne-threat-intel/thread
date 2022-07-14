@@ -31,6 +31,32 @@
   </div>
 </div>
 
+<form id="reportDatesForm">
+  <div class="row">
+    <label for="dateOf" class="col-sm-2 col-form-label">Article Publication Date:</label>
+    <div class="col-sm-10">
+      <input type="date" class="form-control" id="dateOf" value={{date_written}}>
+    </div>
+  </div>
+  <br>
+  <span><b>Techniques Discussed</b></span>
+  <br><br>
+  <div class="row">
+    <label for="startDate" class="col-sm-2 col-form-label">Start Date:</label>
+    <div class="col-sm-10">
+      <input type="date" class="form-control" id="startDate" value={{start_date}}>
+    </div>
+  </div>
+  <div class="row">
+    <label for="endDate" class="col-sm-2 col-form-label">End Date:</label>
+    <div class="col-sm-10">
+      <input type="date" class="form-control" id="endDate" value={{end_date}}>
+    </div>
+  </div>
+  <br>
+  <button type="button" onclick='' class="btn btn-md btn-outline-secondary">Update Report Dates</button>
+</form>
+
 <div class="row">
   <div class="col reportSentencesDiv">
     {% for elmt in final_html %}

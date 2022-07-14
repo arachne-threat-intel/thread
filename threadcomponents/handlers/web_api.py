@@ -276,7 +276,8 @@ class WebAPI:
             saved_date = report[0].get(report_date)
             if isinstance(saved_date, datetime):  # don't pass datetime objects; convert to string
                 saved_date = saved_date.strftime('%Y-%m-%d')
-            template_data[report_date] = saved_date
+            if saved_date:
+                template_data[report_date] = saved_date
         return template_data
 
     async def nav_export(self, request):
