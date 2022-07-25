@@ -159,6 +159,18 @@ function finish_analysis(reportTitle) {
   }
 }
 
+function update_report_dates(reportTitle) {
+  if(!document.getElementById("reportDatesForm").reportValidity()) {
+    return;
+  }
+  // Send off the request with the inputted dates
+  var dateOf = document.getElementById("dateOf").value;
+  var startDate = document.getElementById("startDate").value;
+  var endDate = document.getElementById("endDate").value;
+  restRequest("POST", {"index": "update_report_dates", "report_title": reportTitle,
+                       "date_of": dateOf, "start_date": startDate, "end_date": endDate});
+}
+
 function submit(data, submitButton) {
   // Do extra checks if this is not locally run
   if(!isLocal) {
