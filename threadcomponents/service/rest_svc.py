@@ -256,6 +256,54 @@ class RestService:
         await self.check_report_status(report_id=report_id, update_if_false=True)
         return REST_SUCCESS
 
+    async def update_report_dates(self, request, criteria=None):
+        default_error, success = dict(error='Error updating report dates.'), REST_SUCCESS.copy()
+        try:
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
+            report_title, date_of = criteria['report_title'], criteria['date_of']
+            start_date, end_date = criteria['start_date'], criteria['end_date']
+        except (KeyError, TypeError):
+            return default_error
+        # Get the report data from the provided report title
+        try:
+            report = await self.data_svc.get_report_by_title(report_title=unquote(report_title),
+                                                             add_expiry_bool=(not self.is_local))
+        except TypeError:  # Thrown when unquote() receives a non-string type
+            return default_error
+        try:
+            report_id, r_status, r_written = report[0][UID], report[0]['current_status'], report[0]['date_written']
+        except (KeyError, IndexError):  # Thrown if the report title is not in the db or db record is malformed
+            return default_error
+        # Found a valid report, check if protected by token
+        await self.web_svc.action_allowed(request, 'update-report-dates', context=dict(report=report[0]))
+        # Check a queued or completed report ID hasn't been provided
+        if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
+            return default_error
+        # Validate dates requested to be updated
+        # Has a date-written not been provided if the report entry in db is lacking one?
+        if (not r_written) and not date_of:
+            return dict(error='Article Publication Date missing.', alert_user=1)
+        # TODO check end-date > start-date; same-date boolean clashes with if different dates provided
+        # Have reasonable date values been given (not too historic/futuristic)?
+        update_data, invalid_dates = dict(), []
+        for date_value, date_key in [(date_of, 'date_written'), (start_date, 'start_date'), (end_date, 'end_date')]:
+            try:
+                # TODO return date object of variable for further checks?
+                self.check_input_date(date_value)
+            except (TypeError, ValueError):
+                if date_value:  # if not blank, store this to report back to user
+                    invalid_dates.append(date_value)
+                continue
+            update_data[date_key] = date_value  # else add acceptable value to dictionary to be updated with
+        # Update the database if there were values to update with; inform user of any which were ignored
+        if update_data:
+            await self.dao.update('reports', where=dict(uid=report_id), data=update_data)
+        if invalid_dates:
+            msg = 'The following dates were ignored for being too far in the past/future, and/or being in an ' \
+                  'incorrect format: ' + ', '.join(str(val) for val in invalid_dates)
+            success.update(dict(info=msg, alert_user=1))
+        return success
+
     async def rollback_report(self, request, criteria=None):
         default_error = dict(error='Error completing rollback of report.')
         try:
@@ -797,6 +845,7 @@ class RestService:
     def check_input_date(date_str):
         """Function to check given a date string, it is in an acceptable format and range to be saved."""
         # Convert the given date into a datetime object to be able to do comparisons
+        # Expect to raise TypeError if date_str is not a string
         given_date = datetime.strptime(date_str, '%Y-%m-%d')
         # Establish the min and max date ranges we want dates to fall in
         date_now = datetime.now()
