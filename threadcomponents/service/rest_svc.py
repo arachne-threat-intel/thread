@@ -165,25 +165,44 @@ class RestService:
             await self.queue.put(report)
             queue.append(report[URL])
 
-    async def set_status(self, request, criteria=None):
-        default_error = dict(error='Error setting status.')
+    async def _report_pre_check(self, request, criteria, action, report_variables, criteria_variables):
+        """Function that given request data, checks the variables needed for the request are there.
+        :return: report, error"""
         try:
-            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
-            new_status, report_title = criteria['set_status'], criteria['report_title']
+            report_title = criteria['report_title']
         except (KeyError, TypeError):
-            return default_error
+            return None, True
+        for variable in (criteria_variables or []):
+            try:
+                # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
+                criteria[variable]
+            except (KeyError, TypeError):
+                return None, True
         # Get the report data from the provided report title
         try:
-            report_dict = await self.data_svc.get_report_by_title(report_title=unquote(report_title),
-                                                                  add_expiry_bool=(not self.is_local))
+            report = await self.data_svc.get_report_by_title(report_title=unquote(report_title),
+                                                             add_expiry_bool=(not self.is_local))
         except TypeError:  # Thrown when unquote() receives a non-string type
-            return default_error
-        try:
-            report_id, r_status = report_dict[0][UID], report_dict[0]['current_status']
-        except (KeyError, IndexError):  # Thrown if the report title did not match any report in the db
-            return default_error
+            return None, True
+        # Check we can obtain what we need about the report
+        for variable in (report_variables or []):
+            try:
+                report[0][variable]
+            except (KeyError, IndexError):  # Thrown if the report title is not in the db or db record is malformed
+                return None, True
         # Found a valid report, check if protected by token
-        await self.web_svc.action_allowed(request, 'set-status', context=dict(report=report_dict[0]))
+        await self.web_svc.action_allowed(request, action, context=dict(report=report[0]))
+        return report[0], False
+
+    async def set_status(self, request, criteria=None):
+        default_error = dict(error='Error setting status.')
+        # Do initial report checks
+        report_dict, error = await self._report_pre_check(request, criteria, 'set-status',
+                                                          [UID, 'current_status'], ['set_status'])
+        if error:
+            return default_error
+        new_status = criteria['set_status']
+        report_id, r_status = report_dict[UID], report_dict['current_status']
         # May be refined to allow reverting statuses in future - should use enum to check valid status
         if new_status == ReportStatus.COMPLETED.value:
             # Check there are no unconfirmed attacks
@@ -210,23 +229,12 @@ class RestService:
 
     async def delete_report(self, request, criteria=None):
         default_error = dict(error='Error deleting report.')
-        try:
-            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
-            report_title = criteria['report_title']
-        except (KeyError, TypeError):
+        # Do initial report checks
+        report, error = await self._report_pre_check(request, criteria, 'delete-report',
+                                                     [UID, 'current_status', 'error'], None)
+        if error:
             return default_error
-        # Get the report data from the provided report title
-        try:
-            report = await self.data_svc.get_report_by_title(report_title=unquote(report_title),
-                                                             add_expiry_bool=(not self.is_local))
-        except TypeError:  # Thrown when unquote() receives a non-string type
-            return default_error
-        try:
-            report_id, r_status, r_error = report[0][UID], report[0]['current_status'], report[0]['error']
-        except (KeyError, IndexError):  # Thrown if the report title is not in the db or db record is malformed
-            return default_error
-        # Found a valid report, check if protected by token
-        await self.web_svc.action_allowed(request, 'delete-report', context=dict(report=report[0]))
+        report_id, r_status, r_error = report[UID], report['current_status'], report['error']
         # Check a queued, error-free report ID hasn't been provided -> this may be mid-analysis
         if (not r_error) and (r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value,
                                                ReportStatus.COMPLETED.value]):
@@ -258,24 +266,14 @@ class RestService:
 
     async def update_report_dates(self, request, criteria=None):
         default_error, success = dict(error='Error updating report dates.'), REST_SUCCESS.copy()
-        try:
-            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
-            report_title, date_of = criteria['report_title'], criteria['date_of']
-            start_date, end_date = criteria['start_date'], criteria['end_date']
-        except (KeyError, TypeError):
+        # Do initial report checks
+        report, error = await \
+            self._report_pre_check(request, criteria, 'update-report-dates',
+                                   [UID, 'current_status', 'date_written'], ['date_of', 'start_date', 'end_date'])
+        if error:
             return default_error
-        # Get the report data from the provided report title
-        try:
-            report = await self.data_svc.get_report_by_title(report_title=unquote(report_title),
-                                                             add_expiry_bool=(not self.is_local))
-        except TypeError:  # Thrown when unquote() receives a non-string type
-            return default_error
-        try:
-            report_id, r_status, r_written = report[0][UID], report[0]['current_status'], report[0]['date_written']
-        except (KeyError, IndexError):  # Thrown if the report title is not in the db or db record is malformed
-            return default_error
-        # Found a valid report, check if protected by token
-        await self.web_svc.action_allowed(request, 'update-report-dates', context=dict(report=report[0]))
+        date_of, start_date, end_date = criteria['date_of'], criteria['start_date'], criteria['end_date']
+        report_id, r_status, r_written = report[UID], report['current_status'], report['date_written']
         # Check a queued or completed report ID hasn't been provided
         if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
             return default_error
@@ -306,23 +304,11 @@ class RestService:
 
     async def rollback_report(self, request, criteria=None):
         default_error = dict(error='Error completing rollback of report.')
-        try:
-            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
-            report_title = criteria['report_title']
-        except (KeyError, TypeError):
+        # Do initial report checks
+        report, error = await self._report_pre_check(request, criteria, 'rollback-report', [UID, 'current_status'], None)
+        if error:
             return default_error
-        # Get the report data from the provided report title
-        try:
-            report = await self.data_svc.get_report_by_title(report_title=unquote(report_title),
-                                                             add_expiry_bool=(not self.is_local))
-        except TypeError:  # Thrown when unquote() receives a non-string type
-            return default_error
-        try:
-            report_id, r_status = report[0][UID], report[0]['current_status']
-        except (KeyError, IndexError):  # Thrown if the report title is not in the db or db record is malformed
-            return default_error
-        # Found a valid report, check if protected by token
-        await self.web_svc.action_allowed(request, 'rollback-report', context=dict(report=report[0]))
+        report_id, r_status = report[UID], report['current_status']
         # Only mid-review reports can be rollbacked
         if r_status != ReportStatus.IN_REVIEW.value:
             return default_error
