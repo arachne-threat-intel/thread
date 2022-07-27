@@ -281,18 +281,21 @@ class RestService:
         # Has a date-written not been provided if the report entry in db is lacking one?
         if (not r_written) and not date_of:
             return dict(error='Article Publication Date missing.', alert_user=1)
-        # TODO check end-date > start-date; same-date boolean clashes with if different dates provided
+        # TODO same-date boolean clashes with if different dates provided
         # Have reasonable date values been given (not too historic/futuristic)?
-        update_data, invalid_dates = dict(), []
+        update_data, converted_dates, invalid_dates = dict(), dict(), []
         for date_value, date_key in [(date_of, 'date_written'), (start_date, 'start_date'), (end_date, 'end_date')]:
             try:
-                # TODO return date object of variable for further checks?
-                self.check_input_date(date_value)
+                converted_dates[date_key] = self.check_input_date(date_value)
             except (TypeError, ValueError):
                 if date_value:  # if not blank, store this to report back to user
                     invalid_dates.append(date_value)
                 continue
             update_data[date_key] = date_value  # else add acceptable value to dictionary to be updated with
+        # Check a sensible ordering of dates have been provided
+        start_date_conv, end_date_conv = converted_dates.get('start_date'), converted_dates.get('end_date')
+        if (start_date_conv and end_date_conv) and (end_date_conv < start_date_conv):
+            return dict(error='Incorrect ordering of dates provided.', alert_user=1)
         # Update the database if there were values to update with; inform user of any which were ignored
         if update_data:
             await self.dao.update('reports', where=dict(uid=report_id), data=update_data)
@@ -840,3 +843,4 @@ class RestService:
         # Raise a ValueError if the given date is not in this range
         if not (min_date < given_date < max_date):
             raise ValueError('Date `%s` outside permitted range.' % date_str)
+        return given_date
