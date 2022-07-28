@@ -279,6 +279,9 @@ class WebAPI:
                 saved_date = saved_date.strftime('%Y-%m-%d')
             if saved_date:
                 template_data[report_date] = saved_date
+        start_date, end_date = template_data.get('start_date'), template_data.get('end_date')
+        if start_date and end_date and (start_date == end_date):
+            template_data.update(same_dates=True)
         return template_data
 
     async def nav_export(self, request):

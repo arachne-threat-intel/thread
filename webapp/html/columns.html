@@ -83,7 +83,12 @@
             <input type="date" class="form-control" id="startDate" value={{start_date}} {% if completed %}readonly{% endif %}>
           </div>
         </div>
-        <div class="row">
+        <div class="d-flex">
+          <input type="checkbox" id="dateRange" class="report-submission-checkbox" onchange="dateRangeChecked(this)"
+                 {% if same_dates %}checked{% endif %} {% if completed %}disabled{% endif %}>
+          <label for="dateRange" id="dateRangeLabel"><small>No time range for techniques?</small></label>
+        </div>
+        <div id="endDateDiv" class="row" {% if same_dates %}hidden{% endif %}>
           <label for="endDate" class="col-sm-4 col-form-label">End Date:</label>
           <div class="col-sm-8">
             <input type="date" class="form-control" id="endDate" value={{end_date}} {% if completed %}readonly{% endif %}>
