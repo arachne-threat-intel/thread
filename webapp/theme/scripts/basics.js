@@ -167,7 +167,8 @@ function update_report_dates(reportTitle) {
   var dateOf = document.getElementById("dateOf").value;
   var startDate = document.getElementById("startDate").value;
   var endDate = document.getElementById("endDate").value;
-  restRequest("POST", {"index": "update_report_dates", "report_title": reportTitle,
+  var sameDates = $("#dateRange").prop("checked");
+  restRequest("POST", {"index": "update_report_dates", "report_title": reportTitle, "same_dates": sameDates,
                        "date_of": dateOf, "start_date": startDate, "end_date": endDate});
 }
 
@@ -477,6 +478,13 @@ function tokenFieldCheck(field) {
     // Finish by hiding or displaying the confirmation checkbox
     $(checkboxDivID).prop("hidden", hasValue);
   }
+}
+
+function dateRangeChecked(field) {
+  var ticked = $(field).prop("checked");
+  // Hide and reset the end date input value
+  $("#endDateDiv").prop("hidden", ticked);
+  $("#endDate").val("");
 }
 
 // onDocumentReady function bind

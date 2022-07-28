@@ -290,6 +290,8 @@ class RestService:
             except (TypeError, ValueError):
                 if date_value:  # if not blank, store this to report back to user
                     invalid_dates.append(date_value)
+                else:  # else if blank, we will blank the value in the database
+                    update_data[date_key] = None
                 continue
             update_data[date_key] = date_value  # else add acceptable value to dictionary to be updated with
         # Check a sensible ordering of dates have been provided
@@ -308,6 +310,8 @@ class RestService:
             msg = 'The following dates were ignored for being too far in the past/future, and/or being in an ' \
                   'incorrect format: ' + ', '.join(str(val) for val in invalid_dates)
             success.update(dict(info=msg, alert_user=1))
+        else:
+            success.update(dict(info='The report dates have been updated.', alert_user=1))
         return success
 
     async def rollback_report(self, request, criteria=None):

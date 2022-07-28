@@ -346,8 +346,12 @@ input[type="checkbox"].report-submission-checkbox {
 
 /* columns.html */
 
-#reportDatesForm input {
+#reportDatesForm input:not([type="checkbox"]) {
   margin-top: 0.5rem;
+}
+
+#dateRangeLabel {
+  margin-bottom: unset; /* unset from label, input { margin-bottom: .5rem; } styling */
 }
 
 .reportSentencesDiv {
@@ -366,7 +370,7 @@ input[type="checkbox"].report-submission-checkbox {
   width: 75%;
 }
 
-.report-sentence {
+.report-sentence, input[type="checkbox"], input[type="checkbox"]+label {
   cursor: pointer;
 }
 
