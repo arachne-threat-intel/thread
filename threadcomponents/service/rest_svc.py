@@ -273,6 +273,7 @@ class RestService:
         if error:
             return default_error
         date_of, start_date, end_date = criteria['date_of'], criteria['start_date'], criteria['end_date']
+        same_dates = criteria.get('same_dates') is True  # we only want to process booleans sent for this parameter
         report_id, r_status, r_written = report[UID], report['current_status'], report['date_written']
         # Check a queued or completed report ID hasn't been provided
         if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
@@ -281,7 +282,6 @@ class RestService:
         # Has a date-written not been provided if the report entry in db is lacking one?
         if (not r_written) and not date_of:
             return dict(error='Article Publication Date missing.', alert_user=1)
-        # TODO same-date boolean clashes with if different dates provided
         # Have reasonable date values been given (not too historic/futuristic)?
         update_data, converted_dates, invalid_dates = dict(), dict(), []
         for date_value, date_key in [(date_of, 'date_written'), (start_date, 'start_date'), (end_date, 'end_date')]:
@@ -294,8 +294,13 @@ class RestService:
             update_data[date_key] = date_value  # else add acceptable value to dictionary to be updated with
         # Check a sensible ordering of dates have been provided
         start_date_conv, end_date_conv = converted_dates.get('start_date'), converted_dates.get('end_date')
-        if (start_date_conv and end_date_conv) and (end_date_conv < start_date_conv):
-            return dict(error='Incorrect ordering of dates provided.', alert_user=1)
+        if start_date_conv and end_date_conv:
+            if same_dates and (end_date_conv != start_date_conv):
+                return dict(error='Specified same dates but different dates provided.', alert_user=1)
+            if end_date_conv < start_date_conv:
+                return dict(error='Incorrect ordering of dates provided.', alert_user=1)
+        if same_dates and start_date_conv:
+            update_data['end_date'] = start_date
         # Update the database if there were values to update with; inform user of any which were ignored
         if update_data:
             await self.dao.update('reports', where=dict(uid=report_id), data=update_data)

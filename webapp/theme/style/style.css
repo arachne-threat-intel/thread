@@ -346,12 +346,8 @@ input[type="checkbox"].report-submission-checkbox {
 
 /* columns.html */
 
-#reportDatesForm {
-  margin: 2rem;
-}
-
 #reportDatesForm input {
-  width: unset;
+  margin-top: 0.5rem;
 }
 
 .reportSentencesDiv {
