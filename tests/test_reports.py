@@ -171,7 +171,7 @@ class TestReports(ThreadAppTest):
         report_id, report_title = str(uuid4()), 'To Set or Not to Set'
         # Submit and analyse a test report
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='analysing.this',
-                                           current_status=ReportStatus.QUEUE.value))
+                                           current_status=ReportStatus.QUEUE.value, date_written='2022-07-29'))
         # Attempt to complete this newly-analysed report
         data = dict(index='set_status', set_status=ReportStatus.COMPLETED.value, report_title=report_title)
         resp = await self.client.post('/rest', json=data)
