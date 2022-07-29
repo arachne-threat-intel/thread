@@ -198,11 +198,11 @@ class RestService:
         default_error = dict(error='Error setting status.')
         # Do initial report checks
         report_dict, error = await self._report_pre_check(request, criteria, 'set-status',
-                                                          [UID, 'current_status'], ['set_status'])
+                                                          [UID, 'current_status', 'date_written'], ['set_status'])
         if error:
             return default_error
         new_status = criteria['set_status']
-        report_id, r_status = report_dict[UID], report_dict['current_status']
+        report_id, r_status, date_written = report_dict[UID], report_dict['current_status'], report_dict['date_written']
         # May be refined to allow reverting statuses in future - should use enum to check valid status
         if new_status == ReportStatus.COMPLETED.value:
             # Check there are no unconfirmed attacks
@@ -214,6 +214,8 @@ class RestService:
             # Check the report status is not queued (because queued reports will have 0 unchecked attacks)
             if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
                 return default_error
+            if not date_written:
+                return dict(error='Please set an Article Publication Date for this report.', alert_user=1)
             # Finally, update the status
             update_data = dict(current_status=new_status)
             if not self.is_local:
@@ -853,3 +855,10 @@ class RestService:
         if not (min_date < given_date < max_date):
             raise ValueError('Date `%s` outside permitted range.' % date_str)
         return given_date
+
+    @staticmethod
+    def return_date_as_str(date_var):
+        """Function given a date, returns it as a string."""
+        if isinstance(date_var, datetime):
+            return date_var.strftime('%Y-%m-%d')
+        return date_var
