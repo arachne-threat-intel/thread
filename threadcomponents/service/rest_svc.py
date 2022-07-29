@@ -269,12 +269,11 @@ class RestService:
     async def update_report_dates(self, request, criteria=None):
         default_error, success = dict(error='Error updating report dates.'), REST_SUCCESS.copy()
         # Do initial report checks
-        report, error = await \
-            self._report_pre_check(request, criteria, 'update-report-dates',
-                                   [UID, 'current_status', 'date_written'], ['date_of', 'start_date', 'end_date'])
+        report, error = await self._report_pre_check(request, criteria, 'update-report-dates',
+                                                     [UID, 'current_status', 'date_written'], None)
         if error:
             return default_error
-        date_of, start_date, end_date = criteria['date_of'], criteria['start_date'], criteria['end_date']
+        date_of, start_date, end_date = criteria.get('date_of'), criteria.get('start_date'), criteria.get('end_date')
         same_dates = criteria.get('same_dates') is True  # we only want to process booleans sent for this parameter
         report_id, r_status, r_written = report[UID], report['current_status'], report['date_written']
         # Check a queued or completed report ID hasn't been provided
