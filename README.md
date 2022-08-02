@@ -5,6 +5,7 @@ Thread is a tool for analysts to map finished reports and articles to [MITRE ATT
 
 Thread was originally forked from TRAM when it was in its beta phase, and we wanted to build upon it. Therefore, further changes to the original TRAM repo may not be incorporated into Thread as the codebases have largely diverged. 
 
+* [Website](#website)
 * [Requirements](#requirements)
 * [Installation](#installation)
 * [Submitting a Report](#submitting-a-report)
@@ -14,6 +15,9 @@ Thread was originally forked from TRAM when it was in its beta phase, and we wan
 * [How do I contribute?](#how-do-i-contribute)
 * [Contact Us](#contact-us)
 * [Notice](#notice)
+
+## Website
+If you want to use Thread right now, feel free to use the web version at https://arachne.digital/thread.
 
 ## Requirements
 - [Python 3](https://www.python.org/) (3.8+)
