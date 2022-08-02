@@ -291,7 +291,7 @@ class RestService:
             except (TypeError, ValueError):
                 if date_value:  # if not blank, store this to report back to user
                     invalid_dates.append(date_value)
-                else:  # else if blank, we will blank the value in the database
+                elif date_key != 'date_written':  # else if blank, we will blank the value in the database
                     update_data[date_key] = None
                 continue
             update_data[date_key] = date_value  # else add acceptable value to dictionary to be updated with
