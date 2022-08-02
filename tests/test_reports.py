@@ -467,7 +467,6 @@ class TestReports(ThreadAppTest):
                     start_date='2022-01-01', end_date='2022-02-02')
         # Check a successful response was sent and the dates were unset
         resp = await self.client.post('/rest', json=data)
-        resp_json = await resp.json()
         report = await self.db.get('reports', dict(uid=report_id))
         self.assertTrue(resp.status < 300, msg='Updating equal report dates resulted in a non-200 response.')
         self.assertEqual(report[0]['date_written'], '2022-07-29', msg='Start date not updated correctly.')
