@@ -27,18 +27,32 @@ class ThreadSQLite(ThreadDB):
         """Implements ThreadDB.build()"""
         # Ensure the foreign-keys line is prepended to the schema
         schema = ENABLE_FOREIGN_KEYS + '\n' + schema
-        try:
-            # sqlite3 does not support date fields (see 2.2. here: https://www.sqlite.org/datatype3.html)
-            # We only want to log an error if we are building the full schema
-            schema_kwargs = dict(log_error=(not is_partial))
-            schema = self.add_column_to_schema(schema, 'reports', 'expires_on TEXT', **schema_kwargs)
-            schema = self.add_column_to_schema(schema, 'reports', 'date_written TEXT', **schema_kwargs)
-            schema = self.add_column_to_schema(schema, 'reports', 'start_date TEXT', **schema_kwargs)
-            schema = self.add_column_to_schema(schema, 'reports', 'end_date TEXT', **schema_kwargs)
-        except ValueError as e:
-            # Partial-schemas (e.g. backup tables) will most likely raise an error so ignore these
-            if not is_partial:
-                raise e
+        # Keyword arguments for when we want to log an error pending if we are building the full schema
+        not_partial_log = dict(log_error=(not is_partial))
+        partial_log = dict(log_error=is_partial)
+        # sqlite3 does not support date fields (see 2.2. here: https://www.sqlite.org/datatype3.html)
+        start_date_field, end_date_field = 'start_date TEXT', 'end_date TEXT'
+        # Explanation of parameters can be found in comments in thread_postgresql._create_tables()
+        schema_updates = [
+            ('reports', 'expires_on TEXT', not_partial_log, is_partial),
+            ('reports', 'date_written TEXT', not_partial_log, is_partial),
+            ('reports', start_date_field, not_partial_log, is_partial),
+            ('reports', end_date_field, not_partial_log, is_partial),
+            ('report_sentence_hits', start_date_field, not_partial_log, is_partial),
+            ('report_sentence_hits', end_date_field, not_partial_log, is_partial),
+            ('report_sentence_hits_initial', start_date_field, partial_log, not is_partial),
+            ('report_sentence_hits_initial', end_date_field, partial_log, not is_partial)
+        ]
+        for table, sql_field, kwargs, ignore_value_error in schema_updates:
+            try:
+                # Add the field from the schema_updates list
+                if kwargs:
+                    schema = self.add_column_to_schema(schema, table, sql_field, **kwargs)
+                else:
+                    schema = self.add_column_to_schema(schema, table, sql_field)
+            except ValueError as e:
+                if not ignore_value_error:
+                    raise e
         try:  # Execute the schema's SQL statements
             with sqlite3.connect(self.database) as conn:
                 cursor = conn.cursor()

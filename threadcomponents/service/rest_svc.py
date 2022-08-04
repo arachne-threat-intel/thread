@@ -586,9 +586,9 @@ class RestService:
 
         for s_idx, sentence in enumerate(analyzed_html):
             if sentence['ml_techniques_found']:
-                await self.ml_svc.ml_techniques_found(report_id, sentence, s_idx)
+                await self.ml_svc.ml_techniques_found(report_id, sentence, s_idx, tech_start_date=article_date)
             elif sentence['reg_techniques_found']:
-                await self.reg_svc.reg_techniques_found(report_id, sentence, s_idx)
+                await self.reg_svc.reg_techniques_found(report_id, sentence, s_idx, tech_start_date=article_date)
             else:
                 data = dict(report_uid=report_id, text=sentence['text'], html=sentence['html'], sen_index=s_idx,
                             found_status=self.dao.db_false_val)

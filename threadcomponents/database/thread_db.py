@@ -11,14 +11,22 @@ CREATE_BEGIN, CREATE_END = 'CREATE TABLE IF NOT EXISTS', ');'
 
 def find_create_statement_in_schema(schema, table, log_error=True):
     """Helper-method to return the start and end positions of an SQL create statement in a given schema."""
-    try:
-        start_pos = schema.index('%s %s' % (CREATE_BEGIN, table))
+    # The possible matches when finding the CREATE statement (with a space and opening bracket or just the bracket)
+    start_statements = ['%s %s (' % (CREATE_BEGIN, table), '%s %s(' % (CREATE_BEGIN, table)]
+    start_pos, error = None, ValueError()
+    for start_statement in start_statements:
+        try:
+            start_pos = schema.index(start_statement)
+        except ValueError as e:
+            error = e
+            continue  # skip to next statement to attempt search
+        break  # found starting-position so break loop
     # On errors when positions cannot be found, log the error (if we want to) and then raise the error
     # Start-position not found
-    except ValueError as e:
+    if not start_pos:
         if log_error:
             logging.error('Table `%s` missing: given schema has different or missing CREATE statement.' % table)
-        raise e
+        raise error
     # Given a starting position, find where the table's create statement finishes
     try:
         end_pos = schema[start_pos:].index(CREATE_END)
