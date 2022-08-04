@@ -67,18 +67,35 @@ def _create_tables(username, password, host, port, schema='', is_partial=False):
     boolean_default = 'BOOLEAN DEFAULT'
     schema = schema.replace('%s 1' % boolean_default, '%s TRUE' % boolean_default)
     schema = schema.replace('%s 0' % boolean_default, '%s FALSE' % boolean_default)
-    try:
-        # Whilst adding fields, we only want to log an error if we are building the full schema
-        schema_kwargs = dict(log_error=(not is_partial))
-        # Add expiry field and date fields
-        schema = ThreadDB.add_column_to_schema(schema, 'reports', 'expires_on TIMESTAMP WITH TIME ZONE', **schema_kwargs)
-        schema = ThreadDB.add_column_to_schema(schema, 'reports', 'date_written TIMESTAMP WITH TIME ZONE', **schema_kwargs)
-        schema = ThreadDB.add_column_to_schema(schema, 'reports', 'start_date TIMESTAMP WITH TIME ZONE', **schema_kwargs)
-        schema = ThreadDB.add_column_to_schema(schema, 'reports', 'end_date TIMESTAMP WITH TIME ZONE', **schema_kwargs)
-    except ValueError as e:
-        # Partial-schemas (e.g. backup tables) will most likely raise an error so ignore these
-        if not is_partial:
-            raise e
+    # Keyword arguments for when we want to log an error pending if we are building the full schema
+    not_partial_log = dict(log_error=(not is_partial))
+    partial_log = dict(log_error=is_partial)
+    start_date_field = 'start_date TIMESTAMP WITH TIME ZONE'
+    end_date_field = 'end_date TIMESTAMP WITH TIME ZONE'
+    # (1) Table, (2) SQL statement for field, (3) whether we want to log errors, (4) whether we are ignoring ValueErrors
+    schema_updates = [
+        # (3) is not-partial because we only want to log an error if we are building the full schema
+        # (4) is if partial because these tables are only in full schema (ignore ValueError if not full schema)
+        ('reports', 'expires_on TIMESTAMP WITH TIME ZONE', not_partial_log, is_partial),
+        ('reports', 'date_written TIMESTAMP WITH TIME ZONE', not_partial_log, is_partial),
+        ('reports', start_date_field, not_partial_log, is_partial),
+        ('reports', end_date_field, not_partial_log, is_partial),
+        ('report_sentence_hits', start_date_field, not_partial_log, is_partial),
+        ('report_sentence_hits', end_date_field, not_partial_log, is_partial),
+        # (3) and (4) are inverse above because report_sentence_hits_initial is from partial schema
+        ('report_sentence_hits_initial', start_date_field, partial_log, not is_partial),
+        ('report_sentence_hits_initial', end_date_field, partial_log, not is_partial)
+    ]
+    for table, sql_field, kwargs, ignore_value_error in schema_updates:
+        try:
+            # Add the field from the schema_updates list
+            if kwargs:
+                schema = ThreadDB.add_column_to_schema(schema, table, sql_field, **kwargs)
+            else:
+                schema = ThreadDB.add_column_to_schema(schema, table, sql_field)
+        except ValueError as e:
+            if not ignore_value_error:
+                raise e
     connection = None
     try:
         # Set up a connection to the specified database
