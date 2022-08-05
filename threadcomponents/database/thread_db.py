@@ -2,6 +2,7 @@ import logging
 import uuid
 
 from abc import ABC, abstractmethod
+from contextlib import suppress
 
 BACKUP_TABLE_SUFFIX = '_initial'
 TABLES_WITH_BACKUPS = ['report_sentences', 'report_sentence_hits', 'original_html']
@@ -9,7 +10,7 @@ TABLES_WITH_BACKUPS = ['report_sentences', 'report_sentence_hits', 'original_htm
 CREATE_BEGIN, CREATE_END = 'CREATE TABLE IF NOT EXISTS', ');'
 
 
-def find_create_statement_in_schema(schema, table, log_error=True):
+def find_create_statement_in_schema(schema, table, log_error=True, find_closing_bracket=False):
     """Helper-method to return the start and end positions of an SQL create statement in a given schema."""
     # The possible matches when finding the CREATE statement (with a space and opening bracket or just the bracket)
     start_statements = ['%s %s (' % (CREATE_BEGIN, table), '%s %s(' % (CREATE_BEGIN, table)]
@@ -35,6 +36,11 @@ def find_create_statement_in_schema(schema, table, log_error=True):
         if log_error:
             logging.error('SQL error: could not find closing `%s` for table `%s` in schema.' % (CREATE_END, table))
         raise e
+    # Consider the end position to be before any foreign key statements; they might not be present so ignore ValueErrors
+    if not find_closing_bracket:
+        table_statement = schema[start_pos:start_pos + end_pos]
+        with suppress(ValueError):
+            end_pos = table_statement.index('FOREIGN KEY')
     # End position is offset by the start_pos (because index() was called from start_pos)
     return start_pos, (start_pos + end_pos)
 
@@ -103,8 +109,12 @@ class ThreadDB(ABC):
         """Function to add a column to a table in a schema and return the new schema."""
         # First, find the create-table SQL statements
         start_pos, end_pos = find_create_statement_in_schema(schema, table, log_error=log_error)
-        # Then insert the new column statement just before the end of the create-table SQL statement
-        return schema[:end_pos] + ', ' + column + schema[end_pos:]
+        # If the end-position is the end of the create statement, add a comma to separate from the line before
+        if schema[end_pos] == ')':
+            return schema[:end_pos] + ', ' + column + schema[end_pos:]
+        # Else, the end-position represents the end of the list of variables for the table and a comma should follow
+        else:
+            return schema[:end_pos] + ' ' + column + ', ' + schema[end_pos:]
 
     @staticmethod
     def generate_copied_tables(schema=''):
@@ -114,7 +124,7 @@ class ThreadDB(ABC):
         # For each table that we are copying the structure of...
         for table in TABLES_WITH_BACKUPS:
             # Obtain the start and end positions of the SQL create statement for this table
-            start_pos, end_pos = find_create_statement_in_schema(schema, table)
+            start_pos, end_pos = find_create_statement_in_schema(schema, table, find_closing_bracket=True)
             # We can now isolate just the create statement for this table
             # end_pos + len(CREATE_END) to include the end of the creation string itself (i.e. include ');' )
             create_statement = schema[start_pos:(end_pos + len(CREATE_END))]
