@@ -159,7 +159,7 @@ function finish_analysis(reportTitle) {
   }
 }
 
-function update_report_dates(reportTitle) {
+function updateReportDates(reportTitle) {
   if(!document.getElementById("reportDatesForm").reportValidity()) {
     return;
   }
@@ -320,13 +320,25 @@ function updateSentenceContext(data) {
 function updateConfirmedContext(data) {
   $("#confirmedSentenceInfo tr").remove();
   $.each(data, function(index, op) {
+    // Listing the technique: prefix with the parent-technique (if it is a sub-technique), else just print the name
+    var techLabel = op.parent_name ? `${op.parent_name}: ${op.name}` : op.name;
+    // The checkbox to update the mappings
+    // TODO Display clock icon to show saved dates
+    var checkbox = `<div class="d-flex"><input type="checkbox" id="${op.mapping_id}" `;
+    checkbox += `class="report-submission-checkbox"><label for="${op.mapping_id}"`;
+    checkbox += `<small>${techLabel}</small></label></div>`;
     // Before the attack-name, flag if deprecated/revoked
-    td1 = "<td>" + (op.inactive ? "<b>!</b> " : "")
-          // Prefix the name with the parent-technique (if it is a sub-technique), else just print the name
-          + (op.parent_name ? `${op.parent_name}: ${op.name}` : op.name) + "</td>";
-    tmp = "<tr>" + td1 + "</tr>";
+    var td1 = "<td>" + (op.inactive ? "<b>!</b> " : "") + checkbox + "</td>";
+    var tmp = "<tr>" + td1 + "</tr>";
     $("#confirmedSentenceInfo").find("tbody").append(tmp);
   });
+}
+
+function updateAttackTime() {
+  if(!document.getElementById("ttpDatesForm").reportValidity()) {
+    return;
+  }
+  restRequest("POST", {"index": "update_attack_time"});
 }
 
 function importFont() {

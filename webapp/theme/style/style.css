@@ -393,3 +393,7 @@ input[type="checkbox"].report-submission-checkbox {
 .btn:disabled {
   cursor: not-allowed;
 }
+
+table#confirmedSentenceInfo td {
+  border-bottom: none;
+}

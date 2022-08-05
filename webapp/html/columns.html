@@ -96,7 +96,7 @@
         </div>
         {% if not completed %}
           <br>
-          <button type="button" onclick="update_report_dates('{{title_quoted}}')" class="btn btn-md btn-outline-secondary">Update Report Dates</button>
+          <button type="button" onclick="updateReportDates('{{title_quoted}}')" class="btn btn-md btn-outline-secondary">Update Report Dates</button>
         {% endif %}
       </form>
       <hr>
@@ -108,10 +108,29 @@
         </div>
       {% endif %}
       <span class='spanMissingTechniqueView'><b>Confirmed Techniques</b></span>
-      <br><br>
+      <br>
       <div id="confirmedsentenceInformation">
         <table id="confirmedSentenceInfo" class="table"><tbody></tbody></table>
       </div>
+      {% if not completed %}
+        <form id="ttpDatesForm">{# Date of TTP mapping #}
+          <div class="row">
+            <label for="ttpStartDate" class="col-sm-4 col-form-label">Tech. Start Date:</label>
+            <div class="col-sm-8">
+              <input type="date" class="form-control" id="ttpStartDate" required>
+            </div>
+          </div>
+          <div class="row">
+            <label for="ttpEndDate" class="col-sm-4 col-form-label">Tech. End Date:</label>
+            <div class="col-sm-8">
+              <input type="date" class="form-control" id="ttpEndDate">
+            </div>
+          </div>
+          <br>
+          <button type="button" onclick="updateAttackTime()" class="btn btn-md btn-outline-secondary">Update Technique Dates</button>
+        </form>
+        <hr>
+      {% endif %}
       <small>Any techniques listed with <b>!</b> are deprecated or revoked from the MITRE ATT&CK® framework.</small>
       <hr>
       {% if completed == 0 %}{# Incomplete reports: display option to add missing attacks; delete sentences; and complete report #}
