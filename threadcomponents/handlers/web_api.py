@@ -212,7 +212,8 @@ class WebAPI:
                     rollback_report=lambda d: self.rest_svc.rollback_report(request=request, criteria=d),
                     sentence_context=lambda d: self.rest_svc.sentence_context(request=request, criteria=d),
                     confirmed_attacks=lambda d: self.rest_svc.confirmed_attacks(request=request, criteria=d),
-                    update_report_dates=lambda d: self.rest_svc.update_report_dates(request=request, criteria=d)
+                    update_report_dates=lambda d: self.rest_svc.update_report_dates(request=request, criteria=d),
+                    update_attack_time=lambda d: self.rest_svc.update_attack_time(request=request, criteria=d)
                 ))
             method = options[request.method][index]
         except KeyError:

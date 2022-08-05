@@ -376,7 +376,9 @@ class DataService:
         """Function to retrieve confirmed-attack data for a sentence."""
         select_join_query = (
             # Select all columns from the full attack info table
-            self.SQL_WITH_PAR_ATTACK_INC_INACTIVE + "SELECT " + FULL_ATTACK_INFO + ".* "
+            self.SQL_WITH_PAR_ATTACK_INC_INACTIVE + "SELECT " + FULL_ATTACK_INFO + ".*, "
+            # Include row ID for use when updating dates of attack
+            "report_sentence_hits.uid AS mapping_id "
             # Use an INNER JOIN on full_attack_info and report_sentence_hits (to get the intersection of attacks)
             "FROM (" + FULL_ATTACK_INFO + " INNER JOIN report_sentence_hits ON " + FULL_ATTACK_INFO +
             ".uid = report_sentence_hits.attack_uid) "

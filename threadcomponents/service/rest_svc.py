@@ -748,6 +748,9 @@ class RestService:
         await self.check_report_status(report_id=sentence_dict[0]['report_uid'], update_if_false=True)
         return REST_SUCCESS
 
+    async def update_attack_time(self, request, criteria=None):
+        return REST_IGNORED
+
     async def _pre_add_reject_attack_checks(self, request, sen_id='', sentence_dict=None, attack_id='', attack_dict=None):
         """Function to check for adding or rejecting attacks, enough sentence and attack data has been given."""
         # Check there is sentence data to access
