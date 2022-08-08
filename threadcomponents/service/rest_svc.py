@@ -626,8 +626,8 @@ class RestService:
         # Get the report sentence information for the sentence id
         sentence_dict = await self.dao.get('report_sentences', dict(uid=sen_id))
         # Check the method can continue
-        checks = await self._pre_add_reject_attack_checks(request, sen_id=sen_id, sentence_dict=sentence_dict,
-                                                          attack_id=attack_id, attack_dict=attack_dict)
+        checks, report = await self._pre_add_reject_attack_checks(request, sen_id=sen_id, sentence_dict=sentence_dict,
+                                                                  attack_id=attack_id, attack_dict=attack_dict)
         if checks is not None:
             return checks
         a_name, tid, inactive = attack_dict[0]['name'], attack_dict[0]['tid'], attack_dict[0]['inactive']
@@ -636,6 +636,8 @@ class RestService:
                               'Please contact us if this is incorrect.', alert_user=1)
         # Get the sentence to insert by removing html markup
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
+        # Get the report-date to default this attack mapping's start date as
+        start_date = self.return_date_as_str(report['date_written'])
         # A flag to determine if the model initially predicted this attack for this sentence
         model_initially_predicted = False
         # The list of SQL commands to run in a single transaction
@@ -649,8 +651,8 @@ class RestService:
                 return REST_IGNORED
             # Else update the hit as active and confirmed
             sql_commands.append(await self.dao.update(
-                'report_sentence_hits', where=dict(sentence_id=sen_id, attack_uid=attack_id),
-                data=dict(active_hit=self.dao.db_true_val, confirmed=self.dao.db_true_val), return_sql=True))
+                'report_sentence_hits', where=dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True,
+                data=dict(active_hit=self.dao.db_true_val, confirmed=self.dao.db_true_val, start_date=start_date)))
             # Update model_initially_predicted flag using returned historic_hits
             model_initially_predicted = returned_hit['initial_model_match']
         else:
@@ -659,7 +661,7 @@ class RestService:
             sql_commands.append(await self.dao.insert_generate_uid(
                 'report_sentence_hits', dict(sentence_id=sen_id, attack_uid=attack_id, attack_tid=tid,
                                              attack_technique_name=a_name, report_uid=sentence_dict[0]['report_uid'],
-                                             confirmed=self.dao.db_true_val), return_sql=True))
+                                             confirmed=self.dao.db_true_val, start_date=start_date), return_sql=True))
         # As this will now be either a true positive or false negative, ensure it is not a false positive too
         sql_commands.append(await self.dao.delete('false_positives', dict(sentence_id=sen_id, attack_uid=attack_id),
                                                   return_sql=True))
@@ -701,8 +703,8 @@ class RestService:
         # Get the attack information for this attack id
         attack_dict = await self.dao.get('attack_uids', dict(uid=attack_id))
         # Check the method can continue
-        checks = await self._pre_add_reject_attack_checks(request, sen_id=sen_id, sentence_dict=sentence_dict,
-                                                          attack_id=attack_id, attack_dict=attack_dict)
+        checks, report = await self._pre_add_reject_attack_checks(request, sen_id=sen_id, sentence_dict=sentence_dict,
+                                                                  attack_id=attack_id, attack_dict=attack_dict)
         if checks is not None:
             return checks
         # Get the sentence to insert by removing html markup
@@ -758,38 +760,38 @@ class RestService:
             a, b = sentence_dict[0]['text'], sentence_dict[0]['found_status']
             report_id = sentence_dict[0]['report_uid']
         except (KeyError, IndexError):  # sentence error (SE) occurred
-            return dict(error='Error. Please quote SE%s when contacting admin.' % sen_id, alert_user=1)
+            return dict(error='Error. Please quote SE%s when contacting admin.' % sen_id, alert_user=1), None
         # Check there is attack data to access
         try:
             attack_dict[0]['name'], attack_dict[0]['tid']
         except (KeyError, IndexError):  # attack-info error (AE) occurred
-            return dict(error='Error. Please quote AE%s when contacting admin.' % attack_id, alert_user=1)
+            return dict(error='Error. Please quote AE%s when contacting admin.' % attack_id, alert_user=1), None
         # Check permissions
-        await self.check_report_permission(request, report_id=report_id, action='add-reject-attack')
+        report = await self.check_report_permission(request, report_id=report_id, action='add-reject-attack')
         # Check the report status is acceptable (return a report status error (RSE) if not)
         if not await self.check_report_status_multiple(report_id=report_id,
                                                        statuses=[ReportStatus.IN_REVIEW.value,
                                                                  ReportStatus.NEEDS_REVIEW.value]):
-            return dict(error='Error. Please quote RSE%s when contacting admin.' % report_id, alert_user=1)
-        return None
+            return dict(error='Error. Please quote RSE%s when contacting admin.' % report_id, alert_user=1), None
+        return None, report
 
     async def check_report_permission(self, request, report_id='', action='unspecified'):
         """Function to check a request is permitted given an action involving a report ID."""
-        # Do this if we need to
-        if self.is_local:
-            return True
         # If there is no report ID, the user hasn't supplied something correctly
         if not report_id:
             raise web.HTTPBadRequest()
         # Obtain the report from the db
         report = await self.data_svc.get_report_by_id(report_id=report_id, add_expiry_bool=(not self.is_local))
         try:
-            report[0]['uid']
+            report[0]['uid'], report[0]['date_written']
         except (KeyError, IndexError):
             # No report exists or db record malformed
             raise web.HTTPBadRequest()
         # Run the checker
-        await self.web_svc.action_allowed(request, action, context=dict(report=report[0]))
+        if not self.is_local:
+            await self.web_svc.action_allowed(request, action, context=dict(report=report[0]))
+        # Checks have passed, return report for further use
+        return report[0]
 
     async def check_report_status(self, report_id='', status=ReportStatus.IN_REVIEW.value, update_if_false=False):
         """Function to check a report is of the given status and updates it if not."""

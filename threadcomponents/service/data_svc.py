@@ -374,11 +374,14 @@ class DataService:
 
     async def get_confirmed_attacks_for_sentence(self, sentence_id=''):
         """Function to retrieve confirmed-attack data for a sentence."""
+        # Ensure any date fields are converted into strings
+        start_date = self.dao.db.sql_date_field_to_str('report_sentence_hits.start_date')
+        end_date = self.dao.db.sql_date_field_to_str('report_sentence_hits.end_date')
         select_join_query = (
             # Select all columns from the full attack info table
             self.SQL_WITH_PAR_ATTACK_INC_INACTIVE + "SELECT " + FULL_ATTACK_INFO + ".*, "
             # Include row ID for use when updating dates of attack
-            "report_sentence_hits.uid AS mapping_id "
+            "report_sentence_hits.uid AS mapping_id, " + start_date + ", " + end_date + " "
             # Use an INNER JOIN on full_attack_info and report_sentence_hits (to get the intersection of attacks)
             "FROM (" + FULL_ATTACK_INFO + " INNER JOIN report_sentence_hits ON " + FULL_ATTACK_INFO +
             ".uid = report_sentence_hits.attack_uid) "

@@ -172,6 +172,11 @@ class ThreadDB(ABC):
         return await self._execute_select(sql, parameters=parameters, single_col=single_col)
 
     @staticmethod
+    def sql_date_field_to_str(sql, field_name_as=None):
+        """Method that given sql for a date field, converts it into a statement that returns the field as a string."""
+        return sql
+
+    @staticmethod
     def _check_method_parameters(table, data, data_allowed_as_none=False, method_name='unspecified'):
         """Function to check parameters passed to CRUD methods."""
         # Check the table is a string

@@ -322,11 +322,20 @@ function updateConfirmedContext(data) {
   $.each(data, function(index, op) {
     // Listing the technique: prefix with the parent-technique (if it is a sub-technique), else just print the name
     var techLabel = op.parent_name ? `${op.parent_name}: ${op.name}` : op.name;
+    // Listing the technique dates if there are any saved
+    var datesLabel = "unspecified";
+    if (op.start_date) {
+      datesLabel = op.start_date;
+      if (op.end_date) {
+        datesLabel += " - " + op.end_date;
+      }
+    }
+    var datesHTML = `<a data-bs-toggle="tooltip" data-bs-placement="top" title="${datesLabel}">`;
+    datesHTML += `<span class="fa-regular fa-clock glyphicon glyphicon-time btn-sm float-right"></span></a>`;
     // The checkbox to update the mappings
-    // TODO Display clock icon to show saved dates
     var checkbox = `<div class="d-flex"><input type="checkbox" id="${op.mapping_id}" `;
     checkbox += `class="report-submission-checkbox"><label for="${op.mapping_id}"`;
-    checkbox += `<small>${techLabel}</small></label></div>`;
+    checkbox += `<small>${techLabel}</small></label>${datesHTML}</div>`;
     // Before the attack-name, flag if deprecated/revoked
     var td1 = "<td>" + (op.inactive ? "<b>!</b> " : "") + checkbox + "</td>";
     var tmp = "<tr>" + td1 + "</tr>";
