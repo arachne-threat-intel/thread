@@ -116,6 +116,7 @@ class ThreadPostgreSQL(ThreadDB):
         function_name_map = dict()
         function_name_map[self.FUNC_STR_POS] = 'STRPOS'
         function_name_map[self.FUNC_TIME_NOW] = 'NOW'
+        function_name_map[self.FUNC_DATE_TO_STR] = 'TO_CHAR'
         super().__init__(mapped_functions=function_name_map)
         self.username, self.password, self.host, self.port = get_db_info()
 
@@ -228,17 +229,3 @@ class ThreadPostgreSQL(ThreadDB):
         if not sql_list:
             return
         return self._connection_wrapper(cursor_multiple_execute, return_success=return_success)
-
-    @staticmethod
-    def sql_date_field_to_str(sql, field_name_as=None):
-        """Overrides ThreadDB.sql_date_field_to_str()"""
-        # We don't want the column labelled as 'to_char'
-        if not field_name_as:
-            # If a new field name has not been provided, look for last '.' and take field name after this position
-            field_name_pos = sql.rfind('.')
-            if field_name_pos > -1:
-                field_name_as = sql[field_name_pos + 1:]
-        # New field name is what has been provided, calculated or the original sql given
-        field_name_as = field_name_as or sql
-        # Construct and return sql statement
-        return "to_char(%s, 'YYYY-MM-DD') AS %s" % (sql, field_name_as)

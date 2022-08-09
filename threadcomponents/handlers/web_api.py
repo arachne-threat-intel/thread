@@ -275,8 +275,7 @@ class WebAPI:
         )
         # Prepare the date fields to be interpreted by the front-end
         for report_date in ['date_written', 'start_date', 'end_date']:
-            saved_date = report[0].get(report_date)
-            saved_date = self.rest_svc.return_date_as_str(saved_date)  # don't pass datetime objects; convert to string
+            saved_date = report[0].get(report_date + '_str')  # field is returned under field_str
             if saved_date:
                 template_data[report_date] = saved_date
         start_date, end_date = template_data.get('start_date'), template_data.get('end_date')
@@ -296,7 +295,9 @@ class WebAPI:
         try:
             # Ensure a valid report title has been passed in the request
             report_id, report_status = report[0]['uid'], report[0]['current_status']
-            date_of, start_date, end_date = report[0]['date_written'], report[0]['start_date'], report[0]['end_date']
+            date_of = report[0]['date_written_str'] or 'unspecified'
+            start_date = report[0]['start_date_str'] or 'unspecified'
+            end_date = report[0]['end_date_str'] or 'unspecified'
         except (KeyError, IndexError):
             raise web.HTTPNotFound()
         # Found a valid report, check if protected by token
@@ -311,11 +312,6 @@ class WebAPI:
         version = '1.0'
         if version:  # add version number if it exists
             enterprise_layer_description += f" v{version}"
-
-        # Ensure any date objects are converted to strings
-        date_of = self.rest_svc.return_date_as_str(date_of) or 'unspecified'
-        start_date = self.rest_svc.return_date_as_str(start_date) or 'unspecified'
-        end_date = self.rest_svc.return_date_as_str(end_date) or 'unspecified'
 
         # Enterprise navigator layer
         enterprise_layer = {
@@ -350,7 +346,9 @@ class WebAPI:
         try:
             # Ensure a valid report title has been passed in the request
             report_id, report_status, report_url = report[0]['uid'], report[0]['current_status'], report[0]['url']
-            date_of, start_date, end_date = report[0]['date_written'], report[0]['start_date'], report[0]['end_date']
+            date_of = report[0]['date_written_str'] or 'unspecified'
+            start_date = report[0]['start_date_str'] or 'unspecified'
+            end_date = report[0]['end_date_str'] or 'unspecified'
         except (KeyError, IndexError):
             raise web.HTTPNotFound()
         # Found a valid report, check if protected by token
@@ -361,10 +359,6 @@ class WebAPI:
             raise web.HTTPNotFound()
         # Continue with the method and retrieve the report's sentences
         sentences = await self.data_svc.get_report_sentences_with_attacks(report_id=report_id)
-        # Ensure any date objects are converted to strings
-        date_of = self.rest_svc.return_date_as_str(date_of) or 'unspecified'
-        start_date = self.rest_svc.return_date_as_str(start_date) or 'unspecified'
-        end_date = self.rest_svc.return_date_as_str(end_date) or 'unspecified'
 
         dd = dict()
         # Default background which will be replaced by logo via client-side
