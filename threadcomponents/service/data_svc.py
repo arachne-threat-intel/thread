@@ -456,24 +456,32 @@ class DataService:
         query = 'DELETE FROM reports WHERE expires_on < %s' % time_now
         await self.dao.run_sql_list(sql_list=[(query,)])
 
+    async def get_report_by_id_or_title(self, by_id=False, by_title=False, report='', add_expiry_bool=True):
+        """Given a report ID or title, returns matching report records."""
+        # Retrieval by ID or title must be specified, not both nor neither
+        if (by_id and by_title) or (not by_id and not by_title):
+            raise ValueError('Incorrect parameters: unsure if retrieval is by report ID or title.')
+        # Proceed to set up the query: ensure date fields are converted into strings
+        date_written = self.dao.db.sql_date_field_to_str('date_written', str_suffix=True)
+        start_date = self.dao.db.sql_date_field_to_str('start_date', str_suffix=True)
+        end_date = self.dao.db.sql_date_field_to_str('end_date', str_suffix=True)
+        # Set up the sql statements to select the fields
+        fields = [date_written, start_date, end_date]
+        if add_expiry_bool:
+            # Similar to remove_expired_reports() above, get the appropriate time-function and execute a query
+            time_now = self.dao.db_func(self.dao.db.FUNC_TIME_NOW) + '()'
+            fields.append('expires_on < %s AS is_expired' % time_now)
+        column = 'title' if by_title else 'uid'
+        query = 'SELECT *, %s FROM reports WHERE %s = %s' % (', '.join(fields), column, self.dao.db_qparam)
+        return await self.dao.raw_select(query, parameters=tuple([report]))
+
     async def get_report_by_title(self, report_title='', add_expiry_bool=True):
         """Given a report title, returns matching report records."""
-        # If we are not adding an expiry boolean, we can do a get() like normal
-        if not add_expiry_bool:
-            return await self.dao.get('reports', dict(title=report_title))
-        # Similar to remove_expired_reports() above, get the appropriate time-function and execute a query
-        time_now = self.dao.db_func(self.dao.db.FUNC_TIME_NOW) + '()'
-        query = 'SELECT *, expires_on < %s AS is_expired FROM reports WHERE title = %s' % (time_now, self.dao.db_qparam)
-        return await self.dao.raw_select(query, parameters=tuple([report_title]))
+        return await self.get_report_by_id_or_title(by_title=True, report=report_title, add_expiry_bool=add_expiry_bool)
 
     async def get_report_by_id(self, report_id='', add_expiry_bool=True):
         """Given a report ID, returns matching report records."""
-        # Similar structure to get_report_by_title()
-        if not add_expiry_bool:
-            return await self.dao.get('reports', dict(uid=report_id))
-        time_now = self.dao.db_func(self.dao.db.FUNC_TIME_NOW) + '()'
-        query = 'SELECT *, expires_on < %s AS is_expired FROM reports WHERE uid = %s' % (time_now, self.dao.db_qparam)
-        return await self.dao.raw_select(query, parameters=tuple([report_id]))
+        return await self.get_report_by_id_or_title(by_id=True, report=report_id, add_expiry_bool=add_expiry_bool)
 
     async def rollback_report(self, report_id=''):
         """Function to rollback a report to its initial state."""

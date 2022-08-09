@@ -50,6 +50,7 @@ class ThreadDB(ABC):
     # Constants to track which SQL functions have different names (between different DB engines)
     FUNC_STR_POS = 'string_pos'
     FUNC_TIME_NOW = 'time_now'
+    FUNC_DATE_TO_STR = 'to_char'
 
     def __init__(self, mapped_functions=None):
         # The map to keep track of SQL functions
@@ -88,18 +89,20 @@ class ThreadDB(ABC):
         """The db's value for False."""
         return 0  # default as int, 0
 
-    def get_function_name(self, func_key, *args):
+    def get_function_name(self, func_key, *args, unquote=None):
         """Function to retrieve a function name for this ThreadDB instance.
         Can take non-iterable args such that it returns the string `function(arg1, arg2, ...)`."""
+        unquote = unquote or []
         # Get the function name according to the mapped_functions dictionary
         func_name = self._mapped_functions.get(func_key)
         # If there is nothing to retrieve, return None
         if func_name is None:
             return None
-        # If we have args, construct the string `f(a, b, ...)` (where str args - except query params - are quoted)
+        # If we have args, construct the string f(a, b, ...) (where str args except fields and query params are quoted)
         if args:
             return '%s(%s)' % (func_name, ', '.join(
-                ('\'%s\'' % x if (type(x) is str and x != self.query_param) else str(x)) for x in args))
+                ('\'%s\'' % x if ((type(x) is str) and (x != self.query_param) and (x not in unquote)) else str(x))
+                for x in args))
         # Else if no args are supplied, just return the function name
         else:
             return func_name
@@ -171,10 +174,22 @@ class ThreadDB(ABC):
         """Method to run a constructed SQL SELECT query."""
         return await self._execute_select(sql, parameters=parameters, single_col=single_col)
 
-    @staticmethod
-    def sql_date_field_to_str(sql, field_name_as=None):
+    def sql_date_field_to_str(self, sql, field_name_as=None, str_suffix=False):
         """Method that given sql for a date field, converts it into a statement that returns the field as a string."""
-        return sql
+        # We don't want the column labelled as 'to_char'
+        if not field_name_as:
+            # If a new field name has not been provided, look for last '.' and take field name after this position
+            field_name_pos = sql.rfind('.')
+            if field_name_pos > -1:
+                field_name_as = sql[field_name_pos + 1:]
+        # New field name is what has been provided, calculated or the original sql given
+        field_name_as = field_name_as or sql
+        # If we are adding str at the end, do this (useful when SELECT *, to_char(... to prevent duplicate column names)
+        if str_suffix:
+            field_name_as += '_str'
+        # Construct and return sql statement
+        converter = self.get_function_name(self.FUNC_DATE_TO_STR, sql, 'YYYY-MM-DD', unquote=[sql])
+        return "%s AS %s" % (converter or sql, field_name_as)
 
     @staticmethod
     def _check_method_parameters(table, data, data_allowed_as_none=False, method_name='unspecified'):

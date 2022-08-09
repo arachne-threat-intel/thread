@@ -637,7 +637,7 @@ class RestService:
         # Get the sentence to insert by removing html markup
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
         # Get the report-date to default this attack mapping's start date as
-        start_date = self.return_date_as_str(report['date_written'])
+        start_date = report['date_written_str']
         # A flag to determine if the model initially predicted this attack for this sentence
         model_initially_predicted = False
         # The list of SQL commands to run in a single transaction
@@ -783,7 +783,7 @@ class RestService:
         # Obtain the report from the db
         report = await self.data_svc.get_report_by_id(report_id=report_id, add_expiry_bool=(not self.is_local))
         try:
-            report[0]['uid'], report[0]['date_written']
+            report[0]['uid'], report[0]['date_written_str']
         except (KeyError, IndexError):
             # No report exists or db record malformed
             raise web.HTTPBadRequest()
@@ -859,10 +859,3 @@ class RestService:
         if not (min_date < given_date < max_date):
             raise ValueError('Date `%s` outside permitted range.' % date_str)
         return given_date
-
-    @staticmethod
-    def return_date_as_str(date_var):
-        """Function given a date, returns it as a string."""
-        if isinstance(date_var, datetime):
-            return date_var.strftime('%Y-%m-%d')
-        return date_var
