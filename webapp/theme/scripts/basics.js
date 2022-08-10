@@ -334,7 +334,7 @@ function updateConfirmedContext(data) {
     datesHTML += `<span class="fa-regular fa-clock glyphicon glyphicon-time btn-sm float-right"></span></a>`;
     // The checkbox to update the mappings
     var checkbox = `<div class="d-flex"><input type="checkbox" id="${op.mapping_id}" `;
-    checkbox += `class="report-submission-checkbox"><label for="${op.mapping_id}"`;
+    checkbox += `class="confirmed-technique report-submission-checkbox"><label for="${op.mapping_id}"`;
     checkbox += `<small>${techLabel}</small></label>${datesHTML}</div>`;
     // Before the attack-name, flag if deprecated/revoked
     var td1 = "<td>" + (op.inactive ? "<b>!</b> " : "") + checkbox + "</td>";
@@ -343,11 +343,20 @@ function updateConfirmedContext(data) {
   });
 }
 
-function updateAttackTime() {
-  if(!document.getElementById("ttpDatesForm").reportValidity()) {
+function updateAttackTime(reportTitle) {
+  if (!document.getElementById("ttpDatesForm").reportValidity()) {
     return;
   }
-  restRequest("POST", {"index": "update_attack_time"});
+  var startDate = document.getElementById("ttpStartDate").value;
+  var endDate = document.getElementById("ttpEndDate").value;
+  var mappingList = [];
+  $(".confirmed-technique:checked").each(function() {
+    mappingList.push($(this).prop("id"));
+  });
+  restRequest("POST", {"index": "update_attack_time", "start_date": startDate, "end_date": endDate,
+                       "mapping_list": mappingList, "report_title": reportTitle});
+  // TODO refresh table after successful call
+  // TODO display/hide form depending if sentence is clicked
 }
 
 function importFont() {
