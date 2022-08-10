@@ -21,6 +21,7 @@ from urllib.parse import unquote
 PUBLIC = 'public'
 UID = 'uid'
 URL = 'url'
+DATETIME_OBJ = 'datetime_obj'
 REST_IGNORED = dict(ignored=1)
 REST_SUCCESS = dict(success=1)
 
@@ -279,39 +280,26 @@ class RestService:
         # Check a queued or completed report ID hasn't been provided
         if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
             return default_error
-        # Validate dates requested to be updated
         # Has a date-written not been provided if the report entry in db is lacking one?
         if (not r_written) and not date_of:
             return dict(error='Article Publication Date missing.', alert_user=1)
-        # Have reasonable date values been given (not too historic/futuristic)?
-        update_data, converted_dates, invalid_dates = dict(), dict(), []
-        for date_value, date_key in [(date_of, 'date_written'), (start_date, 'start_date'), (end_date, 'end_date')]:
-            try:
-                converted_dates[date_key] = self.check_input_date(date_value)
-            except (TypeError, ValueError):
-                if date_value:  # if not blank, store this to report back to user
-                    invalid_dates.append(date_value)
-                elif date_key != 'date_written':  # else if blank, we will blank the value in the database
-                    update_data[date_key] = None
-                continue
-            update_data[date_key] = date_value  # else add acceptable value to dictionary to be updated with
-        # Check a sensible ordering of dates have been provided
-        start_date_conv, end_date_conv = converted_dates.get('start_date'), converted_dates.get('end_date')
-        if start_date_conv and end_date_conv:
-            if same_dates and (end_date_conv != start_date_conv):
-                return dict(error='Specified same dates but different dates provided.', alert_user=1)
-            if end_date_conv < start_date_conv:
-                return dict(error='Incorrect ordering of dates provided.', alert_user=1)
+        # Do date-format and range checks
+        start_dict = dict(field='start_date', value=start_date, is_lower=True)
+        end_dict = dict(field='end_date', value=end_date, is_upper=True)
+        dates = [dict(field='date_written', value=date_of), start_dict, end_dict]
+        update_data, checks = self._pre_date_checks(dates, ['date_written'], success)
+        if checks:
+            return checks
+        # Carry out further checks and final data tidy up before updating the database
+        start_date_conv, end_date_conv = start_dict.get(DATETIME_OBJ), end_dict.get(DATETIME_OBJ)
+        if (start_date_conv and end_date_conv) and same_dates and (end_date_conv != start_date_conv):
+            return dict(error='Specified same dates but different dates provided.', alert_user=1)
         if same_dates and start_date_conv:
             update_data['end_date'] = start_date
         # Update the database if there were values to update with; inform user of any which were ignored
         if update_data:
             await self.dao.update('reports', where=dict(uid=report_id), data=update_data)
-        if invalid_dates:
-            msg = 'The following dates were ignored for being too far in the past/future, and/or being in an ' \
-                  'incorrect format: ' + ', '.join(str(val) for val in invalid_dates)
-            success.update(dict(info=msg, alert_user=1))
-        else:
+        if not success.get('info'):  # the success response hasn't already been updated with info
             success.update(dict(info='The report dates have been updated.', alert_user=1))
         return success
 
@@ -751,7 +739,22 @@ class RestService:
         return REST_SUCCESS
 
     async def update_attack_time(self, request, criteria=None):
-        return REST_IGNORED
+        success = REST_SUCCESS.copy()
+        # Check all request parameters
+        start_date, end_date = criteria.get('start_date'), criteria.get('end_date')
+        mapping_list = criteria.get('mapping_list', [])
+        if not start_date:
+            return dict(error='Technique Start Date missing.', alert_user=1)
+        if (not mapping_list) or (not isinstance(mapping_list, list)):
+            return dict(error='No Confirmed Techniques selected.', alert_user=1)
+        # Do date-format and range checks
+        start_dict = dict(field='start_date', value=start_date, is_lower=True)
+        end_dict = dict(field='end_date', value=end_date, is_upper=True)
+        update_data, checks = self._pre_date_checks([start_dict, end_dict], ['start_date'], success)
+        if checks:
+            return checks
+        # TODO Only update active, confirmed hits for report specified
+        return success
 
     async def _pre_add_reject_attack_checks(self, request, sen_id='', sentence_dict=None, attack_id='', attack_dict=None):
         """Function to check for adding or rejecting attacks, enough sentence and attack data has been given."""
@@ -774,6 +777,40 @@ class RestService:
                                                                  ReportStatus.NEEDS_REVIEW.value]):
             return dict(error='Error. Please quote RSE%s when contacting admin.' % report_id, alert_user=1), None
         return None, report
+
+    def _pre_date_checks(self, date_dict_list, mandatory_field_list, success_response):
+        """Function to carry out checks when dealing with date fields. :return data-to-save, errors"""
+        update_data, converted_dates, invalid_dates = dict(), dict(), []
+        # If we need to check date ranges
+        lower_bound_key, upper_bound_key = None, None
+        for date_dict in date_dict_list:
+            date_value, date_key = date_dict.get('value'), date_dict.get('field')
+            is_lower, is_upper = date_dict.get('is_lower', False), date_dict.get('is_upper', False)
+            lower_bound_key = date_key if is_lower else lower_bound_key
+            upper_bound_key = date_key if is_upper else upper_bound_key
+            try:
+                # Have reasonable date values been given (not too historic/futuristic)?
+                converted_dates[date_key] = self.check_input_date(date_value)
+                # Update original dictionary for further use
+                date_dict[DATETIME_OBJ] = converted_dates[date_key]
+            except (TypeError, ValueError):
+                if date_value:  # if not blank, store this to report back to user
+                    invalid_dates.append(date_value)
+                elif date_key not in mandatory_field_list:  # else if blank, we will blank the value in the database
+                    update_data[date_key] = None
+                continue
+            update_data[date_key] = date_value  # else add acceptable value to dictionary to be updated with
+        # Check a sensible ordering of dates have been provided if we are testing ranges
+        if lower_bound_key and upper_bound_key:
+            start_date_conv, end_date_conv = converted_dates.get(lower_bound_key), converted_dates.get(upper_bound_key)
+            if (start_date_conv and end_date_conv) and (end_date_conv < start_date_conv):
+                return None, dict(error='Incorrect ordering of dates provided.', alert_user=1)
+        # Checks have passed but update success response over invalid dates
+        if invalid_dates:
+            msg = 'The following dates were ignored for being too far in the past/future, and/or being in an ' \
+                  'incorrect format: ' + ', '.join(str(val) for val in invalid_dates)
+            success_response.update(dict(info=msg, alert_user=1))
+        return update_data, None
 
     async def check_report_permission(self, request, report_id='', action='unspecified'):
         """Function to check a request is permitted given an action involving a report ID."""
