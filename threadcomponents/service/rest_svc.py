@@ -739,21 +739,58 @@ class RestService:
         return REST_SUCCESS
 
     async def update_attack_time(self, request, criteria=None):
-        success = REST_SUCCESS.copy()
+        default_error, success = dict(error='Error updating technique times.'), REST_SUCCESS.copy()
+        # Do initial report checks
+        report, error = await self._report_pre_check(
+            request, criteria, 'update-technique-times', [UID, 'current_status', 'start_date', 'end_date'], None)
+        if error:
+            return default_error
         # Check all request parameters
         start_date, end_date = criteria.get('start_date'), criteria.get('end_date')
         mapping_list = criteria.get('mapping_list', [])
+        report_id, r_status = report[UID], report['current_status']
+        r_start_date, r_end_date = report['start_date'], report['end_date']
         if not start_date:
             return dict(error='Technique Start Date missing.', alert_user=1)
         if (not mapping_list) or (not isinstance(mapping_list, list)):
             return dict(error='No Confirmed Techniques selected.', alert_user=1)
+        if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
+            return default_error
         # Do date-format and range checks
         start_dict = dict(field='start_date', value=start_date, is_lower=True)
         end_dict = dict(field='end_date', value=end_date, is_upper=True)
         update_data, checks = self._pre_date_checks([start_dict, end_dict], ['start_date'], success)
         if checks:
             return checks
-        # TODO Only update active, confirmed hits for report specified
+        updates = []  # what database updates will be carried out
+        for mapping in mapping_list:
+            entries = await self.dao.get('report_sentence_hits', dict(uid=mapping))
+            # Check if a suitable entry to update
+            if not (entries and (entries[0].get('report_uid') == report_id) and entries[0].get('confirmed')
+                    and entries[0].get('active_hit')):
+                continue
+            updates.append(await self.dao.update('report_sentence_hits', where=dict(uid=mapping),
+                                                 data=update_data, return_sql=True))
+        # If there are updates, check if the report start/end dates should be updated
+        info = '%s of %s techniques updated.' % (len(updates), len(mapping_list))
+        report_info = ''
+        if updates:
+            r_update_data = dict()
+            start_date_conv, end_date_conv = start_dict.get(DATETIME_OBJ), end_dict.get(DATETIME_OBJ)
+            if start_date_conv and r_start_date and (start_date_conv < r_start_date):
+                r_update_data.update(dict(start_date=start_date))
+            if end_date_conv and r_end_date and (end_date_conv > r_end_date):
+                r_update_data.update(dict(end_date=end_date))
+            if r_update_data:
+                updates.append(await self.dao.update('reports', where=dict(uid=report_id),
+                                                     data=r_update_data, return_sql=True))
+                report_info = ' Report start/end dates have also been updated.'
+            await self.dao.run_sql_list(sql_list=updates)
+        if len(updates) != len(mapping_list):
+            info += ' This could be because of report status and/or technique(s) not being confirmed.'
+        current_info = success.pop('info', '')
+        info += report_info + (('\n\n' + current_info) if current_info else '')
+        success.update(dict(info=info, alert_user=1))
         return success
 
     async def _pre_add_reject_attack_checks(self, request, sen_id='', sentence_dict=None, attack_id='', attack_dict=None):
