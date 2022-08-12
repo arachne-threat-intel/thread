@@ -207,11 +207,11 @@ class RestService:
         # May be refined to allow reverting statuses in future - should use enum to check valid status
         if new_status == ReportStatus.COMPLETED.value:
             # Check there are no unconfirmed attacks
-            unchecked = await self.data_svc.get_unconfirmed_attack_count(report_id=report_id)
+            unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id)
             if unchecked:
                 partial_msg = '%s %s %s' % \
                               ('is' if unchecked == 1 else 'are', unchecked, 'attack' + ('' if unchecked == 1 else 's'))
-                return dict(error='There %s unconfirmed for this report.' % partial_msg, alert_user=1)
+                return dict(error='There %s unconfirmed or with no start date for this report.' % partial_msg, alert_user=1)
             # Check the report status is not queued (because queued reports will have 0 unchecked attacks)
             if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
                 return default_error

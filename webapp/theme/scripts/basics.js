@@ -12,6 +12,7 @@ var clickedClass = "report-sentence-clicked";
 // ID selectors for report-sentence buttons
 var delSenBtn = "#delSenBtn";
 var missingTechBtn = "#missingTechBtn";
+var senTTPForm = "#ttpDatesForm";
 // The URL for the rest requests
 var restUrl = $("script#basicsScript").data("rest-url");
 // If this script is being run locally
@@ -120,6 +121,7 @@ function remove_sentence() {
     // Disable further actions until another item is selected
     $(missingTechBtn).prop("disabled", true);
     $(delSenBtn).prop("disabled", true);
+    $(senTTPForm).prop("hidden", true);
     // Reset any 'Techniques Found' list
     $("#tableSentenceInfo tr").remove();
     // Send off request to delete from the db
@@ -341,6 +343,8 @@ function updateConfirmedContext(data) {
     var tmp = "<tr>" + td1 + "</tr>";
     $("#confirmedSentenceInfo").find("tbody").append(tmp);
   });
+  // Display the TTP-dates form if there were confirmed attacks
+  $(senTTPForm).prop("hidden", !Boolean(data.length));
 }
 
 function updateAttackTime(reportTitle) {
@@ -353,10 +357,13 @@ function updateAttackTime(reportTitle) {
   $(".confirmed-technique:checked").each(function() {
     mappingList.push($(this).prop("id"));
   });
+  if (!mappingList.length) {
+    alert("No Confirmed Techniques selected.");
+    return;
+  }
   restRequest("POST", {"index": "update_attack_time", "start_date": startDate, "end_date": endDate,
                        "mapping_list": mappingList, "report_title": reportTitle});
   // TODO refresh table after successful call
-  // TODO display/hide form depending if sentence is clicked
 }
 
 function importFont() {

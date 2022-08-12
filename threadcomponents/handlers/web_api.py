@@ -317,7 +317,7 @@ class WebAPI:
         enterprise_layer = {
             'filename': sanitise_filename(report_title), 'name': report_title, 'domain': 'mitre-enterprise',
             'description': enterprise_layer_description, 'version': '2.2', 'techniques': [],
-            'article_date_published': date_of, 'techniques_start_date': start_date, 'techniques_end_date': end_date,
+            'article_date_published': date_of, 'report_start_date': start_date, 'report_end_date': end_date,
             # white for non-used, blue for used
             'gradient': {'colors': ['#ffffff', '#66b1ff'], 'minValue': 0, 'maxValue': 1},
             'legendItems': [{'label': f'used by {report_title}', 'color': '#66b1ff'}]
@@ -375,7 +375,7 @@ class WebAPI:
 
         # Table for found attacks
         table = {'body': []}
-        table['body'].append(['ID', 'Name', 'Identified Sentence'])
+        table['body'].append(['ID', 'Name', 'Identified Sentence', 'Start Date', 'End Date'])
         # Add the text to the document
         dd['content'].append(dict(text=title, style='header'))  # begin with title of document
         dd['content'].append(dict(text='\n'))  # Blank line after title
@@ -406,7 +406,8 @@ class WebAPI:
                 # Append any attack for this sentence to the table; prefix parent-tech for any sub-technique
                 tech_name, parent_tech = sentence['attack_technique_name'], sentence.get('attack_parent_name')
                 tech_name = "%s: %s" % (parent_tech, tech_name) if parent_tech else tech_name
-                table['body'].append([sentence['attack_tid'], tech_name, sen_text])
+                table['body'].append([sentence['attack_tid'], tech_name, sen_text, sentence.get('tech_start_date'),
+                                      sentence.get('tech_end_date')])
 
         # Append table to the end
         dd['content'].append({'table': table})

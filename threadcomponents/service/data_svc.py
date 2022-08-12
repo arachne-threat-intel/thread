@@ -328,6 +328,9 @@ class DataService:
 
     async def get_report_sentences_with_attacks(self, report_id=''):
         """Function to retrieve all report sentences and any attacks they may have given a report ID."""
+        # Ensure date fields are converted into strings
+        start_date = self.dao.db.sql_date_field_to_str('report_sentence_hits.start_date', field_name_as='tech_start_date')
+        end_date = self.dao.db.sql_date_field_to_str('report_sentence_hits.end_date', field_name_as='tech_end_date')
         select_join_query = (
             # Using the temporary table with parent-technique info
             self.SQL_WITH_PAR_ATTACK +
@@ -336,14 +339,14 @@ class DataService:
             # We want to add any sub-technique's parent-technique name
             "report_sentence_hits.active_hit, " + FULL_ATTACK_INFO + ".parent_name AS attack_parent_name, "
             # LEFT (not INNER) JOINS with FULL_ATTACK_INFO may have 'inactive' data; return 'inactive' from attack_uids
-            "attack_uids.inactive AS inactive_attack "
+            "attack_uids.inactive AS inactive_attack, " + start_date + ", " + end_date + " "
             # The first join for the report data; LEFT OUTER JOIN because we want all report sentences
             "FROM (((report_sentences LEFT OUTER JOIN report_sentence_hits "
             "ON report_sentences.uid = report_sentence_hits.sentence_id) "
             # A second join for the full attack table; still using a LEFT JOIN
-            "LEFT JOIN " + FULL_ATTACK_INFO + " ON " + FULL_ATTACK_INFO + ".uid = report_sentence_hits.attack_uid)"
+            "LEFT JOIN " + FULL_ATTACK_INFO + " ON " + FULL_ATTACK_INFO + ".uid = report_sentence_hits.attack_uid) "
             # FULL_ATTACK_INFO omits 'inactive' flag; join so we have this info
-            "LEFT JOIN attack_uids ON report_sentence_hits.attack_uid = attack_uids.uid)"
+            "LEFT JOIN attack_uids ON report_sentence_hits.attack_uid = attack_uids.uid) "
             # Finish with the WHERE clause stating which report this is for
             "WHERE report_sentences.report_uid = %s" % self.dao.db_qparam + " "
             # Need to order by for JOIN query (otherwise sentences can be out of order if attacks are updated)
@@ -391,8 +394,8 @@ class DataService:
         # Run the above query and return its results
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
 
-    async def get_unconfirmed_attack_count(self, report_id=''):
-        """Function to retrieve the number of unconfirmed attacks for a report."""
+    async def get_unconfirmed_undated_attack_count(self, report_id=''):
+        """Function to retrieve the number of unconfirmed attacks without a start-date for a report."""
         # Retrieve all unconfirmed attacks
         all_unconfirmed = await self.dao.get('report_sentence_hits', dict(report_uid=report_id,
                                                                           confirmed=self.dao.db_false_val))
@@ -403,16 +406,21 @@ class DataService:
             "ON report_sentence_hits.attack_uid = false_positives.attack_uid "
             "AND report_sentence_hits.sentence_id = false_positives.sentence_id) "
             "WHERE report_sentence_hits.report_uid = %s" % self.dao.db_qparam + " "
-            "AND report_sentence_hits.confirmed = %s" % self.dao.db_false_val)
+            "AND (report_sentence_hits.confirmed = %s" % self.dao.db_false_val + " "
+            "OR report_sentence_hits.start_date IS NULL)")
         ignore = await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
         # Ideally would use an SQL MINUS query but this caused errors
         return len(all_unconfirmed) - len(ignore)
 
     async def get_confirmed_techniques_for_nav_export(self, report_id):
+        # Ensure date fields are converted into strings
+        start_date = self.dao.db.sql_date_field_to_str('report_sentence_hits.start_date', field_name_as='tech_start_date')
+        end_date = self.dao.db.sql_date_field_to_str('report_sentence_hits.end_date', field_name_as='tech_end_date')
         # The SQL select join query to retrieve the confirmed techniques for the nav export
         select_join_query = (
             "SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, "
-            "report_sentence_hits.attack_tid, report_sentences.text, report_sentence_hits.initial_model_match "
+            "report_sentence_hits.attack_tid, report_sentences.text, report_sentence_hits.initial_model_match,"
+            " " + start_date + ", " + end_date + " "
             "FROM (report_sentences INNER JOIN report_sentence_hits "
             "ON report_sentences.uid = report_sentence_hits.sentence_id) "
             "WHERE report_sentence_hits.report_uid = %s" % self.dao.db_qparam + " "
@@ -424,7 +432,9 @@ class DataService:
             # For each confirmed technique returned,
             # create a technique object and add it to the list of techniques.
             technique = {'model_score': hit['initial_model_match'], 'techniqueID': hit['attack_tid'],
-                         'comment': await self.web_svc.remove_html_markup_and_found(hit['text'])}
+                         'comment': await self.web_svc.remove_html_markup_and_found(hit['text']),
+                         'tech_start_date': hit.get('tech_start_date') or 'unspecified',
+                         'tech_end_date': hit.get('tech_end_date') or 'unspecified'}
             techniques.append(technique)
         # Return the list of confirmed techniques
         return techniques
