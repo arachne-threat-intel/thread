@@ -179,7 +179,7 @@ class TestReports(ThreadAppTest):
         # Check an unsuccessful response was sent
         error_msg, alert_user = resp_json.get('error'), resp_json.get('alert_user')
         self.assertTrue(resp.status == 500, msg='Completing a report too early resulted in a non-500 response.')
-        self.assertTrue('unconfirmed for this report' in error_msg,
+        self.assertTrue('unconfirmed or with no start date for this report' in error_msg,
                         msg='Error message for outstanding attacks in report is different than expected.')
         self.assertEqual(alert_user, self.db.val_as_true, msg='User is not notified over unconfirmed attacks in report.')
         # Delete the sentence that has an attack
