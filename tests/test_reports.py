@@ -363,7 +363,7 @@ class TestReports(ThreadAppTest):
         report_id, report_title = str(uuid4()), 'Never Gonna Rollback This Up'
         # Submit and analyse a test report
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='analysing.this',
-                                           current_status=ReportStatus.QUEUE.value))
+                                           current_status=ReportStatus.QUEUE.value, date_written='2022-08-15'))
         # Get the report sentences for this report
         sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id),
                                       order_by_asc=dict(sen_index=1))
