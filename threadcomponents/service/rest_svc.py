@@ -294,6 +294,23 @@ class RestService:
         start_date_conv, end_date_conv = start_dict.get(DATETIME_OBJ), end_dict.get(DATETIME_OBJ)
         if (start_date_conv and end_date_conv) and same_dates and (end_date_conv != start_date_conv):
             return dict(error='Specified same dates but different dates provided.', alert_user=1)
+        # Are there any techniques that have start/end dates that don't fit with these new report dates?
+        if start_date or end_date:
+            start_date_com, end_date_com = 'start_date < {par_holder}', 'end_date > {par_holder}'
+            if start_date and end_date:
+                date_query, date_params = '(' + start_date_com + ' OR ' + end_date_com + ')', [start_date, end_date]
+            elif start_date:
+                date_query, date_params = start_date_com, [start_date]
+            else:
+                date_query, date_params = end_date_com, [end_date]
+            bounds_query = ("SELECT * FROM report_sentence_hits WHERE " + date_query + " AND report_uid = "
+                            "{par_holder} AND confirmed = %s" % self.dao.db_true_val).format(par_holder=self.dao.db_qparam)
+            out_of_bounds = await self.dao.raw_select(bounds_query, parameters=tuple(date_params + [report_id]))
+            if out_of_bounds:
+                number = len(out_of_bounds)
+                error_msg = ('%s confirmed technique' % number) + (' has' if number == 1 else 's have') \
+                            + ' start/end dates outside specified range.'
+                return dict(error=error_msg, alert_user=1)
         if same_dates and start_date_conv:
             update_data['end_date'] = start_date
         # Update the database if there were values to update with; inform user of any which were ignored
@@ -765,32 +782,33 @@ class RestService:
         updates = []  # what database updates will be carried out
         for mapping in mapping_list:
             entries = await self.dao.get('report_sentence_hits', dict(uid=mapping))
-            # Check if a suitable entry to update
+            # Check if a suitable entry to update or update_data is not already subset of entry (no updates needed)
             if not (entries and (entries[0].get('report_uid') == report_id) and entries[0].get('confirmed')
-                    and entries[0].get('active_hit')):
+                    and entries[0].get('active_hit')) or (update_data.items() <= entries[0].items()):
                 continue
             updates.append(await self.dao.update('report_sentence_hits', where=dict(uid=mapping),
                                                  data=update_data, return_sql=True))
         # If there are updates, check if the report start/end dates should be updated
         info = '%s of %s techniques updated.' % (len(updates), len(mapping_list))
-        report_info = ''
+        if len(updates) != len(mapping_list):
+            info += ' This could be because of report status and/or technique(s) not being confirmed.'
+        report_info, refresh_page = '', False
         if updates:
             r_update_data = dict()
             start_date_conv, end_date_conv = start_dict.get(DATETIME_OBJ), end_dict.get(DATETIME_OBJ)
-            if start_date_conv and r_start_date and (start_date_conv < r_start_date):
+            if start_date_conv and r_start_date and (start_date_conv < r_start_date.replace(tzinfo=None)):
                 r_update_data.update(dict(start_date=start_date))
-            if end_date_conv and r_end_date and (end_date_conv > r_end_date):
+            if end_date_conv and r_end_date and (end_date_conv > r_end_date.replace(tzinfo=None)):
                 r_update_data.update(dict(end_date=end_date))
             if r_update_data:
                 updates.append(await self.dao.update('reports', where=dict(uid=report_id),
                                                      data=r_update_data, return_sql=True))
                 report_info = ' Report start/end dates have also been updated.'
+                refresh_page = True
             await self.dao.run_sql_list(sql_list=updates)
-        if len(updates) != len(mapping_list):
-            info += ' This could be because of report status and/or technique(s) not being confirmed.'
         current_info = success.pop('info', '')
         info += report_info + (('\n\n' + current_info) if current_info else '')
-        success.update(dict(info=info, alert_user=1))
+        success.update(dict(info=info, alert_user=1, refresh_page=refresh_page, updated_attacks=bool(updates)))
         return success
 
     async def _pre_add_reject_attack_checks(self, request, sen_id='', sentence_dict=None, attack_id='', attack_dict=None):

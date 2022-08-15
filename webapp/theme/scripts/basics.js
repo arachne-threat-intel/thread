@@ -362,8 +362,20 @@ function updateAttackTime(reportTitle) {
     return;
   }
   restRequest("POST", {"index": "update_attack_time", "start_date": startDate, "end_date": endDate,
-                       "mapping_list": mappingList, "report_title": reportTitle});
-  // TODO refresh table after successful call
+                       "mapping_list": mappingList, "report_title": reportTitle},
+    // Either refresh the whole page or just the techniques list to display recently-saved dates
+    function success(resp) {
+      if (resp.refresh_page) {
+        page_refresh();
+        return;
+      }
+      if (resp.updated_attacks) {
+        restRequest("POST", {"index":"confirmed_attacks", "sentence_id": sentence_id}, updateConfirmedContext);
+        document.getElementById("ttpStartDate").value = null;
+        document.getElementById("ttpEndDate").value = null;
+      }
+    }
+  );
 }
 
 function importFont() {
