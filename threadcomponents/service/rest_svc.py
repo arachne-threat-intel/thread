@@ -277,6 +277,7 @@ class RestService:
         date_of, start_date, end_date = criteria.get('date_of'), criteria.get('start_date'), criteria.get('end_date')
         same_dates = criteria.get('same_dates') is True  # we only want to process booleans sent for this parameter
         report_id, r_status, r_written = report[UID], report['current_status'], report['date_written']
+        r_start, r_end = report['start_date'], report['end_date']
         # Check a queued or completed report ID hasn't been provided
         if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
             return default_error
@@ -294,6 +295,9 @@ class RestService:
         start_date_conv, end_date_conv = start_dict.get(DATETIME_OBJ), end_dict.get(DATETIME_OBJ)
         if (start_date_conv and end_date_conv) and same_dates and (end_date_conv != start_date_conv):
             return dict(error='Specified same dates but different dates provided.', alert_user=1)
+        if (start_date_conv and r_end and (start_date_conv > r_end.replace(tzinfo=None))) or \
+                (end_date_conv and r_start and (end_date_conv < r_start.replace(tzinfo=None))):
+            return dict(error='The start/end dates do not follow the order of the existing start/end dates.', alert_user=1)
         # Are there any techniques that have start/end dates that don't fit with these new report dates?
         if start_date or end_date:
             start_date_com, end_date_com = 'start_date < {par_holder}', 'end_date > {par_holder}'
@@ -779,6 +783,7 @@ class RestService:
         update_data, checks = self._pre_date_checks([start_dict, end_dict], ['start_date'], success)
         if checks:
             return checks
+        start_date_conv, end_date_conv = start_dict.get(DATETIME_OBJ), end_dict.get(DATETIME_OBJ)
         updates = []  # what database updates will be carried out
         for mapping in mapping_list:
             entries = await self.dao.get('report_sentence_hits', dict(uid=mapping))
@@ -786,16 +791,19 @@ class RestService:
             if not (entries and (entries[0].get('report_uid') == report_id) and entries[0].get('confirmed')
                     and entries[0].get('active_hit')) or (update_data.items() <= entries[0].items()):
                 continue
+            current_start, current_end = entries[0]['start_date'], entries[0]['end_date']
+            if (start_date_conv and current_end and (start_date_conv > current_end.replace(tzinfo=None))) or \
+                    (end_date_conv and current_start and (end_date_conv < current_start.replace(tzinfo=None))):
+                continue
             updates.append(await self.dao.update('report_sentence_hits', where=dict(uid=mapping),
                                                  data=update_data, return_sql=True))
         # If there are updates, check if the report start/end dates should be updated
-        info = '%s of %s techniques updated.' % (len(updates), len(mapping_list))
+        info = '%s of %s technique(s) updated.' % (len(updates), len(mapping_list))
         if len(updates) != len(mapping_list):
-            info += ' This could be because of report status and/or technique(s) not being confirmed.'
+            info += ' This could be because of report status; unconfirmed technique(s) and/or existing start/end dates.'
         report_info, refresh_page = '', False
         if updates:
             r_update_data = dict()
-            start_date_conv, end_date_conv = start_dict.get(DATETIME_OBJ), end_dict.get(DATETIME_OBJ)
             if start_date_conv and r_start_date and (start_date_conv < r_start_date.replace(tzinfo=None)):
                 r_update_data.update(dict(start_date=start_date))
             if end_date_conv and r_end_date and (end_date_conv > r_end_date.replace(tzinfo=None)):
