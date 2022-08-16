@@ -277,7 +277,7 @@ class RestService:
         date_of, start_date, end_date = criteria.get('date_of'), criteria.get('start_date'), criteria.get('end_date')
         same_dates = criteria.get('same_dates') is True  # we only want to process booleans sent for this parameter
         report_id, r_status, r_written = report[UID], report['current_status'], report['date_written']
-        r_start, r_end = report['start_date'], report['end_date']
+        r_start, r_end = self.to_datetime_obj(report['start_date']), self.to_datetime_obj(report['end_date'])
         # Check a queued or completed report ID hasn't been provided
         if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
             return default_error
@@ -300,13 +300,16 @@ class RestService:
             return dict(error='The start/end dates do not follow the order of the existing start/end dates.', alert_user=1)
         # Are there any techniques that have start/end dates that don't fit with these new report dates?
         if start_date or end_date:
-            start_date_com, end_date_com = 'start_date < {par_holder}', 'end_date > {par_holder}'
+            start_date_lt, start_date_gt = 'start_date < {par_holder}', 'start_date > {par_holder}'
+            end_date_lt, end_date_gt = 'end_date < {par_holder}', 'end_date > {par_holder}'
             if start_date and end_date:
-                date_query, date_params = '(' + start_date_com + ' OR ' + end_date_com + ')', [start_date, end_date]
+                date_query = '({a} OR {b} OR {c} OR {d})'.format(a=start_date_lt, b=end_date_gt,
+                                                                 c=start_date_gt, d=end_date_lt)
+                date_params = [start_date, end_date, end_date, start_date]
             elif start_date:
-                date_query, date_params = start_date_com, [start_date]
+                date_query, date_params = '({a} OR {b})'.format(a=start_date_lt, b=end_date_lt), [start_date, start_date]
             else:
-                date_query, date_params = end_date_com, [end_date]
+                date_query, date_params = '({a} OR {b})'.format(a=end_date_gt, b=start_date_gt), [end_date, end_date]
             bounds_query = ("SELECT * FROM report_sentence_hits WHERE " + date_query + " AND report_uid = "
                             "{par_holder} AND confirmed = %s" % self.dao.db_true_val).format(par_holder=self.dao.db_qparam)
             out_of_bounds = await self.dao.raw_select(bounds_query, parameters=tuple(date_params + [report_id]))
@@ -770,7 +773,7 @@ class RestService:
         start_date, end_date = criteria.get('start_date'), criteria.get('end_date')
         mapping_list = criteria.get('mapping_list', [])
         report_id, r_status = report[UID], report['current_status']
-        r_start_date, r_end_date = report['start_date'], report['end_date']
+        r_start_date, r_end_date = self.to_datetime_obj(report['start_date']), self.to_datetime_obj(report['end_date'])
         if not start_date:
             return dict(error='Technique Start Date missing.', alert_user=1)
         if (not mapping_list) or (not isinstance(mapping_list, list)):
@@ -791,7 +794,8 @@ class RestService:
             if not (entries and (entries[0].get('report_uid') == report_id) and entries[0].get('confirmed')
                     and entries[0].get('active_hit')) or (update_data.items() <= entries[0].items()):
                 continue
-            current_start, current_end = entries[0]['start_date'], entries[0]['end_date']
+            current_start = self.to_datetime_obj(entries[0]['start_date'])
+            current_end = self.to_datetime_obj(entries[0]['end_date'])
             if (start_date_conv and current_end and (start_date_conv > current_end.replace(tzinfo=None))) or \
                     (end_date_conv and current_start and (end_date_conv < current_start.replace(tzinfo=None))):
                 continue
@@ -946,11 +950,22 @@ class RestService:
         return False
 
     @staticmethod
-    def check_input_date(date_str):
+    def to_datetime_obj(date_val, raise_error=False):
+        """Function to convert a given date into a datetime object."""
+        if isinstance(date_val, datetime):
+            return date_val  # nothing to do if already converted
+        try:
+            return datetime.strptime(date_val, '%Y-%m-%d')
+        except (TypeError, ValueError) as e:
+            if raise_error:
+                raise e
+        return None
+
+    def check_input_date(self, date_str):
         """Function to check given a date string, it is in an acceptable format and range to be saved."""
         # Convert the given date into a datetime object to be able to do comparisons
         # Expect to raise TypeError if date_str is not a string
-        given_date = datetime.strptime(date_str, '%Y-%m-%d')
+        given_date = self.to_datetime_obj(date_str, raise_error=True)
         # Establish the min and max date ranges we want dates to fall in
         date_now = datetime.now()
         max_date = datetime(date_now.year + 5, month=date_now.month, day=date_now.day, tzinfo=date_now.tzinfo)
