@@ -181,7 +181,7 @@ class TestReports(ThreadAppTest):
         self.assertTrue(resp.status == 500, msg='Completing a report too early resulted in a non-500 response.')
         self.assertTrue('unconfirmed or with no start date for this report' in error_msg,
                         msg='Error message for outstanding attacks in report is different than expected.')
-        self.assertEqual(alert_user, self.db.val_as_true, msg='User is not notified over unconfirmed attacks in report.')
+        self.assertEqual(alert_user, 1, msg='User is not notified over unconfirmed attacks in report.')
         # Delete the sentence that has an attack
         await self.db.delete('report_sentences', dict(report_uid=report_id, found_status=self.db.val_as_true))
         # Re-attempt setting the status
@@ -192,8 +192,7 @@ class TestReports(ThreadAppTest):
         self.assertTrue(resp.status == 500, msg='Completing a report without a date resulted in a non-500 response.')
         self.assertTrue('Please set an Article Publication Date for this report' in error_msg,
                         msg='Error message for missing report date is different than expected.')
-        self.assertEqual(alert_user, self.db.val_as_true,
-                         msg='User is not notified over missing report date.')
+        self.assertEqual(alert_user, 1, msg='User is not notified over missing report date.')
         # Update report date, try again and check a successful response was sent
         await self.db.update('reports', where=dict(uid=report_id), data=dict(date_written='2022-07-29'))
         resp = await self.client.post('/rest', json=data)
@@ -389,86 +388,3 @@ class TestReports(ThreadAppTest):
         # Check that the first sentence is the one we previously deleted
         self.assertEqual(rollback_sentences[0].get(UID_KEY), sen_id,
                          msg='Report-rollback resulted in a different first sentence.')
-
-    async def test_missing_date_written(self):
-        """Function to test attempting to update report dates without a date-written value."""
-        report_id, report_title = str(uuid4()), 'Marvel Dance Moves 1: Praise for Peter Parker'
-        # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url='dance.moves',
-                                           current_status=ReportStatus.QUEUE.value))
-        # Attempt to complete this newly-analysed report
-        data = dict(index='update_report_dates', report_title=report_title, date_of=None, start_date=None, end_date=None)
-        resp = await self.client.post('/rest', json=data)
-        resp_json = await resp.json()
-        # Check an unsuccessful response was sent
-        error_msg, alert_user = resp_json.get('error'), resp_json.get('alert_user')
-        self.assertTrue(resp.status == 500, msg='Missing date-written resulted in a non-500 response.')
-        self.assertTrue('Article Publication Date missing' in error_msg,
-                        msg='Error message for missing date-written value is different than expected.')
-        self.assertEqual(alert_user, self.db.val_as_true, msg='User is not notified over missing date-written value.')
-
-    async def test_incorrect_report_date_order(self):
-        """Function to test flagging incorrect ordering of report start and end dates."""
-        report_id, report_title = str(uuid4()), 'Marvel Dance Moves 2: Dance Off with Star-Lord'
-        # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url='dance.moves',
-                                           current_status=ReportStatus.QUEUE.value, date_written='2022-07-29'))
-        # Attempt to complete this newly-analysed report
-        data = dict(index='update_report_dates', report_title=report_title, start_date='2022-01-01', end_date='2021-12-25')
-        resp = await self.client.post('/rest', json=data)
-        resp_json = await resp.json()
-        # Check an unsuccessful response was sent
-        error_msg, alert_user = resp_json.get('error'), resp_json.get('alert_user')
-        self.assertTrue(resp.status == 500, msg='Invalid date ordering resulted in a non-500 response.')
-        self.assertTrue('Incorrect ordering of dates provided' in error_msg,
-                        msg='Error message for invalid date ordering is different than expected.')
-        self.assertEqual(alert_user, self.db.val_as_true, msg='User is not notified over invalid date ordering.')
-
-    async def test_unsetting_report_dates(self):
-        """Function to test unsetting report start and end dates."""
-        report_id, report_title = str(uuid4()), 'Marvel Dance Moves 3: Zooming with Zemo'
-        # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url='dance.moves',
-                                           current_status=ReportStatus.QUEUE.value, date_written='2022-07-29',
-                                           start_date='2022-01-01', end_date='2022-02-02'))
-        # Attempt to complete this newly-analysed report
-        data = dict(index='update_report_dates', report_title=report_title, start_date=None, end_date=None)
-        # Check a successful response was sent and the dates were unset
-        resp = await self.client.post('/rest', json=data)
-        report = await self.db.get('reports', dict(uid=report_id))
-        self.assertTrue(resp.status < 300, msg='Unsetting report dates resulted in a non-200 response.')
-        self.assertIsNone(report[0]['start_date'], msg='Start date not unset.')
-        self.assertIsNone(report[0]['end_date'], msg='End date not unset.')
-
-    async def test_using_same_dates_flag(self):
-        """Function to test setting the same report start and end dates."""
-        report_id, report_title = str(uuid4()), 'Marvel Dance Moves 4: Lunging Like Loxias'
-        # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url='dance.moves',
-                                           current_status=ReportStatus.QUEUE.value, date_written='2022-07-29',
-                                           start_date='2022-01-01', end_date='2022-02-02'))
-        # Attempt to complete this newly-analysed report
-        data = dict(index='update_report_dates', report_title=report_title, start_date='2020-01-01', same_dates=True)
-        # Check a successful response was sent and the dates were unset
-        resp = await self.client.post('/rest', json=data)
-        report = await self.db.get('reports', dict(uid=report_id))
-        self.assertTrue(resp.status < 300, msg='Updating equal report dates resulted in a non-200 response.')
-        self.assertEqual(report[0]['start_date'], '2020-01-01', msg='Start date not updated correctly.')
-        self.assertEqual(report[0]['end_date'], '2020-01-01', msg='End date not updated correctly.')
-
-    async def test_updating_report_dates(self):
-        """Function to test setting the same report start and end dates."""
-        report_id, report_title = str(uuid4()), 'Marvel Dance Moves 5: Stanning over Stan Lee'
-        # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url='dance.moves', date_written=None,
-                                           current_status=ReportStatus.QUEUE.value, start_date=None, end_date=None))
-        # Attempt to complete this newly-analysed report
-        data = dict(index='update_report_dates', report_title=report_title, date_of='2022-07-29',
-                    start_date='2022-01-01', end_date='2022-02-02')
-        # Check a successful response was sent and the dates were unset
-        resp = await self.client.post('/rest', json=data)
-        report = await self.db.get('reports', dict(uid=report_id))
-        self.assertTrue(resp.status < 300, msg='Updating equal report dates resulted in a non-200 response.')
-        self.assertEqual(report[0]['date_written'], '2022-07-29', msg='Start date not updated correctly.')
-        self.assertEqual(report[0]['start_date'], '2022-01-01', msg='Start date not updated correctly.')
-        self.assertEqual(report[0]['end_date'], '2022-02-02', msg='End date not updated correctly.')

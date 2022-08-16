@@ -17,7 +17,7 @@ from threadcomponents.service import data_svc
 from threadcomponents.service.data_svc import DataService, NO_DESC
 from threadcomponents.service.ml_svc import MLService
 from threadcomponents.service.reg_svc import RegService
-from threadcomponents.service.rest_svc import RestService
+from threadcomponents.service.rest_svc import RestService, UID as UID_KEY
 from threadcomponents.service.web_svc import WebService
 from unittest.mock import MagicMock, patch
 
@@ -125,7 +125,7 @@ class ThreadAppTest(AioHTTPTestCase):
         # We don't want the queue to be checked after this test; mock this to return (and do) nothing
         self.create_patch(target=RestService, attribute='check_queue', return_value=None)
 
-    async def submit_test_report(self, report, fail_map_html=False):
+    async def submit_test_report(self, report, fail_map_html=False, post_confirm_attack=False):
         """A helper method to submit a test report and create some associated test-sentences."""
         # Some test sentences and expected analysed html for them
         sen1 = 'When Creating Test Data...'
@@ -152,6 +152,17 @@ class ThreadAppTest(AioHTTPTestCase):
         await self.db.insert('reports', report)
         # Mock the analysis of the report
         await self.rest_svc.start_analysis(criteria=report)
+        if post_confirm_attack:
+            # Get the report sentences for this report
+            sentences = await self.db.get('report_sentences', equal=dict(report_uid=report[UID_KEY]))
+            sen_id = None
+            for sen in sentences:
+                # Find the sentence that has an attack for this test
+                if sen.get('found_status') == self.db.val_as_true:
+                    sen_id = sen.get(UID_KEY)
+            if not sen_id:
+                return
+            await self.client.post('/rest', json=dict(index='add_attack', sentence_id=sen_id, attack_uid='d99999'))
 
     def mock_current_attack_data(self, attack_list=None):
         """Helper-method to mock the retrieval of the current Att%ck data by returning a specified attack-list."""
