@@ -1,0 +1,613 @@
+{
+  "aerospace": {
+    "name": "Aerospace",
+    "sub_categories": []
+  },
+  "livestock": {
+    "name": "Livestock",
+    "sub_categories": []
+  },
+  "fishing": {
+    "name": "Fishing",
+    "sub_categories": []
+  },
+  "timber": {
+    "name": "Timber",
+    "sub_categories": []
+  },
+  "tobacco": {
+    "name": "Tobacco",
+    "sub_categories": []
+  },
+  "meat_dairy": {
+    "name": "Meat & Dairy",
+    "sub_categories": []
+  },
+  "food_crops": {
+    "name": "Food Crops",
+    "sub_categories": []
+  },
+  "agriculture": {
+    "name": "Agriculture & Horticulture",
+    "sub_categories": ["livestock", "fishing", "timber", "tobacco", "meat_dairy", "food_crops"]
+  },
+  "pharmaceuticals": {
+    "name": "Pharmaceuticals & Research",
+    "sub_categories": []
+  },
+  "chem_manufacturing": {
+    "name": "Chemical Manufacturing",
+    "sub_categories": ["pharmaceuticals"]
+  },
+  "software": {
+    "name": "Software Development & Engineering",
+    "sub_categories": []
+  },
+  "hardware": {
+    "name": "Hardware, Peripherals, Repair & Retail",
+    "sub_categories": []
+  },
+  "data_centres": {
+    "name": "Data Centres",
+    "sub_categories": []
+  },
+  "cloud_computing": {
+    "name": "Cloud Computing Providers",
+    "sub_categories": []
+  },
+  "managed_service": {
+    "name": "Managed Service Providers",
+    "sub_categories": []
+  },
+  "info_tech": {
+    "name": "Information Technology",
+    "sub_categories": ["software", "hardware", "data_centres", "cloud_computing", "managed_service"]
+  },
+  "construction": {
+    "name": "Construction",
+    "sub_categories": []
+  },
+  "arms_trade": {
+    "name": "Arms Trade & Manufacturing",
+    "sub_categories": []
+  },
+  "anthropology": {
+    "name": "Anthropology",
+    "sub_categories": []
+  },
+  "archaeology": {
+    "name": "Archaeology",
+    "sub_categories": []
+  },
+  "history": {
+    "name": "History",
+    "sub_categories": []
+  },
+  "linguistics": {
+    "name": "Linguistics & Languages",
+    "sub_categories": []
+  },
+  "philosophy": {
+    "name": "Philosophy",
+    "sub_categories": []
+  },
+  "religion": {
+    "name": "Religion",
+    "sub_categories": []
+  },
+  "divinity": {
+    "name": "Divinity",
+    "sub_categories": []
+  },
+  "culinary_arts": {
+    "name": "Culinary Arts",
+    "sub_categories": []
+  },
+  "literature": {
+    "name": "Literature",
+    "sub_categories": []
+  },
+  "performing_arts": {
+    "name": "Performing Arts",
+    "sub_categories": []
+  },
+  "visual_arts": {
+    "name": "Visual Arts",
+    "sub_categories": []
+  },
+  "economics": {
+    "name": "Economics",
+    "sub_categories": []
+  },
+  "geography": {
+    "name": "Geography",
+    "sub_categories": []
+  },
+  "interdisciplinary_studies": {
+    "name": "Interdisciplinary Studies",
+    "sub_categories": []
+  },
+  "area_studies": {
+    "name": "Area Studies",
+    "sub_categories": []
+  },
+  "cultural_studies": {
+    "name": "Ethnic & Cultural Studies",
+    "sub_categories": []
+  },
+  "gender_studies": {
+    "name": "Gender & Sexuality Studies",
+    "sub_categories": []
+  },
+  "organisational_studies": {
+    "name": "Organisational Studies",
+    "sub_categories": []
+  },
+  "political_science": {
+    "name": "Political Science",
+    "sub_categories": []
+  },
+  "psychology": {
+    "name": "Psychology",
+    "sub_categories": []
+  },
+  "sociology": {
+    "name": "Sociology",
+    "sub_categories": []
+  },
+  "biology": {
+    "name": "Biology",
+    "sub_categories": []
+  },
+  "chemistry": {
+    "name": "Chemistry",
+    "sub_categories": []
+  },
+  "earth_sciences": {
+    "name": "Earth Sciences",
+    "sub_categories": []
+  },
+  "physics": {
+    "name": "Physics",
+    "sub_categories": []
+  },
+  "space_sciences": {
+    "name": "Space Sciences",
+    "sub_categories": []
+  },
+  "astronomy": {
+    "name": "Astronomy",
+    "sub_categories": []
+  },
+  "comp_sci": {
+    "name": "Computer Science",
+    "sub_categories": []
+  },
+  "logic": {
+    "name": "Logic",
+    "sub_categories": []
+  },
+  "pure_maths": {
+    "name": "Pure Mathematics",
+    "sub_categories": []
+  },
+  "applied_maths": {
+    "name": "Applied Mathematics",
+    "sub_categories": []
+  },
+  "stats": {
+    "name": "Statistics",
+    "sub_categories": []
+  },
+  "systems_science": {
+    "name": "Systems Science",
+    "sub_categories": []
+  },
+  "agriculture_studies": {
+    "name": "Agriculture",
+    "sub_categories": []
+  },
+  "architecture": {
+    "name": "Architecture & Design",
+    "sub_categories": []
+  },
+  "business": {
+    "name": "Business",
+    "sub_categories": []
+  },
+  "education_studies": {
+    "name": "Education",
+    "sub_categories": []
+  },
+  "engineering": {
+    "name": "Engineering & Technology",
+    "sub_categories": []
+  },
+  "env_studies": {
+    "name": "Environmental Studies & Forestry",
+    "sub_categories": []
+  },
+  "consumer_science": {
+    "name": "Family & Consumer Science",
+    "sub_categories": []
+  },
+  "physical_ed": {
+    "name": "Human Physical Performance & Recreation",
+    "sub_categories": []
+  },
+  "journalism": {
+    "name": "Journalism, Media Studies & Communication",
+    "sub_categories": []
+  },
+  "law": {
+    "name": "Law",
+    "sub_categories": []
+  },
+  "library": {
+    "name": "Library & Museum Studies",
+    "sub_categories": []
+  },
+  "medicine": {
+    "name": "Medicine",
+    "sub_categories": []
+  },
+  "military": {
+    "name": "Military Sciences",
+    "sub_categories": []
+  },
+  "public_admin": {
+    "name": "Public Administration",
+    "sub_categories": []
+  },
+  "public_policy": {
+    "name": "Public Policy",
+    "sub_categories": []
+  },
+  "social_work": {
+    "name": "Social Work",
+    "sub_categories": []
+  },
+  "transport_ed": {
+    "name": "Transportation",
+    "sub_categories": []
+  },
+  "tertiary_ed": {
+    "name": "Tertiary & Higher Education",
+    "sub_categories": ["anthropology", "archaeology", "history", "linguistics", "philosophy", "religion", "divinity",
+      "culinary_arts", "literature", "performing_arts", "visual_arts", "economics", "geography",
+      "interdisciplinary_studies", "area_studies", "cultural_studies", "gender_studies", "organisational_studies",
+      "political_science", "psychology", "sociology", "biology", "chemistry", "earth_sciences", "physics",
+      "space_sciences", "astronomy", "comp_sci", "logic", "pure_maths", "applied_maths", "stats", "systems_science",
+      "agriculture_studies", "architecture", "business", "education_studies", "engineering", "env_studies",
+      "consumer_science", "physical_ed", "journalism", "law", "library", "medicine", "military", "public_admin",
+      "public_policy", "social_work", "transport_ed"
+    ]
+  },
+  "preschool": {
+    "name": "Preschool & Daycares",
+    "sub_categories": []
+  },
+  "primary_ed": {
+    "name": "Primary & Secondary Education",
+    "sub_categories": []
+  },
+  "vocational": {
+    "name": "Vocational",
+    "sub_categories": []
+  },
+  "special_ed": {
+    "name": "Special",
+    "sub_categories": []
+  },
+  "education": {
+    "name": "Education",
+    "sub_categories": ["preschool", "primary_ed", "tertiary_ed", "vocational", "special_ed"]
+  },
+  "electrical": {
+    "name": "Electrical Power",
+    "sub_categories": []
+  },
+  "oil": {
+    "name": "Oil, Gas & Petroleum",
+    "sub_categories": []
+  },
+  "coal": {
+    "name": "Coal",
+    "sub_categories": []
+  },
+  "nuclear": {
+    "name": "Nuclear",
+    "sub_categories": []
+  },
+  "renewable": {
+    "name": "Renewable & Alternative",
+    "sub_categories": []
+  },
+  "energy": {
+    "name": "Energy Production & Distribution",
+    "sub_categories": ["electrical", "oil", "coal", "nuclear", "renewable"]
+  },
+  "amusement_parks": {
+    "name": "Amusement Parks",
+    "sub_categories": []
+  },
+  "animation": {
+    "name": "Animation",
+    "sub_categories": []
+  },
+  "circus": {
+    "name": "Circus",
+    "sub_categories": []
+  },
+  "event_management": {
+    "name": "Event Management",
+    "sub_categories": []
+  },
+  "film": {
+    "name": "Film",
+    "sub_categories": []
+  },
+  "gambling": {
+    "name": "Gambling",
+    "sub_categories": []
+  },
+  "gaming": {
+    "name": "Video Games",
+    "sub_categories": []
+  },
+  "media": {
+    "name": "Media",
+    "sub_categories": []
+  },
+  "music": {
+    "name": "Music",
+    "sub_categories": []
+  },
+  "adult_entertainment": {
+    "name": "Adult Entertainment",
+    "sub_categories": []
+  },
+  "sports": {
+    "name": "Sports Management & Event Promotion",
+    "sub_categories": []
+  },
+  "agencies": {
+    "name": "Talent Agencies",
+    "sub_categories": []
+  },
+  "theatre": {
+    "name": "Theatre Production",
+    "sub_categories": []
+  },
+  "museums": {
+    "name": "Museums & Art Galleries",
+    "sub_categories": []
+  },
+  "entertainment": {
+    "name": "Entertainment",
+    "sub_categories": ["amusement_parks", "animation", "circus", "event_management", "film", "gambling", "gaming",
+      "media", "music", "adult_entertainment", "sports", "agencies", "theatre", "museums"]
+  },
+  "banks": {
+    "name": "Banks & Credit Unions",
+    "sub_categories": []
+  },
+  "insurance": {
+    "name": "Insurance",
+    "sub_categories": []
+  },
+  "accountancy": {
+    "name": "Accountancy",
+    "sub_categories": []
+  },
+  "stock_brokers": {
+    "name": "Stock Brokerages",
+    "sub_categories": []
+  },
+  "investment": {
+    "name": "Investment Funds",
+    "sub_categories": []
+  },
+  "crypto": {
+    "name": "Cryptocurrency Providers",
+    "sub_categories": []
+  },
+  "financial": {
+    "name": "Financial",
+    "sub_categories": ["banks", "insurance", "accountancy", "stock_brokers", "investment", "crypto"]
+  },
+  "food_manufacturing": {
+    "name": "Manufacturing, Agrichemicals & Farm Machinery",
+    "sub_categories": []
+  },
+  "grocery": {
+    "name": "Grocery Stores & Supermarkets",
+    "sub_categories": []
+  },
+  "food_tech": {
+    "name": "Food Technology and Research & Development",
+    "sub_categories": []
+  },
+  "food": {
+    "name": "Food",
+    "sub_categories": ["food_manufacturing", "grocery", "food_tech"]
+  },
+  "health": {
+    "name": "Health Care",
+    "sub_categories": []
+  },
+  "catering": {
+    "name": "Catering & Restaurants",
+    "sub_categories": []
+  },
+  "lodging": {
+    "name": "Lodging",
+    "sub_categories": []
+  },
+  "tourism": {
+    "name": "Tourism",
+    "sub_categories": []
+  },
+  "facilities": {
+    "name": "Facilities",
+    "sub_categories": []
+  },
+  "hospitality": {
+    "name": "Hospitality",
+    "sub_categories": ["catering", "lodging", "tourism", "facilities"]
+  },
+  "legal": {
+    "name": "Legal & Lobbying Services",
+    "sub_categories": []
+  },
+  "end_products": {
+    "name": "End Products",
+    "sub_categories": []
+  },
+  "raw_materials": {
+    "name": "Raw Materials",
+    "sub_categories": []
+  },
+  "machining": {
+    "name": "Machining",
+    "sub_categories": []
+  },
+  "manufacturing": {
+    "name": "",
+    "sub_categories": ["end_products", "raw_materials", "machining"]
+  },
+  "broadcasting": {
+    "name": "Broadcasting",
+    "sub_categories": []
+  },
+  "internet": {
+    "name": "Internet",
+    "sub_categories": []
+  },
+  "news": {
+    "name": "News",
+    "sub_categories": []
+  },
+  "publishing": {
+    "name": "Publishing",
+    "sub_categories": []
+  },
+  "mass_media": {
+    "name": "Mass Media",
+    "sub_categories": ["broadcasting", "internet", "news", "publishing"]
+  },
+  "mining": {
+    "name": "Mining",
+    "sub_categories": []
+  },
+  "professional_services": {
+    "name": "Professional Services",
+    "sub_categories": []
+  },
+  "telecom": {
+    "name": "Telecommunications",
+    "sub_categories": []
+  },
+  "transport": {
+    "name": "Transport",
+    "sub_categories": []
+  },
+  "drinking_water": {
+    "name": "Drinking Water",
+    "sub_categories": []
+  },
+  "waste_water": {
+    "name": "Wastewater",
+    "sub_categories": []
+  },
+  "water": {
+    "name": "Water",
+    "sub_categories": ["drinking_water", "waste_water"]
+  },
+  "charities": {
+    "name": "Charitable Organisations",
+    "sub_categories": []
+  },
+  "human_rights": {
+    "name": "Human Rights & Social Advocacy Groups",
+    "sub_categories": []
+  },
+  "foundations": {
+    "name": "Foundations",
+    "sub_categories": []
+  },
+  "welfare": {
+    "name": "Social Welfare Organisations & Employee Associations",
+    "sub_categories": []
+  },
+  "unions": {
+    "name": "Unions",
+    "sub_categories": []
+  },
+  "trade_associations": {
+    "name": "Trade & Professional Associations",
+    "sub_categories": []
+  },
+  "pensions": {
+    "name": "Pension Trusts",
+    "sub_categories": []
+  },
+  "veterans": {
+    "name": "Veterans' Organisations",
+    "sub_categories": []
+  },
+  "religious": {
+    "name": "Religious & Apostolic Associations",
+    "sub_categories": []
+  },
+  "sports_clubs": {
+    "name": "Sporting & Recreational Clubs",
+    "sub_categories": []
+  },
+  "cultural_clubs": {
+    "name": "Cultural & Social Societies",
+    "sub_categories": []
+  },
+  "not_for_profit": {
+    "name": "Not-for-Profit",
+    "sub_categories": ["charities", "human_rights", "foundations", "welfare", "unions", "trade_associations",
+      "pensions", "veterans", "religious", "sports_clubs", "cultural_clubs"]
+  },
+  "defence": {
+    "name": "Defence & Intelligence",
+    "sub_categories": []
+  },
+  "law_enforcement": {
+    "name": "Law Enforcement",
+    "sub_categories": []
+  },
+  "emergency_services": {
+    "name": "Emergency Services",
+    "sub_categories": []
+  },
+  "courts": {
+    "name": "Legislature & Courts",
+    "sub_categories": []
+  },
+  "local_gov": {
+    "name": "Local Government",
+    "sub_categories": []
+  },
+  "state_gov": {
+    "name": "State Government",
+    "sub_categories": []
+  },
+  "federal_gov": {
+    "name": "Federal Government",
+    "sub_categories": []
+  },
+  "government": {
+    "name": "Government",
+    "sub_categories": ["defence", "law_enforcement", "emergency_services", "courts", "local_gov", "state_gov",
+      "federal_gov"]
+  },
+  "general_public": {
+    "name": "General Public",
+    "sub_categories": []
+  }
+}
