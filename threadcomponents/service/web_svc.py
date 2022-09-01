@@ -38,6 +38,8 @@ class WebService:
         self.is_local = is_local
         self.tokenizer_sen = None
         self.cached_responses = dict()
+        # A dictionary keeping track of the possible report categories
+        self.categories_dict = dict()
         # Initialise app route info
         self.__app_routes = self._initialise_route_values(route_prefix_param=route_prefix)
 

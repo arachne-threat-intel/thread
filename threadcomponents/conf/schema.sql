@@ -43,6 +43,27 @@ CREATE TABLE IF NOT EXISTS report_sentences (
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS categories (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- The category key
+    keyname TEXT UNIQUE,
+    -- The category name
+    name TEXT,
+    -- The display name
+    display_name TEXT
+);
+
+CREATE TABLE IF NOT EXISTS report_categories (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- The UID of the report
+    report_uid VARCHAR(60),
+    -- The UID of the category
+    category_keyname VARCHAR(60),
+    UNIQUE (report_uid, category_keyname),
+    FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE,
+    FOREIGN KEY(category_keyname) REFERENCES categories(keyname) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS true_positives (
     uid VARCHAR(60) PRIMARY KEY,
     -- Attack ID

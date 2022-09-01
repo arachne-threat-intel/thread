@@ -302,6 +302,50 @@ class DataService:
                 [await self.dao.insert_generate_uid('true_positives', dict(attack_uid=k, true_positive=defang_text(x)))
                  for x in v['example_uses']]
 
+    async def insert_category_json_data(self, buildfile=os.path.join('threadcomponents', 'conf', 'categories',
+                                                                     'industry.json')):
+        """Function to read in the categories json file and insert data into the database."""
+        buildfile = os.path.join(self.dir_prefix, buildfile)  # prefix directory path if there is one
+        # The current categories saved in the db
+        cur_categories = await self.dao.get_column_as_list(table='categories', column='keyname')
+        # Load the JSON file
+        with open(buildfile, 'r') as infile:
+            categories_dict = self.web_svc.categories_dict = json.load(infile)
+        # Dictionaries to hold the display names and parent-category names for categories
+        parent_cat_names, display_names = {}, {}
+        # Loop through category list once to map all sub-categories to their parent categories
+        for keyname, entry in categories_dict.items():
+            if keyname in cur_categories:
+                continue
+            sub_categories = entry.get('sub_categories', [])
+            for sub_cat in sub_categories:
+                parent_cat_names[sub_cat] = keyname
+        # Loop through a second time to construct the display name of categories
+        for keyname, entry in categories_dict.items():
+            if keyname in cur_categories:
+                continue
+            # While we have a parent category; traversed less-than 3 categories; and not repeated parent categories...
+            parent_cat_name = parent_cat_names.get(keyname)
+            parent_history = {keyname}
+            display_name = entry['name']
+            count = 0
+            while (parent_cat_name is not None) and (count < 3) and (parent_cat_name not in parent_history):
+                count += 1
+                parent_history.add(parent_cat_name)
+                parent_cat_entry = categories_dict.get(parent_cat_name)
+                if not parent_cat_entry:
+                    break
+                # ...make the parent category name prefix the current display name
+                display_name = parent_cat_entry['name'] + ' - ' + display_name
+                parent_cat_name = parent_cat_names.get(parent_cat_name)
+            display_names[keyname] = display_name
+        # Finally, insert the categories into the database
+        for keyname, entry in categories_dict.items():
+            if keyname in cur_categories:
+                continue
+            await self.dao.insert_generate_uid('categories', dict(keyname=keyname, name=entry['name'],
+                                                                  display_name=display_names[keyname]))
+
     async def status_grouper(self, status, criteria=None):
         # The search based on the given status
         search = dict(current_status=status)
