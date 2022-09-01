@@ -78,6 +78,7 @@ async def background_tasks(taxii_local=ONLINE_BUILD_SOURCE, build=False, json_fi
                 sys.exit()
         elif taxii_local == OFFLINE_BUILD_SOURCE and json_file:
             await data_svc.insert_attack_json_data(json_file)
+        await data_svc.insert_category_json_data()
 
 
 async def init(host, port, app_setup_func=None):
