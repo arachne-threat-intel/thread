@@ -267,6 +267,37 @@ class RestService:
         await self.check_report_status(report_id=report_id, update_if_false=True)
         return REST_SUCCESS
 
+    async def set_report_categories(self, request, criteria=None):
+        default_error = dict(error='Error updating report categories.')
+        # Do initial report checks
+        report, error = await self._report_pre_check(request, criteria, 'update-report-categories',
+                                                     [UID, 'current_status'], None)
+        if error:
+            return default_error
+        # Check all request parameters
+        categories = criteria.get('categories', [])
+        report_id, r_status = report[UID], report['current_status']
+        if (not categories) or (not isinstance(categories, list)):
+            return REST_IGNORED
+        if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
+            return default_error
+        # Retrieve current report categories
+        query = 'SELECT category_keyname FROM report_categories WHERE report_uid = %s' % self.dao.db_qparam
+        current = await self.dao.raw_select(query, parameters=tuple([report_id]), single_col=True)
+        valid_categories = set(self.web_svc.categories_dict.keys()).intersection(categories)
+        to_add = valid_categories - set(current)
+        to_delete = set(current) - valid_categories
+        sql_list = []
+        # Save the associations
+        for category in to_add:
+            sql_list.append(await self.dao.insert_generate_uid(
+                'report_categories', dict(report_uid=report_id, category_keyname=category), return_sql=True))
+        for category in to_delete:
+            sql_list.append(await self.dao.delete(
+                'report_categories', dict(report_uid=report_id, category_keyname=category), return_sql=True))
+        await self.dao.run_sql_list(sql_list=sql_list)
+        return REST_SUCCESS
+
     async def update_report_dates(self, request, criteria=None):
         default_error, success = dict(error='Error updating report dates.'), REST_SUCCESS.copy()
         # Do initial report checks
