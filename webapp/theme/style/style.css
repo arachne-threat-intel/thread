@@ -401,3 +401,8 @@ input[type="checkbox"].confirmed-technique {
 table#confirmedSentenceInfo td {
   border-bottom: none;
 }
+
+#reportInfoAccordion {
+    margin: 3rem;
+    margin-left: 2.3rem;
+}
