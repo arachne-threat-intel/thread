@@ -31,6 +31,8 @@
   </div>
 </div>
 
+{% include "report-data.html" %}
+
 <div class="row">
   <div class="col reportSentencesDiv">
     {% for elmt in final_html %}
@@ -67,39 +69,6 @@
             <hr>
           {% endif %}
       {% endif %}
-      <form id="reportDatesForm">{# Report date fields #}
-        <div class="row">
-          <label for="dateOf" class="col-sm-4 col-form-label">Article Publication Date:</label>
-          <div class="col-sm-8">
-            <input type="date" class="form-control" id="dateOf" value="{{date_written}}" required {% if completed %}readonly{% endif %}>
-          </div>
-        </div>
-        <br>
-        <span><b>Techniques Discussed</b></span>
-        <br><br>
-        <div class="row">
-          <label for="startDate" class="col-sm-4 col-form-label">Start Date:</label>
-          <div class="col-sm-8">
-            <input type="date" class="form-control" id="startDate" value="{{start_date}}" {% if completed %}readonly{% endif %}>
-          </div>
-        </div>
-        <div class="d-flex">
-          <input type="checkbox" id="dateRange" class="report-submission-checkbox" onchange="dateRangeChecked(this)"
-                 {% if same_dates %}checked{% endif %} {% if completed %}disabled{% endif %}>
-          <label for="dateRange" id="dateRangeLabel"><small>No time range for techniques?</small></label>
-        </div>
-        <div id="endDateDiv" class="row" {% if same_dates %}hidden{% endif %}>
-          <label for="endDate" class="col-sm-4 col-form-label">End Date:</label>
-          <div class="col-sm-8">
-            <input type="date" class="form-control" id="endDate" value="{{end_date}}" {% if completed %}readonly{% endif %}>
-          </div>
-        </div>
-        {% if not completed %}
-          <br>
-          <button type="button" onclick="updateReportDates('{{title_quoted}}')" class="btn btn-md btn-outline-secondary">Update Report Dates</button>
-        {% endif %}
-      </form>
-      <hr>
       {% if not completed %}{# Incomplete reports: display 'Techniques Found' panel to approve/reject attacks #}
         <span class='spanMissingTechniqueView'><b>Techniques Found</b></span>
         <br><br>
