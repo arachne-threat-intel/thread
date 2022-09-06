@@ -406,3 +406,7 @@ table#confirmedSentenceInfo td {
     margin: 3rem;
     margin-left: 2.3rem;
 }
+
+.missingTechOpt {
+    overflow: auto;
+}
