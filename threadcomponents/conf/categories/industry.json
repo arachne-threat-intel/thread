@@ -473,7 +473,7 @@
     "sub_categories": []
   },
   "manufacturing": {
-    "name": "",
+    "name": "Manufacturing",
     "sub_categories": ["end_products", "raw_materials", "machining"]
   },
   "broadcasting": {
