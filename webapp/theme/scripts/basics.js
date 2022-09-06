@@ -486,6 +486,9 @@ function addDeleteListener() {
 }
 
 function addMissingTechnique() {
+  if (!document.getElementById("missingTechniqueSelect").reportValidity()) {
+    return;
+  }
   // If an image is currently not highlighted (don't imply images can be mapped to attacks)
   if($(`.${highlightClassImg}`).length == 0) {
     uid = $("#missingTechniqueSelect :selected").val();
