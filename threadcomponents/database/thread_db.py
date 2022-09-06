@@ -260,7 +260,7 @@ class ThreadDB(ABC):
         """Method to return a column from a db table as a list."""
         return await self.raw_select('SELECT %s FROM %s' % (column, table), single_col=True)
 
-    async def get_dict_value_as_key(self, table, column_key, columns):
+    async def get_dict_value_as_key(self, column_key, table=None, columns=None, sql=None, sql_params=None):
         """Method to return a dictionary of results where the key is a column's value.
            Ideally, we'd want to use Pivot tables, but you need to know the column-values in advance."""
         def on_fetch(results):
@@ -271,18 +271,18 @@ class ThreadDB(ABC):
                 temp_key = temp_dict.pop(column_key)
                 converted[temp_key] = temp_dict
             return converted
-        # We currently don't have a use-case for this and other clauses (WHERE, etc) so leaving as-is for now
-        sql = 'SELECT %s FROM ' + table
-        # Insert the columns in the SQL statement depending on its type
-        # Need to add the column-key to the query, so we get the values for that column
-        if isinstance(columns, str):
-            sql = sql % (columns + ', ' + column_key)
-        elif isinstance(columns, list):
-            columns.append(column_key)
-            sql = sql % ', '.join(columns)
-        else:
-            raise TypeError('Argument `columns` should be str or list.')
-        return await self._execute_select(sql, on_fetch=on_fetch)
+        if not sql:  # if no SQL was provided, construct one
+            sql = 'SELECT %s FROM ' + table
+            # Insert the columns in the SQL statement depending on its type
+            # Need to add the column-key to the query, so we get the values for that column
+            if isinstance(columns, str):
+                sql = sql % (columns + ', ' + column_key)
+            elif isinstance(columns, list):
+                columns.append(column_key)
+                sql = sql % ', '.join(columns)
+            else:
+                raise TypeError('Argument `columns` should be str or list.')
+        return await self._execute_select(sql, parameters=sql_params, on_fetch=on_fetch)
 
     async def initialise_column_names(self):
         """Method to initialise the map used to store column names for the db tables."""

@@ -260,7 +260,7 @@ class WebAPI:
             raise web.HTTPNotFound()
         # Proceed to gather the data for the template
         sentences = await self.data_svc.get_report_sentences(report_id)
-        categories = await self.data_svc.get_report_categories(report_id)
+        categories = await self.data_svc.get_report_categories_for_display(report_id, include_keynames=True)
         original_html = await self.dao.get('original_html', equal=dict(report_uid=report_id),
                                            order_by_asc=dict(elem_index=1))
         final_html = await self.web_svc.build_final_html(original_html, sentences)
@@ -313,7 +313,7 @@ class WebAPI:
             raise web.HTTPNotFound()
 
         # Get the report categories
-        categories = await self.data_svc.get_report_categories(report_id, display_names=True)
+        categories = await self.data_svc.get_report_categories_for_display(report_id)
         # Create the layer name and description
         enterprise_layer_description = f"Enterprise techniques used by '{report_title}', ATT&CK"
         version = '1.0'
@@ -368,7 +368,7 @@ class WebAPI:
         # Continue with the method and retrieve the report's sentences
         sentences = await self.data_svc.get_report_sentences_with_attacks(report_id=report_id)
         # Get the report categories
-        categories = await self.data_svc.get_report_categories(report_id, display_names=True)
+        categories = await self.data_svc.get_report_categories_for_display(report_id)
 
         dd = dict()
         # Default background which will be replaced by logo via client-side
