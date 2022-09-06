@@ -372,9 +372,14 @@ class DataService:
         query = 'SELECT keyname, display_name FROM categories'
         return await self.dao.raw_select(query)
 
-    async def get_report_categories(self, report_id):
+    async def get_report_categories(self, report_id, display_names=False):
         """Function to retrieve the categories for a report given a report ID."""
-        query = 'SELECT category_keyname FROM report_categories WHERE report_uid = %s' % self.dao.db_qparam
+        if display_names:
+            query = "SELECT display_name FROM (categories INNER JOIN report_categories ON " \
+                    "categories.keyname = report_categories.category_keyname)"
+        else:
+            query = 'SELECT category_keyname FROM report_categories'
+        query += ' WHERE report_uid = %s' % self.dao.db_qparam
         return await self.dao.raw_select(query, parameters=tuple([report_id]), single_col=True)
 
     async def get_report_sentences(self, report_id):
@@ -488,8 +493,7 @@ class DataService:
             # create a technique object and add it to the list of techniques.
             technique = {'model_score': hit['initial_model_match'], 'techniqueID': hit['attack_tid'],
                          'comment': await self.web_svc.remove_html_markup_and_found(hit['text']),
-                         'tech_start_date': hit.get('tech_start_date') or 'unspecified',
-                         'tech_end_date': hit.get('tech_end_date') or 'unspecified'}
+                         'tech_start_date': hit.get('tech_start_date'), 'tech_end_date': hit.get('tech_end_date')}
             techniques.append(technique)
         # Return the list of confirmed techniques
         return techniques
