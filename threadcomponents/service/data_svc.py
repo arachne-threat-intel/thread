@@ -367,7 +367,18 @@ class DataService:
             report.update(dict(link=edit_link, title_quoted=title_quoted))
         return reports
 
+    async def get_all_categories(self):
+        """Function to retrieve all the possible categories for a report."""
+        query = 'SELECT keyname, display_name FROM categories'
+        return await self.dao.raw_select(query)
+
+    async def get_report_categories(self, report_id):
+        """Function to retrieve the categories for a report given a report ID."""
+        query = 'SELECT category_keyname FROM report_categories WHERE report_uid = %s' % self.dao.db_qparam
+        return await self.dao.raw_select(query, parameters=tuple([report_id]), single_col=True)
+
     async def get_report_sentences(self, report_id):
+        """Function to retrieve all report sentences for a given report ID."""
         return await self.dao.get('report_sentences', equal=dict(report_uid=report_id), order_by_asc=dict(sen_index=1))
 
     async def get_report_sentences_with_attacks(self, report_id=''):

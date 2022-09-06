@@ -378,6 +378,19 @@ function updateAttackTime(reportTitle) {
   );
 }
 
+function setReportCategories(reportTitle) {
+  // Get selected-category list and send request for updating
+  var categories = [];
+  $(".categoryOpt:selected").each(function() {
+    categories.push($(this).prop("value"));
+  });
+  if (!categories.length) {  // TODO check if mandatory
+    alert("No categories selected.");
+    return;
+  }
+  restRequest("POST", {"index":"set_report_categories", "report_title": reportTitle, "categories": categories});
+}
+
 function importFont() {
   // Obtain the filepath of the JSON containing the font
   var vfsPath = $("script#arachneVfsJson").data("json-path");
