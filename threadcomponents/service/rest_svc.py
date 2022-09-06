@@ -282,7 +282,7 @@ class RestService:
         if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
             return default_error
         # Retrieve current report categories
-        current = await self.data_svc.get_report_categories(report_id)
+        current = await self.data_svc.get_report_category_keynames(report_id)
         valid_categories = set(self.web_svc.categories_dict.keys()).intersection(categories)
         to_add = valid_categories - set(current)
         to_delete = set(current) - valid_categories

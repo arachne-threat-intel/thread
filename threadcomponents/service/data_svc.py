@@ -182,7 +182,7 @@ class DataService:
         attack_data = references
         logging.info('Finished...now creating the database.')
 
-        cur_attacks = (await self.dao.get_dict_value_as_key('attack_uids', 'uid', ['name', 'inactive'])) or dict()
+        cur_attacks = (await self.dao.get_dict_value_as_key('uid', table='attack_uids', columns=['name', 'inactive'])) or dict()
         cur_uids = set(cur_attacks.keys())
         retrieved_uids = set(attack_data.keys())
         added_attacks = retrieved_uids - cur_uids
@@ -372,15 +372,25 @@ class DataService:
         query = 'SELECT keyname, display_name FROM categories'
         return await self.dao.raw_select(query)
 
-    async def get_report_categories(self, report_id, display_names=False):
-        """Function to retrieve the categories for a report given a report ID."""
-        if display_names:
-            query = "SELECT display_name FROM (categories INNER JOIN report_categories ON " \
-                    "categories.keyname = report_categories.category_keyname)"
-        else:
-            query = 'SELECT category_keyname FROM report_categories'
-        query += ' WHERE report_uid = %s' % self.dao.db_qparam
+    async def get_report_category_keynames(self, report_id):
+        """Function to retrieve the category keynames for a report given a report ID."""
+        query = 'SELECT category_keyname FROM report_categories WHERE report_uid = %s' % self.dao.db_qparam
         return await self.dao.raw_select(query, parameters=tuple([report_id]), single_col=True)
+
+    async def get_report_categories_for_display(self, report_id, include_keynames=False):
+        """Function to retrieve the categories for a report given a report ID."""
+        # We are definitely returning the display name; include the keyname if applicable
+        columns = ['display_name']
+        if include_keynames:
+            columns.append('keyname')
+        query = "SELECT " + (', '.join(columns)) + " FROM (categories INNER JOIN report_categories ON " \
+                "categories.keyname = report_categories.category_keyname)"
+        query += ' WHERE report_uid = %s' % self.dao.db_qparam
+        # If we are including keynames, return a dictionary where each entry is searchable by the keyname
+        if include_keynames:
+            return await self.dao.get_dict_value_as_key('keyname', sql=query, sql_params=tuple([report_id]))
+        # Else return the list of display names for this report
+        return await self.dao.raw_select(query, parameters=tuple([report_id]), single_col=len(columns) == 1)
 
     async def get_report_sentences(self, report_id):
         """Function to retrieve all report sentences for a given report ID."""
