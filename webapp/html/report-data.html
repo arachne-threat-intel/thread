@@ -17,7 +17,7 @@
             </div>
           </div>
           <br>
-          <span><b>Techniques Discussed</b></span>
+          <span><b>Confirmed Techniques</b></span>
           <br><br>
           <div class="row">
             <label for="startDate" class="col-sm-4 col-form-label">Start Date:</label>
@@ -38,7 +38,25 @@
           </div>
           {% if not completed %}
             <br>
-            <button type="button" onclick="updateReportDates('{{title_quoted}}')" class="btn btn-md btn-outline-secondary">Update Report Dates</button>
+            <button type="button" onclick="updateReportDates('{{title_quoted}}')" class="btn btn-md btn-primary">Update Report Dates</button>
+          {% endif %}
+        </form>
+        <form id="reportCategoriesForm">{# Report categories #}
+          <div class="row">
+            <label for="categorySelect" class="col-sm-4 col-form-label">Report Categories</label>
+            <div class="col-sm-8">
+              <select id="categorySelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
+                      title="Select categories" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}>
+                {% for category_entry in category_list %}
+                    <option class="categoryOpt" value="{{category_entry.keyname}}" {% if category_entry.keyname in categories %}selected{% endif %}>{{category_entry.display_name}}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <!-- TODO display list of categories if count > 1 -->
+          </div>
+          {% if not completed %}
+            <br>
+            <button type="button" onclick="setReportCategories('{{title_quoted}}')" class="btn btn-md btn-primary">Set Report Categories</button>
           {% endif %}
         </form>
       </div>
