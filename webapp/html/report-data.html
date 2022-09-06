@@ -11,16 +11,17 @@
       <div class="accordion-body">
         <form id="reportDatesForm">{# Report date fields #}
           <div class="row">
-            <label for="dateOf" class="col-sm-4 col-form-label">Article Publication Date:</label>
+            <label for="dateOf" class="col-sm-4 col-form-label"><b>Article Publication Date:</b></label>
             <div class="col-sm-8">
               <input type="date" class="form-control" id="dateOf" value="{{date_written}}" required {% if completed %}readonly{% endif %}>
             </div>
           </div>
           <br>
           <span><b>Confirmed Techniques</b></span>
+          <br><small>You can set Start/End dates for individual confirmed techniques after selecting a sentence.</small>
           <br><br>
           <div class="row">
-            <label for="startDate" class="col-sm-4 col-form-label">Start Date:</label>
+            <label for="startDate" class="col-sm-4 col-form-label"><b>Start Date:</b></label>
             <div class="col-sm-8">
               <input type="date" class="form-control" id="startDate" value="{{start_date}}" {% if completed %}readonly{% endif %}>
             </div>
@@ -31,7 +32,7 @@
             <label for="dateRange" id="dateRangeLabel"><small>No time range for techniques?</small></label>
           </div>
           <div id="endDateDiv" class="row" {% if same_dates %}hidden{% endif %}>
-            <label for="endDate" class="col-sm-4 col-form-label">End Date:</label>
+            <label for="endDate" class="col-sm-4 col-form-label"><b>End Date:</b></label>
             <div class="col-sm-8">
               <input type="date" class="form-control" id="endDate" value="{{end_date}}" {% if completed %}readonly{% endif %}>
             </div>
@@ -40,10 +41,10 @@
             <br>
             <button type="button" onclick="updateReportDates('{{title_quoted}}')" class="btn btn-md btn-primary">Update Report Dates</button>
           {% endif %}
-        </form>
+        </form><hr>
         <form id="reportCategoriesForm">{# Report categories #}
           <div class="row">
-            <label for="categorySelect" class="col-sm-4 col-form-label">Report Categories</label>
+            <label for="categorySelect" class="col-sm-4 col-form-label"><b>Report Categories:</b></label>
             <div class="col-sm-8">
               <select id="categorySelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
                       title="Select categories" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}>

@@ -300,9 +300,9 @@ class WebAPI:
         try:
             # Ensure a valid report title has been passed in the request
             report_id, report_status = report[0]['uid'], report[0]['current_status']
-            date_of = report[0]['date_written_str'] or 'unspecified'
-            start_date = report[0]['start_date_str'] or 'unspecified'
-            end_date = report[0]['end_date_str'] or 'unspecified'
+            date_of = report[0]['date_written_str']
+            start_date = report[0]['start_date_str']
+            end_date = report[0]['end_date_str']
         except (KeyError, IndexError):
             raise web.HTTPNotFound()
         # Found a valid report, check if protected by token
@@ -312,6 +312,8 @@ class WebAPI:
                                  self.report_statuses.COMPLETED.value]:
             raise web.HTTPNotFound()
 
+        # Get the report categories
+        categories = await self.data_svc.get_report_categories(report_id, display_names=True)
         # Create the layer name and description
         enterprise_layer_description = f"Enterprise techniques used by '{report_title}', ATT&CK"
         version = '1.0'
@@ -321,8 +323,9 @@ class WebAPI:
         # Enterprise navigator layer
         enterprise_layer = {
             'filename': sanitise_filename(report_title), 'name': report_title, 'domain': 'mitre-enterprise',
-            'description': enterprise_layer_description, 'version': '2.2', 'techniques': [],
+            'description': enterprise_layer_description, 'version': '2.2', 'categories': categories,
             'article_date_published': date_of, 'report_start_date': start_date, 'report_end_date': end_date,
+            'techniques': [],
             # white for non-used, blue for used
             'gradient': {'colors': ['#ffffff', '#66b1ff'], 'minValue': 0, 'maxValue': 1},
             'legendItems': [{'label': f'used by {report_title}', 'color': '#66b1ff'}]
@@ -364,6 +367,8 @@ class WebAPI:
             raise web.HTTPNotFound()
         # Continue with the method and retrieve the report's sentences
         sentences = await self.data_svc.get_report_sentences_with_attacks(report_id=report_id)
+        # Get the report categories
+        categories = await self.data_svc.get_report_categories(report_id, display_names=True)
 
         dd = dict()
         # Default background which will be replaced by logo via client-side
@@ -400,6 +405,9 @@ class WebAPI:
         dd['content'].append(dict(text='\n'))
         dd['content'].append(dict(text='Techniques End Date: %s' % end_date, style='bold'))
         dd['content'].append(dict(text='\n'))  # Blank line after technique dates
+        dd['content'].append(dict(text='Categories: ', style='bold'))
+        dd['content'].append(dict(ul=categories))
+        dd['content'].append(dict(text='\n'))  # Blank line after categories
         seen_sentences = set()  # set to prevent duplicate sentences being exported
         for sentence in sentences:
             sen_id, sen_text = sentence['uid'], sentence['text']
