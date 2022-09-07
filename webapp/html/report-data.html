@@ -53,8 +53,12 @@
                 {% endfor %}
               </select>
             </div>
-            <!-- TODO display list of categories if count > 1 -->
           </div>
+          <ul id="currentCategoryList">{# Display the list of categories outside the select-box in case list is long #}
+            {% for report_category in categories %}
+              <li class="reportCategoryLi" id="{{report_category}}">{{categories[report_category]['display_name']}}</li>
+            {% endfor %}
+          </ul>
           {% if not completed %}
             <br>
             <button type="button" onclick="setReportCategories('{{title_quoted}}')" class="btn btn-md btn-primary">Set Report Categories</button>

@@ -388,7 +388,18 @@ function setReportCategories(reportTitle) {
     alert("No categories selected.");
     return;
   }
-  restRequest("POST", {"index":"set_report_categories", "report_title": reportTitle, "categories": categories});
+  restRequest("POST", {"index":"set_report_categories", "report_title": reportTitle, "categories": categories},
+              setReportCategoryList);
+}
+
+function setReportCategoryList() {
+  // Remove currently displayed list and rebuild a new list with the recently saved categories
+  $("ul#currentCategoryList li").remove();
+  $(".categoryOpt:selected").each(function() {
+    var tempLi = "<li class='reportCategoryLi' id=" + $(this).prop("value") + ">";
+    tempLi += $(this).prop("text") + "</li>"
+    $("ul#currentCategoryList").append(tempLi);
+  });
 }
 
 function importFont() {
