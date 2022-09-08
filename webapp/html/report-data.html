@@ -47,9 +47,10 @@
             <label for="categorySelect" class="col-sm-4 col-form-label"><b>Report Categories:</b></label>
             <div class="col-sm-8">
               <select id="categorySelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
-                      title="Select categories" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}>
+                      title="Select categories" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
+                      onchange="onchangeReportCategories(this)">
                 {% for category_entry in category_list %}
-                    <option class="categoryOpt" value="{{category_entry.keyname}}" {% if category_entry.keyname in categories %}selected{% endif %}>{{category_entry.display_name}}</option>
+                  <option class="categoryOpt" value="{{category_entry.keyname}}" {% if category_entry.keyname in categories %}selected{% endif %}>{{category_entry.display_name}}</option>
                 {% endfor %}
               </select>
             </div>
