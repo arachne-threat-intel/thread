@@ -25,6 +25,11 @@ var exoConfig = {
   bolditalics: "Exo-BoldItalic.ttf"
 };
 var exoFontReady = false;
+// HTML for icons when adding/removing list items
+var addLiHTML = "<a class= 'list-delta' data-bs-toggle='tooltip' data-bs-placement='top' title='Pending: This is a new selection.'>";
+addLiHTML += "<span class='fa-solid fa-circle-plus glyphicon glyphicon-plus-sign text-success'></span></a>";
+var remLiHTML = "<a class= 'list-delta' data-bs-toggle='tooltip' data-bs-placement='top' title='Pending: This has been unselected.'>";
+remLiHTML += "<span class='fas fa-trash-alt glyphicon glyphicon-trash text-danger'></span></a>";
 
 function restRequest(type, data, callback=null, url=restUrl) {
   $.ajax({
@@ -396,10 +401,45 @@ function setReportCategoryList() {
   // Remove currently displayed list and rebuild a new list with the recently saved categories
   $("ul#currentCategoryList li").remove();
   $(".categoryOpt:selected").each(function() {
-    var tempLi = "<li class='reportCategoryLi' id=" + $(this).prop("value") + ">";
-    tempLi += $(this).prop("text") + "</li>"
+    var tempLi = "<li class='reportCategoryLi' id=" + $(this).prop("value") + ">" + $(this).prop("text") + "</li>";
     $("ul#currentCategoryList").append(tempLi);
   });
+}
+
+function onchangeReportCategories(e) {
+  var selectedCategories = $(e).val();
+  var displayedCategories = [];
+  // Loop through originally displayed categories
+  $("ul#currentCategoryList li.reportCategoryLi").each(function() {
+    var catKey = $(this).prop("id");
+    displayedCategories.push(catKey);
+    if (selectedCategories.includes(catKey)) {
+      // The selected category is already displayed; display no plus/delete signs
+      $(this).children('.list-delta').remove();
+    } else {
+      // This is a displayed category that has been unselected; display the delete symbol if it is not already there
+      if (!$(this).children('.list-delta').length) {
+        $(this).prepend(remLiHTML);
+      }
+    }
+  });
+  // Loop through any temporarily added categories (new selections)
+  $("ul#currentCategoryList li.reportCategoryLiTemp").each(function() {
+    var catKey = $(this).prop("id");
+    if (!selectedCategories.includes(catKey)) {
+      // This was selected and then unselected; remove the li
+      $(this).remove();
+    }
+  });
+  // Add new li's for newly-selected categories if they do not already have an li
+  var newlySelected = selectedCategories.filter(x => !displayedCategories.includes(x));
+  for (var newCategory of newlySelected) {
+    if (!$('ul#currentCategoryList li#' + newCategory).length) {
+      var catName = $(".categoryOpt[value='" + newCategory + "']").prop("text");
+      var tempLi = "<li class='reportCategoryLiTemp' id=" + newCategory + ">" + addLiHTML + catName + "</li>";
+      $("ul#currentCategoryList").append(tempLi);
+    }
+  }
 }
 
 function importFont() {
