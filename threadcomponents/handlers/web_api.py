@@ -405,8 +405,11 @@ class WebAPI:
         dd['content'].append(dict(text='\n'))
         dd['content'].append(dict(text='Techniques End Date: %s' % end_date, style='bold'))
         dd['content'].append(dict(text='\n'))  # Blank line after technique dates
-        dd['content'].append(dict(text='Categories: ', style='bold'))
-        dd['content'].append(dict(ul=categories))
+        if categories:
+            dd['content'].append(dict(text='Categories: ', style='bold'))
+            dd['content'].append(dict(ul=categories))
+        else:
+            dd['content'].append(dict(text='Categories: unspecified', style='bold'))
         dd['content'].append(dict(text='\n'))  # Blank line after categories
         seen_sentences = set()  # set to prevent duplicate sentences being exported
         for sentence in sentences:

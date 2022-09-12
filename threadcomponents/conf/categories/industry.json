@@ -3,6 +3,10 @@
     "name": "Aerospace",
     "sub_categories": []
   },
+  "advertising": {
+    "name": "Advertising",
+    "sub_categories": []
+  },
   "livestock": {
     "name": "Livestock",
     "sub_categories": []
@@ -39,6 +43,10 @@
     "name": "Chemical Manufacturing",
     "sub_categories": ["pharmaceuticals"]
   },
+  "defence_con": {
+    "name": "Defence Contractors",
+    "sub_categories": []
+  },
   "software": {
     "name": "Software Development & Engineering",
     "sub_categories": []
@@ -59,9 +67,13 @@
     "name": "Managed Service Providers",
     "sub_categories": []
   },
+  "web_services": {
+    "name": "Web Services",
+    "sub_categories": []
+  },
   "info_tech": {
     "name": "Information Technology",
-    "sub_categories": ["software", "hardware", "data_centres", "cloud_computing", "managed_service"]
+    "sub_categories": ["software", "hardware", "data_centres", "cloud_computing", "managed_service", "web_services"]
   },
   "construction": {
     "name": "Construction",
