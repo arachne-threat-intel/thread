@@ -275,9 +275,9 @@ class RestService:
         if error:
             return default_error
         # Check all request parameters
-        categories = criteria.get('categories', [])
+        categories = criteria.get('categories')
         report_id, r_status = report[UID], report['current_status']
-        if (not categories) or (not isinstance(categories, list)):
+        if not isinstance(categories, list):
             return REST_IGNORED
         if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
             return default_error
