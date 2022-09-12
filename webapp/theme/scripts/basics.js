@@ -389,10 +389,6 @@ function setReportCategories(reportTitle) {
   $(".categoryOpt:selected").each(function() {
     categories.push($(this).prop("value"));
   });
-  if (!categories.length) {  // TODO check if mandatory
-    alert("No categories selected.");
-    return;
-  }
   restRequest("POST", {"index":"set_report_categories", "report_title": reportTitle, "categories": categories},
               setReportCategoryList);
 }
