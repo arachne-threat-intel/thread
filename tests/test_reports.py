@@ -388,3 +388,44 @@ class TestReports(ThreadAppTest):
         # Check that the first sentence is the one we previously deleted
         self.assertEqual(rollback_sentences[0].get(UID_KEY), sen_id,
                          msg='Report-rollback resulted in a different first sentence.')
+
+    async def test_adding_report_categories(self):
+        """Function to test successfully adding categories to a report."""
+        report_id, report_title = str(uuid4()), 'Add Categories to Me!'
+        # Submit and analyse a test report
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='add.categories',
+                                           current_status=ReportStatus.QUEUE.value))
+        # Add an invalid category
+        data = dict(index='set_report_categories', report_title=report_title, categories=['notACategory', 'reallyNot'])
+        await self.client.post('/rest', json=data)
+        # Check that these invalid categories were not saved
+        current = await self.data_svc.get_report_category_keynames(report_id)
+        self.assertFalse(current, msg='Invalid categories saved to report.')
+        # Add valid categories
+        data = dict(index='set_report_categories', report_title=report_title, categories=['aerospace', 'music'])
+        resp = await self.client.post('/rest', json=data)
+        self.assertTrue(resp.status < 300, msg='Adding categories resulted in a non-200 response.')
+        current = await self.data_svc.get_report_category_keynames(report_id)
+        self.assertEqual(set(current), {'aerospace', 'music'}, msg='Categories were not added.')
+
+    async def test_removing_report_categories(self):
+        """Function to test successfully removing categories from a report."""
+        report_id, report_title = str(uuid4()), 'Remove Categories From Me!'
+        # Submit and analyse a test report
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='remove.categories',
+                                           current_status=ReportStatus.QUEUE.value))
+        # Add categories
+        data = dict(index='set_report_categories', report_title=report_title, categories=['aerospace', 'music', 'film'])
+        await self.client.post('/rest', json=data)
+        # Remove a category
+        data = dict(index='set_report_categories', report_title=report_title, categories=['music', 'film'])
+        resp = await self.client.post('/rest', json=data)
+        self.assertTrue(resp.status < 300, msg='Removing categories resulted in a non-200 response.')
+        current = await self.data_svc.get_report_category_keynames(report_id)
+        self.assertEqual(set(current), {'film', 'music'}, msg='Categories were not removed.')
+        # Remove last two categories
+        data = dict(index='set_report_categories', report_title=report_title, categories=[])
+        resp = await self.client.post('/rest', json=data)
+        self.assertTrue(resp.status < 300, msg='Removing all categories resulted in a non-200 response.')
+        current = await self.data_svc.get_report_category_keynames(report_id)
+        self.assertEqual(current, [], msg='Categories were not removed.')
