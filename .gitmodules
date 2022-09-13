@@ -1,0 +1,3 @@
+[submodule "rosettaStone"]
+	path = rosettaStone
+	url = https://github.com/arachne-threat-intel/rosettaStone
