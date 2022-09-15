@@ -346,6 +346,24 @@ class DataService:
             await self.dao.insert_generate_uid('categories', dict(keyname=keyname, name=entry['name'],
                                                                   display_name=display_names[keyname]))
 
+    async def insert_keyword_json_data(self, buildfile=os.path.join('rosettaStone', 'cta_names_mappings.json')):
+        """Function to read in the keywords json file and insert data into the database."""
+        buildfile = os.path.join(self.dir_prefix, buildfile)  # prefix directory path if there is one
+        # The current keywords saved in the db
+        cur_keywords = await self.dao.get_column_as_list(table='keywords', column='name')
+        # Load the JSON file
+        with open(buildfile, 'r') as infile:
+            keywords_dict = json.load(infile)
+        # Obtain all the unique keywords and aliases into a set
+        to_add = set()
+        for keyword, entry in keywords_dict.items():
+            aliases = entry.get('aliases', [])
+            to_add.update(aliases + [keyword])
+        # Check which ones are not in the database and add them if so
+        for adding_keyword in to_add:
+            if adding_keyword not in cur_keywords:
+                await self.dao.insert_generate_uid('keywords', dict(name=adding_keyword))
+
     async def status_grouper(self, status, criteria=None):
         # The search based on the given status
         search = dict(current_status=status)
