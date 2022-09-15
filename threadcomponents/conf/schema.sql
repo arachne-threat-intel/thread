@@ -57,11 +57,42 @@ CREATE TABLE IF NOT EXISTS report_categories (
     uid VARCHAR(60) PRIMARY KEY,
     -- The UID of the report
     report_uid VARCHAR(60),
-    -- The UID of the category
-    category_keyname VARCHAR(60),
+    -- The keyname of the category
+    category_keyname TEXT,
     UNIQUE (report_uid, category_keyname),
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE,
     FOREIGN KEY(category_keyname) REFERENCES categories(keyname) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS keywords (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- The keyword
+    name TEXT UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS report_keywords (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- The UID of the report
+    report_uid VARCHAR(60),
+    -- The keyword
+    keyword TEXT,
+    -- Whether the keyword reflects an aggressor or victim
+    association_type VARCHAR(20),
+    UNIQUE (report_uid, keyword),
+    FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE,
+    FOREIGN KEY(keyword) REFERENCES keywords(name) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS report_countries (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- The UID of the report
+    report_uid VARCHAR(60),
+    -- The country code
+    country VARCHAR(5),
+    -- Whether the country is an aggressor or victim
+    association_type VARCHAR(20),
+    UNIQUE (report_uid, country),
+    FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS true_positives (
