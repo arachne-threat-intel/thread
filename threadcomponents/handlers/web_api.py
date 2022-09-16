@@ -47,10 +47,21 @@ class WebAPI:
                                    js_src_online=js_src_config == ONLINE_JS_SRC, is_local=self.is_local)
         self.attack_dropdown_list = []
         self.cat_dropdown_list = []
+        self.keyword_dropdown_list = []
 
     async def set_attack_dropdown_list(self):
         """Function to set the attack-dropdown-list used to add/reject attacks in a report."""
         self.attack_dropdown_list = await self.data_svc.get_techniques(get_parent_info=True)
+
+    async def set_keyword_dropdown_list(self):
+        """Function to set the keyword-dropdown-list used to select aggressors and victims in a report."""
+        # I was unable to order the APTs using a single UNION query which kept the order of the queries below
+        # Two queries to ensure APT1, APT10, APT11, ... APT2, APT20, ... ordering does not happen
+        apt_query = "SELECT name FROM keywords WHERE name LIKE 'APT%' ORDER BY LENGTH(name), name"
+        r1 = await self.dao.raw_select(apt_query, single_col=True)
+        non_apt_query = "SELECT name FROM keywords WHERE name NOT LIKE 'APT%' ORDER BY name"
+        r2 = await self.dao.raw_select(non_apt_query, single_col=True)
+        self.keyword_dropdown_list = r1 + r2
 
     async def pre_launch_init(self):
         """Function to call any required methods before the app is initialised and launched."""
@@ -58,9 +69,10 @@ class WebAPI:
         await self.ml_svc.check_nltk_packs()
         # Before the app starts up, prepare the queue of reports
         await self.rest_svc.prepare_queue()
-        # We want the list of attacks and categories ready before the app starts
+        # We want the list of attacks, categories and keywords ready before the app starts
         await self.set_attack_dropdown_list()
         self.cat_dropdown_list = await self.data_svc.get_all_categories()
+        await self.set_keyword_dropdown_list()
         # We want column names ready
         await self.dao.db.initialise_column_names()
 
@@ -276,7 +288,8 @@ class WebAPI:
             file=report_title, title=report[0]['title'], title_quoted=title_quoted, final_html=final_html,
             sentences=sentences, attack_uids=self.attack_dropdown_list, original_html=original_html, pdf_link=pdf_link,
             nav_link=nav_link, completed=int(report_status == self.report_statuses.COMPLETED.value), help_text=help_text,
-            categories=categories, category_list=self.cat_dropdown_list
+            categories=categories, category_list=self.cat_dropdown_list,
+            groups=[], group_list=self.keyword_dropdown_list,
         )
         # Prepare the date fields to be interpreted by the front-end
         for report_date in ['date_written', 'start_date', 'end_date']:
