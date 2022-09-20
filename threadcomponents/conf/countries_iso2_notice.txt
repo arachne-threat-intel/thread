@@ -1,0 +1,3 @@
+NOTICE: As required by the Creative Commons Attribution-ShareAlike 4.0 International License, this notice is to state the following files have been used by Arachne Digital:
+
+* `countries-iso2.json` > not modified; credited to https://github.com/lukes/ISO-3166-Countries-with-Regional-Codes/blob/master/slim-2/slim-2.json
