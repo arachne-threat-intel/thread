@@ -425,9 +425,9 @@ class DataService:
     async def get_report_aggressors_victims(self, report_id, include_display=False):
         """Function to retrieve the aggressors and victims for a report given a report ID."""
         # Obtain all groups and countries for this report
-        query = "(SELECT keyword, NULL AS country, association_type FROM report_keywords WHERE report_uid = {sel}) " \
-                "UNION (SELECT NULL AS keyword, country, association_type " \
-                "FROM report_countries WHERE report_uid = {sel})".format(sel=self.dao.db_qparam)
+        query = "SELECT keyword, NULL AS country, association_type FROM report_keywords WHERE report_uid = {sel} " \
+                "UNION SELECT NULL AS keyword, country, association_type " \
+                "FROM report_countries WHERE report_uid = {sel}".format(sel=self.dao.db_qparam)
         db_results = await self.dao.raw_select(query, parameters=tuple([report_id, report_id]))
         # Set up the dictionary to return the results split by aggressor and victim
         r_template = dict(groups=[], country_codes=[])
