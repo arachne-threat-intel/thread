@@ -229,6 +229,7 @@ class WebAPI:
                     update_report_dates=lambda d: self.rest_svc.update_report_dates(request=request, criteria=d),
                     update_attack_time=lambda d: self.rest_svc.update_attack_time(request=request, criteria=d),
                     set_report_categories=lambda d: self.rest_svc.set_report_categories(request=request, criteria=d),
+                    set_report_keywords=lambda d: self.rest_svc.set_report_keywords(request=request, criteria=d),
                 ))
             method = options[request.method][index]
         except KeyError:
@@ -273,6 +274,7 @@ class WebAPI:
         # Proceed to gather the data for the template
         sentences = await self.data_svc.get_report_sentences(report_id)
         categories = await self.data_svc.get_report_categories_for_display(report_id, include_keynames=True)
+        keywords = await self.data_svc.get_report_aggressors_victims(report_id)
         original_html = await self.dao.get('original_html', equal=dict(report_uid=report_id),
                                            order_by_asc=dict(elem_index=1))
         final_html = await self.web_svc.build_final_html(original_html, sentences)
@@ -288,9 +290,10 @@ class WebAPI:
             file=report_title, title=report[0]['title'], title_quoted=title_quoted, final_html=final_html,
             sentences=sentences, attack_uids=self.attack_dropdown_list, original_html=original_html, pdf_link=pdf_link,
             nav_link=nav_link, completed=int(report_status == self.report_statuses.COMPLETED.value), help_text=help_text,
-            categories=categories, category_list=self.cat_dropdown_list,
-            aggressor_groups=[], victim_groups=[], group_list=self.web_svc.keyword_dropdown_list,
-            aggressor_countries=[], victim_countries=[], country_list=self.data_svc.country_dict,
+            categories=categories, category_list=self.cat_dropdown_list, group_list=self.web_svc.keyword_dropdown_list,
+            aggressor_groups=keywords['aggressors']['groups'], victim_groups=keywords['victims']['groups'],
+            aggressor_countries=keywords['aggressors']['country_codes'],
+            victim_countries=keywords['victims']['country_codes'], country_list=self.data_svc.country_dict,
         )
         # Prepare the date fields to be interpreted by the front-end
         for report_date in ['date_written', 'start_date', 'end_date']:

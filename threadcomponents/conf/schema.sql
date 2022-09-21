@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS report_keywords (
     keyword TEXT,
     -- Whether the keyword reflects an aggressor or victim
     association_type VARCHAR(20),
-    UNIQUE (report_uid, keyword),
+    UNIQUE (report_uid, keyword, association_type),
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE,
     FOREIGN KEY(keyword) REFERENCES keywords(name) ON DELETE CASCADE
 );
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS report_countries (
     country VARCHAR(5),
     -- Whether the country is an aggressor or victim
     association_type VARCHAR(20),
-    UNIQUE (report_uid, country),
+    UNIQUE (report_uid, country, association_type),
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
 );
 
