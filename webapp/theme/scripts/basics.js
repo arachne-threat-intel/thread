@@ -402,38 +402,59 @@ function setReportCategoryList() {
   });
 }
 
+function onchangeAggressorGroups(e) {
+  updateMultiSelectList(e, "aggressorGroupOpt", "aggressorCurrentGroupList", "aggressorGroupLi", false);
+}
+
+function onchangeAggressorCountries(e) {
+  updateMultiSelectList(e, "aggressorCountryOpt", "aggressorCurrentCountryList", "aggressorCountryLi");
+}
+
+function onchangeVictimGroups(e) {
+  updateMultiSelectList(e, "victimGroupOpt", "victimCurrentGroupList", "victimGroupLi", false);
+}
+
+function onchangeVictimCountries(e) {
+  updateMultiSelectList(e, "victimCountryOpt", "victimCurrentCountryList", "victimCountryLi");
+}
+
 function onchangeReportCategories(e) {
-  var selectedCategories = $(e).val();
-  var displayedCategories = [];
-  // Loop through originally displayed categories
-  $("ul#currentCategoryList li.reportCategoryLi").each(function() {
-    var catKey = $(this).prop("id");
-    displayedCategories.push(catKey);
-    if (selectedCategories.includes(catKey)) {
-      // The selected category is already displayed; display no plus/delete signs
+  updateMultiSelectList(e, "categoryOpt", "currentCategoryList", "reportCategoryLi");
+}
+
+function updateMultiSelectList(dropdown, selOptClass, ulID, liClass, useSelToLookupDisplay=true) {
+  var selectedValues = $(dropdown).val();
+  var displayedValues = [];
+  var liClassTemp = liClass + "Temp";
+  // Loop through originally displayed li-items
+  $("ul#" + ulID + " li." + liClass).each(function() {
+    var valKey = $(this).prop("id");
+    displayedValues.push(valKey);
+    if (selectedValues.includes(valKey)) {
+      // The selected value is already displayed; display no plus/delete signs
       $(this).children('.list-delta').remove();
     } else {
-      // This is a displayed category that has been unselected; display the delete symbol if it is not already there
+      // This is a displayed value that has been unselected; display the delete symbol if it is not already there
       if (!$(this).children('.list-delta').length) {
         $(this).prepend(remLiHTML);
       }
     }
   });
-  // Loop through any temporarily added categories (new selections)
-  $("ul#currentCategoryList li.reportCategoryLiTemp").each(function() {
-    var catKey = $(this).prop("id");
-    if (!selectedCategories.includes(catKey)) {
+  // Loop through any temporarily added values (new selections)
+  $("ul#" + ulID + " li." + liClassTemp).each(function() {
+    var valKey = $(this).prop("id");
+    if (!selectedValues.includes(valKey)) {
       // This was selected and then unselected; remove the li
       $(this).remove();
     }
   });
-  // Add new li's for newly-selected categories if they do not already have an li
-  var newlySelected = selectedCategories.filter(x => !displayedCategories.includes(x));
-  for (var newCategory of newlySelected) {
-    if (!$('ul#currentCategoryList li#' + newCategory).length) {
-      var catName = $(".categoryOpt[value='" + newCategory + "']").prop("text");
-      var tempLi = "<li class='reportCategoryLiTemp' id=" + newCategory + ">" + addLiHTML + catName + "</li>";
-      $("ul#currentCategoryList").append(tempLi);
+  // Add new li's for newly-selected values if they do not already have an li
+  var newlySelected = selectedValues.filter(x => !displayedValues.includes(x));
+  for (var newValue of newlySelected) {
+    if (!$("ul#" + ulID + " li[id='"  + newValue + "']").length) {
+      var valName = useSelToLookupDisplay ? $("." + selOptClass + "[value='" + newValue + "']").prop("text") : newValue;
+      var tempLi = "<li class='" + liClassTemp + "' id=" + newValue + ">" + addLiHTML + valName + "</li>";
+      $("ul#" + ulID).append(tempLi);
     }
   }
 }

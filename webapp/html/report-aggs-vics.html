@@ -4,18 +4,22 @@
     {% set db_group_list = aggressor_groups %}
     {% set db_country_list = aggressor_countries %}
     {% set allow_select_all = false %}
+    {% set onchangeGroup = "onchangeAggressorGroups" %}
+    {% set onchangeCountry = "onchangeAggressorCountries" %}
   {% else %}
     {% set assoc_label = "Victims" %}
     {% set db_group_list = victim_groups %}
     {% set db_country_list = victim_countries %}
     {% set allow_select_all = true %}
+    {% set onchangeGroup = "onchangeVictimGroups" %}
+    {% set onchangeCountry = "onchangeVictimCountries" %}
   {% endif %}
   <div class="row">
     <label class="col-sm-2 col-form-label"><b>{{assoc_label}}:</b></label>
     <div class="col-sm-5">
       <select class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
               title="Select groups" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
-              onchange="">
+              onchange="{{onchangeGroup}}(this)">
         {% for group_name in group_list %}
           <option class="{{assoc_type}}GroupOpt" value="{{group_name}}" {% if group_name in db_group_list %}selected{% endif %}>{{group_name}}</option>
         {% endfor %}
@@ -24,14 +28,28 @@
     <div class="col-sm-5">
       <select class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
               title="Select countries" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
-              onchange="">
+              onchange="{{onchangeCountry}}(this)">
         {% for country_key in country_list %}
           <option class="{{assoc_type}}CountryOpt" value="{{country_key}}" {% if country_key in db_country_list %}selected{% endif %}>{{country_list[country_key]}}</option>
         {% endfor %}
       </select>
     </div>
   </div>
-  <ul id="">{# Display the list of groups and countries #}
-
-  </ul>
+  <div class="row pt-2">{# Display the list of selected groups and countries #}
+    <div class="col-sm-2"></div>
+    <div class="col-sm-5">
+      <ul id="{{assoc_type}}CurrentGroupList">
+        {% for saved_group in db_group_list %}
+          <li class="{{assoc_type}}GroupLi" id="{{saved_group}}">{{saved_group}}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="col-sm-5">
+      <ul id="{{assoc_type}}CurrentCountryList">
+        {% for saved_country in db_country_list %}
+          <li class="{{assoc_type}}CountryLi" id="{{saved_country}}">{{country_list[saved_country]}}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
 {% endwith %}
