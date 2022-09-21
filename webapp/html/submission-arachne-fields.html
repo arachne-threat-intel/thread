@@ -1,5 +1,5 @@
 {% if not is_local %}{# Display fields for token-protection and non-token-use confirmation #}
-  {% with %}
+  {% with %}{# Keep variables set below, visible just within this scope #}
     {% if is_csv %}{# Determine an attribute suffix to distinguish when these fields are in the CSV tab or not #}
       {% set attr_suffix = "CSV" %}
       {% set plural_suffix = "(s)" %}
