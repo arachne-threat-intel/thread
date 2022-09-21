@@ -41,6 +41,12 @@ class ReportStatus(Enum):
         return obj
 
 
+@unique
+class AssociationWith(Enum):
+    CN = 'country'
+    GR = 'group'
+
+
 class RestService:
     def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix='', queue_limit=None, max_tasks=1,
                  attack_file_settings=None):
@@ -294,6 +300,70 @@ class RestService:
         for category in to_delete:
             sql_list.append(await self.dao.delete(
                 'report_categories', dict(report_uid=report_id, category_keyname=category), return_sql=True))
+        await self.dao.run_sql_list(sql_list=sql_list)
+        if sql_list:
+            success.update(dict(info='The report categories have been updated.', alert_user=1))
+        return success
+
+    async def set_report_keywords(self, request, criteria=None):
+        default_error, success = dict(error='Error updating aggressors and victims.'), REST_SUCCESS.copy()
+        # Do initial report checks
+        report, error = await self._report_pre_check(request, criteria, 'update-report-keywords',
+                                                     [UID, 'current_status'], None)
+        if error:
+            return default_error
+        # Check all request parameters
+        aggressors = criteria.get('aggressors', dict())
+        victims = criteria.get('victims', dict())
+        report_id, r_status = report[UID], report['current_status']
+        if not (isinstance(aggressors, dict) and isinstance(victims, dict)):
+            return REST_IGNORED
+        # Check aggressors and victims are passed as lists within these dictionaries
+        for associate_dict in [aggressors, victims]:
+            for association_type, associations in associate_dict.items():
+                # Check a valid association type has been given
+                try:
+                    AssociationWith(association_type)
+                except ValueError:
+                    return REST_IGNORED
+                # Check the associations for this type are given in a list
+                if not isinstance(associations, list):
+                    return REST_IGNORED
+        if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
+            return default_error
+        # Retrieve current report aggressors and victims
+        current = await self.data_svc.get_report_aggressors_victims(report_id)
+        # For each aggressor and victim, have the current-data and request-data ready to compare
+        to_compare = [('aggressor', current['aggressors'], criteria['aggressors']),
+                      ('victim', current['victims'], criteria['victims'])]
+        # For each aggressor and victim, we know we need to go through countries and groups
+        to_process = [('report_countries', 'country', 'country_codes', AssociationWith.CN.value,
+                       self.data_svc.country_dict.keys()),
+                      ('report_keywords', 'keyword', 'groups', AssociationWith.GR.value,
+                       self.web_svc.keyword_dropdown_list)]
+        sql_list = []
+        # Comparing current-data and request-data dictionaries
+        for assoc_type, current_assoc_dict, request_assoc_dict in to_compare:
+            # Given the table names/columns, keys to use in the dictionaries ('*_k'), and list of valid values...
+            for table_name, table_col, current_k, request_k, valid_list in to_process:
+                # From the dictionary and using its relevant key, extract the current and requested data as sets
+                current_set = set(current_assoc_dict[current_k])
+                requested_set = set(request_assoc_dict[request_k])
+                # Using the valid list of values, determine which of the requested values are valid
+                valid_request_values = set(valid_list).intersection(requested_set)
+                # Finally determine what values are being added and deleted
+                to_add = valid_request_values - set(current_set)
+                to_delete = set(current_set) - valid_request_values
+                # Build the SQL query for this aggressor/victim country/group
+                db_entry = dict(report_uid=report_id, association_type=assoc_type)
+                for assoc_val in to_add:
+                    temp = db_entry.copy()
+                    temp[table_col] = assoc_val
+                    sql_list.append(await self.dao.insert_generate_uid(table_name, temp, return_sql=True))
+                for assoc_val in to_delete:
+                    temp = db_entry.copy()
+                    temp[table_col] = assoc_val
+                    sql_list.append(await self.dao.delete(table_name, temp, return_sql=True))
         await self.dao.run_sql_list(sql_list=sql_list)
         if sql_list:
             success.update(dict(info='The report categories have been updated.', alert_user=1))

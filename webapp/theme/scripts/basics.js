@@ -393,6 +393,25 @@ function setReportCategories(reportTitle) {
               setReportCategoryList);
 }
 
+function setReportKeywords(reportTitle) {
+  // Get selected aggressors and victims and send request for updating
+  var requestData = {aggressors: {country: [], group: []}, victims: {country: [], group: []}};
+  $(".aggressorGroupOpt:selected").each(function() {
+    requestData.aggressors.group.push($(this).prop("value"));
+  });
+  $(".aggressorCountryOpt:selected").each(function() {
+    requestData.aggressors.country.push($(this).prop("value"));
+  });
+  $(".victimGroupOpt:selected").each(function() {
+    requestData.victims.group.push($(this).prop("value"));
+  });
+  $(".victimCountryOpt:selected").each(function() {
+    requestData.victims.country.push($(this).prop("value"));
+  });
+  restRequest("POST", {"index":"set_report_keywords", "report_title": reportTitle, "victims": requestData.victims,
+                       "aggressors": requestData.aggressors});
+}
+
 function setReportCategoryList() {
   // Remove currently displayed list and rebuild a new list with the recently saved categories
   $("ul#currentCategoryList li").remove();

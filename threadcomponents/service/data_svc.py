@@ -9,6 +9,7 @@ import json
 import logging
 
 from contextlib import suppress
+from copy import deepcopy
 from datetime import datetime
 from stix2 import Filter, MemoryStore
 from urllib.parse import quote
@@ -420,6 +421,42 @@ class DataService:
             return await self.dao.get_dict_value_as_key('keyname', sql=query, sql_params=tuple([report_id]))
         # Else return the list of display names for this report
         return await self.dao.raw_select(query, parameters=tuple([report_id]), single_col=len(columns) == 1)
+
+    async def get_report_aggressors_victims(self, report_id, include_display=False):
+        """Function to retrieve the aggressors and victims for a report given a report ID."""
+        # Obtain all groups and countries for this report
+        query = "(SELECT keyword, NULL AS country, association_type FROM report_keywords WHERE report_uid = {sel}) " \
+                "UNION (SELECT NULL AS keyword, country, association_type " \
+                "FROM report_countries WHERE report_uid = {sel})".format(sel=self.dao.db_qparam)
+        db_results = await self.dao.raw_select(query, parameters=tuple([report_id, report_id]))
+        # Set up the dictionary to return the results split by aggressor and victim
+        r_template = dict(groups=[], country_codes=[])
+        if include_display:
+            r_template.update(dict(countries=[]))
+        results = dict(aggressors=deepcopy(r_template), victims=deepcopy(r_template))
+        # Go through the retrieved database results and place result in appropriate dictionary/list
+        for entry in db_results:
+            # First determine if this result is for an aggressor or victim
+            assoc_type = entry.get('association_type')
+            if assoc_type == 'aggressor':
+                updating = results['aggressors']
+            elif assoc_type == 'victim':
+                updating = results['victims']
+            else:
+                logging.error('INVALID report association `%s` saved in db, uid `%s`' % (assoc_type, entry.get('uid')))
+                continue
+            # Then determine if this result is for a group or country
+            assoc_value_g, assoc_value_c = entry.get('keyword'), entry.get('country')
+            if not (assoc_value_g or assoc_value_c):
+                logging.error('GROUP or COUNTRY missing in db entry uid `%s`' % entry.get('uid'))
+                continue
+            if assoc_value_g:
+                updating['groups'].append(assoc_value_g)
+            else:
+                updating['country_codes'].append(assoc_value_c)
+                if include_display:
+                    updating['countries'].append(self.country_dict.get(assoc_value_c))
+        return results
 
     async def get_report_sentences(self, report_id):
         """Function to retrieve all report sentences for a given report ID."""
