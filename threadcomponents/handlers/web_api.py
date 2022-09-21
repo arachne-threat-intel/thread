@@ -47,7 +47,7 @@ class WebAPI:
                                    js_src_online=js_src_config == ONLINE_JS_SRC, is_local=self.is_local)
         self.attack_dropdown_list = []
         self.cat_dropdown_list = []
-        self.keyword_dropdown_list = []
+        self.web_svc.keyword_dropdown_list = []
 
     async def set_attack_dropdown_list(self):
         """Function to set the attack-dropdown-list used to add/reject attacks in a report."""
@@ -61,7 +61,7 @@ class WebAPI:
         r1 = await self.dao.raw_select(apt_query, single_col=True)
         non_apt_query = "SELECT name FROM keywords WHERE name NOT LIKE 'APT%' ORDER BY name"
         r2 = await self.dao.raw_select(non_apt_query, single_col=True)
-        self.keyword_dropdown_list = r1 + r2
+        self.web_svc.keyword_dropdown_list = r1 + r2
 
     async def pre_launch_init(self):
         """Function to call any required methods before the app is initialised and launched."""
@@ -289,7 +289,8 @@ class WebAPI:
             sentences=sentences, attack_uids=self.attack_dropdown_list, original_html=original_html, pdf_link=pdf_link,
             nav_link=nav_link, completed=int(report_status == self.report_statuses.COMPLETED.value), help_text=help_text,
             categories=categories, category_list=self.cat_dropdown_list,
-            groups=[], group_list=self.keyword_dropdown_list,
+            aggressor_groups=[], victim_groups=[], group_list=self.web_svc.keyword_dropdown_list,
+            aggressor_countries=[], victim_countries=[], country_list=self.data_svc.country_dict,
         )
         # Prepare the date fields to be interpreted by the front-end
         for report_date in ['date_written', 'start_date', 'end_date']:

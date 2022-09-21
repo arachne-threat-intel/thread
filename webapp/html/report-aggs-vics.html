@@ -1,0 +1,37 @@
+{% with %}
+  {% if assoc_type == "aggressor" %}
+    {% set assoc_label = "Aggressors" %}
+    {% set db_group_list = aggressor_groups %}
+    {% set db_country_list = aggressor_countries %}
+    {% set allow_select_all = false %}
+  {% else %}
+    {% set assoc_label = "Victims" %}
+    {% set db_group_list = victim_groups %}
+    {% set db_country_list = victim_countries %}
+    {% set allow_select_all = true %}
+  {% endif %}
+  <div class="row">
+    <label class="col-sm-2 col-form-label"><b>{{assoc_label}}:</b></label>
+    <div class="col-sm-5">
+      <select class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
+              title="Select groups" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
+              onchange="">
+        {% for group_name in group_list %}
+          <option class="{{assoc_type}}GroupOpt" value="{{group_name}}" {% if group_name in db_group_list %}selected{% endif %}>{{group_name}}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-sm-5">
+      <select class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
+              title="Select countries" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
+              onchange="">
+        {% for country_key in country_list %}
+          <option class="{{assoc_type}}CountryOpt" value="{{country_key}}" {% if country_key in db_country_list %}selected{% endif %}>{{country_list[country_key]}}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <ul id="">{# Display the list of groups and countries #}
+
+  </ul>
+{% endwith %}

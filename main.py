@@ -80,6 +80,7 @@ async def background_tasks(taxii_local=ONLINE_BUILD_SOURCE, build=False, json_fi
             await data_svc.insert_attack_json_data(json_file)
         await data_svc.set_countries_data()
         await data_svc.insert_category_json_data()
+        await data_svc.insert_keyword_json_data()
 
 
 async def init(host, port, app_setup_func=None):

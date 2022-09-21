@@ -64,6 +64,14 @@
             <br>
             <button type="button" onclick="setReportCategories('{{title_quoted}}')" class="btn btn-md btn-primary">Set Report Categories</button>
           {% endif %}
+        </form><hr>
+        <form id="reportAggressorsVictimsForm">{# Report aggressors and victims #}
+          {% with assoc_type = "aggressor" %}{% include "report-aggs-vics.html" %}{% endwith %}
+          {% with assoc_type = "victim" %}{% include "report-aggs-vics.html" %}{% endwith %}
+          {% if not completed %}
+            <br>
+            <button type="button" onclick="setReportKeywords('{{title_quoted}}')" class="btn btn-md btn-primary">Set Aggressors & Victims</button>
+          {% endif %}
         </form>
       </div>
     </div>
