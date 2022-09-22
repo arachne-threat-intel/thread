@@ -409,15 +409,26 @@ function setReportKeywords(reportTitle) {
     requestData.victims.country.push($(this).prop("value"));
   });
   restRequest("POST", {"index":"set_report_keywords", "report_title": reportTitle, "victims": requestData.victims,
-                       "aggressors": requestData.aggressors});
+                       "aggressors": requestData.aggressors}, setAggressorsVictimsLists);
+}
+
+function setAggressorsVictimsLists() {
+  generateMultiSelectList("aggressorGroupOpt", "aggressorCurrentGroupList", "aggressorGroupLi");
+  generateMultiSelectList("aggressorCountryOpt", "aggressorCurrentCountryList", "aggressorCountryLi");
+  generateMultiSelectList("victimGroupOpt", "victimCurrentGroupList", "victimGroupLi");
+  generateMultiSelectList("victimCountryOpt", "victimCurrentCountryList", "victimCountryLi");
 }
 
 function setReportCategoryList() {
-  // Remove currently displayed list and rebuild a new list with the recently saved categories
-  $("ul#currentCategoryList li").remove();
-  $(".categoryOpt:selected").each(function() {
-    var tempLi = "<li class='reportCategoryLi' id=" + $(this).prop("value") + ">" + $(this).prop("text") + "</li>";
-    $("ul#currentCategoryList").append(tempLi);
+  generateMultiSelectList("categoryOpt", "currentCategoryList", "reportCategoryLi");
+}
+
+function generateMultiSelectList(selOptClass, ulID, liClass) {
+  // Remove currently displayed list and rebuild a new list with the recently saved values
+  $("ul#" + ulID + " li").remove();
+  $("." + selOptClass + ":selected").each(function() {
+    var tempLi = "<li class='" + liClass + "' id=" + $(this).prop("value") + ">" + $(this).prop("text") + "</li>";
+    $("ul#" + ulID).append(tempLi);
   });
 }
 
