@@ -95,6 +95,19 @@ CREATE TABLE IF NOT EXISTS report_countries (
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
 );
 
+-- A table to represent when select-all for report_keywords and report_countries are needed (prevent multiple records)
+CREATE TABLE IF NOT EXISTS report_all_assoc (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- The UID of the report
+    report_uid VARCHAR(60),
+    -- What the association is with
+    association_with VARCHAR(10),
+    -- Whether the country is an aggressor or victim
+    association_type VARCHAR(20),
+    UNIQUE (report_uid, association_with, association_type),
+    FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS true_positives (
     uid VARCHAR(60) PRIMARY KEY,
     -- Attack ID
