@@ -429,11 +429,18 @@ class DataService:
                 "UNION SELECT NULL AS keyword, country, association_type " \
                 "FROM report_countries WHERE report_uid = {sel}".format(sel=self.dao.db_qparam)
         db_results = await self.dao.raw_select(query, parameters=tuple([report_id, report_id]))
+        # Check if this report is flagged at having all victims
+        query = 'SELECT association_type, association_with FROM report_all_assoc WHERE report_uid = %s' % self.dao.db_qparam
+        all_assoc = await self.dao.raw_select(query, parameters=tuple([report_id]))
         # Set up the dictionary to return the results split by aggressor and victim
-        r_template = dict(groups=[], country_codes=[])
+        r_template = dict(groups=[], groups_all=False, country_codes=[], countries_all=False)
         if include_display:
             r_template.update(dict(countries=[]))
         results = dict(aggressors=deepcopy(r_template), victims=deepcopy(r_template))
+        # Flag select-all in results: only doing this for victims
+        for results_key in ['victims']:
+            results[results_key]['groups_all'] = any(r.get('association_with') == 'group' for r in all_assoc)
+            results[results_key]['countries_all'] = any(r.get('association_with') == 'country' for r in all_assoc)
         # Go through the retrieved database results and place result in appropriate dictionary/list
         for entry in db_results:
             # First determine if this result is for an aggressor or victim
@@ -445,14 +452,14 @@ class DataService:
             else:
                 logging.error('INVALID report association `%s` saved in db, uid `%s`' % (assoc_type, entry.get('uid')))
                 continue
-            # Then determine if this result is for a group or country
+            # Then determine if this result is for a group or country: append value if not already flagged as select-all
             assoc_value_g, assoc_value_c = entry.get('keyword'), entry.get('country')
             if not (assoc_value_g or assoc_value_c):
                 logging.error('GROUP or COUNTRY missing in db entry uid `%s`' % entry.get('uid'))
                 continue
-            if assoc_value_g:
+            if assoc_value_g and not updating['groups_all']:
                 updating['groups'].append(assoc_value_g)
-            else:
+            elif assoc_value_c and not updating['countries_all']:
                 updating['country_codes'].append(assoc_value_c)
                 if include_display:
                     updating['countries'].append(self.country_dict.get(assoc_value_c))

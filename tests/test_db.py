@@ -79,8 +79,8 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         # The list of tables we are expecting to have been created
         expected = ['attack_uids', 'reports', 'report_sentences', 'true_positives', 'true_negatives', 'false_positives',
                     'false_negatives', 'regex_patterns', 'similar_words', 'report_sentence_hits', 'original_html',
-                    'report_sentences_initial', 'report_sentence_hits_initial', 'original_html_initial',
-                    'categories', 'report_categories', 'keywords', 'report_keywords', 'report_countries']
+                    'report_sentences_initial', 'report_sentence_hits_initial', 'original_html_initial', 'categories',
+                    'report_categories', 'keywords', 'report_keywords', 'report_countries', 'report_all_assoc']
         # Check the expectations against the results
         for table in results:
             self.assertTrue(table in expected, msg='Table %s was created but not expected.' % table)
