@@ -294,6 +294,7 @@ class WebAPI:
             aggressor_groups=keywords['aggressors']['groups'], victim_groups=keywords['victims']['groups'],
             aggressor_countries=keywords['aggressors']['country_codes'],
             victim_countries=keywords['victims']['country_codes'], country_list=self.data_svc.country_dict,
+            vic_groups_all=keywords['victims']['groups_all'], vic_countries_all=keywords['victims']['countries_all'],
         )
         # Prepare the date fields to be interpreted by the front-end
         for report_date in ['date_written', 'start_date', 'end_date']:

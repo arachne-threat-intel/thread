@@ -321,7 +321,9 @@ class RestService:
         # Check aggressors and victims are passed as lists within these dictionaries
         for associate_dict in [aggressors, victims]:
             for association_type, associations in associate_dict.items():
-                # Check a valid association type has been given
+                # Check a valid association type has been given (unless we are selecting-all)
+                if association_type in ['groups_all', 'countries_all']:
+                    continue
                 try:
                     AssociationWith(association_type)
                 except ValueError:
@@ -334,18 +336,39 @@ class RestService:
         # Retrieve current report aggressors and victims
         current = await self.data_svc.get_report_aggressors_victims(report_id)
         # For each aggressor and victim, have the current-data and request-data ready to compare
-        to_compare = [('aggressor', current['aggressors'], criteria['aggressors']),
-                      ('victim', current['victims'], criteria['victims'])]
+        to_compare = [('aggressor', current['aggressors'], aggressors, False),
+                      ('victim', current['victims'], victims, True)]
         # For each aggressor and victim, we know we need to go through countries and groups
-        to_process = [('report_countries', 'country', 'country_codes', AssociationWith.CN.value,
+        to_process = [('report_countries', 'country', 'country_codes', AssociationWith.CN.value, 'countries_all',
                        self.data_svc.country_dict.keys()),
-                      ('report_keywords', 'keyword', 'groups', AssociationWith.GR.value,
+                      ('report_keywords', 'keyword', 'groups', AssociationWith.GR.value, 'groups_all',
                        self.web_svc.keyword_dropdown_list)]
         sql_list = []
-        # Comparing current-data and request-data dictionaries
-        for assoc_type, current_assoc_dict, request_assoc_dict in to_compare:
+        # Comparing current-data and request-data dictionaries: loop once to see if we're selecting all
+        for assoc_type, current_assoc_dict, request_assoc_dict, allow_select_all in to_compare:
+            if not allow_select_all:
+                continue
             # Given the table names/columns, keys to use in the dictionaries ('*_k'), and list of valid values...
-            for table_name, table_col, current_k, request_k, valid_list in to_process:
+            for table_name, table_col, current_k, request_k, sel_all_k, valid_list in to_process:
+                currently_is_all = current_assoc_dict[sel_all_k]
+                requesting_is_all = request_assoc_dict[sel_all_k]
+                if requesting_is_all:
+                    # If we are requesting all, ignore any specified values in the list
+                    request_assoc_dict[request_k] = []
+                    if not currently_is_all:
+                        # Requesting all when not currently-all: add an entry in the select-all table for this report
+                        db_entry = dict(report_uid=report_id, association_type=assoc_type, association_with=request_k)
+                        sql_list.append(await self.dao.insert_generate_uid('report_all_assoc', db_entry, return_sql=True))
+                if currently_is_all:
+                    # Currently all when not requesting all and values specified...
+                    if (not requesting_is_all) and request_assoc_dict[request_k]:
+                        # ...delete entry in the select-all table for this report
+                        db_entry = dict(report_uid=report_id, association_type=assoc_type, association_with=request_k)
+                        sql_list.append(await self.dao.delete('report_all_assoc', db_entry, return_sql=True))
+
+        # Loop twice to determine which association db entries need to be updated
+        for assoc_type, current_assoc_dict, request_assoc_dict, allow_select_all in to_compare:
+            for table_name, table_col, current_k, request_k, sel_all_k, valid_list in to_process:
                 # From the dictionary and using its relevant key, extract the current and requested data as sets
                 current_set = set(current_assoc_dict[current_k])
                 requested_set = set(request_assoc_dict[request_k])
@@ -360,10 +383,14 @@ class RestService:
                     temp = db_entry.copy()
                     temp[table_col] = assoc_val
                     sql_list.append(await self.dao.insert_generate_uid(table_name, temp, return_sql=True))
-                for assoc_val in to_delete:
-                    temp = db_entry.copy()
-                    temp[table_col] = assoc_val
-                    sql_list.append(await self.dao.delete(table_name, temp, return_sql=True))
+                # Check if current_set = to_delete; if so, no point doing individual deletes
+                if current_set == to_delete:
+                    sql_list.append(await self.dao.delete(table_name, db_entry, return_sql=True))
+                else:
+                    for assoc_val in to_delete:
+                        temp = db_entry.copy()
+                        temp[table_col] = assoc_val
+                        sql_list.append(await self.dao.delete(table_name, temp, return_sql=True))
         await self.dao.run_sql_list(sql_list=sql_list)
         if sql_list:
             success.update(dict(info='The report categories have been updated.', alert_user=1))
