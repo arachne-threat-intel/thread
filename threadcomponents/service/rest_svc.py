@@ -679,13 +679,12 @@ class RestService:
         html_data = newspaper_article.text.replace('\n', '<br>')
         article = dict(title=criteria['title'], html_text=html_data)
         # Obtain the article date if possible
+        article_date = None
         with suppress(ValueError):
             article_date = find_date(criteria[URL])
         # Check any obtained date is a sensible value to store in the database
-        try:
+        with suppress(TypeError, ValueError):
             self.check_input_date(article_date)
-        except (TypeError, ValueError):
-            article_date = None
 
         # Here we build the sentence dictionary
         html_sentences = self.web_svc.tokenize_sentence(article['html_text'])
