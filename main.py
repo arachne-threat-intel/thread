@@ -142,8 +142,9 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
         # Schedule the function to update the attack-data (check daily if it is time to do so)
         asyncio.ensure_future(repeat(86400, update_attack_data_scheduler))
     if not web_svc.is_local:
-        # Schedule the function to tidy up reports
+        # Schedule the function to tidy up reports and fetch updated keywords
         asyncio.ensure_future(repeat(86400, data_svc.remove_expired_reports))
+        asyncio.ensure_future(repeat(86400, website_handler.fetch_and_update_keywords))
     try:
         loop.run_forever()
     except KeyboardInterrupt:
