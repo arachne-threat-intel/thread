@@ -372,9 +372,10 @@ class DataService:
             aliases = entry.get('aliases', [])
             to_add.update(aliases + [keyword])
         # Check which ones are not in the database and add them if so
+        to_add = to_add - set(cur_keywords)
         for adding_keyword in to_add:
-            if adding_keyword not in cur_keywords:
-                await self.dao.insert_generate_uid('keywords', dict(name=adding_keyword))
+            await self.dao.insert_generate_uid('keywords', dict(name=adding_keyword))
+        return to_add
 
     async def status_grouper(self, status, criteria=None):
         # The search based on the given status
