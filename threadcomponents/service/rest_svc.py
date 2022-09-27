@@ -383,8 +383,8 @@ class RestService:
                     temp = db_entry.copy()
                     temp[table_col] = assoc_val
                     sql_list.append(await self.dao.insert_generate_uid(table_name, temp, return_sql=True))
-                # Check if current_set = to_delete; if so, no point doing individual deletes
-                if current_set == to_delete:
+                # Check if there are deletions and current_set = to_delete; if so, no point doing individual deletes
+                if (current_set == to_delete) and bool(to_delete):
                     sql_list.append(await self.dao.delete(table_name, db_entry, return_sql=True))
                 else:
                     for assoc_val in to_delete:

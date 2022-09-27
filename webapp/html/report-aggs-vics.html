@@ -11,13 +11,15 @@
     {% set db_group_list = victim_groups %}
     {% set db_country_list = victim_countries %}
     {% set allow_select_all = true %}
+    {% set groups_select_all = vic_groups_all %}
+    {% set countries_select_all = vic_countries_all %}
     {% set onchangeGroup = "onchangeVictimGroups" %}
     {% set onchangeCountry = "onchangeVictimCountries" %}
   {% endif %}
   <div class="row">
     <label class="col-sm-2 col-form-label"><b>{{assoc_label}}:</b></label>
     <div class="col-sm-5">
-      <select class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
+      <select id="{{assoc_type}}GroupSelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
               title="Select groups" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
               onchange="{{onchangeGroup}}(this)">
         {% for group_name in group_list %}
@@ -26,7 +28,7 @@
       </select>
     </div>
     <div class="col-sm-5">
-      <select class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
+      <select id="{{assoc_type}}CountrySelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
               title="Select countries" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
               onchange="{{onchangeCountry}}(this)">
         {% for country_key in country_list %}
@@ -52,4 +54,19 @@
       </ul>
     </div>
   </div>
+  {% if allow_select_all %}{# Give option to select all #}
+    <div class="row pt-2">
+      <div class="col-sm-2"></div>
+      <div class="col-sm-5">
+        <input type="checkbox" id="{{assoc_type}}GroupSelAll" onchange="onchangeSelectAllKeywords(this, '{{assoc_type}}', 'Group')"
+               {% if groups_select_all %}checked{% endif %} {% if completed %}disabled{% endif %}>
+        <label for="{{assoc_type}}GroupSelAll"><small>{{assoc_label}} > Groups > Select all?</small></label>
+      </div>
+      <div class="col-sm-5">
+        <input type="checkbox" id="{{assoc_type}}CountrySelAll" onchange="onchangeSelectAllKeywords(this, '{{assoc_type}}', 'Country')"
+               {% if countries_select_all %}checked{% endif %} {% if completed %}disabled{% endif %}>
+        <label for="{{assoc_type}}CountrySelAll"><small>{{assoc_label}} > Countries > Select all?</small></label>
+      </div>
+    </div>
+  {% endif %}
 {% endwith %}

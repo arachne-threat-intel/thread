@@ -395,7 +395,8 @@ function setReportCategories(reportTitle) {
 
 function setReportKeywords(reportTitle) {
   // Get selected aggressors and victims and send request for updating
-  var requestData = {aggressors: {country: [], group: []}, victims: {country: [], group: []}};
+  var assocObj = {country: [], countries_all: false, group: [], groups_all: false};
+  var requestData = {aggressors: JSON.parse(JSON.stringify(assocObj)), victims: JSON.parse(JSON.stringify(assocObj))};
   $(".aggressorGroupOpt:selected").each(function() {
     requestData.aggressors.group.push($(this).prop("value"));
   });
@@ -408,6 +409,8 @@ function setReportKeywords(reportTitle) {
   $(".victimCountryOpt:selected").each(function() {
     requestData.victims.country.push($(this).prop("value"));
   });
+  requestData.victims.countries_all = $("input#victimCountrySelAll").prop("checked");
+  requestData.victims.groups_all = $("input#victimGroupSelAll").prop("checked");
   restRequest("POST", {"index":"set_report_keywords", "report_title": reportTitle, "victims": requestData.victims,
                        "aggressors": requestData.aggressors}, setAggressorsVictimsLists);
 }
@@ -442,14 +445,27 @@ function onchangeAggressorCountries(e) {
 
 function onchangeVictimGroups(e) {
   updateMultiSelectList(e, "victimGroupOpt", "victimCurrentGroupList", "victimGroupLi", false);
+  // If the list is updated after interacting with individual select-options, this means select-all is n/a
+  $("#victimGroupSelAll").prop("checked", false);
 }
 
 function onchangeVictimCountries(e) {
   updateMultiSelectList(e, "victimCountryOpt", "victimCurrentCountryList", "victimCountryLi");
+  $("#victimCountrySelAll").prop("checked", false);
 }
 
 function onchangeReportCategories(e) {
   updateMultiSelectList(e, "categoryOpt", "currentCategoryList", "reportCategoryLi");
+}
+
+function onchangeSelectAllKeywords(e, assocType, assocWith) {
+  var selectId = assocType + assocWith;
+  // Unselect all dropdown options if select-all is checked
+  if ($(e).prop("checked")) {
+    $("#" + selectId + "Select").selectpicker("deselectAll");
+    // Ensure the checkbox stays checked (as unselect-onchange-triggers will revert this)
+    $("#" + selectId + "SelAll").prop("checked", true);
+  }
 }
 
 function updateMultiSelectList(dropdown, selOptClass, ulID, liClass, useSelToLookupDisplay=true) {
