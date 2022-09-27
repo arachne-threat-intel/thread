@@ -438,9 +438,11 @@ class DataService:
             r_template.update(dict(countries=[]))
         results = dict(aggressors=deepcopy(r_template), victims=deepcopy(r_template))
         # Flag select-all in results: only doing this for victims
-        for results_key in ['victims']:
-            results[results_key]['groups_all'] = any(r.get('association_with') == 'group' for r in all_assoc)
-            results[results_key]['countries_all'] = any(r.get('association_with') == 'country' for r in all_assoc)
+        for results_key, db_assoc_type in [('victims', 'victim')]:
+            results[results_key]['groups_all'] = any((r.get('association_with') == 'group') and
+                                                     (r.get('association_type') == db_assoc_type) for r in all_assoc)
+            results[results_key]['countries_all'] = any((r.get('association_with') == 'country') and
+                                                        (r.get('association_type') == db_assoc_type) for r in all_assoc)
         # Go through the retrieved database results and place result in appropriate dictionary/list
         for entry in db_results:
             # First determine if this result is for an aggressor or victim
