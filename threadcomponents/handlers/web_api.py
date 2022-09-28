@@ -337,8 +337,9 @@ class WebAPI:
                                  self.report_statuses.COMPLETED.value]:
             raise web.HTTPNotFound()
 
-        # Get the report categories
+        # Get the report categories and keywords
         categories = await self.data_svc.get_report_categories_for_display(report_id)
+        keywords = await self.data_svc.get_report_aggressors_victims(report_id)
         # Create the layer name and description
         enterprise_layer_description = f"Enterprise techniques used by '{report_title}', ATT&CK"
         version = '1.0'
@@ -349,12 +350,13 @@ class WebAPI:
         enterprise_layer = {
             'filename': sanitise_filename(report_title), 'name': report_title, 'domain': 'mitre-enterprise',
             'description': enterprise_layer_description, 'version': '2.2', 'categories': categories,
-            'article_date_published': date_of, 'report_start_date': start_date, 'report_end_date': end_date,
-            'techniques': [],
+            'aggressors': dict(), 'victims': dict(), 'article_date_published': date_of, 'report_start_date': start_date,
+            'report_end_date': end_date, 'techniques': [],
             # white for non-used, blue for used
             'gradient': {'colors': ['#ffffff', '#66b1ff'], 'minValue': 0, 'maxValue': 1},
             'legendItems': [{'label': f'used by {report_title}', 'color': '#66b1ff'}]
         }
+        enterprise_layer.update(keywords)
 
         # Get confirmed techniques for the report from the database
         techniques = await self.data_svc.get_confirmed_techniques_for_nav_export(report_id)
@@ -379,9 +381,8 @@ class WebAPI:
         try:
             # Ensure a valid report title has been passed in the request
             report_id, report_status, report_url = report[0]['uid'], report[0]['current_status'], report[0]['url']
-            date_of = report[0]['date_written_str'] or 'unspecified'
-            start_date = report[0]['start_date_str'] or 'unspecified'
-            end_date = report[0]['end_date_str'] or 'unspecified'
+            date_of = report[0]['date_written_str'] or '-'
+            start_date, end_date = (report[0]['start_date_str'] or '-'), (report[0]['end_date_str'] or '-')
         except (KeyError, IndexError):
             raise web.HTTPNotFound()
         # Found a valid report, check if protected by token
@@ -392,8 +393,9 @@ class WebAPI:
             raise web.HTTPNotFound()
         # Continue with the method and retrieve the report's sentences
         sentences = await self.data_svc.get_report_sentences_with_attacks(report_id=report_id)
-        # Get the report categories
+        # Get the report categories and keywords
         categories = await self.data_svc.get_report_categories_for_display(report_id)
+        keywords = await self.data_svc.get_report_aggressors_victims(report_id, include_display=True)
 
         dd = dict()
         # Default background which will be replaced by logo via client-side
@@ -408,9 +410,6 @@ class WebAPI:
         dd['info']['title'] = sanitise_filename(title)
         dd['info']['creator'] = report_url
 
-        # Table for found attacks
-        table = {'body': []}
-        table['body'].append(['ID', 'Name', 'Identified Sentence', 'Start Date', 'End Date'])
         # Add the text to the document
         dd['content'].append(dict(text=title, style='header'))  # begin with title of document
         dd['content'].append(dict(text='\n'))  # Blank line after title
@@ -434,8 +433,32 @@ class WebAPI:
             dd['content'].append(dict(text='Categories: ', style='bold'))
             dd['content'].append(dict(ul=categories))
         else:
-            dd['content'].append(dict(text='Categories: unspecified', style='bold'))
+            dd['content'].append(dict(text='Categories: -', style='bold'))
         dd['content'].append(dict(text='\n'))  # Blank line after categories
+        # Table for keywords
+        k_table = {'widths': ['20%', '40%', '40%'], 'body': []}
+        k_table['body'].append(['', dict(text='Aggressors', style='bold'), dict(text='Victims', style='bold')])
+        k_table_cols = ['aggressors', 'victims']
+        # For each row, build up the column values based on the keywords dictionary
+        for r_name, r_key, rk_all in [('Groups', 'groups', 'groups_all'), ('Countries', 'countries', 'countries_all')]:
+            row = [dict(text=r_name, style='bold')]
+            for col in k_table_cols:
+                k_vals, k_is_all = keywords[col][r_key], keywords[col][rk_all]
+                # We're either flagging 'All' values, listing the values or listing no values ('-')
+                if k_is_all:
+                    row.append(dict(text='All', style='bold'))
+                elif k_vals:
+                    row.append(dict(ul=k_vals))
+                else:
+                    row.append('-')
+            k_table['body'].append(row)
+        dd['content'].append({'table': k_table})
+        dd['content'].append(dict(text='\n'))  # Blank line after keywords
+        # Table for found attacks
+        header_row = []
+        for column_header in ['ID', 'Name', 'Identified Sentence', 'Start Date', 'End Date']:
+            header_row.append(dict(text=column_header, style='bold'))
+        table = {'body': [header_row]}
         seen_sentences = set()  # set to prevent duplicate sentences being exported
         for sentence in sentences:
             sen_id, sen_text = sentence['uid'], sentence['text']
