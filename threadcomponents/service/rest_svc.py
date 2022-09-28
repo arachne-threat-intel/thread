@@ -351,7 +351,7 @@ class RestService:
             # Given the table names/columns, keys to use in the dictionaries ('*_k'), and list of valid values...
             for table_name, table_col, current_k, request_k, sel_all_k, valid_list in to_process:
                 currently_is_all = current_assoc_dict[sel_all_k]
-                requesting_is_all = request_assoc_dict[sel_all_k]
+                requesting_is_all = request_assoc_dict.get(sel_all_k)
                 if requesting_is_all:
                     # If we are requesting all, ignore any specified values in the list
                     request_assoc_dict[request_k] = []
@@ -361,7 +361,7 @@ class RestService:
                         sql_list.append(await self.dao.insert_generate_uid('report_all_assoc', db_entry, return_sql=True))
                 if currently_is_all:
                     # Currently all when not requesting all and values specified...
-                    if (not requesting_is_all) and request_assoc_dict[request_k]:
+                    if (not requesting_is_all) and request_assoc_dict.get(request_k):
                         # ...delete entry in the select-all table for this report
                         db_entry = dict(report_uid=report_id, association_type=assoc_type, association_with=request_k)
                         sql_list.append(await self.dao.delete('report_all_assoc', db_entry, return_sql=True))
@@ -371,7 +371,7 @@ class RestService:
             for table_name, table_col, current_k, request_k, sel_all_k, valid_list in to_process:
                 # From the dictionary and using its relevant key, extract the current and requested data as sets
                 current_set = set(current_assoc_dict[current_k])
-                requested_set = set(request_assoc_dict[request_k])
+                requested_set = set(request_assoc_dict.get(request_k, []))
                 # Using the valid list of values, determine which of the requested values are valid
                 valid_request_values = set(valid_list).intersection(requested_set)
                 # Finally determine what values are being added and deleted
@@ -384,7 +384,7 @@ class RestService:
                     temp[table_col] = assoc_val
                     sql_list.append(await self.dao.insert_generate_uid(table_name, temp, return_sql=True))
                 # Check if there are deletions and current_set = to_delete; if so, no point doing individual deletes
-                if (current_set == to_delete) and bool(to_delete):
+                if (current_set == to_delete) and bool(to_delete) and not bool(to_add):
                     sql_list.append(await self.dao.delete(table_name, db_entry, return_sql=True))
                 else:
                     for assoc_val in to_delete:
