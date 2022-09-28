@@ -429,3 +429,58 @@ class TestReports(ThreadAppTest):
         self.assertTrue(resp.status < 300, msg='Removing all categories resulted in a non-200 response.')
         current = await self.data_svc.get_report_category_keynames(report_id)
         self.assertEqual(current, [], msg='Categories were not removed.')
+
+    async def test_adding_report_groups_and_countries(self):
+        """Function to test successfully adding keywords to a report."""
+        report_id, report_title = str(uuid4()), 'Add Keywords To Me!'
+        # Submit and analyse a test report
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='add.keywords',
+                                           current_status=ReportStatus.QUEUE.value))
+        # Add keywords
+        data = dict(index='set_report_keywords', report_title=report_title,
+                    aggressors=dict(country=['HB', 'TA'], group=['APT1']), victims=dict(countries_all=True))
+        resp = await self.client.post('/rest', json=data)
+        self.assertTrue(resp.status < 300, msg='Adding keywords resulted in a non-200 response.')
+        # Test the database contains these additions
+        k = await self.data_svc.get_report_aggressors_victims(report_id, include_display=True)
+        error_sfx = ' not correctly returned.'
+        self.assertEqual(set(k['aggressors']['country_codes']), {'TA', 'HB'}, msg='Aggressor countries' + error_sfx)
+        self.assertEqual(set(k['aggressors']['groups']), {'APT1'}, msg='Aggressor groups' + error_sfx)
+        self.assertFalse(k['aggressors']['groups_all'], msg='Aggressor groups select-all' + error_sfx)
+        self.assertFalse(k['aggressors']['countries_all'], msg='Aggressor countries select-all' + error_sfx)
+        self.assertEqual(set(k['aggressors']['countries']), {'Hobbiton', 'Tatooine'},
+                         msg='Aggressor countries (display)' + error_sfx)
+        self.assertEqual(set(k['victims']['country_codes']), set(), msg='Victim countries' + error_sfx)
+        self.assertEqual(set(k['victims']['groups']), set(), msg='Victim groups' + error_sfx)
+        self.assertFalse(k['victims']['groups_all'], msg='Victim groups select-all' + error_sfx)
+        self.assertTrue(k['victims']['countries_all'], msg='Victim countries select-all' + error_sfx)
+        self.assertEqual(set(k['victims']['countries']), set(), msg='Victim countries (display)' + error_sfx)
+
+    async def test_removing_report_groups_and_countries(self):
+        """Function to test successfully removing keywords from a report."""
+        report_id, report_title = str(uuid4()), 'Remove Keywords From Me!'
+        # Submit and analyse a test report
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='remove.keywords',
+                                           current_status=ReportStatus.QUEUE.value))
+        # Add keywords
+        data = dict(index='set_report_keywords', report_title=report_title,
+                    aggressors=dict(country=['HB', 'TA'], group=['APT1']), victims=dict(countries_all=True))
+        await self.client.post('/rest', json=data)
+        # Update keywords by removing some of them
+        data = dict(index='set_report_keywords', report_title=report_title,
+                    aggressors=dict(country=['WA'], group=['APT2']), victims=dict(country=['HB'], groups_all=True))
+        resp = await self.client.post('/rest', json=data)
+        self.assertTrue(resp.status < 300, msg='Updating and removing keywords resulted in a non-200 response.')
+        # Test the database contains these updates
+        k = await self.data_svc.get_report_aggressors_victims(report_id, include_display=True)
+        error_sfx = ' not correctly returned.'
+        self.assertEqual(set(k['aggressors']['country_codes']), {'WA'}, msg='Aggressor countries' + error_sfx)
+        self.assertEqual(set(k['aggressors']['groups']), {'APT2'}, msg='Aggressor groups' + error_sfx)
+        self.assertFalse(k['aggressors']['groups_all'], msg='Aggressor groups select-all' + error_sfx)
+        self.assertFalse(k['aggressors']['countries_all'], msg='Aggressor countries select-all' + error_sfx)
+        self.assertEqual(set(k['aggressors']['countries']), {'Wakanda'}, msg='Aggressor countries (display)' + error_sfx)
+        self.assertEqual(set(k['victims']['country_codes']), {'HB'}, msg='Victim countries' + error_sfx)
+        self.assertEqual(set(k['victims']['groups']), set(), msg='Victim groups' + error_sfx)
+        self.assertTrue(k['victims']['groups_all'], msg='Victim groups select-all' + error_sfx)
+        self.assertFalse(k['victims']['countries_all'], msg='Victim countries select-all' + error_sfx)
+        self.assertEqual(set(k['victims']['countries']), {'Hobbiton'}, msg='Victim countries (display)' + error_sfx)

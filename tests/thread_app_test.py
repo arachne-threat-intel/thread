@@ -74,13 +74,18 @@ class ThreadAppTest(AioHTTPTestCase):
             # Ignoring Integrity Error in case other test case already has inserted this data (causing duplicate UIDs)
             with suppress(sqlite3.IntegrityError):
                 await self.db.insert('attack_uids', attack)
-        # Insert some category data
+        # Insert some category, keyword & country data
         cat_1 = dict(uid='c010101', keyname='aerospace', name='Aerospace')
         cat_2 = dict(uid='c123456', keyname='music', name='Music')
         cat_3 = dict(uid='c898989', keyname='film', name='Film')
-        for cat in [cat_1, cat_2, cat_3]:
+        group_1 = dict(uid='apt1', name='APT1')
+        group_2 = dict(uid='apt2', name='APT2')
+        group_3 = dict(uid='apt3', name='APT3')
+        self.data_svc.country_dict = dict(HB='Hobbiton', TA='Tatooine', WA='Wakanda')
+        for cat, group in [(cat_1, group_1), (cat_2, group_2), (cat_3, group_3)]:
             with suppress(sqlite3.IntegrityError):
                 await self.db.insert('categories', cat)
+                await self.db.insert('keywords', group)
             self.web_svc.categories_dict[cat['keyname']] = dict(name=cat['name'], sub_categories=[])
         # Carry out pre-launch tasks except for prepare_queue(): replace the call of this to return (and do) nothing
         # We don't want multiple prepare_queue() calls so the queue does not accumulate between tests
