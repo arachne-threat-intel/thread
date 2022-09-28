@@ -436,7 +436,7 @@ class WebAPI:
             dd['content'].append(dict(text='Categories: -', style='bold'))
         dd['content'].append(dict(text='\n'))  # Blank line after categories
         # Table for keywords
-        k_table = {'widths': ['20%', '40%', '40%'], 'body': []}
+        k_table = dict(widths=['16%', '42%', '42%'], body=[])
         k_table['body'].append(['', dict(text='Aggressors', style='bold'), dict(text='Victims', style='bold')])
         k_table_cols = ['aggressors', 'victims']
         # For each row, build up the column values based on the keywords dictionary
@@ -452,13 +452,13 @@ class WebAPI:
                 else:
                     row.append('-')
             k_table['body'].append(row)
-        dd['content'].append({'table': k_table})
+        dd['content'].append(dict(table=k_table))
         dd['content'].append(dict(text='\n'))  # Blank line after keywords
         # Table for found attacks
         header_row = []
         for column_header in ['ID', 'Name', 'Identified Sentence', 'Start Date', 'End Date']:
             header_row.append(dict(text=column_header, style='bold'))
-        table = {'body': [header_row]}
+        table = dict(body=[header_row])
         seen_sentences = set()  # set to prevent duplicate sentences being exported
         for sentence in sentences:
             sen_id, sen_text = sentence['uid'], sentence['text']
@@ -474,7 +474,7 @@ class WebAPI:
                                       sentence.get('tech_end_date')])
 
         # Append table to the end
-        dd['content'].append({'table': table})
+        dd['content'].append(dict(table=table))
         return web.json_response(dd)
 
     async def rebuild_ml(self, request):
