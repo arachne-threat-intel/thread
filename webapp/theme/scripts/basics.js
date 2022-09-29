@@ -383,34 +383,25 @@ function updateAttackTime(reportTitle) {
   );
 }
 
-function setReportCategories(reportTitle) {
-  // Get selected-category list and send request for updating
-  var categories = [];
-  $(".categoryOpt:selected").each(function() {
-    categories.push($(this).prop("value"));
-  });
-  restRequest("POST", {"index":"set_report_categories", "report_title": reportTitle, "categories": categories},
-              setReportCategoryList);
-}
-
 function setReportKeywords(reportTitle) {
   // Get selected aggressors and victims and send request for updating
-  var assocObj = {country: [], countries_all: false, group: [], groups_all: false};
+  var assocObj = {country: [], countries_all: false, group: [], categories_all: false};
   var requestData = {aggressors: JSON.parse(JSON.stringify(assocObj)), victims: JSON.parse(JSON.stringify(assocObj))};
+  requestData.victims.category = [];
   $(".aggressorGroupOpt:selected").each(function() {
     requestData.aggressors.group.push($(this).prop("value"));
   });
   $(".aggressorCountryOpt:selected").each(function() {
     requestData.aggressors.country.push($(this).prop("value"));
   });
-  $(".victimGroupOpt:selected").each(function() {
-    requestData.victims.group.push($(this).prop("value"));
-  });
   $(".victimCountryOpt:selected").each(function() {
     requestData.victims.country.push($(this).prop("value"));
   });
+  $(".categoryOpt:selected").each(function() {
+    requestData.victims.category.push($(this).prop("value"));
+  });
   requestData.victims.countries_all = $("input#victimCountrySelAll").prop("checked");
-  requestData.victims.groups_all = $("input#victimGroupSelAll").prop("checked");
+  requestData.victims.categories_all = $("input#victimCategorySelAll").prop("checked");
   restRequest("POST", {"index":"set_report_keywords", "report_title": reportTitle, "victims": requestData.victims,
                        "aggressors": requestData.aggressors}, setAggressorsVictimsLists);
 }
@@ -418,11 +409,7 @@ function setReportKeywords(reportTitle) {
 function setAggressorsVictimsLists() {
   generateMultiSelectList("aggressorGroupOpt", "aggressorCurrentGroupList", "aggressorGroupLi");
   generateMultiSelectList("aggressorCountryOpt", "aggressorCurrentCountryList", "aggressorCountryLi");
-  generateMultiSelectList("victimGroupOpt", "victimCurrentGroupList", "victimGroupLi");
   generateMultiSelectList("victimCountryOpt", "victimCurrentCountryList", "victimCountryLi");
-}
-
-function setReportCategoryList() {
   generateMultiSelectList("categoryOpt", "currentCategoryList", "reportCategoryLi");
 }
 
@@ -443,19 +430,15 @@ function onchangeAggressorCountries(e) {
   updateMultiSelectList(e, "aggressorCountryOpt", "aggressorCurrentCountryList", "aggressorCountryLi");
 }
 
-function onchangeVictimGroups(e) {
-  updateMultiSelectList(e, "victimGroupOpt", "victimCurrentGroupList", "victimGroupLi", false);
-  // If the list is updated after interacting with individual select-options, this means select-all is n/a
-  $("#victimGroupSelAll").prop("checked", false);
-}
-
 function onchangeVictimCountries(e) {
   updateMultiSelectList(e, "victimCountryOpt", "victimCurrentCountryList", "victimCountryLi");
+  // If the list is updated after interacting with individual select-options, this means select-all is n/a
   $("#victimCountrySelAll").prop("checked", false);
 }
 
 function onchangeReportCategories(e) {
   updateMultiSelectList(e, "categoryOpt", "currentCategoryList", "reportCategoryLi");
+  $("#victimCategorySelAll").prop("checked", false);
 }
 
 function onchangeSelectAllKeywords(e, assocType, assocWith) {

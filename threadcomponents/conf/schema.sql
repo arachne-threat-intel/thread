@@ -59,7 +59,9 @@ CREATE TABLE IF NOT EXISTS report_categories (
     report_uid VARCHAR(60),
     -- The keyname of the category
     category_keyname TEXT,
-    UNIQUE (report_uid, category_keyname),
+    -- Whether the keyword reflects an aggressor or victim (should just be latter for now)
+    association_type VARCHAR(20),
+    UNIQUE (report_uid, category_keyname, association_type),
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE,
     FOREIGN KEY(category_keyname) REFERENCES categories(keyname) ON DELETE CASCADE
 );

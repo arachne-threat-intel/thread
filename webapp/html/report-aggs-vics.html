@@ -8,24 +8,32 @@
     {% set onchangeCountry = "onchangeAggressorCountries" %}
   {% else %}
     {% set assoc_label = "Victims" %}
-    {% set db_group_list = victim_groups %}
     {% set db_country_list = victim_countries %}
     {% set allow_select_all = true %}
-    {% set groups_select_all = vic_groups_all %}
+    {% set categories_select_all = vic_cat_all %}
     {% set countries_select_all = vic_countries_all %}
-    {% set onchangeGroup = "onchangeVictimGroups" %}
     {% set onchangeCountry = "onchangeVictimCountries" %}
   {% endif %}
   <div class="row">
     <label class="col-sm-2 col-form-label"><b>{{assoc_label}}:</b></label>
     <div class="col-sm-5">
-      <select id="{{assoc_type}}GroupSelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
-              title="Select groups" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
-              onchange="{{onchangeGroup}}(this)">
-        {% for group_name in group_list %}
-          <option class="{{assoc_type}}GroupOpt" value="{{group_name}}" {% if group_name in db_group_list %}selected{% endif %}>{{group_name}}</option>
-        {% endfor %}
-      </select>
+      {% if assoc_type == "aggressor" %}
+        <select id="{{assoc_type}}GroupSelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
+                title="Select groups" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
+                onchange="{{onchangeGroup}}(this)">
+          {% for group_name in group_list %}
+            <option class="{{assoc_type}}GroupOpt" value="{{group_name}}" {% if group_name in db_group_list %}selected{% endif %}>{{group_name}}</option>
+          {% endfor %}
+        </select>
+      {% else %}
+        <select id="{{assoc_type}}CategorySelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
+                title="Select categories" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
+                onchange="onchangeReportCategories(this)">
+          {% for category_entry in category_list %}
+            <option class="categoryOpt" value="{{category_entry.keyname}}" {% if category_entry.keyname in categories %}selected{% endif %}>{{category_entry.display_name}}</option>
+          {% endfor %}
+        </select>
+      {% endif %}
     </div>
     <div class="col-sm-5">
       <select id="{{assoc_type}}CountrySelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
@@ -40,11 +48,19 @@
   <div class="row pt-2">{# Display the list of selected groups and countries #}
     <div class="col-sm-2"></div>
     <div class="col-sm-5">
-      <ul id="{{assoc_type}}CurrentGroupList">
-        {% for saved_group in db_group_list %}
-          <li class="{{assoc_type}}GroupLi" id="{{saved_group}}">{{saved_group}}</li>
-        {% endfor %}
-      </ul>
+      {% if assoc_type == "aggressor" %}
+        <ul id="{{assoc_type}}CurrentGroupList">
+          {% for saved_group in db_group_list %}
+            <li class="{{assoc_type}}GroupLi" id="{{saved_group}}">{{saved_group}}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <ul id="currentCategoryList">{# Display the list of categories outside the select-box in case list is long #}
+          {% for report_category in categories %}
+            <li class="reportCategoryLi" id="{{report_category}}">{{categories[report_category]['display_name']}}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
     </div>
     <div class="col-sm-5">
       <ul id="{{assoc_type}}CurrentCountryList">
@@ -58,9 +74,9 @@
     <div class="row pt-2">
       <div class="col-sm-2"></div>
       <div class="col-sm-5">
-        <input type="checkbox" id="{{assoc_type}}GroupSelAll" onchange="onchangeSelectAllKeywords(this, '{{assoc_type}}', 'Group')"
-               {% if groups_select_all %}checked{% endif %} {% if completed %}disabled{% endif %}>
-        <label for="{{assoc_type}}GroupSelAll"><small>{{assoc_label}} > Groups > Select all?</small></label>
+        <input type="checkbox" id="{{assoc_type}}CategorySelAll" onchange="onchangeSelectAllKeywords(this, '{{assoc_type}}', 'Category')"
+               {% if categories_select_all %}checked{% endif %} {% if completed %}disabled{% endif %}>
+        <label for="{{assoc_type}}CategorySelAll"><small>{{assoc_label}} > Categories > Select all?</small></label>
       </div>
       <div class="col-sm-5">
         <input type="checkbox" id="{{assoc_type}}CountrySelAll" onchange="onchangeSelectAllKeywords(this, '{{assoc_type}}', 'Country')"

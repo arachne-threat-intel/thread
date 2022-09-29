@@ -42,29 +42,6 @@
             <button type="button" onclick="updateReportDates('{{title_quoted}}')" class="btn btn-md btn-primary">Update Report Dates</button>
           {% endif %}
         </form><hr>
-        <form id="reportCategoriesForm">{# Report categories #}
-          <div class="row">
-            <label for="categorySelect" class="col-sm-4 col-form-label"><b>Report Categories:</b></label>
-            <div class="col-sm-8">
-              <select id="categorySelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
-                      title="Select categories" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
-                      onchange="onchangeReportCategories(this)">
-                {% for category_entry in category_list %}
-                  <option class="categoryOpt" value="{{category_entry.keyname}}" {% if category_entry.keyname in categories %}selected{% endif %}>{{category_entry.display_name}}</option>
-                {% endfor %}
-              </select>
-            </div>
-          </div>
-          <ul id="currentCategoryList">{# Display the list of categories outside the select-box in case list is long #}
-            {% for report_category in categories %}
-              <li class="reportCategoryLi" id="{{report_category}}">{{categories[report_category]['display_name']}}</li>
-            {% endfor %}
-          </ul>
-          {% if not completed %}
-            <br>
-            <button type="button" onclick="setReportCategories('{{title_quoted}}')" class="btn btn-md btn-primary">Set Report Categories</button>
-          {% endif %}
-        </form><hr>
         <form id="reportAggressorsVictimsForm">{# Report aggressors and victims #}
           {% with assoc_type = "aggressor" %}{% include "report-aggs-vics.html" %}{% endwith %}
           {% with assoc_type = "victim" %}{% include "report-aggs-vics.html" %}{% endwith %}
