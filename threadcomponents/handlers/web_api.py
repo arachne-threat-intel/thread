@@ -235,7 +235,6 @@ class WebAPI:
                     confirmed_attacks=lambda d: self.rest_svc.confirmed_attacks(request=request, criteria=d),
                     update_report_dates=lambda d: self.rest_svc.update_report_dates(request=request, criteria=d),
                     update_attack_time=lambda d: self.rest_svc.update_attack_time(request=request, criteria=d),
-                    set_report_categories=lambda d: self.rest_svc.set_report_categories(request=request, criteria=d),
                     set_report_keywords=lambda d: self.rest_svc.set_report_keywords(request=request, criteria=d),
                 ))
             method = options[request.method][index]
@@ -298,10 +297,9 @@ class WebAPI:
             sentences=sentences, attack_uids=self.attack_dropdown_list, original_html=original_html, pdf_link=pdf_link,
             nav_link=nav_link, completed=int(report_status == self.report_statuses.COMPLETED.value), help_text=help_text,
             categories=categories, category_list=self.cat_dropdown_list, group_list=self.web_svc.keyword_dropdown_list,
-            aggressor_groups=keywords['aggressors']['groups'], victim_groups=keywords['victims']['groups'],
-            aggressor_countries=keywords['aggressors']['country_codes'],
+            aggressor_groups=keywords['aggressors']['groups'], aggressor_countries=keywords['aggressors']['country_codes'],
             victim_countries=keywords['victims']['country_codes'], country_list=self.data_svc.country_dict,
-            vic_groups_all=keywords['victims']['groups_all'], vic_countries_all=keywords['victims']['countries_all'],
+            vic_cat_all=keywords['victims']['categories_all'], vic_countries_all=keywords['victims']['countries_all'],
         )
         # Prepare the date fields to be interpreted by the front-end
         for report_date in ['date_written', 'start_date', 'end_date']:
@@ -340,6 +338,9 @@ class WebAPI:
         # Get the report categories and keywords
         categories = await self.data_svc.get_report_categories_for_display(report_id)
         keywords = await self.data_svc.get_report_aggressors_victims(report_id)
+        # We aren't saving victim-groups as of now
+        keywords['victims'].pop('groups')
+        keywords['victims']['categories'] = categories
         # Create the layer name and description
         enterprise_layer_description = f"Enterprise techniques used by '{report_title}', ATT&CK"
         version = '1.0'
@@ -349,7 +350,7 @@ class WebAPI:
         # Enterprise navigator layer
         enterprise_layer = {
             'filename': sanitise_filename(report_title), 'name': report_title, 'domain': 'mitre-enterprise',
-            'description': enterprise_layer_description, 'version': '2.2', 'categories': categories,
+            'description': enterprise_layer_description, 'version': '2.2',
             'aggressors': dict(), 'victims': dict(), 'article_date_published': date_of, 'report_start_date': start_date,
             'report_end_date': end_date, 'techniques': [],
             # white for non-used, blue for used
@@ -396,6 +397,9 @@ class WebAPI:
         # Get the report categories and keywords
         categories = await self.data_svc.get_report_categories_for_display(report_id)
         keywords = await self.data_svc.get_report_aggressors_victims(report_id, include_display=True)
+        # We aren't saving victim-groups as of now
+        keywords['victims'].pop('groups')
+        keywords['victims']['categories'] = categories
 
         dd = dict()
         # Default background which will be replaced by logo via client-side
@@ -429,21 +433,16 @@ class WebAPI:
         dd['content'].append(dict(text='\n'))
         dd['content'].append(dict(text='Techniques End Date: %s' % end_date, style='bold'))
         dd['content'].append(dict(text='\n'))  # Blank line after technique dates
-        if categories:
-            dd['content'].append(dict(text='Categories: ', style='bold'))
-            dd['content'].append(dict(ul=categories))
-        else:
-            dd['content'].append(dict(text='Categories: -', style='bold'))
-        dd['content'].append(dict(text='\n'))  # Blank line after categories
         # Table for keywords
         k_table = dict(widths=['16%', '42%', '42%'], body=[])
         k_table['body'].append(['', dict(text='Aggressors', style='bold'), dict(text='Victims', style='bold')])
         k_table_cols = ['aggressors', 'victims']
         # For each row, build up the column values based on the keywords dictionary
-        for r_name, r_key, rk_all in [('Groups', 'groups', 'groups_all'), ('Countries', 'countries', 'countries_all')]:
+        for r_name, r_key, rk_all in [('Groups', 'groups', None), ('Categories', 'categories', 'categories_all'),
+                                      ('Countries', 'countries', 'countries_all')]:
             row = [dict(text=r_name, style='bold')]
             for col in k_table_cols:
-                k_vals, k_is_all = keywords[col][r_key], keywords[col][rk_all]
+                k_vals, k_is_all = keywords[col].get(r_key, []), keywords[col].get(rk_all)
                 # We're either flagging 'All' values, listing the values or listing no values ('-')
                 if k_is_all:
                     row.append(dict(text='All', style='bold'))

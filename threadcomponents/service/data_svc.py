@@ -434,14 +434,14 @@ class DataService:
         query = 'SELECT association_type, association_with FROM report_all_assoc WHERE report_uid = %s' % self.dao.db_qparam
         all_assoc = await self.dao.raw_select(query, parameters=tuple([report_id]))
         # Set up the dictionary to return the results split by aggressor and victim
-        r_template = dict(groups=[], groups_all=False, country_codes=[], countries_all=False)
+        r_template = dict(groups=[], categories_all=False, country_codes=[], countries_all=False)
         if include_display:
             r_template.update(dict(countries=[]))
         results = dict(aggressors=deepcopy(r_template), victims=deepcopy(r_template))
         # Flag select-all in results: only doing this for victims
         for results_key, db_assoc_type in [('victims', 'victim')]:
-            results[results_key]['groups_all'] = any((r.get('association_with') == 'group') and
-                                                     (r.get('association_type') == db_assoc_type) for r in all_assoc)
+            results[results_key]['categories_all'] = any((r.get('association_with') == 'category') and
+                                                         (r.get('association_type') == db_assoc_type) for r in all_assoc)
             results[results_key]['countries_all'] = any((r.get('association_with') == 'country') and
                                                         (r.get('association_type') == db_assoc_type) for r in all_assoc)
         # Go through the retrieved database results and place result in appropriate dictionary/list
@@ -460,7 +460,7 @@ class DataService:
             if not (assoc_value_g or assoc_value_c):
                 logging.error('GROUP or COUNTRY missing in db entry uid `%s`' % entry.get('uid'))
                 continue
-            if assoc_value_g and not updating['groups_all']:
+            if assoc_value_g:
                 updating['groups'].append(assoc_value_g)
             elif assoc_value_c and not updating['countries_all']:
                 updating['country_codes'].append(assoc_value_c)

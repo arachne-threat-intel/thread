@@ -396,13 +396,15 @@ class TestReports(ThreadAppTest):
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='add.categories',
                                            current_status=ReportStatus.QUEUE.value))
         # Add an invalid category
-        data = dict(index='set_report_categories', report_title=report_title, categories=['notACategory', 'reallyNot'])
+        data = dict(index='set_report_keywords', report_title=report_title,
+                    victims=dict(category=['notACategory', 'reallyNot']))
         await self.client.post('/rest', json=data)
         # Check that these invalid categories were not saved
         current = await self.data_svc.get_report_category_keynames(report_id)
         self.assertFalse(current, msg='Invalid categories saved to report.')
         # Add valid categories
-        data = dict(index='set_report_categories', report_title=report_title, categories=['aerospace', 'music'])
+        data = dict(index='set_report_keywords', report_title=report_title,
+                    victims=dict(category=['aerospace', 'music']))
         resp = await self.client.post('/rest', json=data)
         self.assertTrue(resp.status < 300, msg='Adding categories resulted in a non-200 response.')
         current = await self.data_svc.get_report_category_keynames(report_id)
@@ -415,16 +417,17 @@ class TestReports(ThreadAppTest):
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='remove.categories',
                                            current_status=ReportStatus.QUEUE.value))
         # Add categories
-        data = dict(index='set_report_categories', report_title=report_title, categories=['aerospace', 'music', 'film'])
+        data = dict(index='set_report_keywords', report_title=report_title,
+                    victims=dict(category=['aerospace', 'music', 'film']))
         await self.client.post('/rest', json=data)
         # Remove a category
-        data = dict(index='set_report_categories', report_title=report_title, categories=['music', 'film'])
+        data = dict(index='set_report_keywords', report_title=report_title, victims=dict(category=['music', 'film']))
         resp = await self.client.post('/rest', json=data)
         self.assertTrue(resp.status < 300, msg='Removing categories resulted in a non-200 response.')
         current = await self.data_svc.get_report_category_keynames(report_id)
         self.assertEqual(set(current), {'film', 'music'}, msg='Categories were not removed.')
         # Remove last two categories
-        data = dict(index='set_report_categories', report_title=report_title, categories=[])
+        data = dict(index='set_report_keywords', report_title=report_title, victims=dict(category=[]))
         resp = await self.client.post('/rest', json=data)
         self.assertTrue(resp.status < 300, msg='Removing all categories resulted in a non-200 response.')
         current = await self.data_svc.get_report_category_keynames(report_id)
@@ -446,13 +449,13 @@ class TestReports(ThreadAppTest):
         error_sfx = ' not correctly returned.'
         self.assertEqual(set(k['aggressors']['country_codes']), {'TA', 'HB'}, msg='Aggressor countries' + error_sfx)
         self.assertEqual(set(k['aggressors']['groups']), {'APT1'}, msg='Aggressor groups' + error_sfx)
-        self.assertFalse(k['aggressors']['groups_all'], msg='Aggressor groups select-all' + error_sfx)
+        self.assertFalse(k['aggressors']['categories_all'], msg='Aggressor categories select-all' + error_sfx)
         self.assertFalse(k['aggressors']['countries_all'], msg='Aggressor countries select-all' + error_sfx)
         self.assertEqual(set(k['aggressors']['countries']), {'Hobbiton', 'Tatooine'},
                          msg='Aggressor countries (display)' + error_sfx)
         self.assertEqual(set(k['victims']['country_codes']), set(), msg='Victim countries' + error_sfx)
         self.assertEqual(set(k['victims']['groups']), set(), msg='Victim groups' + error_sfx)
-        self.assertFalse(k['victims']['groups_all'], msg='Victim groups select-all' + error_sfx)
+        self.assertFalse(k['victims']['categories_all'], msg='Victim categories select-all' + error_sfx)
         self.assertTrue(k['victims']['countries_all'], msg='Victim countries select-all' + error_sfx)
         self.assertEqual(set(k['victims']['countries']), set(), msg='Victim countries (display)' + error_sfx)
 
@@ -468,7 +471,7 @@ class TestReports(ThreadAppTest):
         await self.client.post('/rest', json=data)
         # Update keywords by removing some of them
         data = dict(index='set_report_keywords', report_title=report_title,
-                    aggressors=dict(country=['WA'], group=['APT2']), victims=dict(country=['HB'], groups_all=True))
+                    aggressors=dict(country=['WA'], group=['APT2']), victims=dict(country=['HB'], categories_all=True))
         resp = await self.client.post('/rest', json=data)
         self.assertTrue(resp.status < 300, msg='Updating and removing keywords resulted in a non-200 response.')
         # Test the database contains these updates
@@ -476,11 +479,11 @@ class TestReports(ThreadAppTest):
         error_sfx = ' not correctly returned.'
         self.assertEqual(set(k['aggressors']['country_codes']), {'WA'}, msg='Aggressor countries' + error_sfx)
         self.assertEqual(set(k['aggressors']['groups']), {'APT2'}, msg='Aggressor groups' + error_sfx)
-        self.assertFalse(k['aggressors']['groups_all'], msg='Aggressor groups select-all' + error_sfx)
+        self.assertFalse(k['aggressors']['categories_all'], msg='Aggressor categories select-all' + error_sfx)
         self.assertFalse(k['aggressors']['countries_all'], msg='Aggressor countries select-all' + error_sfx)
         self.assertEqual(set(k['aggressors']['countries']), {'Wakanda'}, msg='Aggressor countries (display)' + error_sfx)
         self.assertEqual(set(k['victims']['country_codes']), {'HB'}, msg='Victim countries' + error_sfx)
         self.assertEqual(set(k['victims']['groups']), set(), msg='Victim groups' + error_sfx)
-        self.assertTrue(k['victims']['groups_all'], msg='Victim groups select-all' + error_sfx)
+        self.assertTrue(k['victims']['categories_all'], msg='Victim categories select-all' + error_sfx)
         self.assertFalse(k['victims']['countries_all'], msg='Victim countries select-all' + error_sfx)
         self.assertEqual(set(k['victims']['countries']), {'Hobbiton'}, msg='Victim countries (display)' + error_sfx)
