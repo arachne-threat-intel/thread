@@ -435,8 +435,9 @@ class RestService:
         start_date_conv, end_date_conv = start_dict.get(DATETIME_OBJ), end_dict.get(DATETIME_OBJ)
         if (start_date_conv and end_date_conv) and same_dates and (end_date_conv != start_date_conv):
             return dict(error='Specified same dates but different dates provided.', alert_user=1)
-        if (start_date_conv and r_end and (start_date_conv > r_end.replace(tzinfo=None))) or \
-                (end_date_conv and r_start and (end_date_conv < r_start.replace(tzinfo=None))):
+        # Check that if one date in the date range is given, it fits with previously-saved/other date in range
+        if (start_date_conv and (not end_date_conv) and r_end and (start_date_conv > r_end.replace(tzinfo=None))) or \
+                (end_date_conv and (not start_date_conv) and r_start and (end_date_conv < r_start.replace(tzinfo=None))):
             return dict(error='The start/end dates do not follow the order of the existing start/end dates.', alert_user=1)
         # Are there any techniques that have start/end dates that don't fit with these new report dates?
         if start_date or end_date:
@@ -933,10 +934,14 @@ class RestService:
             if not (entries and (entries[0].get('report_uid') == report_id) and entries[0].get('confirmed')
                     and entries[0].get('active_hit')) or (update_data.items() <= entries[0].items()):
                 continue
+            # Check that if one date in the date range is given, it fits with previously-saved/other date in range
             current_start = self.to_datetime_obj(entries[0]['start_date'])
             current_end = self.to_datetime_obj(entries[0]['end_date'])
-            if (start_date_conv and current_end and (start_date_conv > current_end.replace(tzinfo=None))) or \
-                    (end_date_conv and current_start and (end_date_conv < current_start.replace(tzinfo=None))):
+            inv_start = start_date_conv and (not end_date_conv) and current_end and \
+                        (start_date_conv > current_end.replace(tzinfo=None))
+            inv_end = end_date_conv and (not start_date_conv) and current_start and \
+                      (end_date_conv < current_start.replace(tzinfo=None))
+            if inv_start or inv_end:
                 continue
             updates.append(await self.dao.update('report_sentence_hits', where=dict(uid=mapping),
                                                  data=update_data, return_sql=True))
