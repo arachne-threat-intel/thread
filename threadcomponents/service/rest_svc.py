@@ -415,7 +415,8 @@ class RestService:
         if error:
             return default_error
         date_of, start_date, end_date = criteria.get('date_of'), criteria.get('start_date'), criteria.get('end_date')
-        same_dates = criteria.get('same_dates') is True  # we only want to process booleans sent for this parameter
+        # We only want to process booleans sent for these parameters
+        same_dates, apply_to_all = criteria.get('same_dates') is True, criteria.get('apply_to_all') is True
         report_id, r_status, r_written = report[UID], report['current_status'], report['date_written']
         r_start, r_end = self.to_datetime_obj(report['start_date']), self.to_datetime_obj(report['end_date'])
         # Check a queued or completed report ID hasn't been provided
@@ -440,7 +441,7 @@ class RestService:
                 (end_date_conv and (not start_date_conv) and r_start and (end_date_conv < r_start.replace(tzinfo=None))):
             return dict(error='The start/end dates do not follow the order of the existing start/end dates.', alert_user=1)
         # Are there any techniques that have start/end dates that don't fit with these new report dates?
-        if start_date or end_date:
+        if (not apply_to_all) and (start_date or end_date):
             start_date_lt, start_date_gt = 'start_date < {par_holder}', 'start_date > {par_holder}'
             end_date_lt, end_date_gt = 'end_date < {par_holder}', 'end_date > {par_holder}'
             if start_date and end_date:
@@ -463,7 +464,21 @@ class RestService:
             update_data['end_date'] = start_date
         # Update the database if there were values to update with; inform user of any which were ignored
         if update_data:
-            await self.dao.update('reports', where=dict(uid=report_id), data=update_data)
+            sql_list = [await self.dao.update('reports', where=dict(uid=report_id), data=update_data, return_sql=True)]
+            if apply_to_all:  # if we're applying the report date range to all techniques...
+                techs_update_data = dict()
+                if start_date:
+                    techs_update_data.update(dict(start_date=start_date))
+                    if same_dates:
+                        techs_update_data.update(dict(end_date=start_date))
+                if end_date:
+                    techs_update_data.update(dict(end_date=end_date))
+                if techs_update_data:
+                    # WHERE clause can be just matching this report ID; narrowing this to unconfirmed techs might cause
+                    # issues when they are later confirmed and have old/different date ranges
+                    sql_list.append(await self.dao.update('report_sentence_hits', where=dict(report_uid=report_id),
+                                                          data=techs_update_data, return_sql=True))
+            await self.dao.run_sql_list(sql_list=sql_list)
         if not success.get('info'):  # the success response hasn't already been updated with info
             success.update(dict(info='The report dates have been updated.', alert_user=1))
         return success

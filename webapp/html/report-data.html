@@ -38,6 +38,8 @@
             </div>
           </div>
           {% if not completed %}
+            <input type="checkbox" id="applyToAllDates" class="report-submission-checkbox" checked>
+            <label for="applyToAllDates"><small>Apply Start/End dates to all confirmed techniques?</small></label>
             <br>
             <button type="button" onclick="updateReportDates('{{title_quoted}}')" class="btn btn-md btn-primary">Update Report Dates</button>
           {% endif %}
