@@ -175,8 +175,9 @@ function updateReportDates(reportTitle) {
   var startDate = document.getElementById("startDate").value;
   var endDate = document.getElementById("endDate").value;
   var sameDates = $("#dateRange").prop("checked");
+  var applyToAll = $("#applyToAllDates").prop("checked");
   restRequest("POST", {"index": "update_report_dates", "report_title": reportTitle, "same_dates": sameDates,
-                       "date_of": dateOf, "start_date": startDate, "end_date": endDate});
+                       "apply_to_all": applyToAll, "date_of": dateOf, "start_date": startDate, "end_date": endDate});
 }
 
 function submit(data, submitButton) {

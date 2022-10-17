@@ -580,10 +580,14 @@
     "name": "Cultural & Social Societies",
     "sub_categories": []
   },
+  "think_tanks": {
+    "name": "Think Tanks & Policy Institutes",
+    "sub_categories": []
+  },
   "not_for_profit": {
     "name": "Not-for-Profit",
     "sub_categories": ["charities", "human_rights", "foundations", "welfare", "unions", "trade_associations",
-      "pensions", "veterans", "religious", "sports_clubs", "cultural_clubs"]
+      "pensions", "veterans", "religious", "sports_clubs", "cultural_clubs", "think_tanks"]
   },
   "defence": {
     "name": "Defence & Intelligence",
