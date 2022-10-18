@@ -327,11 +327,13 @@ class DataService:
         parent_cat_names, display_names = {}, {}
         # Loop through category list once to map all sub-categories to their parent categories
         for keyname, entry in categories_dict.items():
-            if keyname in cur_categories:
-                continue
             sub_categories = entry.get('sub_categories', [])
+            # Even if a category is in our db, we need to check if any of its sub-categories are new
+            if (keyname in cur_categories) and not sub_categories:
+                continue
             for sub_cat in sub_categories:
-                parent_cat_names[sub_cat] = keyname
+                if sub_cat not in cur_categories:
+                    parent_cat_names[sub_cat] = keyname
         # Loop through a second time to construct the display name of categories
         for keyname, entry in categories_dict.items():
             if keyname in cur_categories:
