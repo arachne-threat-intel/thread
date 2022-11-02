@@ -41,7 +41,7 @@
             <input type="checkbox" id="applyToAllDates" class="report-submission-checkbox" checked>
             <label for="applyToAllDates"><small>Apply Start/End dates to all confirmed techniques?</small></label>
             <br>
-            <button type="button" onclick="updateReportDates('{{title_quoted}}')" class="btn btn-md btn-primary">Update Report Dates</button>
+            <button type="button" onclick="updateReportDates('{{title_quoted}}')" class="btn btn-primary">Update Report Dates</button>
           {% endif %}
         </form><hr>
         <form id="reportAggressorsVictimsForm">{# Report aggressors and victims #}
@@ -49,7 +49,7 @@
           {% with assoc_type = "victim" %}{% include "report-aggs-vics.html" %}{% endwith %}
           <br>
           {% if not completed %}
-            <button type="button" onclick="setReportKeywords('{{title_quoted}}')" class="btn btn-md btn-primary me-2">Set Aggressors & Victims</button>
+            <button type="button" onclick="setReportKeywords('{{title_quoted}}')" class="btn btn-primary me-2">Set Aggressors & Victims</button>
           {% endif %}
           <button type="button" class="btn btn-secondary" data-bs-toggle="collapse" data-bs-target="#requestNewConfigInfo"
                   aria-expanded="false" aria-controls="requestNewConfigInfo">Missing/Outdated Aggressor & Victim Options?</button>
