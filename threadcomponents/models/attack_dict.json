@@ -2878,9 +2878,10 @@
       "has cleared event logs, including by using the commands wevtutil cl System and wevtutil cl Security."
     ],
     "id": "T1070",
-    "name": "Indicator Removal on Host",
+    "name": "Indicator Removal",
     "similar_words": [
-      "Indicator Removal on Host"
+      "Indicator Removal on Host",
+      "Indicator Removal"
     ]
   },
   "attack-pattern--7bc57495-ea59-4380-be31-a64af124ef18": {
