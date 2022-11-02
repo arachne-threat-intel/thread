@@ -47,10 +47,34 @@
         <form id="reportAggressorsVictimsForm">{# Report aggressors and victims #}
           {% with assoc_type = "aggressor" %}{% include "report-aggs-vics.html" %}{% endwith %}
           {% with assoc_type = "victim" %}{% include "report-aggs-vics.html" %}{% endwith %}
+          <br>
           {% if not completed %}
-            <br>
-            <button type="button" onclick="setReportKeywords('{{title_quoted}}')" class="btn btn-md btn-primary">Set Aggressors & Victims</button>
+            <button type="button" onclick="setReportKeywords('{{title_quoted}}')" class="btn btn-md btn-primary me-2">Set Aggressors & Victims</button>
           {% endif %}
+          <button type="button" class="btn btn-secondary" data-bs-toggle="collapse" data-bs-target="#requestNewConfigInfo"
+                  aria-expanded="false" aria-controls="requestNewConfigInfo">Missing/Outdated Aggressor & Victim Options?</button>
+          <div class="collapse" id="requestNewConfigInfo">
+            <div class="card-body">
+              <ul>
+                <li><b>Categories</b>: We maintain our category list within the Thread repository. For requested additions/changes,
+                  <a href="https://github.com/arachne-threat-intel/thread/issues/new?labels=config+change&title=Category+Config+Change+Request"
+                     target="_blank">please raise an Issue with us here</a>.
+                </li>
+                <li><b>Countries</b>: We use a list collated and maintained in another repository (not created by us), specifically
+                  <a href="https://github.com/lukes/ISO-3166-Countries-with-Regional-Codes/blob/master/slim-2/slim-2.json"
+                     target="_blank">this file</a>. For country-list changes, initially, if you can see we haven't
+                  updated our list from the repository we are using
+                  <a href="https://github.com/arachne-threat-intel/thread/issues/new?labels=config+change&title=Country+Config+Change+Request"
+                     target="_blank">please raise an Issue with us</a>. If that is not the case, please follow up with
+                  the initial repository via an Issue or Pull Request with your requested additions/changes.
+                </li>
+                <li><b>Groups</b>: We maintain our group list via a separate repository. For requested additions/changes,
+                  <a href="https://github.com/arachne-threat-intel/rosettaStone/issues/new?labels=config+change&title=Group+Config+Change+Request"
+                     target="_blank">please raise an Issue with us there</a>.
+                </li>
+              </ul>
+            </div>
+          </div>
         </form>
       </div>
     </div>
