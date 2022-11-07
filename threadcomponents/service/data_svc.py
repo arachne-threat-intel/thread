@@ -662,6 +662,31 @@ class DataService:
         # Run the deletions and insertions for this method altogether; return if it was successful
         return await self.dao.run_sql_list(sql_list=sql_list)
 
+    async def export_report_data(self, report=None, report_id='', report_title=''):
+        """Function to retrieve all the data for a report."""
+        # If we have no report, retrieve the report using the ID or title
+        if not report:
+            if report_id:
+                report = await self.get_report_by_id(report_id=report_id)
+            elif report_title:
+                report = await self.get_report_by_title(report_title=report_title)
+            else:
+                raise ValueError('Insufficient arguments to retrieve report data.')
+        # Using the report, obtain the ID (if not already given) to continue the data retrieval
+        if not report_id:
+            # Be wary, this can raise KeyError, IndexError
+            report_id = report[0]['uid']
+        # Retrieve and return the rest of the report data
+        sentences = await self.get_report_sentences_with_attacks(report_id=report_id)
+        categories = await self.get_report_categories_for_display(report_id)
+        keywords = await self.get_report_aggressors_victims(report_id, include_display=True)
+        # We aren't saving victim-groups as of now
+        keywords['victims'].pop('groups')
+        keywords['victims']['categories'] = categories
+        all_data = dict(report=report, sentences=sentences)
+        all_data.update(keywords)
+        return all_data
+
     async def get_unique_title(self, title):
         """
         Function to retrieve a unique title whilst checking for a given title in the database.

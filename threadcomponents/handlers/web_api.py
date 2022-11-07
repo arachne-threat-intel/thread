@@ -392,14 +392,10 @@ class WebAPI:
         if report_status not in [self.report_statuses.NEEDS_REVIEW.value, self.report_statuses.IN_REVIEW.value,
                                  self.report_statuses.COMPLETED.value]:
             raise web.HTTPNotFound()
-        # Continue with the method and retrieve the report's sentences
-        sentences = await self.data_svc.get_report_sentences_with_attacks(report_id=report_id)
-        # Get the report categories and keywords
-        categories = await self.data_svc.get_report_categories_for_display(report_id)
-        keywords = await self.data_svc.get_report_aggressors_victims(report_id, include_display=True)
-        # We aren't saving victim-groups as of now
-        keywords['victims'].pop('groups')
-        keywords['victims']['categories'] = categories
+        # Continue with the method and retrieve the report's sentences and aggressors/victims
+        report_data = await self.data_svc.export_report_data(report=report, report_id=report_id)
+        sentences = report_data.get('sentences', [])
+        keywords = dict(aggressors=report_data['aggressors'], victims=report_data['victims'])
 
         dd = dict()
         # Default background which will be replaced by logo via client-side
