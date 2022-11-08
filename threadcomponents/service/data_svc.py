@@ -667,15 +667,15 @@ class DataService:
         # If we have no report, retrieve the report using the ID or title
         if not report:
             if report_id:
-                report = await self.get_report_by_id(report_id=report_id)
+                report = (await self.get_report_by_id(report_id=report_id))[0]
             elif report_title:
-                report = await self.get_report_by_title(report_title=report_title)
+                report = (await self.get_report_by_title(report_title=report_title))[0]
             else:
                 raise ValueError('Insufficient arguments to retrieve report data.')
         # Using the report, obtain the ID (if not already given) to continue the data retrieval
         if not report_id:
-            # Be wary, this can raise KeyError, IndexError
-            report_id = report[0]['uid']
+            # Be wary, this can raise KeyError
+            report_id = report['uid']
         # Retrieve and return the rest of the report data
         sentences = await self.get_report_sentences_with_attacks(report_id=report_id)
         categories = await self.get_report_categories_for_display(report_id)
