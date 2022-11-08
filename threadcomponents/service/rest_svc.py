@@ -467,12 +467,10 @@ class RestService:
             sql_list = [await self.dao.update('reports', where=dict(uid=report_id), data=update_data, return_sql=True)]
             if apply_to_all:  # if we're applying the report date range to all techniques...
                 techs_update_data = dict()
-                if start_date:
-                    techs_update_data.update(dict(start_date=start_date))
-                    if same_dates:
-                        techs_update_data.update(dict(end_date=start_date))
-                if end_date:
-                    techs_update_data.update(dict(end_date=end_date))
+                if 'start_date' in update_data:
+                    techs_update_data.update(dict(start_date=update_data.get('start_date')))
+                if 'end_date' in update_data:
+                    techs_update_data.update(dict(end_date=update_data.get('end_date')))
                 if techs_update_data:
                     # WHERE clause can be just matching this report ID; narrowing this to unconfirmed techs might cause
                     # issues when they are later confirmed and have old/different date ranges
@@ -803,8 +801,8 @@ class RestService:
                               'Please contact us if this is incorrect.', alert_user=1)
         # Get the sentence to insert by removing html markup
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
-        # Get the report-date to default this attack mapping's start date as
-        start_date = report['date_written_str']
+        # Get the report-start-date to default this attack mapping's start date as
+        start_date = report['start_date_str']
         # A flag to determine if the model initially predicted this attack for this sentence
         model_initially_predicted = False
         # The list of SQL commands to run in a single transaction
@@ -819,7 +817,7 @@ class RestService:
             # Else update the hit as active and confirmed
             sql_commands.append(await self.dao.update(
                 'report_sentence_hits', where=dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True,
-                data=dict(active_hit=self.dao.db_true_val, confirmed=self.dao.db_true_val, start_date=start_date)))
+                data=dict(active_hit=self.dao.db_true_val, confirmed=self.dao.db_true_val)))
             # Update model_initially_predicted flag using returned historic_hits
             model_initially_predicted = returned_hit['initial_model_match']
         else:

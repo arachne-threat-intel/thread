@@ -393,7 +393,7 @@ class WebAPI:
                                  self.report_statuses.COMPLETED.value]:
             raise web.HTTPNotFound()
         # Continue with the method and retrieve the report's sentences and aggressors/victims
-        report_data = await self.data_svc.export_report_data(report=report, report_id=report_id)
+        report_data = await self.data_svc.export_report_data(report=report[0], report_id=report_id)
         sentences = report_data.get('sentences', [])
         keywords = dict(aggressors=report_data['aggressors'], victims=report_data['victims'])
 
