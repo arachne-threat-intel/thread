@@ -233,6 +233,10 @@ class RestService:
                 update_data.update(dict(expires_on=expiry_date_str))
             await self.dao.update('reports', where=dict(uid=report_id), data=update_data)
             self.seen_report_status[report_id] = new_status
+            # Before finishing, do any post-complete tasks if necessary
+            if not self.is_local:
+                report_data = await self.data_svc.export_report_data(report_id=report_id)
+                await self.web_svc.on_report_complete(request, report_data)
             return REST_SUCCESS
         else:
             return default_error
