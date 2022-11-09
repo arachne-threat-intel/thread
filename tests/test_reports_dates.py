@@ -99,7 +99,12 @@ class TestReportDates(ThreadAppTest):
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='kami.gawa',
                                            date_written='2022-08-16', current_status=ReportStatus.QUEUE.value),
                                       post_confirm_attack=True)
-        # Mapped attacks now have default start date; attempt to set end date before this start date
+        # Update a single technique from the report with a new start date
+        hits = await self.db.get('report_sentence_hits', dict(report_uid=report_id, confirmed=self.db.val_as_true))
+        data = dict(index='update_attack_time', report_title=report_title, start_date='2022-08-10',
+                    mapping_list=[hits[0][UID_KEY]])
+        await self.client.post('/rest', json=data)
+        # Attempt to set end date before the start date
         data = dict(index='update_report_dates', report_title=report_title, end_date='2020-08-16')
         resp = await self.client.post('/rest', json=data)
         resp_json = await resp.json()
