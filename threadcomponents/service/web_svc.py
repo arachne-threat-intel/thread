@@ -111,6 +111,17 @@ class WebService:
             # SystemError makes more sense but we are listening for ValueErrors
             raise ValueError('Apologies, this URL could not be processed at this time, please contact us.')
 
+    async def on_report_complete(self, request, report_data):
+        """Function to complete any post-complete actions for a report."""
+        if self.is_local:
+            # No post-complete actions needed for local-use
+            return
+        try:
+            # Attempt to use app's on-complete method; log if this couldn't be done
+            return await request.app.on_report_complete(request, report_data)
+        except (TypeError, AttributeError) as e:
+            logging.error('Misconfigured app: on_report_complete() error: ' + str(e))
+
     async def get_current_token(self, request):
         """Function to obtain the current user-token given a request."""
         if self.is_local:
