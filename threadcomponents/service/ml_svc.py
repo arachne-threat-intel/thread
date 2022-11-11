@@ -198,10 +198,10 @@ class MLService:
                 # Skip this technique and continue with the next one
                 continue
             attack_technique = attack_uid[0]['uid']
-            attack_technique_name = '{} (m)'.format(attack_uid[0]['name'])
+            attack_tech_name = attack_uid[0]['name']
             attack_tid = attack_uid[0]['tid']
             # Allow 'inactive' attacks to be recorded: they will be filtered out when viewing/exporting a report
-            data = dict(sentence_id=sentence_id, attack_uid=attack_technique, attack_technique_name=attack_technique_name,
+            data = dict(sentence_id=sentence_id, attack_uid=attack_technique, attack_technique_name=attack_tech_name,
                         report_uid=report_id, attack_tid=attack_tid, initial_model_match=self.dao.db_true_val)
             if tech_start_date:
                 data.update(dict(start_date=tech_start_date))

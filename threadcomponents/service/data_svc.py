@@ -678,11 +678,12 @@ class DataService:
             report_id = report['uid']
         # Retrieve and return the rest of the report data
         sentences = await self.get_report_sentences_with_attacks(report_id=report_id)
-        categories = await self.get_report_categories_for_display(report_id)
+        categories = await self.get_report_categories_for_display(report_id, include_keynames=True)
         keywords = await self.get_report_aggressors_victims(report_id, include_display=True)
         # We aren't saving victim-groups as of now
         keywords['victims'].pop('groups')
-        keywords['victims']['categories'] = categories
+        keywords['victims']['categories'] = [row.get('display_name', cat_code) for cat_code, row in categories.items()]
+        keywords['victims']['category_codes'] = list(categories.keys())
         all_data = dict(report=report, sentences=sentences)
         all_data.update(keywords)
         return all_data
