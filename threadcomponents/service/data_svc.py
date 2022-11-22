@@ -203,20 +203,24 @@ class DataService:
                                                         dict(attack_uid=k, similar_word=defang_text(x)))
                      for x in v['similar_words']]
                 if 'false_negatives' in v:
-                    [await self.dao.insert_generate_uid('false_negatives',
-                                                        dict(attack_uid=k, false_negative=defang_text(x)))
+                    [await self.dao.insert_generate_uid(
+                        'false_negatives',
+                        dict(attack_uid=k, false_negative=self.dao.truncate_str(defang_text(x), 800)))
                      for x in v['false_negatives']]
                 if 'false_positives' in v:
-                    [await self.dao.insert_generate_uid('false_positives',
-                                                        dict(attack_uid=k, false_positive=defang_text(x)))
+                    [await self.dao.insert_generate_uid(
+                        'false_positives',
+                        dict(attack_uid=k, false_positive=self.dao.truncate_str(defang_text(x), 800)))
                      for x in v['false_positives']]
                 if 'true_positives' in v:
-                    [await self.dao.insert_generate_uid('true_positives',
-                                                        dict(attack_uid=k, true_positive=defang_text(x)))
+                    [await self.dao.insert_generate_uid(
+                        'true_positives',
+                        dict(attack_uid=k, true_positive=self.dao.truncate_str(defang_text(x), 800)))
                      for x in v['true_positives']]
                 if 'example_uses' in v:
-                    [await self.dao.insert_generate_uid('true_positives',
-                                                        dict(attack_uid=k, true_positive=defang_text(x)))
+                    [await self.dao.insert_generate_uid(
+                        'true_positives',
+                        dict(attack_uid=k, true_positive=self.dao.truncate_str(defang_text(x), 800)))
                      for x in v['example_uses']]
             else:
                 # If the attack is already in the DB, check the name hasn't changed; update if so
@@ -299,7 +303,8 @@ class DataService:
         for k, v in to_add.items():
             await self.dao.insert('attack_uids', dict(uid=k, tid=v['id'], name=v['name']))
             if 'example_uses' in v:
-                [await self.dao.insert_generate_uid('true_positives', dict(attack_uid=k, true_positive=defang_text(x)))
+                [await self.dao.insert_generate_uid(
+                    'true_positives', dict(attack_uid=k, true_positive=self.dao.truncate_str(defang_text(x), 800)))
                  for x in v['example_uses']]
 
     async def set_countries_data(self, buildfile=os.path.join('threadcomponents', 'conf', 'countries-iso2.json')):
