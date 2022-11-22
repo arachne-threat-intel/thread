@@ -73,7 +73,6 @@ class DataService:
         # SQL queries below use a string-pos function which differs across DB engines; obtain the correct one
         str_pos = self.dao.db_func(self.dao.db.FUNC_STR_POS)
         # SQL query to obtain attack records where sub-techniques are returned with their parent-technique info
-        # Currently omits 'description' as it is large and is not used in the front-end (this can be added here though)
         sql_par_attack_base = (
             # Use a temporary table 'parent_tids' to return attacks which are sub-techniques (i.e. tid is Txxx.xx)
             # Use the substring method to save in the parent_tid column as the Txxx part of the tid (without the .xx)
@@ -167,6 +166,7 @@ class DataService:
                     references[i['target_ref']]['example_uses'].append(use)
 
         for i in attack['malware']:
+            # TODO check if we should be skipping those without a description?
             # some software do not have description, example: darkmoon https://attack.mitre.org/software/S0209
             if ('description' not in i) or attack_data_reject(i):
                 continue
@@ -193,8 +193,7 @@ class DataService:
             # If this loop takes long, the below logging-statement will help track progress
             # logging.info('Processing attack %s of %s.' % (list(attack_data.keys()).index(k) + 1, len(attack_data)))
             if k not in cur_uids:
-                await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v.get('description', NO_DESC)),
-                                                          tid=v['tid'], name=v['name']))
+                await self.dao.insert('attack_uids', dict(uid=k, tid=v['tid'], name=v['name']))
                 if 'regex_patterns' in v:
                     [await self.dao.insert_generate_uid('regex_patterns',
                                                         dict(attack_uid=k, regex_pattern=defang_text(x)))
@@ -298,8 +297,7 @@ class DataService:
         to_add = {x: y for x, y in loaded_items.items() if x not in cur_uids}
         logging.info('[#] {} Techniques found that are not in the existing database'.format(len(to_add)))
         for k, v in to_add.items():
-            await self.dao.insert('attack_uids', dict(uid=k, description=defang_text(v.get('description', NO_DESC)),
-                                                      tid=v['id'], name=v['name']))
+            await self.dao.insert('attack_uids', dict(uid=k, tid=v['id'], name=v['name']))
             if 'example_uses' in v:
                 [await self.dao.insert_generate_uid('true_positives', dict(attack_uid=k, true_positive=defang_text(x)))
                  for x in v['example_uses']]

@@ -6,22 +6,20 @@ CREATE TABLE IF NOT EXISTS attack_uids (
     uid VARCHAR(60) PRIMARY KEY,
     -- If this is an old attack (currently not in the Mitre Att&ck framework)
     inactive BOOLEAN DEFAULT 0,
-    -- Attack description
-    description TEXT,
     -- Attack ID in the form of T<Number>
-    tid TEXT,
+    tid VARCHAR(20),
     -- The name of the attack
-    name TEXT
+    name VARCHAR(200)
 );
 
 CREATE TABLE IF NOT EXISTS reports (
     uid VARCHAR(60) PRIMARY KEY,
     -- The title of the report as submitted by the user
-    title TEXT,
+    title VARCHAR(210),
     -- If applicable, the URL the user submitted for this report
-    url TEXT,
+    url VARCHAR(500),
     -- Its stage in the analysis process: queue, needs review, etc.
-    current_status TEXT,
+    current_status VARCHAR(20),
     -- Whether there is an error with this report
     error BOOLEAN DEFAULT 0,
     -- If applicable, a token to limit who can view this report
@@ -46,11 +44,11 @@ CREATE TABLE IF NOT EXISTS report_sentences (
 CREATE TABLE IF NOT EXISTS categories (
     uid VARCHAR(60) PRIMARY KEY,
     -- The category key
-    keyname TEXT UNIQUE,
+    keyname VARCHAR(40) UNIQUE,
     -- The category name
-    name TEXT,
+    name VARCHAR(100),
     -- The display name
-    display_name TEXT
+    display_name VARCHAR(200)
 );
 
 CREATE TABLE IF NOT EXISTS report_categories (
@@ -58,7 +56,7 @@ CREATE TABLE IF NOT EXISTS report_categories (
     -- The UID of the report
     report_uid VARCHAR(60),
     -- The keyname of the category
-    category_keyname TEXT,
+    category_keyname VARCHAR(40),
     -- Whether the keyword reflects an aggressor or victim (should just be latter for now)
     association_type VARCHAR(20),
     UNIQUE (report_uid, category_keyname, association_type),
@@ -69,7 +67,7 @@ CREATE TABLE IF NOT EXISTS report_categories (
 CREATE TABLE IF NOT EXISTS keywords (
     uid VARCHAR(60) PRIMARY KEY,
     -- The keyword
-    name TEXT UNIQUE
+    name VARCHAR(100) UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS report_keywords (
@@ -77,7 +75,7 @@ CREATE TABLE IF NOT EXISTS report_keywords (
     -- The UID of the report
     report_uid VARCHAR(60),
     -- The keyword
-    keyword TEXT,
+    keyword VARCHAR(100),
     -- Whether the keyword reflects an aggressor or victim
     association_type VARCHAR(20),
     UNIQUE (report_uid, keyword, association_type),
@@ -163,16 +161,16 @@ CREATE TABLE IF NOT EXISTS regex_patterns (
     -- Attack ID
     attack_uid VARCHAR(60),
     -- The regex pattern
-    regex_pattern TEXT,
+    regex_pattern VARCHAR(100),
     FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid)
 );
 
 CREATE TABLE IF NOT EXISTS similar_words (
     uid VARCHAR(60) PRIMARY KEY,
     -- Attack ID
-    attack_uid TEXT,
+    attack_uid VARCHAR(60),
     -- The similar word (to the attack of attack_uid)
-    similar_word TEXT,
+    similar_word VARCHAR(200),
     FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid)
 );
 
@@ -181,13 +179,13 @@ CREATE TABLE IF NOT EXISTS report_sentence_hits (
     -- Attack ID
     attack_uid VARCHAR(60),
     -- The name of the attack
-    attack_technique_name TEXT,
+    attack_technique_name VARCHAR(200),
     -- The report ID for this sentence-hit
     report_uid VARCHAR(60),
     -- The sentence ID of the sentence itself
     sentence_id VARCHAR(60),
     -- The attack T-ID
-    attack_tid TEXT,
+    attack_tid VARCHAR(20),
     -- Whether the Thread-analysis (not user-analysis) detected this attack for this sentence
     initial_model_match BOOLEAN DEFAULT 0,
     -- Whether an attack is currently associated with this sentence
@@ -206,7 +204,7 @@ CREATE TABLE IF NOT EXISTS original_html (
     -- The text of this element
     text TEXT,
     -- The element's tag
-    tag TEXT,
+    tag VARCHAR(10),
     -- The order this html element has relative to the other elements in a report (e.g. 0 = first element in report)
     elem_index INTEGER,
     -- Whether the Thread-analysis (not user-analysis) detected any attack for this element
