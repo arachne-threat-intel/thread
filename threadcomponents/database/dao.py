@@ -66,3 +66,10 @@ class Dao:
 
     async def run_sql_list(self, sql_list=None, return_success=True):
         return await self.db.run_sql_list(sql_list=sql_list, return_success=return_success)
+
+    @staticmethod
+    def truncate_str(value, max_length):
+        """Helper method to truncate strings before saving into db."""
+        if not (isinstance(max_length, int) and isinstance(value, str)):
+            raise TypeError('str and int args not provided to truncate_str(value, max_length).')
+        return value if len(value) < max_length else value[:(max_length - 3)] + '...'

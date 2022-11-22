@@ -765,6 +765,8 @@ class RestService:
         analyzed_html = await self.ml_svc.combine_ml_reg(ml_analyzed_html, reg_analyzed_html)
 
         for s_idx, sentence in enumerate(analyzed_html):
+            sentence['text'] = self.dao.truncate_str(sentence['text'], 800)
+            sentence['html'] = self.dao.truncate_str(sentence['html'], 900)
             if sentence['ml_techniques_found']:
                 await self.ml_svc.ml_techniques_found(report_id, sentence, s_idx, tech_start_date=article_date)
             elif sentence['reg_techniques_found']:
@@ -775,6 +777,7 @@ class RestService:
                 await self.dao.insert_with_backup('report_sentences', data)
 
         for e_idx, element in enumerate(original_html):
+            element['text'] = self.dao.truncate_str(element['text'], 800)
             html_element = dict(report_uid=report_id, text=element['text'], tag=element['tag'], elem_index=e_idx,
                                 found_status=self.dao.db_false_val)
             await self.dao.insert_with_backup('original_html', html_element)
@@ -816,6 +819,7 @@ class RestService:
                               'Please contact us if this is incorrect.', alert_user=1)
         # Get the sentence to insert by removing html markup
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
+        sentence_to_insert = self.dao.truncate_str(sentence_to_insert, 800)
         # Get the report-start-date to default this attack mapping's start date as
         start_date = report['start_date_str']
         # A flag to determine if the model initially predicted this attack for this sentence
@@ -889,6 +893,7 @@ class RestService:
             return checks
         # Get the sentence to insert by removing html markup
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]['text'])
+        sentence_to_insert = self.dao.truncate_str(sentence_to_insert, 800)
         # The list of SQL commands to run in a single transaction
         sql_commands = [
             # Delete any sentence-hits where the model didn't initially guess the attack

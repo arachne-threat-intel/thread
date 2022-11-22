@@ -25,7 +25,7 @@ class TestAttackData(ThreadAppTest):
     async def test_update_attacks(self):
         """Function to test when new attacks are added to the database."""
         # Create a new attack to mock being added; confirm it is not already in the database
-        new_attack = dict(uid='b12345', description='Blizzard spell costing 4MP', tid='T1489', name='Blizzard')
+        new_attack = dict(uid='b12345', tid='T1489', name='Blizzard')
         attacks = await self.db.get('attack_uids')
         if (new_attack in attacks) or (new_attack in self.web_api.attack_dropdown_list):
             self.skipTest('Could not test added attacks as database has specified attack already.')
@@ -37,7 +37,6 @@ class TestAttackData(ThreadAppTest):
         # Tweak original attack-dict to be how they would be in the db and dropdown-list before assertions
         in_db = dict(new_attack, inactive=0)
         in_dropdown_list = dict(new_attack, inactive=0, parent_tid=None, parent_name=None)
-        in_dropdown_list.pop('description')
         self.assertTrue(in_db in attacks, 'New attack did not appear in database.')
         self.assertTrue(in_dropdown_list in self.web_api.attack_dropdown_list,
                         'New attack did not appear in web-dropdown-list.')

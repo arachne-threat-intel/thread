@@ -31,9 +31,9 @@ CREATE TABLE IF NOT EXISTS report_sentences (
     -- The report which this sentence belongs to
     report_uid VARCHAR(60),
     -- The sentence itself
-    text TEXT,
+    text VARCHAR(800),
     -- Its html representation
-    html TEXT,
+    html VARCHAR(900),
     -- The order this sentence has relative to the other sentences of a report (e.g. 0 = first sentence in report)
     sen_index INTEGER,
     -- Whether any attacks for this sentence have been found
@@ -115,7 +115,7 @@ CREATE TABLE IF NOT EXISTS true_positives (
     -- Sentence ID
     sentence_id VARCHAR(60),
     -- The sentence itself
-    true_positive TEXT,
+    true_positive VARCHAR(800),
     FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
     FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
 );
@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS true_negatives (
     -- Sentence ID
     sentence_id VARCHAR(60),
     -- The sentence itself
-    sentence TEXT,
+    sentence VARCHAR(800),
     FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
     FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
 );
@@ -139,7 +139,7 @@ CREATE TABLE IF NOT EXISTS false_positives (
     -- Sentence ID
     sentence_id VARCHAR(60),
     -- The sentence itself
-    false_positive TEXT,
+    false_positive VARCHAR(800),
     FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
     FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
 );
@@ -151,7 +151,7 @@ CREATE TABLE IF NOT EXISTS false_negatives (
     -- Sentence ID
     sentence_id VARCHAR(60),
     -- The sentence itself
-    false_negative TEXT,
+    false_negative VARCHAR(800),
     FOREIGN KEY(attack_uid) REFERENCES attack_uids(uid),
     FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
 );
@@ -202,7 +202,7 @@ CREATE TABLE IF NOT EXISTS original_html (
     -- The report ID for this html element
     report_uid VARCHAR(60),
     -- The text of this element
-    text TEXT,
+    text VARCHAR(800),
     -- The element's tag
     tag VARCHAR(10),
     -- The order this html element has relative to the other elements in a report (e.g. 0 = first element in report)
