@@ -64,12 +64,10 @@ class ThreadAppTest(AioHTTPTestCase):
         await self.db.build(self.schema)
         await self.db.build(self.backup_schema, is_partial=True)
         # Insert some attack data
-        a1_name, a2_name, a3_name = self.attacks.get('f12345'), self.attacks.get('f32451'), self.attacks.get('d99999')
-        a4_name = self.attacks.get('s00001')
-        attack_1 = dict(uid='f12345', description='Fire spell costing 4MP', tid='T1562', name=a1_name)
-        attack_2 = dict(uid='f32451', description='Stronger Fire spell costing 16MP', tid='T1562.004', name=a2_name)
-        attack_3 = dict(uid='d99999', description='Absorbs HP', tid='T1029', name=a3_name)
-        attack_4 = dict(uid='s00001', description='Damages all enemies', tid='T1485', name=a4_name, inactive=1)
+        attack_1 = dict(uid='f12345', tid='T1562', name=self.attacks.get('f12345'))
+        attack_2 = dict(uid='f32451', tid='T1562.004', name=self.attacks.get('f32451'))
+        attack_3 = dict(uid='d99999', tid='T1029', name=self.attacks.get('d99999'))
+        attack_4 = dict(uid='s00001', tid='T1485', name=self.attacks.get('s00001'), inactive=1)
         for attack in [attack_1, attack_2, attack_3, attack_4]:
             # Ignoring Integrity Error in case other test case already has inserted this data (causing duplicate UIDs)
             with suppress(sqlite3.IntegrityError):

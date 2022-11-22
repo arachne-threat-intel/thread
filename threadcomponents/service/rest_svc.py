@@ -594,7 +594,7 @@ class RestService:
         # Possible responses to the request
         default_error, success = dict(error='Error inserting report(s).'), REST_SUCCESS.copy()
         # Different counts for different reasons why reports are not queued
-        limit_exceeded, duplicate_urls, malformed_urls = 0, 0, 0
+        limit_exceeded, duplicate_urls, malformed_urls, long_titles, long_urls = 0, 0, 0, 0, 0
         # Get the relevant queue for this user
         queue = self.get_queue_for_user(token=token)
         for row in range(row_count):
@@ -622,30 +622,41 @@ class RestService:
             title = await self.data_svc.get_unique_title(title)
             # Set up a temporary dictionary to represent db object
             temp_dict = dict(title=title, url=url, current_status=ReportStatus.QUEUE.value, token=token)
-            # Before adding to the db, check that this submitted URL isn't already in the queue; if so, skip it
+            # Are we skipping this report?
             skip_report = False
-            for queued_url in queue:
-                try:
-                    if self.web_svc.urls_match(testing_url=url, matches_with=queued_url):
+            if len(title) > 200:
+                long_titles += 1
+                skip_report = True
+            if len(url) > 500:
+                long_urls += 1
+                skip_report = True
+            if not skip_report:
+                # Before adding to the db, check that this submitted URL isn't already in the queue; if so, skip it
+                for queued_url in queue:
+                    try:
+                        if self.web_svc.urls_match(testing_url=url, matches_with=queued_url):
+                            skip_report = True
+                            duplicate_urls += 1
+                            break
+                    except ValueError:
                         skip_report = True
-                        duplicate_urls += 1
+                        malformed_urls += 1
                         break
-                except ValueError:
-                    skip_report = True
-                    malformed_urls += 1
-                    break
-            # Proceed to add to queue if URL was not found
+            # Proceed to add to queue if report is not being skipped
             if not skip_report:
                 # Insert report into db and update temp_dict with inserted ID from db
                 temp_dict[UID] = await self.dao.insert_generate_uid('reports', temp_dict)
                 # Finally, update queue and check queue when batch is finished
                 await self.queue.put(temp_dict)
                 queue.append(url)
-        if limit_exceeded or duplicate_urls or malformed_urls:
-            message = '%s of %s ' % (sum([limit_exceeded, duplicate_urls, malformed_urls]), row_count) + \
-                      'report(s) not added to the queue.\n- %s exceeded queue limit.' % limit_exceeded + \
+        if limit_exceeded or duplicate_urls or malformed_urls or long_titles or long_urls:
+            total_skipped = sum([limit_exceeded, duplicate_urls, malformed_urls, long_titles, long_urls])
+            message = '%s of %s ' % (total_skipped, row_count) + 'report(s) not added to the queue.' + \
+                      '\n- %s exceeded queue limit.' % limit_exceeded + \
                       '\n- %s already in the queue/duplicate URL(s).' % duplicate_urls + \
-                      '\n- %s malformed URL(s).' % malformed_urls
+                      '\n- %s malformed URL(s).' % malformed_urls + \
+                      '\n- %s report-title(s) exceeded 200-character limit.' % long_titles + \
+                      '\n- %s URL(s) exceeded 500-character limit.' % long_urls
             success.update(dict(info=message, alert_user=1))
         asyncio.create_task(self.check_queue())
         return success
