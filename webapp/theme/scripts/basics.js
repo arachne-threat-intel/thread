@@ -339,7 +339,7 @@ function updateConfirmedContext(data) {
       }
     }
     var datesHTML = `<a data-bs-toggle="tooltip" data-bs-placement="top" title="${datesLabel}">`;
-    datesHTML += `<span class="fa-regular fa-clock glyphicon glyphicon-time btn-sm float-right"></span></a>`;
+    datesHTML += `<span class="fa-regular fa-clock glyphicon glyphicon-time btn-sm float-right ps-1"></span></a>`;
     // The checkbox to update the mappings
     var checkbox = `<div class="d-flex"><input type="checkbox" id="${op.mapping_id}" `;
     checkbox += `class="confirmed-technique report-submission-checkbox"><label for="${op.mapping_id}"`;
