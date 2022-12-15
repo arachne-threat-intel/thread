@@ -40,19 +40,19 @@
                         {% if report.error %}{# Display error icon if applicable #}
                           <a data-bs-toggle="tooltip" data-bs-placement="top"
                              title="{% if value.error_msg %}{{value.error_msg}}{% else %}Error{% endif %}">
-                            <span class="fas fa-exclamation glyphicon glyphicon-exclamation-sign error-icon"></span>
+                            <span class="fas fa-exclamation glyphicon glyphicon-exclamation-sign btn btn-sm btn-outline-danger help-tooltip"></span>
                           </a>
                         {% endif %}
                         {% if value.allow_delete or report.error %}{# Display button to delete report if allowed #}
                           <a data-bs-toggle="tooltip" data-bs-placement="top" title="Delete this report."
-                             onclick="deleteReport('{{report.title_quoted}}')">
-                             <span class="fas fa-trash-alt glyphicon glyphicon-trash btn-sm btn-outline-danger float-right report-action"></span>
+                             onclick="deleteReport('{{report.title_quoted}}')" role="button">
+                             <span class="fas fa-trash-alt glyphicon glyphicon-trash btn btn-sm btn-outline-danger float-right report-action"></span>
                           </a>
                         {% endif %}
                         {% if value.allow_rollback %}{# Display button to rollback report if allowed #}
                           <a data-bs-toggle="tooltip" data-bs-placement="top" title="Rollback report to NEEDS REVIEW."
-                             onclick="rollbackReport('{{report.title_quoted}}')">
-                             <span class="fas fa-undo-alt glyphicon glyphicon-refresh btn-sm float-right report-action"></span>
+                             onclick="rollbackReport('{{report.title_quoted}}')" role="button">
+                             <span class="fas fa-undo-alt glyphicon glyphicon-refresh btn btn-sm btn-outline-info float-right report-action"></span>
                           </a>
                         {% endif %}
                         {% if value.display_expiry and not is_local %}{# Display report-expiry date if applicable #}
