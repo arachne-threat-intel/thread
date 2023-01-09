@@ -21,7 +21,6 @@ If you want to use Thread right now, feel free to use the web version at https:/
 
 ## Requirements
 - [Python 3](https://www.python.org/) (3.8+)
-- Google Chrome is our only supported/tested browser
 
 ## Installation
 Please note: if your environment has multiple Python interpreters (e.g. `python` is for Python 2.x and `python3` is for Python 3.x, please adjust some of the commands below accordingly. For example, `pip` may be `python3 -m pip install ...` and `python main.py` may be `python3 main.py`).
