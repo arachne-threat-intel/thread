@@ -43,7 +43,6 @@ class WebAPI:
                                    what_to_submit_url=self.web_svc.get_route(self.web_svc.WHAT_TO_SUBMIT_KEY),
                                    rest_url=self.web_svc.get_route(self.web_svc.REST_KEY),
                                    static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY),
-                                   current_year=datetime.now().strftime('%Y'),
                                    js_src_online=js_src_config == ONLINE_JS_SRC, is_local=self.is_local)
         self.attack_dropdown_list = []
         self.cat_dropdown_list = []
@@ -97,6 +96,7 @@ class WebAPI:
             return
         # Update data with the base page data
         data.update(self.BASE_PAGE_DATA)
+        data.update(current_year=datetime.now().strftime('%Y'))
         # Non-local sessions include cookies, update context data for this
         if not self.is_local:
             # Check request if the cookie banner has been dismissed
