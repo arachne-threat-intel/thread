@@ -545,7 +545,7 @@ class DataService:
         # Run the above query and return its results
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
 
-    async def get_unconfirmed_undated_attack_count(self, report_id=''):
+    async def get_unconfirmed_undated_attack_count(self, report_id='', return_detail=False):
         """Function to retrieve the number of unconfirmed attacks without a start-date for a report."""
         # Retrieve all unconfirmed attacks
         all_unconfirmed = await self.dao.get('report_sentence_hits', dict(report_uid=report_id,
@@ -561,7 +561,25 @@ class DataService:
             "OR report_sentence_hits.start_date IS NULL)")
         ignore = await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
         # Ideally would use an SQL MINUS query but this caused errors
-        return len(all_unconfirmed) - len(ignore)
+        # Return the count if we are not returning the detail
+        if not return_detail:
+            return len(all_unconfirmed) - len(ignore)
+        # If returning details, set up a dictionary and convert the dictionaries in ignore to tuples (for matching)
+        unconfirmed_by_sentence = dict()
+        tuple_ig = [(x.get('attack_uid', 'error'), x.get('sentence_id', 'error'), x.get('attack_tid', 'error'))
+                    for x in ignore]
+        # Loop through each unconfirmed hit; check it's not in ignore; add to final dictionary (group by sentence)
+        for u in all_unconfirmed:
+            sen_id = u.get('sentence_id', 'error')
+            a_id, a_tid = u.get('attack_uid', 'error'), u.get('attack_tid', 'error')
+            if (a_id, sen_id, a_tid) in tuple_ig:
+                continue
+            current_list = unconfirmed_by_sentence.get(sen_id, [])
+            attack_info = dict(attack_uid=a_id, attack_tid=a_tid)
+            if attack_info not in current_list:
+                current_list.append(attack_info)
+                unconfirmed_by_sentence[sen_id] = current_list
+        return unconfirmed_by_sentence
 
     async def get_confirmed_techniques_for_nav_export(self, report_id):
         # Ensure date fields are converted into strings

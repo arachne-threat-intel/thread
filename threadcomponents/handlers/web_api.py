@@ -291,11 +291,14 @@ class WebAPI:
         if report[0]['token']:
             help_text = 'This is a token-protected report. If this page becomes unresponsive, please refresh or ' \
                         'visit the homepage to check your session has not expired.'
+        # Get the list of sentences with techniques that need to be confirmed
+        unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id, return_detail=True)
         # Update overall template data and return
         template_data.update(
             file=report_title, title=report[0]['title'], title_quoted=title_quoted, final_html=final_html,
             sentences=sentences, attack_uids=self.attack_dropdown_list, original_html=original_html, pdf_link=pdf_link,
-            nav_link=nav_link, completed=int(report_status == self.report_statuses.COMPLETED.value), help_text=help_text,
+            nav_link=nav_link, unchecked=unchecked, help_text=help_text,
+            completed=int(report_status == self.report_statuses.COMPLETED.value),
             categories=categories, category_list=self.cat_dropdown_list, group_list=self.web_svc.keyword_dropdown_list,
             aggressor_groups=keywords['aggressors']['groups'], aggressor_countries=keywords['aggressors']['country_codes'],
             victim_countries=keywords['victims']['country_codes'], country_list=self.data_svc.country_dict,
