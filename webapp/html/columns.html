@@ -66,9 +66,25 @@
         <hr>
           {% if not is_local %}{# Notice about expiry-date #}
             <span><b>Completed reports will expire 24 hours after completion.</b></span>
-            <hr>
           {% endif %}
+      {% else %}{# Incomplete reports: list techniques user still needs to review #}
+        <span class='spanAwaitingTechniqueView'><b>Techniques Awaiting Confirmation</b></span>
+        <br><br>
+        <span id="techsNoMoreConfNote" {% if unchecked|length > 0 %}hidden{% endif %}>None awaiting review.</span>
+        <ul id="outstandingTechsList">
+          {% for sen_key in unchecked %}
+            <li id="outstanding-sen-{{sen_key}}">Sentence
+              {% for sen_tech in unchecked[sen_key] %}
+                <a data-bs-toggle="tooltip" data-bs-placement="top" title="{{sen_tech['attack_tid']}}">
+                  <span id="outstanding-tech-{{sen_key}}-{{sen_tech['attack_uid']}}"
+                        class="fa-solid fa-flag glyphicon glyphicon-flag help-tooltip"></span>
+                </a>
+              {% endfor %}
+            </li>
+          {% endfor %}
+        </ul>
       {% endif %}
+      <hr>
       {% if not completed %}{# Incomplete reports: display 'Techniques Found' panel to approve/reject attacks #}
         <span class='spanMissingTechniqueView'><b>Techniques Found</b></span>
         <br><br>
