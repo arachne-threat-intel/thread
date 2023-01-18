@@ -373,8 +373,16 @@ input[type="checkbox"].confirmed-technique {
   width: 75%;
 }
 
-.report-sentence, input[type="checkbox"], input[type="checkbox"]+label {
+.report-sentence, .sentence-link, input[type="checkbox"], input[type="checkbox"]+label {
   cursor: pointer;
+}
+
+.report-sentence {
+  scroll-margin-top: 10em;
+}
+
+.sentence-link {
+  text-decoration: underline;
 }
 
 .highlight-sentence {

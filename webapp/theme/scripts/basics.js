@@ -136,12 +136,12 @@ function remove_sentence() {
 
 function acceptAttack(id, attack_uid) {
   restRequest("POST", {"index":"add_attack", "sentence_id": id, "attack_uid": attack_uid});
-  sentenceContext(id, attack_uid);
+  sentenceContext(id);
 }
 
 function rejectAttack(id, attack_uid) {
   restRequest("POST", {"index":"reject_attack", "sentence_id": id, "attack_uid": attack_uid});
-  sentenceContext(id, attack_uid);
+  sentenceContext(id);
 }
 
 function deleteReport(reportTitle) {
@@ -648,6 +648,15 @@ function dateRangeChecked(field) {
   // Hide and reset the end date input value
   $("#endDateDiv").prop("hidden", ticked);
   $("#endDate").val("");
+}
+
+function scrollAndSelectSentence(sentenceId) {
+  // If there's a matching sentence-ID, mimic a user clicking on it (get-context) and scroll to it
+  var sentenceElem = document.getElementById(`elmt${sentenceId}`);
+  if (sentenceElem) {
+    sentenceContext(sentenceId);
+    sentenceElem.scrollIntoView();
+  }
 }
 
 // onDocumentReady function bind
