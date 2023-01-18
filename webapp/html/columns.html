@@ -73,7 +73,8 @@
         <span id="techsNoMoreConfNote" {% if unchecked|length > 0 %}hidden{% endif %}>None awaiting review.</span>
         <ul id="outstandingTechsList">
           {% for sen_key in unchecked %}
-            <li id="outstanding-sen-{{sen_key}}">Sentence
+            <li id="outstanding-sen-{{sen_key}}">
+              <span class="link-primary sentence-link" onclick="scrollAndSelectSentence('{{sen_key}}')">Sentence</span>
               {% for sen_tech in unchecked[sen_key] %}
                 <a data-bs-toggle="tooltip" data-bs-placement="top" title="{{sen_tech['attack_tid']}}">
                   <span id="outstanding-tech-{{sen_key}}-{{sen_tech['attack_uid']}}"
