@@ -83,6 +83,21 @@ function prefixHttp(urlInput) {
   }
 }
 
+function removeSentenceFromReviewList(sentence_id, forceDelete) {
+  // If all flags for a sentence have now been removed, remove the sentence from the to-review list
+  var liSelector = `li#outstanding-sen-${sentence_id}`;
+  if (forceDelete || !$(`${liSelector} a`).length) {
+    $(liSelector).remove();
+    // As we removed an li, check if this is the last one > if so, all sentences have been reviewed
+    var ulSelector = "ul#outstandingTechsList";
+    if (!$(`${ulSelector} li`).length) {
+      $(ulSelector).remove();
+      // Display the no-more-to-review message
+      $("span#techsNoMoreConfNote").prop("hidden", false);
+    }
+  }
+}
+
 function remove_sentence() {
   // The selected image or sentence
   var selectedSentence = document.getElementById(`elmt${sentence_id}`);
@@ -118,30 +133,46 @@ function remove_sentence() {
   // Confirm with the user that this is being removed
   if (confirm("Are you sure you want to remove the currently selected " + messageInfo
         + "? This can only be retrieved by re-submitting or rollbacking this report.")) {
-    // Remove the element itself and any related elements (e.g. buffering <br>s)
-    selected.remove();
-    $(`.elmtRelated${sentence_id}`).remove();
-    // Nothing is currently selected after this removal
-    tempHighlighted = undefined;
-    // Disable further actions until another item is selected
-    $(missingTechBtn).prop("disabled", true);
-    $(delSenBtn).prop("disabled", true);
-    $(senTTPForm).prop("hidden", true);
-    // Reset any 'Techniques Found' list
-    $("#tableSentenceInfo tr").remove();
     // Send off request to delete from the db
-    restRequest("POST", {"index":"remove_sentence", "sentence_id": sentence_id});
+    restRequest("POST", {"index": "remove_sentence", "sentence_id": sentence_id}, function() {
+      // Remove the element itself and any related elements (e.g. buffering <br>s, the to-review list)
+      selected.remove();
+      $(`.elmtRelated${sentence_id}`).remove();
+      removeSentenceFromReviewList(sentence_id, true);
+      // Nothing is currently selected after this removal
+      tempHighlighted = undefined;
+      // Disable further actions until another item is selected
+      $(missingTechBtn).prop("disabled", true);
+      $(delSenBtn).prop("disabled", true);
+      $(senTTPForm).prop("hidden", true);
+      // Reset any sentence-techniques lists
+      $("#tableSentenceInfo tr").remove();
+      $("#confirmedSentenceInfo tr").remove();
+    });
   }
 }
 
 function acceptAttack(id, attack_uid) {
-  restRequest("POST", {"index":"add_attack", "sentence_id": id, "attack_uid": attack_uid});
-  sentenceContext(id);
+  acceptReject(id, attack_uid, accepting=true);
 }
 
 function rejectAttack(id, attack_uid) {
-  restRequest("POST", {"index":"reject_attack", "sentence_id": id, "attack_uid": attack_uid});
-  sentenceContext(id);
+  acceptReject(id, attack_uid, accepting=false, rejecting=true);
+}
+
+function acceptReject(sentence_id, attack_uid, accepting=false, rejecting=false) {
+  // Either accepting or rejecting needs to be specified
+  if ((accepting && rejecting) || !(accepting || rejecting)) {
+    throw new Error("Sentence-attack: accepting or rejecting not specified.");
+  }
+  var action = accepting ? "add_attack" : "reject_attack";
+  restRequest("POST", {"index": action, "sentence_id": sentence_id, "attack_uid": attack_uid}, function() {
+    // Update the to-review list
+    $(`a#outstanding-tech-${sentence_id}-${attack_uid}`).remove();
+    removeSentenceFromReviewList(sentence_id);
+    // Retrieve and display the list of attacks
+    sentenceContext(sentence_id);
+  });
 }
 
 function deleteReport(reportTitle) {
