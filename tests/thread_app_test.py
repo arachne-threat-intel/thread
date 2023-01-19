@@ -136,13 +136,15 @@ class ThreadAppTest(AioHTTPTestCase):
         # We don't want the queue to be checked after this test; mock this to return (and do) nothing
         self.create_patch(target=RestService, attribute='check_queue', return_value=None)
 
-    async def submit_test_report(self, report, fail_map_html=False, post_confirm_attack=False):
+    async def submit_test_report(self, report, attacks_found=None, fail_map_html=False, post_confirm_attack=False):
         """A helper method to submit a test report and create some associated test-sentences."""
         # Some test sentences and expected analysed html for them
         sen1 = 'When Creating Test Data...'
         sen2 = 'i. It can be quite draining'
-        html = [{'html': sen1, 'text': sen1, 'tag': 'p', 'ml_techniques_found': [], 'res_techniques_found': []},
-                {'html': sen2, 'text': sen2, 'tag': 'li', 'ml_techniques_found': [('d99999', 'Drain')],
+        attacks_found = attacks_found or ([], [('d99999', 'Drain')])
+        sen1_a, sen2_a = attacks_found
+        html = [{'html': sen1, 'text': sen1, 'tag': 'p', 'ml_techniques_found': sen1_a, 'res_techniques_found': []},
+                {'html': sen2, 'text': sen2, 'tag': 'li', 'ml_techniques_found': sen2_a,
                  'res_techniques_found': []}]
         # The result of the mapping function (no html, no Article object)
         map_result = None, None

@@ -198,6 +198,37 @@ class TestReports(ThreadAppTest):
         resp = await self.client.post('/rest', json=data)
         self.assertTrue(resp.status < 300, msg='Completing a report resulted in a non-200 response.')
 
+    async def test_outstanding_attacks_list(self):
+        """Function to test the counts of report-techniques awaiting review."""
+        report_id, report_title = str(uuid4()), 'Look For The Light'
+        # Submit and analyse a test report
+        report = dict(uid=report_id, title=report_title, url='fire.flies', current_status=ReportStatus.QUEUE.value)
+        attacks = ([('d99999', 'Drain')], [('d99999', 'Drain'), ('f12345', 'Fire')])
+        await self.submit_test_report(report, attacks_found=attacks)
+        # Check the unreviewed attack counts are correct
+        unchecked_count = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id)
+        unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id, return_detail=True)
+        unchecked_vals = list(unchecked.values())
+        error_msg = 'Attacks-to-Review miscalculated.'
+        self.assertEqual(unchecked_count, 3, msg=error_msg)
+        self.assertEqual(len(unchecked), 2, msg=error_msg + ' # of sentences incorrect.')
+        self.assertEqual(len(unchecked_vals[0]) + len(unchecked_vals[1]), 3, msg=error_msg)
+        self.assertEqual(unchecked_vals[0][0]['attack_uid'], 'd99999', msg=error_msg + ' Incorrect details.')
+        self.assertEqual(unchecked_vals[1][0]['attack_uid'], 'd99999', msg=error_msg + ' Incorrect details.')
+        self.assertEqual(unchecked_vals[1][1]['attack_uid'], 'f12345', msg=error_msg + ' Incorrect details.')
+        # Reject an attack and retest the above
+        sen2_id = list(unchecked.keys())[1]
+        data = dict(index='reject_attack', sentence_id=sen2_id, attack_uid='f12345')
+        await self.client.post('/rest', json=data)
+        unchecked_count = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id)
+        unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id, return_detail=True)
+        unchecked_vals = list(unchecked.values())
+        self.assertEqual(unchecked_count, 2, msg=error_msg)
+        self.assertEqual(len(unchecked), 2, msg=error_msg + ' # of sentences incorrect.')
+        self.assertEqual(len(unchecked_vals[0]) + len(unchecked_vals[1]), 2, msg=error_msg)
+        self.assertEqual(unchecked_vals[0][0]['attack_uid'], 'd99999', msg=error_msg + ' Incorrect details.')
+        self.assertEqual(unchecked_vals[1][0]['attack_uid'], 'd99999', msg=error_msg + ' Incorrect details.')
+
     async def test_revert_status(self):
         """Function to test setting the status of a report back to its initial status of 'Queue'."""
         report_id, report_title = str(uuid4()), 'To Set or Not to Set: The Sequel'
