@@ -72,6 +72,7 @@ def _create_tables(username, password, host, port, schema='', is_partial=False):
     partial_log = dict(log_error=is_partial)
     start_date_field = 'start_date TIMESTAMP WITH TIME ZONE'
     end_date_field = 'end_date TIMESTAMP WITH TIME ZONE'
+    automatically_generated_field = 'automatically_generated BOOLEAN DEFAULT FALSE'
     # (1) Table, (2) SQL statement for field, (3) whether we want to log errors, (4) whether we are ignoring ValueErrors
     schema_updates = [
         # (3) is not-partial because we only want to log an error if we are building the full schema
@@ -80,6 +81,7 @@ def _create_tables(username, password, host, port, schema='', is_partial=False):
         ('reports', 'date_written TIMESTAMP WITH TIME ZONE', not_partial_log, is_partial),
         ('reports', start_date_field, not_partial_log, is_partial),
         ('reports', end_date_field, not_partial_log, is_partial),
+        ('reports', automatically_generated_field, not_partial_log, is_partial),
         ('report_sentence_hits', start_date_field, not_partial_log, is_partial),
         ('report_sentence_hits', end_date_field, not_partial_log, is_partial),
         # (3) and (4) are inverse above because report_sentence_hits_initial is from partial schema

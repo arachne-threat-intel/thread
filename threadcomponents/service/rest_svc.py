@@ -551,6 +551,10 @@ class RestService:
                 return dict(error='Missing value for %s.' % column, alert_user=1)
             # Place title and URL in list to be compatible with _insert_batch_reports()
             criteria[column] = [value]
+        if criteria.get('automatically_generated', False):
+            criteria['automatically_generated'] = str(self.dao.db_true_val)
+        else:
+            criteria['automatically_generated'] = str(self.dao.db_false_val)
         return await self._insert_batch_reports(request, criteria, 1, token=criteria.get('token'))
 
     async def insert_csv(self, request, criteria=None):
@@ -604,6 +608,7 @@ class RestService:
                 break
             try:
                 title, url = batch['title'][row].strip(), batch[URL][row].strip()
+                automatically_generated = batch['automatically_generated'][row]
             # Check for malformed request parameters; AttributeError thrown if not strings
             except (AttributeError, KeyError):
                 return default_error
@@ -621,7 +626,13 @@ class RestService:
             # Ensure the report has a unique title
             title = await self.data_svc.get_unique_title(title)
             # Set up a temporary dictionary to represent db object
-            temp_dict = dict(title=title, url=url, current_status=ReportStatus.QUEUE.value, token=token)
+            temp_dict = dict(
+                title=title,
+                url=url,
+                current_status=ReportStatus.QUEUE.value,
+                automatically_generated=automatically_generated,
+                token=token
+            )
             # Are we skipping this report?
             skip_report = False
             if len(title) > 200:

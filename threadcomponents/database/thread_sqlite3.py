@@ -32,12 +32,15 @@ class ThreadSQLite(ThreadDB):
         partial_log = dict(log_error=is_partial)
         # sqlite3 does not support date fields (see 2.2. here: https://www.sqlite.org/datatype3.html)
         start_date_field, end_date_field = 'start_date TEXT', 'end_date TEXT'
+        # sqlite3 does not support boolean fields (see 2.1. here: https://www.sqlite.org/datatype3.html)
+        automatically_generated_field = 'automatically_generated INT DEFAULT 0'
         # Explanation of parameters can be found in comments in thread_postgresql._create_tables()
         schema_updates = [
             ('reports', 'expires_on TEXT', not_partial_log, is_partial),
             ('reports', 'date_written TEXT', not_partial_log, is_partial),
             ('reports', start_date_field, not_partial_log, is_partial),
             ('reports', end_date_field, not_partial_log, is_partial),
+            ('reports', automatically_generated_field, not_partial_log, is_partial),
             ('report_sentence_hits', start_date_field, not_partial_log, is_partial),
             ('report_sentence_hits', end_date_field, not_partial_log, is_partial),
             ('report_sentence_hits_initial', start_date_field, partial_log, not is_partial),
