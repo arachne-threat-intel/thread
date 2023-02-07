@@ -21,9 +21,13 @@ from urllib.parse import unquote
 PUBLIC = 'public'
 UID = 'uid'
 URL = 'url'
+TITLE = 'title'
 DATETIME_OBJ = 'datetime_obj'
 REST_IGNORED = dict(ignored=1)
 REST_SUCCESS = dict(success=1)
+
+# The minimum amount of tecniques for a report to not be discarded
+REPORT_TECHNIQUES_MINIMUM = 5
 
 
 @unique
@@ -755,7 +759,7 @@ class RestService:
             return
 
         html_data = newspaper_article.text.replace('\n', '<br>')
-        article = dict(title=criteria['title'], html_text=html_data)
+        article = dict(title=criteria[TITLE], html_text=html_data)
         # Obtain the article date if possible
         article_date = None
         with suppress(ValueError):
@@ -774,6 +778,27 @@ class RestService:
 
         # Merge ML and Reg hits
         analyzed_html = await self.ml_svc.combine_ml_reg(ml_analyzed_html, reg_analyzed_html)
+
+        techniques_found_count = 0
+
+        # Count techniques found
+        for sentence in analyzed_html:
+            if sentence['ml_techniques_found']:
+                techniques_found_count += len(sentence['ml_techniques_found'])
+            elif sentence['reg_techniques_found']:
+                techniques_found_count += len(sentence['reg_techniques_found'])
+
+        # Remove report if amount of techniques found doesn't reach the minimum
+        # and if the report has been automatically generated
+        if (techniques_found_count < REPORT_TECHNIQUES_MINIMUM and
+                (str(criteria['automatically_generated']).upper() == str(self.dao.db_true_val).upper() or
+                str(criteria['automatically_generated']).upper() == 'T')):
+            self.remove_report_from_queue_map(criteria)
+            await self.data_svc.remove_report_by_id(report_id=report_id)
+            logging.info('Deleted report ' + report_id + ' with ' + str(techniques_found_count) + ' technique(s) found')
+            return
+        else:
+            logging.info(str(techniques_found_count) + ' technique(s) found for report ' + report_id)
 
         for s_idx, sentence in enumerate(analyzed_html):
             sentence['text'] = self.dao.truncate_str(sentence['text'], 800)
