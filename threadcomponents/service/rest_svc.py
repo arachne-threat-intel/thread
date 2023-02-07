@@ -612,7 +612,7 @@ class RestService:
                 break
             try:
                 title, url = batch['title'][row].strip(), batch[URL][row].strip()
-                automatically_generated = batch['automatically_generated'][row]
+                automatically_generated = batch['automatically_generated'][row] if 'automatically_generated' in batch.keys() else False
             # Check for malformed request parameters; AttributeError thrown if not strings
             except (AttributeError, KeyError):
                 return default_error
