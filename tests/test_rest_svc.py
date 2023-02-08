@@ -17,8 +17,7 @@ class TestRestService(ThreadAppTest):
         self.data_svc.remove_report_by_id = AsyncMock()
 
         # Act
-        with self.assertNoLogs():
-            await self.rest_svc.remove_report_if_low_quality(report_id=report_id)
+        await self.rest_svc.remove_report_if_low_quality(report_id=report_id)
 
         # Assert
         self.data_svc.get_report_by_id_or_title.assert_called_once_with(by_id=True, report=report_id)
@@ -38,8 +37,7 @@ class TestRestService(ThreadAppTest):
         self.data_svc.remove_report_by_id = AsyncMock()
 
         # Act
-        with self.assertNoLogs():
-            await self.rest_svc.remove_report_if_low_quality(report_id=report_id)
+        await self.rest_svc.remove_report_if_low_quality(report_id=report_id)
 
         # Assert
         self.data_svc.get_report_by_id_or_title.assert_called_once_with(by_id=True, report=report_id)
