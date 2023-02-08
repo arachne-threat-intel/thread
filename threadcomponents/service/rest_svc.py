@@ -825,7 +825,7 @@ class RestService:
         if str(report['automatically_generated']).upper() != str(self.dao.db_true_val).upper():
             return
 
-        unique_techniques_count = await self.data_svc.get_report_unique_techniques_count(report_id)
+        unique_techniques_count = await self.data_svc.get_report_unique_techniques_count(report_id=report_id)
 
         # Remove report if amount of unique techniques found doesn't reach the minimum
         if unique_techniques_count < REPORT_TECHNIQUES_MINIMUM:
