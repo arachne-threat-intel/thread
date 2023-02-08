@@ -625,6 +625,16 @@ class DataService:
             "AND report_sentence_hits.active_hit = %s" % self.dao.db_true_val)
         # Run the above query and return its results
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
+    
+    async def get_report_unique_techniques_count(self, report_id) -> int:
+        """Function to return the amount of unique techniques found in a report."""
+        count_query = (
+            "SELECT COUNT(DISTINCT(attack_uid)) AS count " +
+            "FROM report_sentence_hits " +
+            "WHERE report_uid = %s" % self.dao.db_qparam
+        )
+        count_query_result = await self.dao.raw_select(count_query, parameters=tuple([report_id]))
+        return count_query_result[0]['count']
 
     async def remove_expired_reports(self):
         """Function to delete expired reports."""

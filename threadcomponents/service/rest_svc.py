@@ -779,27 +779,6 @@ class RestService:
         # Merge ML and Reg hits
         analyzed_html = await self.ml_svc.combine_ml_reg(ml_analyzed_html, reg_analyzed_html)
 
-        techniques_found_count = 0
-
-        # Count techniques found
-        for sentence in analyzed_html:
-            if sentence['ml_techniques_found']:
-                techniques_found_count += len(sentence['ml_techniques_found'])
-            elif sentence['reg_techniques_found']:
-                techniques_found_count += len(sentence['reg_techniques_found'])
-
-        # Remove report if amount of techniques found doesn't reach the minimum
-        # and if the report has been automatically generated
-        if (techniques_found_count < REPORT_TECHNIQUES_MINIMUM and
-                (str(criteria['automatically_generated']).upper() == str(self.dao.db_true_val).upper() or
-                str(criteria['automatically_generated']).upper() == 'T')):
-            self.remove_report_from_queue_map(criteria)
-            await self.data_svc.remove_report_by_id(report_id=report_id)
-            logging.info('Deleted report ' + report_id + ' with ' + str(techniques_found_count) + ' technique(s) found')
-            return
-        else:
-            logging.info(str(techniques_found_count) + ' technique(s) found for report ' + report_id)
-
         for s_idx, sentence in enumerate(analyzed_html):
             sentence['text'] = self.dao.truncate_str(sentence['text'], 800)
             sentence['html'] = self.dao.truncate_str(sentence['html'], 900)
@@ -833,6 +812,28 @@ class RestService:
         # Update the relevant queue for this user
         self.remove_report_from_queue_map(criteria)
         logging.info('Finished analysing report ' + report_id)
+        # Remove report if low quality
+        await self.remove_report_if_low_quality(report_id)
+
+    async def remove_report_if_low_quality(self, report_id):
+        """Function that removes report if its quality is low."""
+        reports_found = await self.data_svc.get_report_by_id_or_title(by_id=True, report=report_id)
+        if len(reports_found) != 1:
+            return
+
+        report = reports_found[0]
+        if str(report['automatically_generated']).upper() != str(self.dao.db_true_val).upper():
+            return
+
+        unique_techniques_count = await self.data_svc.get_report_unique_techniques_count(report_id)
+
+        # Remove report if amount of unique techniques found doesn't reach the minimum
+        if unique_techniques_count < REPORT_TECHNIQUES_MINIMUM:
+            await self.data_svc.remove_report_by_id(report_id=report_id)
+            logging.info('Deleted report ' + report_id + ' with ' + str(unique_techniques_count) + ' technique(s) found')
+            return
+        
+        logging.info(str(unique_techniques_count) + ' technique(s) found for report ' + report_id)
 
     async def add_attack(self, request, criteria=None):
         try:
