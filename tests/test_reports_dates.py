@@ -14,7 +14,7 @@ class TestReportDates(ThreadAppTest):
         report_id, report_title = str(uuid4()), 'Marvel Dance Moves 1: Praise for Peter Parker'
         # Submit and analyse a test report
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='dance.moves',
-                                           current_status=ReportStatus.QUEUE.value, automatically_generated=False))
+                                           current_status=ReportStatus.QUEUE.value))
         # Attempt to complete this newly-analysed report
         data = dict(index='update_report_dates', report_title=report_title, date_of=None, start_date=None, end_date=None)
         resp = await self.client.post('/rest', json=data)
@@ -31,8 +31,7 @@ class TestReportDates(ThreadAppTest):
         report_id, report_title = str(uuid4()), 'Marvel Dance Moves 2: Dance Off with Star-Lord'
         # Submit and analyse a test report
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='dance.moves',
-                                           current_status=ReportStatus.QUEUE.value, automatically_generated=False,
-                                           date_written='2022-07-29'))
+                                           current_status=ReportStatus.QUEUE.value, date_written='2022-07-29'))
         # Attempt to complete this newly-analysed report
         data = dict(index='update_report_dates', report_title=report_title, start_date='2022-01-01', end_date='2021-12-25')
         resp = await self.client.post('/rest', json=data)
@@ -49,8 +48,8 @@ class TestReportDates(ThreadAppTest):
         report_id, report_title = str(uuid4()), 'Marvel Dance Moves 3: Zooming with Zemo'
         # Submit and analyse a test report
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='dance.moves',
-                                           current_status=ReportStatus.QUEUE.value, automatically_generated=False,
-                                           date_written='2022-07-29', start_date='2022-01-01', end_date='2022-02-02'))
+                                           current_status=ReportStatus.QUEUE.value, date_written='2022-07-29',
+                                           start_date='2022-01-01', end_date='2022-02-02'))
         # Attempt to complete this newly-analysed report
         data = dict(index='update_report_dates', report_title=report_title, start_date=None, end_date=None)
         # Check a successful response was sent and the dates were unset
@@ -65,8 +64,8 @@ class TestReportDates(ThreadAppTest):
         report_id, report_title = str(uuid4()), 'Marvel Dance Moves 4: Lunging Like Loxias'
         # Submit and analyse a test report
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='dance.moves',
-                                           current_status=ReportStatus.QUEUE.value, automatically_generated=False,
-                                           date_written='2022-07-29', start_date='2022-01-01', end_date='2022-02-02'))
+                                           current_status=ReportStatus.QUEUE.value, date_written='2022-07-29',
+                                           start_date='2022-01-01', end_date='2022-02-02'))
         # Attempt to complete this newly-analysed report
         data = dict(index='update_report_dates', report_title=report_title, start_date='2020-01-01', same_dates=True)
         # Check a successful response was sent and the dates were unset
@@ -81,8 +80,7 @@ class TestReportDates(ThreadAppTest):
         report_id, report_title = str(uuid4()), 'Marvel Dance Moves 5: Stanning over Stan Lee'
         # Submit and analyse a test report
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='dance.moves', date_written=None,
-                                           current_status=ReportStatus.QUEUE.value, automatically_generated=False,
-                                           start_date=None, end_date=None))
+                                           current_status=ReportStatus.QUEUE.value, start_date=None, end_date=None))
         # Attempt to complete this newly-analysed report
         data = dict(index='update_report_dates', report_title=report_title, date_of='2022-07-29',
                     start_date='2022-01-01', end_date='2022-02-02')
@@ -99,9 +97,8 @@ class TestReportDates(ThreadAppTest):
         report_id, report_title = str(uuid4()), 'Kamigawa Tales: Lucky Offering'
         # Submit and analyse a test report
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='kami.gawa',
-                                           date_written='2022-08-16', current_status=ReportStatus.QUEUE.value,
-                                           automatically_generated=False),
-                                        post_confirm_attack=True)
+                                           date_written='2022-08-16', current_status=ReportStatus.QUEUE.value),
+                                      post_confirm_attack=True)
         # Update a single technique from the report with a new start date
         hits = await self.db.get('report_sentence_hits', dict(report_uid=report_id, confirmed=self.db.val_as_true))
         data = dict(index='update_attack_time', report_title=report_title, start_date='2022-08-10',
@@ -123,8 +120,7 @@ class TestReportDates(ThreadAppTest):
         report_id, report_title = str(uuid4()), 'Kamigawa Tales: Unforgiving One'
         # Submit and analyse a test report
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='kami.gawa',
-                                           date_written='2022-08-16', current_status=ReportStatus.QUEUE.value,
-                                           automatically_generated=False),
+                                           date_written='2022-08-16', current_status=ReportStatus.QUEUE.value),
                                       post_confirm_attack=True)
         # Attempt to call rest endpoint without a start date
         data = dict(index='update_attack_time', report_title=report_title, end_date='2020-08-16', mapping_list=[])
@@ -143,8 +139,7 @@ class TestReportDates(ThreadAppTest):
         # Submit and analyse a test report
         await self.submit_test_report(
             dict(uid=report_id, title=report_title, url='kami.gawa', date_written='2022-08-16', start_date='2021-08-16',
-                 end_date='2023-08-16', current_status=ReportStatus.QUEUE.value, automatically_generated=False),
-            post_confirm_attack=True)
+                 end_date='2023-08-16', current_status=ReportStatus.QUEUE.value), post_confirm_attack=True)
         # Update a single technique from the report with a new start and end date
         hits = await self.db.get('report_sentence_hits', dict(report_uid=report_id, confirmed=self.db.val_as_true))
         data = dict(index='update_attack_time', report_title=report_title, start_date='2023-08-16',
