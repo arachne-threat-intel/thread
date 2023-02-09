@@ -23,7 +23,9 @@ CREATE TABLE IF NOT EXISTS reports (
     -- Whether there is an error with this report
     error BOOLEAN DEFAULT 0,
     -- If applicable, a token to limit who can view this report
-    token VARCHAR(60) DEFAULT NULL
+    token VARCHAR(60) DEFAULT NULL,
+    -- Whether it has been automatically generated
+    automatically_generated BOOLEAN DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS report_sentences (

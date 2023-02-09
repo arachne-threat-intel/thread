@@ -21,9 +21,13 @@ from urllib.parse import unquote
 PUBLIC = 'public'
 UID = 'uid'
 URL = 'url'
+TITLE = 'title'
 DATETIME_OBJ = 'datetime_obj'
 REST_IGNORED = dict(ignored=1)
 REST_SUCCESS = dict(success=1)
+
+# The minimum amount of tecniques for a report to not be discarded
+REPORT_TECHNIQUES_MINIMUM = 5
 
 
 @unique
@@ -551,6 +555,10 @@ class RestService:
                 return dict(error='Missing value for %s.' % column, alert_user=1)
             # Place title and URL in list to be compatible with _insert_batch_reports()
             criteria[column] = [value]
+        if criteria.get('automatically_generated', False):
+            criteria['automatically_generated'] = str(self.dao.db_true_val)
+        else:
+            criteria['automatically_generated'] = str(self.dao.db_false_val)
         return await self._insert_batch_reports(request, criteria, 1, token=criteria.get('token'))
 
     async def insert_csv(self, request, criteria=None):
@@ -604,6 +612,7 @@ class RestService:
                 break
             try:
                 title, url = batch['title'][row].strip(), batch[URL][row].strip()
+                automatically_generated = batch['automatically_generated'][row] if 'automatically_generated' in batch.keys() else False
             # Check for malformed request parameters; AttributeError thrown if not strings
             except (AttributeError, KeyError):
                 return default_error
@@ -621,7 +630,13 @@ class RestService:
             # Ensure the report has a unique title
             title = await self.data_svc.get_unique_title(title)
             # Set up a temporary dictionary to represent db object
-            temp_dict = dict(title=title, url=url, current_status=ReportStatus.QUEUE.value, token=token)
+            temp_dict = dict(
+                title=title,
+                url=url,
+                current_status=ReportStatus.QUEUE.value,
+                automatically_generated=automatically_generated,
+                token=token
+            )
             # Are we skipping this report?
             skip_report = False
             if len(title) > 200:
@@ -744,7 +759,7 @@ class RestService:
             return
 
         html_data = newspaper_article.text.replace('\n', '<br>')
-        article = dict(title=criteria['title'], html_text=html_data)
+        article = dict(title=criteria[TITLE], html_text=html_data)
         # Obtain the article date if possible
         article_date = None
         with suppress(ValueError):
@@ -797,6 +812,28 @@ class RestService:
         # Update the relevant queue for this user
         self.remove_report_from_queue_map(criteria)
         logging.info('Finished analysing report ' + report_id)
+        # Remove report if low quality
+        await self.remove_report_if_low_quality(report_id)
+
+    async def remove_report_if_low_quality(self, report_id):
+        """Function that removes report if its quality is low."""
+        reports_found = await self.data_svc.get_report_by_id_or_title(by_id=True, report=report_id)
+        if len(reports_found) != 1:
+            return
+
+        report = reports_found[0]
+        if str(report['automatically_generated']).upper() != str(self.dao.db_true_val).upper():
+            return
+
+        unique_techniques_count = await self.data_svc.get_report_unique_techniques_count(report_id=report_id)
+
+        # Remove report if amount of unique techniques found doesn't reach the minimum
+        if unique_techniques_count < REPORT_TECHNIQUES_MINIMUM:
+            await self.data_svc.remove_report_by_id(report_id=report_id)
+            logging.info('Deleted report ' + report_id + ' with ' + str(unique_techniques_count) + ' technique(s) found')
+            return
+        
+        logging.info(str(unique_techniques_count) + ' technique(s) found for report ' + report_id)
 
     async def add_attack(self, request, criteria=None):
         try:

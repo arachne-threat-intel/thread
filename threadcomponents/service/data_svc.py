@@ -625,6 +625,16 @@ class DataService:
             "AND report_sentence_hits.active_hit = %s" % self.dao.db_true_val)
         # Run the above query and return its results
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
+    
+    async def get_report_unique_techniques_count(self, report_id) -> int:
+        """Function to return the amount of unique techniques found in a report."""
+        count_query = (
+            "SELECT COUNT(DISTINCT(attack_uid)) AS count " +
+            "FROM report_sentence_hits " +
+            "WHERE report_uid = %s" % self.dao.db_qparam
+        )
+        count_query_result = await self.dao.raw_select(count_query, parameters=tuple([report_id]))
+        return count_query_result[0]['count']
 
     async def remove_expired_reports(self):
         """Function to delete expired reports."""
@@ -633,6 +643,10 @@ class DataService:
         # Expired reports are where its timestamp is behind the current time (hence less-than)
         query = 'DELETE FROM reports WHERE expires_on < %s' % time_now
         await self.dao.run_sql_list(sql_list=[(query,)])
+
+    async def remove_report_by_id(self, report_id=''):
+        """Function to delete a report by its ID."""
+        await self.dao.delete('reports', dict(uid=report_id))
 
     async def get_report_by_id_or_title(self, by_id=False, by_title=False, report='', add_expiry_bool=True):
         """Given a report ID or title, returns matching report records."""
