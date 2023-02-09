@@ -646,8 +646,7 @@ class DataService:
 
     async def remove_report_by_id(self, report_id=''):
         """Function to delete a report by its ID."""
-        query = await self.dao.delete('reports', dict(uid=report_id), return_sql=True)
-        await self.dao.run_sql_list(sql_list=[query])
+        await self.dao.delete('reports', dict(uid=report_id))
 
     async def get_report_by_id_or_title(self, by_id=False, by_title=False, report='', add_expiry_bool=True):
         """Given a report ID or title, returns matching report records."""
