@@ -159,6 +159,14 @@ class WebService:
             logging.error('Misconfigured app: token_to_username() error: ' + str(e))
             return None
 
+    async def arachne_token_is_valid(self, request, token='') -> bool:
+        """Function to confirm an Arachne token is valid."""
+        try:
+            return await request.app.confirm_arachne_token(token=token)
+        except Exception as e:
+            logging.error('Misconfigured app: arachne_token_is_valid() error: ' + str(e))
+        return False
+
     async def map_all_html(self, url_input):
         a = newspaper.Article(url_input, keep_article_html=True)
         a.config.MAX_TEXT = None

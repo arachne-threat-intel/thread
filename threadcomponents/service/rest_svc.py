@@ -579,10 +579,22 @@ class RestService:
             request_data[key]
         except (KeyError, TypeError):
             return dict(error='Error inserting report(s).')
+        
+        # If automatically generated, check the token from the request_data is valid
+        if request_data.get('automatically_generated'):
+            arachne_token = request_data.get('token')
+            if arachne_token:
+                if not await self.web_svc.arachne_token_is_valid(request=request, token=arachne_token):
+                    return dict(error='Report(s) not submitted. Arachne token not valid.')
+            else:
+                request_data.update(token=None)
+            return None
+        
         # If running locally, there are no further checks but ensure the token is None (to avoid mix of ''s and Nones)
         if self.is_local:
             request_data.update(token=None)
             return None
+        
         # If not running locally, check the token from the request_data is valid if one is given
         token = request_data.get('token')  # obtain the token
         if token:
