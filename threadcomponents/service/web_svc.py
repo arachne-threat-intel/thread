@@ -242,9 +242,20 @@ class WebService:
         """
         :criteria: expects a dictionary of this structure:
         """
-        html = self.tokenizer_sen.tokenize(data)
+        html_sentences = self.tokenizer_sen.tokenize(data)
+        html_sentences_corrected = []
+        next_html_sentence = html_sentences[0]
+        for idx, html_sentence in enumerate(html_sentences[1:]):
+            if next_html_sentence.endswith('[.') and html_sentence.startswith(']'):
+                next_html_sentence += html_sentence
+                if idx == len(html_sentences) - 2:
+                    html_sentences_corrected.append(next_html_sentence)
+            else:
+                html_sentences_corrected.append(next_html_sentence)
+                next_html_sentence = html_sentence
+
         sentences = []
-        for current in html:
+        for current in html_sentences_corrected:
             # Further split by break tags as this might misplace highlighting in the front end
             no_breaks = [x for x in current.split('<br>') if x]
             for fragment in no_breaks:
