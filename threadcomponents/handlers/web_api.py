@@ -404,6 +404,7 @@ class WebAPI:
         report_data = await self.data_svc.export_report_data(report=report[0], report_id=report_id)
         sentences = report_data.get('sentences', [])
         keywords = dict(aggressors=report_data['aggressors'], victims=report_data['victims'])
+        indicators_of_compromise = await self.data_svc.get_report_sentence_indicators_of_compromise(report_id=report_id)
 
         dd = dict()
         # Default background which will be replaced by logo via client-side
@@ -478,6 +479,18 @@ class WebAPI:
 
         # Append table to the end
         dd['content'].append(dict(table=table))
+        dd['content'].append(dict(text='\n'))
+
+        # Table for indicators of compromise
+        ioc_header_row = []
+        for column_header in ['Indicators of Compromise']:
+            ioc_header_row.append(dict(text=column_header, style='bold'))
+        ioc_table = dict(body=[ioc_header_row])
+        for sentence in sentences:
+            if any(ioc['sentence_id'] == sentence['uid'] for ioc in indicators_of_compromise):
+                ioc_table['body'].append([sentence['text']])
+        dd['content'].append(dict(table=ioc_table))
+
         return web.json_response(dd)
 
     async def rebuild_ml(self, request):
