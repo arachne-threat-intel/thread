@@ -697,14 +697,28 @@ function scrollAndSelectSentence(sentenceId) {
   }
 }
 
+function addIndicatorOfCompromise(sentenceId) {
+  if (sentenceId) {
+    restRequest("POST", {"index": "add_indicator_of_compromise", "sentence_id": sentenceId});
+  }
+}
+
+function removeIndicatorOfCompromise(sentenceId) {
+  if (sentenceId) {
+    restRequest("POST", {"index": "remove_indicator_of_compromise", "sentence_id": sentenceId});
+  }
+}
+
 function toggleIoc() {
   if (sentence_id) {
     if ($(`#elmt${sentence_id}`).attr("data-ioc") === "true") {
       $(`#elmt${sentence_id}`).attr("data-ioc", "false");
       $(`#ioc-icon-${sentence_id}`).hide();
+      removeIndicatorOfCompromise(sentence_id);
     } else {
       $(`#elmt${sentence_id}`).attr("data-ioc", "true");
       $(`#ioc-icon-${sentence_id}`).show();
+      addIndicatorOfCompromise(sentence_id);
     }
   }
 }

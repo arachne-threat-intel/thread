@@ -213,3 +213,15 @@ CREATE TABLE IF NOT EXISTS original_html (
     found_status BOOLEAN DEFAULT 0,
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS report_sentence_indicators_of_compromise (
+  uid VARCHAR(60) PRIMARY KEY,
+  -- Report ID
+  report_id VARCHAR(60),
+  -- Sentence ID
+  sentence_id VARCHAR(60),
+  -- Refanged sentence text
+  refanged_sentence_text VARCHAR(800),
+  FOREIGN KEY(report_id) REFERENCES reports(uid) ON DELETE CASCADE,
+  FOREIGN KEY(sentence_id) REFERENCES report_sentences(uid) ON DELETE CASCADE
+);

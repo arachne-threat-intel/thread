@@ -1037,6 +1037,33 @@ class RestService:
         success.update(dict(info=info, alert_user=1, refresh_page=refresh_page, updated_attacks=bool(updates)))
         return success
 
+    def __refang(self, ioc_text):
+        """Function to remove artifacts from common defangs."""
+        return ioc_text.replace('[dot]', '.') \
+                .replace('(dot)', '.') \
+                .replace('[.]', '.') \
+                .replace('(', '') \
+                .replace(')', '') \
+                .replace(',', '.') \
+                .replace(' ', '') \
+                .replace(u'\u30fb', '.')
+
+    async def add_indicator_of_compromise(self, request, criteria=None):
+        """Function to add a sentence as an indicator of compromise."""
+        sentences = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
+        if sentences:
+            await self.dao.insert_generate_uid('report_sentence_indicators_of_compromise',
+                                               dict(sentence_id=sentences[0]['uid'],
+                                                    report_id=sentences[0]['report_uid'],
+                                                    refanged_sentence_text=self.__refang(sentences[0]['text']).strip()))
+    
+    async def remove_indicator_of_compromise(self, request, criteria=None):
+        """Function to remove a sentence as an indicator of compromise."""
+        sentences = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
+        if sentences:
+            await self.dao.delete('report_sentence_indicators_of_compromise',
+                                  dict(sentence_id=sentences[0]['uid'], report_id=sentences[0]['report_uid']))
+
     async def _pre_add_reject_attack_checks(self, request, sen_id='', sentence_dict=None, attack_id='', attack_dict=None):
         """Function to check for adding or rejecting attacks, enough sentence and attack data has been given."""
         # Check there is sentence data to access

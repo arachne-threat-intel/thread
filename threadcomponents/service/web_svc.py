@@ -286,10 +286,6 @@ class WebService:
         
         splitted_by_sha1 = []
         for sentence in splitted_by_md5:
-            # splitted = SHA1_REGEX.split(sentence)
-            # if len(splitted) > 1:
-            #     logging.info(f"FROM: {sentence}")
-            #     logging.info(f"TO: {splitted}")
             splitted_by_sha1 += SHA1_REGEX.split(sentence)
         
         splitted_by_sha256 = []
@@ -300,7 +296,6 @@ class WebService:
         for sentence in splitted_by_sha256:
             splitted_by_sha512 += SHA512_REGEX.split(sentence)
         
-        # logging.info('Splitting finished')
         return splitted_by_sha512
     
     def __split_by_url(self, sentences):
@@ -490,6 +485,7 @@ class WebService:
         final_element['text'] = sentence['text']
         final_element['tag'] = tag
         final_element['found_status'] = sentence['found_status']
+        final_element['is_ioc'] = sentence['is_ioc']
         return final_element
 
     @staticmethod
