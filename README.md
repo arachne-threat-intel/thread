@@ -59,9 +59,11 @@ When the URL has been processed and its report is ready, a new card will appear 
 You will also have the option to delete reports that 1. are not in the queue or 2. those in the queue that have an error.
 
 ## Shared vs. Local
-We are currently working on making Thread a live application where you can view your reports and those of others. You can currently use Thread as a local, single user application.
+You are able to use Thread via https://arachne.digital/thread.
 
-When Thread becomes a live application, if you run Thread via our Arachne website, your reports will be visible to others. You can clone this repo, set it up, and use it locally to ensure all your reports stay only on your machine.
+If you use Thread via our Arachne website, your reports will be visible to others and accessible by the Arachne team. To reduce its visibility, you can use a token when submitting reports (please note, these reports will still be accessible by the Arachne team); a token is available when you sign up for an account on the Arachne website.
+
+Alternatively, you can clone this repo, set it up, and use it locally to ensure all your reports stay only on your machine.
 
 ## Analysing a Report
 Thread's prediction model will try its best to find ATT&CK techniques in the report, but since our current data set is very limited, our models are not 100% accurate, so the tool requires you to review and refine the technique prediction.
