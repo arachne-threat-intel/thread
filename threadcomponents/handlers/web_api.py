@@ -177,7 +177,7 @@ class WebAPI:
             is_complete_status = status.value == self.report_statuses.COMPLETED.value
             # Properties for all statuses when displayed on the index page
             page_data[status.value] = \
-                dict(display_name=status.display_name, allow_delete=True, display_expiry=True,
+                dict(display_name=status.display_name, allow_delete=True,
                      error_msg='Sorry, an error occurred with this report and may appear different than intended.',
                      analysis_button='View Analysis' if is_complete_status else 'Analyse')
             # If the status is 'queue', obtain errored reports separately so we can provide info without these
@@ -195,9 +195,8 @@ class WebAPI:
                     page_data[status.value]['display_name'] += ' (%s/%s)' % queue_ratio
                     # Also add a fuller sentence describing the fraction
                     page_data[status.value]['column_info'] = '%s report(s) pending in Queue out of MAX %s' % queue_ratio
-                # Queued reports can't be deleted (unless errored) nor have an expiry date
+                # Queued reports can't be deleted (unless errored)
                 page_data[status.value]['allow_delete'] = False
-                page_data[status.value]['display_expiry'] = False
                 # There is no analysis button for queued reports
                 del page_data[status.value]['analysis_button']
                 # Queued reports with errors have an error because the contents can't be viewed: update error message
