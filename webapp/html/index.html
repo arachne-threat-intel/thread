@@ -55,7 +55,7 @@
                              <span class="fas fa-undo-alt glyphicon glyphicon-refresh btn btn-sm btn-outline-info float-right report-action"></span>
                           </a>
                         {% endif %}
-                        {% if value.display_expiry and not is_local %}{# Display report-expiry date if applicable #}
+                        {% if not is_local %}{# Display report-expiry date if applicable #}
                           <a data-bs-toggle="tooltip" data-bs-placement="top"
                              title="Report expiry date: {{ report.expires_on|default('a week from its analysis') }}">
                              <span class="fa-regular fa-clock btn-sm float-right"></span>

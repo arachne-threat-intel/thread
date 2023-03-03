@@ -228,13 +228,9 @@ class RestService:
                 return default_error
             if not date_written:
                 return dict(error='Please set an Article Publication Date for this report.', alert_user=1)
-            # Finally, update the status
+            # Finally, update the status and expiry date
             update_data = dict(current_status=new_status)
-            if not self.is_local:
-                # Prepare its expiry date (now + 1 day from completion)
-                expiry_date = datetime.now() + timedelta(days=1)
-                expiry_date_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S')
-                update_data.update(dict(expires_on=expiry_date_str))
+            self.add_report_expiry(data=update_data, days=1)
             await self.dao.update('reports', where=dict(uid=report_id), data=update_data)
             self.seen_report_status[report_id] = new_status
             # Before finishing, do any post-complete tasks if necessary
@@ -649,6 +645,7 @@ class RestService:
                 automatically_generated=automatically_generated,
                 token=token
             )
+            self.add_report_expiry(data=temp_dict, weeks=1)
             # Are we skipping this report?
             skip_report = False
             if len(title) > 200:
@@ -814,11 +811,8 @@ class RestService:
         # Save the article-date if we have one
         if article_date:
             update_data.update(dict(date_written=article_date))
-        if not self.is_local:
-            # Prepare its expiry date (now + 1 week)
-            expiry_date = datetime.now() + timedelta(weeks=1)
-            expiry_date_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S')
-            update_data.update(dict(expires_on=expiry_date_str))
+        # Add expiry date (now + 1 week)
+        self.add_report_expiry(data=update_data, weeks=1)
         # Update card to reflect the end of queue
         await self.dao.update('reports', where=dict(uid=report_id), data=update_data)
         # Update the relevant queue for this user
@@ -1213,6 +1207,16 @@ class RestService:
             if raise_error:
                 raise e
         return None
+
+    def add_report_expiry(self, data=None, **date_kwargs):
+        """Function to generate an expiry date from today."""
+        if not self.is_local:
+            # Prepare expiry date as str
+            expiry_date = datetime.now() + timedelta(**date_kwargs)
+            expiry_date_str = expiry_date.strftime('%Y-%m-%d %H:%M:%S')
+            if data:
+                data.update(dict(expires_on=expiry_date_str))
+            return expiry_date_str
 
     def check_input_date(self, date_str):
         """Function to check given a date string, it is in an acceptable format and range to be saved."""
