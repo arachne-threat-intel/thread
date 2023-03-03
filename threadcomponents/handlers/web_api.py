@@ -461,7 +461,7 @@ class WebAPI:
         header_row = []
         for column_header in ['ID', 'Name', 'Identified Sentence', 'Start Date', 'End Date']:
             header_row.append(dict(text=column_header, style='bold'))
-        table = dict(body=[header_row])
+        table = dict(widths=['10%', '16%', '50%', '12%', '12%'], body=[header_row])
         seen_sentences = set()  # set to prevent duplicate sentences being exported
         for sentence in sentences:
             sen_id, sen_text = sentence['uid'], sentence['text']
@@ -484,7 +484,7 @@ class WebAPI:
         ioc_header_row = []
         for column_header in ['Indicators of Compromise']:
             ioc_header_row.append(dict(text=column_header, style='bold'))
-        ioc_table = dict(body=[ioc_header_row])
+        ioc_table = dict(widths=['100%'], body=[ioc_header_row])
         for sentence in sentences:
             if any(ioc['sentence_id'] == sentence['uid'] for ioc in indicators_of_compromise):
                 ioc_table['body'].append([sentence['text']])
