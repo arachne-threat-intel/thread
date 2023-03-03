@@ -259,17 +259,11 @@ class RestService:
 
     async def remove_sentence(self, request, criteria=None):
         default_error = dict(error='Error removing item.')
-        try:
-            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
-            sen_id = criteria['sentence_id']
-        except (KeyError, TypeError):
-            return default_error
-        report_id = await self.data_svc.get_report_id_from_sentence_id(sentence_id=sen_id)
-        # Use this report ID to check permissions, determine its status and if we can continue
-        await self.check_report_permission(request, report_id=report_id, action='delete-sentence')
-        if not await self.check_report_status_multiple(
-                report_id=report_id, statuses=[ReportStatus.IN_REVIEW.value, ReportStatus.NEEDS_REVIEW.value]):
-            return default_error
+        sen_id, report_id, error = await self.check_edit_sentence_permission(
+            request, criteria, default_error, 'delete-sentence')
+        if error:
+            return error
+
         # This is most likely a sentence ID sent through, so delete as expected
         await self.dao.delete('report_sentences', dict(uid=sen_id))
         # This could also be an image, so delete from original_html table too
@@ -1056,19 +1050,27 @@ class RestService:
 
     async def add_indicator_of_compromise(self, request, criteria=None):
         """Function to add a sentence as an indicator of compromise."""
-        sentences = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
-        if sentences:
-            await self.dao.insert_generate_uid('report_sentence_indicators_of_compromise',
-                                               dict(sentence_id=sentences[0]['uid'],
-                                                    report_id=sentences[0]['report_uid'],
-                                                    refanged_sentence_text=self.__refang(sentences[0]['text']).strip()))
+        sentence_data, report_id, error = await self.check_edit_sentence_permission(
+            request, criteria, 'add-remove-ioc', strict=True)
+        if error:
+            return error
+
+        await self.dao.insert_generate_uid('report_sentence_indicators_of_compromise',
+                                           dict(sentence_id=sentence_data['uid'],
+                                                report_id=report_id,
+                                                refanged_sentence_text=self.__refang(sentence_data['text']).strip()))
+        return REST_SUCCESS
     
     async def remove_indicator_of_compromise(self, request, criteria=None):
         """Function to remove a sentence as an indicator of compromise."""
-        sentences = await self.dao.get('report_sentences', dict(uid=criteria['sentence_id']))
-        if sentences:
-            await self.dao.delete('report_sentence_indicators_of_compromise',
-                                  dict(sentence_id=sentences[0]['uid'], report_id=sentences[0]['report_uid']))
+        sentence_data, report_id, error = await self.check_edit_sentence_permission(
+            request, criteria, 'add-remove-ioc', strict=True)
+        if error:
+            return error
+
+        await self.dao.delete('report_sentence_indicators_of_compromise',
+                              dict(sentence_id=sentence_data['uid'], report_id=report_id))
+        return REST_SUCCESS
 
     async def _pre_add_reject_attack_checks(self, request, sen_id='', sentence_dict=None, attack_id='', attack_dict=None):
         """Function to check for adding or rejecting attacks, enough sentence and attack data has been given."""
@@ -1143,6 +1145,33 @@ class RestService:
             await self.web_svc.action_allowed(request, action, context=dict(report=report[0]))
         # Checks have passed, return report for further use
         return report[0]
+
+    async def check_edit_sentence_permission(self, request, criteria=None, default_error=None, action='unspecified',
+                                             strict=False):
+        """Function to check a request to edit a sentence is permitted. Returns sentence (ID or data), report ID, error.
+        Strict mode: when False, allows matching image-IDs to be checked, else will strictly check sentences only."""
+        default_error = default_error or dict(error='Error editing sentence.')
+        try:
+            # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
+            sen_id = criteria['sentence_id']
+        except (KeyError, TypeError):
+            return None, None, default_error
+        report_id, sentence_data = None, None
+        if strict:
+            sentences = await self.dao.get('report_sentences', dict(uid=sen_id))
+            try:
+                sentence_data = sentences[0]
+                report_id = sentence_data['report_uid']
+            except (KeyError, TypeError):
+                return None, None, default_error
+        else:
+            report_id = await self.data_svc.get_report_id_from_sentence_id(sentence_id=sen_id)
+        # Use this report ID to check permissions, determine its status and if we can continue
+        await self.check_report_permission(request, report_id=report_id, action=action)
+        if not await self.check_report_status_multiple(
+                report_id=report_id, statuses=[ReportStatus.IN_REVIEW.value, ReportStatus.NEEDS_REVIEW.value]):
+            return None, None, default_error
+        return (sentence_data, report_id, None) if strict else (sen_id, report_id, None)
 
     async def check_report_status(self, report_id='', status=ReportStatus.IN_REVIEW.value, update_if_false=False):
         """Function to check a report is of the given status and updates it if not."""
