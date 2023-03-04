@@ -374,8 +374,9 @@ class DataService:
         # Obtain all the unique keywords and aliases into a set
         to_add = set()
         for keyword, entry in keywords_dict.items():
-            aliases = entry.get('aliases', [])
-            to_add.update(aliases + [keyword])
+            to_add.add(keyword)
+            for list_key in ['full_aliases', 'partial_aliases', 'subgroups', 'campaigns']:
+                to_add.update(entry.get(list_key, []))
         # Check which ones are not in the database and add them if so
         to_add = to_add - set(cur_keywords)
         for adding_keyword in to_add:
