@@ -41,7 +41,12 @@
       {% else %}
         {% if elmt.tag == 'li' %}<li class="elmtRelated{{elmt.uid}}">{% endif %}
         {% if elmt.tag == 'header' %}<h3 class="elmtRelated{{elmt.uid}}">{% endif %}
-        <span class="report-sentence {% if elmt.found_status %}highlight-sentence{% endif %}" id="elmt{{elmt.uid}}" onclick="sentenceContext('{{elmt.uid}}')">
+        <i id="ioc-icon-{{elmt.uid}}" class="fas fa-shield-alt" title="Indicator of Compromise" {% if not elmt.is_ioc %}style="display: none;"{% endif %}></i>
+        <span class="report-sentence {% if elmt.found_status %}highlight-sentence{% endif %}"
+          id="elmt{{elmt.uid}}"
+          data-ioc="{% if elmt.is_ioc %}true{% else %}false{% endif %}"
+          onclick="sentenceContext('{{elmt.uid}}')"
+        >
           {{elmt.text}}
         </span>
         {% if elmt.tag == 'header' %}</h3>{% endif %}
@@ -135,6 +140,10 @@
         <br><br>
         <button disabled id="missingTechBtn" onclick="addMissingTechnique()" class="btn btn-primary">Add Technique</button> <br><br>
         <button disabled id="delSenBtn" onclick="remove_sentence()" class="btn btn-danger">Remove Selected</button> <br><br>
+        <div class="form-check form-switch ioc-switch">
+          <input class="form-check-input" type="checkbox" role="switch" id="iocSwitch" onclick="toggleIoc()" disabled>
+          <label class="form-check-label" for="iocSwitch">Indicator of Compromise</label>
+        </div>
         <button onclick="finish_analysis('{{title_quoted}}')" class="btn btn-success">Finish Analysis</button> <br><br>
       {% endif %}
     </div>

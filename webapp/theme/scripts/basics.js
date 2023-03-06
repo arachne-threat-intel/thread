@@ -12,6 +12,7 @@ var clickedClass = "report-sentence-clicked";
 // ID selectors for report-sentence buttons
 var delSenBtn = "#delSenBtn";
 var missingTechBtn = "#missingTechBtn";
+const iocSwitchSelector = "#iocSwitch";
 var senTTPForm = "#ttpDatesForm";
 // The URL for the rest requests
 var restUrl = $("script#basicsScript").data("rest-url");
@@ -144,6 +145,9 @@ function remove_sentence() {
       // Disable further actions until another item is selected
       $(missingTechBtn).prop("disabled", true);
       $(delSenBtn).prop("disabled", true);
+      $(iocSwitchSelector).prop("disabled", true);
+      $(iocSwitchSelector).prop("checked", false);
+      $(`#ioc-icon-${sentence_id}`).remove();
       $(senTTPForm).prop("hidden", true);
       // Reset any sentence-techniques lists
       $("#tableSentenceInfo tr").remove();
@@ -354,6 +358,10 @@ function updateSentenceContext(data) {
   $(missingTechBtn).prop("disabled", $(`.${highlightClassImg}`).length > 0 || !enableSenButtons);
   // Allow 'remove selected' button
   $(delSenBtn).prop("disabled", !enableSenButtons);
+  // Allow 'Indicator of Compromise' switch
+  $(iocSwitchSelector).prop("disabled", !enableSenButtons);
+  const sentenceIsIoc = $(`#elmt${sentence_id}`).attr("data-ioc") === "true";
+  $(iocSwitchSelector).prop("checked", sentenceIsIoc);
 }
 
 function updateConfirmedContext(data) {
@@ -687,6 +695,32 @@ function scrollAndSelectSentence(sentenceId) {
   if (sentenceElem) {
     sentenceContext(sentenceId);
     sentenceElem.scrollIntoView();
+  }
+}
+
+function addIndicatorOfCompromise(sentenceId) {
+  if (sentenceId) {
+    restRequest("POST", {"index": "add_indicator_of_compromise", "sentence_id": sentenceId});
+  }
+}
+
+function removeIndicatorOfCompromise(sentenceId) {
+  if (sentenceId) {
+    restRequest("POST", {"index": "remove_indicator_of_compromise", "sentence_id": sentenceId});
+  }
+}
+
+function toggleIoc() {
+  if (sentence_id) {
+    if ($(`#elmt${sentence_id}`).attr("data-ioc") === "true") {
+      $(`#elmt${sentence_id}`).attr("data-ioc", "false");
+      $(`#ioc-icon-${sentence_id}`).hide();
+      removeIndicatorOfCompromise(sentence_id);
+    } else {
+      $(`#elmt${sentence_id}`).attr("data-ioc", "true");
+      $(`#ioc-icon-${sentence_id}`).show();
+      addIndicatorOfCompromise(sentence_id);
+    }
   }
 }
 

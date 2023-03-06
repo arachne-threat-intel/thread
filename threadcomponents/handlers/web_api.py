@@ -235,6 +235,8 @@ class WebAPI:
                     update_report_dates=lambda d: self.rest_svc.update_report_dates(request=request, criteria=d),
                     update_attack_time=lambda d: self.rest_svc.update_attack_time(request=request, criteria=d),
                     set_report_keywords=lambda d: self.rest_svc.set_report_keywords(request=request, criteria=d),
+                    add_indicator_of_compromise=lambda d: self.rest_svc.add_indicator_of_compromise(request=request, criteria=d),
+                    remove_indicator_of_compromise=lambda d: self.rest_svc.remove_indicator_of_compromise(request=request, criteria=d),
                 ))
             method = options[request.method][index]
         except KeyError:
@@ -280,6 +282,9 @@ class WebAPI:
         sentences = await self.data_svc.get_report_sentences(report_id)
         categories = await self.data_svc.get_report_categories_for_display(report_id, include_keynames=True)
         keywords = await self.data_svc.get_report_aggressors_victims(report_id)
+        indicators_of_compromise = await self.data_svc.get_report_sentence_indicators_of_compromise(report_id)
+        for sentence in sentences:
+            sentence['is_ioc'] = any(ioc['sentence_id'] == sentence['uid'] for ioc in indicators_of_compromise)
         original_html = await self.dao.get('original_html', equal=dict(report_uid=report_id),
                                            order_by_asc=dict(elem_index=1))
         final_html = await self.web_svc.build_final_html(original_html, sentences)
@@ -398,6 +403,7 @@ class WebAPI:
         report_data = await self.data_svc.export_report_data(report=report[0], report_id=report_id)
         sentences = report_data.get('sentences', [])
         keywords = dict(aggressors=report_data['aggressors'], victims=report_data['victims'])
+        indicators_of_compromise = await self.data_svc.get_report_sentence_indicators_of_compromise(report_id=report_id)
 
         dd = dict()
         # Default background which will be replaced by logo via client-side
@@ -455,7 +461,7 @@ class WebAPI:
         header_row = []
         for column_header in ['ID', 'Name', 'Identified Sentence', 'Start Date', 'End Date']:
             header_row.append(dict(text=column_header, style='bold'))
-        table = dict(body=[header_row])
+        table = dict(widths=['10%', '16%', '50%', '12%', '12%'], body=[header_row])
         seen_sentences = set()  # set to prevent duplicate sentences being exported
         for sentence in sentences:
             sen_id, sen_text = sentence['uid'], sentence['text']
@@ -472,6 +478,18 @@ class WebAPI:
 
         # Append table to the end
         dd['content'].append(dict(table=table))
+        dd['content'].append(dict(text='\n'))
+
+        # Table for indicators of compromise
+        ioc_header_row = []
+        for column_header in ['Indicators of Compromise']:
+            ioc_header_row.append(dict(text=column_header, style='bold'))
+        ioc_table = dict(widths=['100%'], body=[ioc_header_row])
+        for sentence in sentences:
+            if any(ioc['sentence_id'] == sentence['uid'] for ioc in indicators_of_compromise):
+                ioc_table['body'].append([sentence['text']])
+        dd['content'].append(dict(table=ioc_table))
+
         return web.json_response(dd)
 
     async def rebuild_ml(self, request):

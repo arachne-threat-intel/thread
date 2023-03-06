@@ -478,6 +478,10 @@ class DataService:
         """Function to retrieve all report sentences for a given report ID."""
         return await self.dao.get('report_sentences', equal=dict(report_uid=report_id), order_by_asc=dict(sen_index=1))
 
+    async def get_report_sentence_indicators_of_compromise(self, report_id):
+        """Function to retrieve all indicators of compromise for a given report ID."""
+        return await self.dao.get('report_sentence_indicators_of_compromise', equal=dict(report_id=report_id))
+
     async def get_report_sentences_with_attacks(self, report_id=''):
         """Function to retrieve all report sentences and any attacks they may have given a report ID."""
         # Ensure date fields are converted into strings

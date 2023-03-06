@@ -422,3 +422,7 @@ table#confirmedSentenceInfo td {
   padding-right: 0.2rem;
   cursor: help;
 }
+
+.ioc-switch {
+  margin-bottom: .75rem;
+}
