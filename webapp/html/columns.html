@@ -41,7 +41,7 @@
       {% else %}
         {% if elmt.tag == 'li' %}<li class="elmtRelated{{elmt.uid}}">{% endif %}
         {% if elmt.tag == 'header' %}<h3 class="elmtRelated{{elmt.uid}}">{% endif %}
-        <i id="ioc-icon-{{elmt.uid}}" class="fas fa-shield-alt" {% if not elmt.is_ioc %}style="display: none;"{% endif %}></i>
+        <i id="ioc-icon-{{elmt.uid}}" class="fas fa-shield-alt" title="Indicator of Compromise" {% if not elmt.is_ioc %}style="display: none;"{% endif %}></i>
         <span class="report-sentence {% if elmt.found_status %}highlight-sentence{% endif %}"
           id="elmt{{elmt.uid}}"
           data-ioc="{% if elmt.is_ioc %}true{% else %}false{% endif %}"
