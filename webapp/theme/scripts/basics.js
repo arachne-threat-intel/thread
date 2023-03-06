@@ -147,6 +147,7 @@ function remove_sentence() {
       $(delSenBtn).prop("disabled", true);
       $(iocSwitchSelector).prop("disabled", true);
       $(iocSwitchSelector).prop("checked", false);
+      $(`#ioc-icon-${sentence_id}`).remove();
       $(senTTPForm).prop("hidden", true);
       // Reset any sentence-techniques lists
       $("#tableSentenceInfo tr").remove();
