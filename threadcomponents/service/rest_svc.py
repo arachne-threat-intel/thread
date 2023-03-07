@@ -759,6 +759,7 @@ class RestService:
             logging.error('Skipping report; could not download url ' + criteria[URL])
             await self.dao.update('reports', where=dict(uid=report_id), data=dict(error=self.dao.db_true_val))
             self.remove_report_from_queue_map(criteria)
+            await self.remove_report_if_automatically_generated(report_id)
             return
 
         html_data = newspaper_article.text.replace('\n', '<br>')
@@ -834,6 +835,19 @@ class RestService:
             return
         
         logging.info(str(unique_techniques_count) + ' technique(s) found for report ' + report_id)
+    
+    async def remove_report_if_automatically_generated(self, report_id):
+        """Function that removes a report if it has been automatically generated."""
+        reports_found = await self.data_svc.get_report_by_id_or_title(by_id=True, report=report_id)
+        if len(reports_found) != 1:
+            return
+
+        report = reports_found[0]
+        if str(report['automatically_generated']).upper() != str(self.dao.db_true_val).upper():
+            return
+        
+        await self.data_svc.remove_report_by_id(report_id=report_id)
+        logging.info('Deleted skipped report ' + report_id)
 
     async def add_attack(self, request, criteria=None):
         try:
