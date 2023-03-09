@@ -2,21 +2,25 @@
   {% if assoc_type == "aggressor" %}
     {% set assoc_label = "Aggressors" %}
     {% set db_group_list = aggressor_groups %}
+    {% set db_region_list = aggressor_regions %}
     {% set db_country_list = aggressor_countries %}
     {% set allow_select_all = false %}
     {% set onchangeGroup = "onchangeAggressorGroups" %}
+    {% set onchangeRegion = "onchangeAggressorRegions" %}
     {% set onchangeCountry = "onchangeAggressorCountries" %}
   {% else %}
     {% set assoc_label = "Victims" %}
+    {% set db_region_list = victim_regions %}
     {% set db_country_list = victim_countries %}
     {% set allow_select_all = true %}
     {% set categories_select_all = vic_cat_all %}
     {% set countries_select_all = vic_countries_all %}
+    {% set onchangeRegion = "onchangeVictimRegions" %}
     {% set onchangeCountry = "onchangeVictimCountries" %}
   {% endif %}
   <div class="row">
-    <label class="col-sm-2 col-form-label"><b>{{assoc_label}}:</b></label>
-    <div class="col-sm-5">
+    <label class="col-sm-3 col-form-label"><b>{{assoc_label}}:</b></label>
+    <div class="col-sm-3">
       {% if assoc_type == "aggressor" %}
         <select id="{{assoc_type}}GroupSelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
                 title="Select groups" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
@@ -35,19 +39,31 @@
         </select>
       {% endif %}
     </div>
-    <div class="col-sm-5">
+    <div class="col-sm-3">
+      <select id="{{assoc_type}}RegionSelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
+              title="Select regions" multiple data-selected-text-format="count" {% if completed %}disabled{% endif %}
+              onchange="{{onchangeRegion}}(this)">
+          {% for region_key in region_list %}
+            <option class="{{assoc_type}}RegionOpt" value="{{region_key}}">{{region_list[region_key]}}</option>
+          {% endfor %}
+      </select>
+    </div>
+    <div class="col-sm-3">
       <select id="{{assoc_type}}CountrySelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
               title="Select countries" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
               onchange="{{onchangeCountry}}(this)">
         {% for country_key in country_list %}
-          <option class="{{assoc_type}}CountryOpt" value="{{country_key}}" {% if country_key in db_country_list %}selected{% endif %}>{{country_list[country_key]}}</option>
+          <option class="{{assoc_type}}CountryOpt" value="{{country_key}}" data-region-id="{{country_region_list[country_key]}}"
+                  {% if country_key in db_country_list %}selected{% endif %}>
+            {{country_list[country_key]}}
+          </option>
         {% endfor %}
       </select>
     </div>
   </div>
   <div class="row pt-2">{# Display the list of selected groups and countries #}
-    <div class="col-sm-2"></div>
-    <div class="col-sm-5">
+    <div class="col-sm-3"></div>
+    <div class="col-sm-3">
       {% if assoc_type == "aggressor" %}
         <ul id="{{assoc_type}}CurrentGroupList">
           {% for saved_group in db_group_list %}
@@ -62,7 +78,14 @@
         </ul>
       {% endif %}
     </div>
-    <div class="col-sm-5">
+    <div class="col-sm-3">
+      <ul id="{{assoc_type}}CurrentRegionList">
+        {% for saved_region in db_region_list %}
+          <li class="{{assoc_type}}RegionLi" id="{{saved_region}}">{{region_list[saved_region]}}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="col-sm-3">
       <ul id="{{assoc_type}}CurrentCountryList">
         {% for saved_country in db_country_list %}
           <li class="{{assoc_type}}CountryLi" id="{{saved_country}}">{{country_list[saved_country]}}</li>
@@ -72,16 +95,17 @@
   </div>
   {% if allow_select_all %}{# Give option to select all #}
     <div class="row pt-2">
-      <div class="col-sm-2"></div>
-      <div class="col-sm-5">
+      <div class="col-sm-3"></div>
+      <div class="col-sm-3">
         <input type="checkbox" id="{{assoc_type}}CategorySelAll" onchange="onchangeSelectAllKeywords(this, '{{assoc_type}}', 'Category')"
                {% if categories_select_all %}checked{% endif %} {% if completed %}disabled{% endif %}>
-        <label for="{{assoc_type}}CategorySelAll"><small>{{assoc_label}} > Categories > Select all?</small></label>
+        <label for="{{assoc_type}}CategorySelAll"><small>{{assoc_label}} &gt; Categories &gt; Select all?</small></label>
       </div>
-      <div class="col-sm-5">
+      <div class="col-sm-3"></div>
+      <div class="col-sm-3">
         <input type="checkbox" id="{{assoc_type}}CountrySelAll" onchange="onchangeSelectAllKeywords(this, '{{assoc_type}}', 'Country')"
                {% if countries_select_all %}checked{% endif %} {% if completed %}disabled{% endif %}>
-        <label for="{{assoc_type}}CountrySelAll"><small>{{assoc_label}} > Countries > Select all?</small></label>
+        <label for="{{assoc_type}}CountrySelAll"><small>{{assoc_label}} &gt; Countries &gt; Select all?</small></label>
       </div>
     </div>
   {% endif %}

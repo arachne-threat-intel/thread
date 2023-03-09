@@ -466,8 +466,20 @@ function onchangeAggressorGroups(e) {
   updateMultiSelectList(e, "aggressorGroupOpt", "aggressorCurrentGroupList", "aggressorGroupLi", false);
 }
 
+function onchangeAggressorRegions(e) {
+  updateMultiSelectList(e, "aggressorRegionOpt", "aggressorCurrentRegionList", "aggressorRegionLi");
+
+  setTimeout(() => updateCountrySelect("aggressor"));
+}
+
 function onchangeAggressorCountries(e) {
   updateMultiSelectList(e, "aggressorCountryOpt", "aggressorCurrentCountryList", "aggressorCountryLi");
+}
+
+function onchangeVictimRegions(e) {
+  updateMultiSelectList(e, "victimRegionOpt", "victimCurrentRegionList", "victimRegionLi");
+
+  setTimeout(() => updateCountrySelect("victim"));
 }
 
 function onchangeVictimCountries(e) {
@@ -489,6 +501,33 @@ function onchangeSelectAllKeywords(e, assocType, assocWith) {
     // Ensure the checkbox stays checked (as unselect-onchange-triggers will revert this)
     $("#" + selectId + "SelAll").prop("checked", true);
   }
+}
+
+function updateCountrySelect(assocType) {
+    $(`#${assocType}CountrySelect`).empty();
+    $(`#${assocType}CountrySelect`).selectpicker("destroy");
+
+    const selectedRegionIds = $(`#${assocType}RegionSelect`).val();
+    // If there are no selected regions, display all countries
+    if (selectedRegionIds.length === 0) {
+      for (let countryKey in countryRegions) {
+        $(`#${assocType}CountrySelect`).append(
+          `<option class='${assocType}CountryOpt' value='${countryKey}' data-region-id='${countryRegions[countryKey]}'>
+            ${countries[countryKey]}
+          </option>`);
+      }
+    }
+    // Display countries from selected regions
+    for (let countryKey in countryRegions) {
+      if (selectedRegionIds.includes(countryRegions[countryKey])) {
+        $(`#${assocType}CountrySelect`).append(
+          `<option class='${assocType}CountryOpt' value='${countryKey}' data-region-id='${countryRegions[countryKey]}'>
+            ${countries[countryKey]}
+          </option>`);
+      }
+    }
+
+    $(`#${assocType}CountrySelect`).selectpicker("render");
 }
 
 function updateMultiSelectList(dropdown, selOptClass, ulID, liClass, useSelToLookupDisplay=true) {

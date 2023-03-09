@@ -69,7 +69,9 @@ class DataService:
         self.dao = dao
         self.web_svc = web_svc
         self.dir_prefix = dir_prefix
+        self.region_dict = {}
         self.country_dict = {}
+        self.country_region_dict = {}
         # SQL queries below use a string-pos function which differs across DB engines; obtain the correct one
         str_pos = self.dao.db_func(self.dao.db.FUNC_STR_POS)
         # SQL query to obtain attack records where sub-techniques are returned with their parent-technique info
@@ -307,6 +309,16 @@ class DataService:
                     'true_positives', dict(attack_uid=k, true_positive=self.dao.truncate_str(defang_text(x), 800)))
                  for x in v['example_uses']]
 
+    async def set_regions_data(self, buildfile=os.path.join('threadcomponents', 'conf', 'country-regions.json')):
+        """Function to read in the regions json file."""
+        buildfile = os.path.join(self.dir_prefix, buildfile)
+        with open(buildfile, 'r') as regions_file:
+            loaded_regions = json.load(regions_file)
+
+        self.region_dict = {}
+        for region in loaded_regions:
+            self.region_dict[region['id']] = region['name']
+
     async def set_countries_data(self, buildfile=os.path.join('threadcomponents', 'conf', 'countries-iso2.json')):
         """Function to read in the countries json file."""
         buildfile = os.path.join(self.dir_prefix, buildfile)  # prefix directory path if there is one
@@ -314,8 +326,10 @@ class DataService:
         with open(buildfile, 'r') as infile:
             loaded_countries = json.load(infile)
         self.country_dict = {}
+        self.country_region_dict = {}
         for entry in loaded_countries:
             self.country_dict[entry['alpha-2']] = entry['name']
+            self.country_region_dict[entry['alpha-2']] = entry['region-id']
 
     async def insert_category_json_data(self, buildfile=os.path.join('threadcomponents', 'conf', 'categories',
                                                                      'industry.json')):
