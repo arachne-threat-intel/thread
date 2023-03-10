@@ -85,6 +85,18 @@ CREATE TABLE IF NOT EXISTS report_keywords (
     FOREIGN KEY(keyword) REFERENCES keywords(name) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS report_regions (
+    uid VARCHAR(60) PRIMARY KEY,
+    -- The UID of the report
+    report_uid VARCHAR(60),
+    -- The region ID
+    region INTEGER,
+    -- Whether the region is an aggressor or victim
+    association_type VARCHAR(20),
+    UNIQUE (report_uid, region, association_type),
+    FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS report_countries (
     uid VARCHAR(60) PRIMARY KEY,
     -- The UID of the report

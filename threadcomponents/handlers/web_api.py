@@ -299,16 +299,31 @@ class WebAPI:
         unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id, return_detail=True)
         # Update overall template data and return
         template_data.update(
-            file=report_title, title=report[0]['title'], title_quoted=title_quoted, final_html=final_html,
-            sentences=sentences, attack_uids=self.attack_dropdown_list, original_html=original_html, pdf_link=pdf_link,
-            nav_link=nav_link, unchecked=unchecked, help_text=help_text,
+            file=report_title,
+            title=report[0]['title'],
+            title_quoted=title_quoted,
+            final_html=final_html,
+            sentences=sentences,
+            attack_uids=self.attack_dropdown_list,
+            original_html=original_html,
+            pdf_link=pdf_link,
+            nav_link=nav_link,
+            unchecked=unchecked,
+            help_text=help_text,
             completed=int(report_status == self.report_statuses.COMPLETED.value),
-            categories=categories, category_list=self.cat_dropdown_list, group_list=self.web_svc.keyword_dropdown_list,
-            aggressor_groups=keywords['aggressors']['groups'], aggressor_countries=keywords['aggressors']['country_codes'],
-            victim_countries=keywords['victims']['country_codes'], country_list=self.data_svc.country_dict,
-            vic_cat_all=keywords['victims']['categories_all'], vic_countries_all=keywords['victims']['countries_all'],
-            region_list=self.data_svc.region_dict, country_region_list=self.data_svc.country_region_dict,
-            victim_regions=[], aggressor_regions=[], # TODO
+            categories=categories,
+            category_list=self.cat_dropdown_list,
+            group_list=self.web_svc.keyword_dropdown_list,
+            aggressor_groups=keywords['aggressors']['groups'],
+            aggressor_regions=keywords['aggressors']['region_ids'],
+            aggressor_countries=keywords['aggressors']['country_codes'],
+            victim_regions=keywords['victims']['region_ids'],
+            victim_countries=keywords['victims']['country_codes'],
+            region_list=self.data_svc.region_dict,
+            country_list=self.data_svc.country_dict,
+            country_region_list=self.data_svc.country_region_dict,
+            vic_cat_all=keywords['victims']['categories_all'],
+            vic_countries_all=keywords['victims']['countries_all'],
         )
         # Prepare the date fields to be interpreted by the front-end
         for report_date in ['date_written', 'start_date', 'end_date']:

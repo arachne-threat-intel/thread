@@ -425,14 +425,30 @@ function updateAttackTime(reportTitle) {
 
 function setReportKeywords(reportTitle) {
   // Get selected aggressors and victims and send request for updating
-  var assocObj = {country: [], countries_all: false, group: [], categories_all: false};
-  var requestData = {aggressors: JSON.parse(JSON.stringify(assocObj)), victims: JSON.parse(JSON.stringify(assocObj))};
+  var assocObj = {
+    country: [],
+    countries_all: false,
+    region: [],
+    regions_all: false,
+    group: [],
+    categories_all: false
+  };
+  var requestData = {
+    aggressors: JSON.parse(JSON.stringify(assocObj)),
+    victims: JSON.parse(JSON.stringify(assocObj))
+  };
   requestData.victims.category = [];
   $(".aggressorGroupOpt:selected").each(function() {
     requestData.aggressors.group.push($(this).prop("value"));
   });
+  $(".aggressorRegionOpt:selected").each(function() {
+    requestData.aggressors.region.push($(this).prop("value"));
+  });
   $(".aggressorCountryOpt:selected").each(function() {
     requestData.aggressors.country.push($(this).prop("value"));
+  });
+  $(".victimRegionOpt:selected").each(function() {
+    requestData.victims.region.push($(this).prop("value"));
   });
   $(".victimCountryOpt:selected").each(function() {
     requestData.victims.country.push($(this).prop("value"));

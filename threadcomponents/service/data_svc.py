@@ -445,16 +445,24 @@ class DataService:
 
     async def get_report_aggressors_victims(self, report_id, include_display=False):
         """Function to retrieve the aggressors and victims for a report given a report ID."""
-        # Obtain all groups and countries for this report
-        query = "SELECT keyword, NULL AS country, association_type FROM report_keywords WHERE report_uid = {sel} " \
-                "UNION SELECT NULL AS keyword, country, association_type " \
-                "FROM report_countries WHERE report_uid = {sel}".format(sel=self.dao.db_qparam)
-        db_results = await self.dao.raw_select(query, parameters=tuple([report_id, report_id]))
+        # Obtain all groups,  and countries for this report
+        query = "SELECT keyword, NULL AS region, NULL AS country, association_type " \
+                "FROM report_keywords " \
+                "WHERE report_uid = {sel} " \
+                "UNION " \
+                "SELECT NULL AS keyword, region, NULL AS country, association_type " \
+                "FROM report_regions " \
+                "WHERE report_uid = {sel} " \
+                "UNION " \
+                "SELECT NULL AS keyword, NULL AS region, country, association_type " \
+                "FROM report_countries " \
+                "WHERE report_uid = {sel}".format(sel=self.dao.db_qparam)
+        db_results = await self.dao.raw_select(query, parameters=tuple([report_id, report_id, report_id]))
         # Check if this report is flagged at having all victims
         query = 'SELECT association_type, association_with FROM report_all_assoc WHERE report_uid = %s' % self.dao.db_qparam
         all_assoc = await self.dao.raw_select(query, parameters=tuple([report_id]))
         # Set up the dictionary to return the results split by aggressor and victim
-        r_template = dict(groups=[], categories_all=False, country_codes=[], countries_all=False)
+        r_template = dict(groups=[], categories_all=False, region_ids=[], regions_all=False, country_codes=[], countries_all=False)
         if include_display:
             r_template.update(dict(countries=[]))
         results = dict(aggressors=deepcopy(r_template), victims=deepcopy(r_template))
@@ -475,13 +483,17 @@ class DataService:
             else:
                 logging.error('INVALID report association `%s` saved in db, uid `%s`' % (assoc_type, entry.get('uid')))
                 continue
-            # Then determine if this result is for a group or country: append value if not already flagged as select-all
-            assoc_value_g, assoc_value_c = entry.get('keyword'), entry.get('country')
-            if not (assoc_value_g or assoc_value_c):
-                logging.error('GROUP or COUNTRY missing in db entry uid `%s`' % entry.get('uid'))
+            # Then determine if this result is for a group, region or country: append value if not already flagged as select-all
+            assoc_value_g, assoc_value_r, assoc_value_c = entry.get('keyword'), entry.get('region'), entry.get('country')
+            if not (assoc_value_g or assoc_value_r or assoc_value_c):
+                logging.error('GROUP, REGION or COUNTRY missing in db entry uid `%s`' % entry.get('uid'))
                 continue
             if assoc_value_g:
                 updating['groups'].append(assoc_value_g)
+            elif assoc_value_r and not updating['regions_all']:
+                updating['region_ids'].append(str(assoc_value_r))
+                if include_display:
+                    updating['regions'].append(self.region_dict.get(assoc_value_r))
             elif assoc_value_c and not updating['countries_all']:
                 updating['country_codes'].append(assoc_value_c)
                 if include_display:

@@ -44,7 +44,9 @@
               title="Select regions" multiple data-selected-text-format="count" {% if completed %}disabled{% endif %}
               onchange="{{onchangeRegion}}(this)">
           {% for region_key in region_list %}
-            <option class="{{assoc_type}}RegionOpt" value="{{region_key}}">{{region_list[region_key]}}</option>
+            <option class="{{assoc_type}}RegionOpt" value="{{region_key}}" {% if region_key in db_region_list %}selected{% endif %}>
+              {{region_list[region_key]}}
+            </option>
           {% endfor %}
       </select>
     </div>
