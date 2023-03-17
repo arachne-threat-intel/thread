@@ -465,6 +465,8 @@ function setReportKeywords(reportTitle) {
 function setAggressorsVictimsLists() {
   generateMultiSelectList("aggressorGroupOpt", "aggressorCurrentGroupList", "aggressorGroupLi");
   generateMultiSelectList("aggressorCountryOpt", "aggressorCurrentCountryList", "aggressorCountryLi");
+  generateMultiSelectList("aggressorRegionOpt", "aggressorCurrentRegionList", "aggressorRegionLi");
+  generateMultiSelectList("victimRegionOpt", "victimCurrentRegionList", "victimRegionLi");
   generateMultiSelectList("victimCountryOpt", "victimCurrentCountryList", "victimCountryLi");
   generateMultiSelectList("categoryOpt", "currentCategoryList", "reportCategoryLi");
 }

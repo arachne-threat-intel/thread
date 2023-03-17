@@ -464,7 +464,7 @@ class DataService:
         # Set up the dictionary to return the results split by aggressor and victim
         r_template = dict(groups=[], categories_all=False, region_ids=[], regions_all=False, country_codes=[], countries_all=False)
         if include_display:
-            r_template.update(dict(countries=[]))
+            r_template.update(dict(countries=[], regions=[]))
         results = dict(aggressors=deepcopy(r_template), victims=deepcopy(r_template))
         # Flag select-all in results: only doing this for victims
         for results_key, db_assoc_type in [('victims', 'victim')]:
