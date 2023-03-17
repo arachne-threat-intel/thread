@@ -775,7 +775,7 @@ class RestService:
         # Here we build the sentence dictionary
         html_sentences = self.web_svc.tokenize_sentence(article['html_text'])
         if not html_sentences:
-            logging.error('Skipping report; could not retrieve sentences')
+            logging.error('Skipping report; could not retrieve sentences from url ' + criteria[URL])
             await self.dao.update('reports', where=dict(uid=report_id), data=dict(error=self.dao.db_true_val))
             self.remove_report_from_queue_map(criteria)
             await self.remove_report_if_automatically_generated(report_id)
