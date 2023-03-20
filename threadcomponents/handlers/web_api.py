@@ -460,7 +460,7 @@ class WebAPI:
         k_table_cols = ['aggressors', 'victims']
         # For each row, build up the column values based on the keywords dictionary
         for r_name, r_key, rk_all in [('Groups', 'groups', None), ('Categories', 'categories', 'categories_all'),
-                                      ('Countries', 'countries', 'countries_all')]:
+                                      ('Regions', 'regions', 'regions_all'), ('Countries', 'countries', 'countries_all')]:
             row = [dict(text=r_name, style='bold')]
             for col in k_table_cols:
                 k_vals, k_is_all = keywords[col].get(r_key, []), keywords[col].get(rk_all)

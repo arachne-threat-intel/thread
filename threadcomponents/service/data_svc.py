@@ -493,7 +493,7 @@ class DataService:
             elif assoc_value_r and not updating['regions_all']:
                 updating['region_ids'].append(str(assoc_value_r))
                 if include_display:
-                    updating['regions'].append(self.region_dict.get(assoc_value_r))
+                    updating['regions'].append(self.region_dict.get(str(assoc_value_r)))
             elif assoc_value_c and not updating['countries_all']:
                 updating['country_codes'].append(assoc_value_c)
                 if include_display:
