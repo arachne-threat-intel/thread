@@ -421,6 +421,8 @@ class WebAPI:
         sentences = report_data.get('sentences', [])
         keywords = dict(aggressors=report_data['aggressors'], victims=report_data['victims'])
         indicators_of_compromise = await self.data_svc.get_report_sentence_indicators_of_compromise(report_id=report_id)
+        all_regions = {r for sub_r in [keywords[k].get('region_ids', []) for k in ['aggressors', 'victims']] for r in sub_r}
+        regions_col_name = 'Regions' + ('*' if all_regions else '')
 
         dd = dict()
         # Default background which will be replaced by logo via client-side
@@ -454,13 +456,15 @@ class WebAPI:
         dd['content'].append(dict(text='\n'))
         dd['content'].append(dict(text='Techniques End Date: %s' % end_date, style='bold'))
         dd['content'].append(dict(text='\n'))  # Blank line after technique dates
+
         # Table for keywords
         k_table = dict(widths=['16%', '42%', '42%'], body=[])
         k_table['body'].append(['', dict(text='Aggressors', style='bold'), dict(text='Victims', style='bold')])
         k_table_cols = ['aggressors', 'victims']
         # For each row, build up the column values based on the keywords dictionary
-        for r_name, r_key, rk_all in [('Groups', 'groups', None), ('Categories', 'categories', 'categories_all'),
-                                      ('Regions', 'regions', 'regions_all'), ('Countries', 'countries', 'countries_all')]:
+        rows = [('Groups', 'groups', None), ('Categories', 'categories', 'categories_all'),
+                (regions_col_name, 'regions', 'regions_all'), ('Countries', 'countries', 'countries_all')]
+        for r_name, r_key, rk_all in rows:
             row = [dict(text=r_name, style='bold')]
             for col in k_table_cols:
                 k_vals, k_is_all = keywords[col].get(r_key, []), keywords[col].get(rk_all)
@@ -474,6 +478,7 @@ class WebAPI:
             k_table['body'].append(row)
         dd['content'].append(dict(table=k_table))
         dd['content'].append(dict(text='\n'))  # Blank line after keywords
+
         # Table for found attacks
         header_row = []
         for column_header in ['ID', 'Name', 'Identified Sentence', 'Start Date', 'End Date']:
@@ -492,7 +497,6 @@ class WebAPI:
                 tech_name = "%s: %s" % (parent_tech, tech_name) if parent_tech else tech_name
                 table['body'].append([sentence['attack_tid'], tech_name, sen_text, sentence.get('tech_start_date'),
                                       sentence.get('tech_end_date')])
-
         # Append table to the end
         dd['content'].append(dict(table=table))
         dd['content'].append(dict(text='\n'))
@@ -506,6 +510,17 @@ class WebAPI:
             if any(ioc['sentence_id'] == sentence['uid'] for ioc in indicators_of_compromise):
                 ioc_table['body'].append([sentence['text']])
         dd['content'].append(dict(table=ioc_table))
+
+        # Expansion on regions if applicable
+        if all_regions:
+            dd['content'].append(dict(text='\n*Arachne Digital defines these regions as follows:\n\n', pageBreak='before'))
+            regions_table = dict(widths=['35%', '65%'], body=[])
+            for region_id in all_regions:
+                r_row = [dict(text=self.data_svc.region_dict.get(region_id))]
+                country_codes = self.data_svc.region_countries_dict.get(region_id, [])
+                r_row.append(dict(ul=[self.data_svc.country_dict.get(c, '') for c in country_codes]))
+                regions_table['body'].append(r_row)
+            dd['content'].append(dict(table=regions_table))
 
         return web.json_response(dd)
 

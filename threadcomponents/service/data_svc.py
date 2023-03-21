@@ -72,6 +72,7 @@ class DataService:
         self.region_dict = {}
         self.country_dict = {}
         self.country_region_dict = {}
+        self.region_countries_dict = {}
         # SQL queries below use a string-pos function which differs across DB engines; obtain the correct one
         str_pos = self.dao.db_func(self.dao.db.FUNC_STR_POS)
         # SQL query to obtain attack records where sub-techniques are returned with their parent-technique info
@@ -327,9 +328,14 @@ class DataService:
             loaded_countries = json.load(infile)
         self.country_dict = {}
         self.country_region_dict = {}
+        self.region_countries_dict = {}
         for entry in loaded_countries:
-            self.country_dict[entry['alpha-2']] = entry['name']
-            self.country_region_dict[entry['alpha-2']] = entry['region-id']
+            country_code, region_id = entry['alpha-2'], entry['region-id']
+            self.country_dict[country_code] = entry['name']
+            self.country_region_dict[country_code] = region_id
+            region_countries_list = self.region_countries_dict.get(region_id, [])
+            region_countries_list.append(country_code)
+            self.region_countries_dict[region_id] = region_countries_list
 
     async def insert_category_json_data(self, buildfile=os.path.join('threadcomponents', 'conf', 'categories',
                                                                      'industry.json')):
