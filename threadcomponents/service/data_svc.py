@@ -330,12 +330,13 @@ class DataService:
         self.country_region_dict = {}
         self.region_countries_dict = {}
         for entry in loaded_countries:
-            country_code, region_id = entry['alpha-2'], entry['region-id']
+            country_code, region_ids = entry['alpha-2'], set(entry.get('region-ids', []))
             self.country_dict[country_code] = entry['name']
-            self.country_region_dict[country_code] = region_id
-            region_countries_list = self.region_countries_dict.get(region_id, [])
-            region_countries_list.append(country_code)
-            self.region_countries_dict[region_id] = region_countries_list
+            self.country_region_dict[country_code] = list(region_ids)
+            for region_id in region_ids:
+                region_countries_list = set(self.region_countries_dict.get(region_id, []))
+                region_countries_list.add(country_code)
+                self.region_countries_dict[region_id] = region_countries_list
 
     async def insert_category_json_data(self, buildfile=os.path.join('threadcomponents', 'conf', 'categories',
                                                                      'industry.json')):
