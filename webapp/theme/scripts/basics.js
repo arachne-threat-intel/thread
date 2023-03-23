@@ -522,6 +522,7 @@ function onchangeSelectAllKeywords(e, assocType, assocWith) {
 }
 
 function updateCountrySelect(assocType) {
+  const currentCountrySelection = $(`#${assocType}CountrySelect`).val();
   $(`#${assocType}CountrySelect`).empty();
   $(`#${assocType}CountrySelect`).selectpicker("destroy");
 
@@ -534,22 +535,27 @@ function updateCountrySelect(assocType) {
           ${countries[countryKey]}
         </option>`);
     }
+    $(`#${assocType}CountrySelect`).selectpicker('val', currentCountrySelection);
   } else {
     // Display countries from selected regions
+    let displayedCountries = [];
     for (let countryKey in countryRegions) {
-      let listOverlap = selectedRegionIds.filter(function (item) {
-	    return countryRegions[countryKey].includes(item);
-	  });
+      let listOverlap = selectedRegionIds.filter(function (item) { return countryRegions[countryKey].includes(item); });
       if (listOverlap.length) {
         $(`#${assocType}CountrySelect`).append(
           `<option class='${assocType}CountryOpt' value='${countryKey}' data-region-ids='${countryRegions[countryKey]}'>
             ${countries[countryKey]}
           </option>`);
+        displayedCountries.push(countryKey);
       }
     }
+    let selectedDisplayed = displayedCountries.filter(function (item) { return currentCountrySelection.includes(item); });
+    $(`#${assocType}CountrySelect`).selectpicker('val', selectedDisplayed);
   }
 
   $(`#${assocType}CountrySelect`).selectpicker("render");
+  updateMultiSelectList(document.getElementById(`${assocType}CountrySelect`), `${assocType}CountryOpt`,
+    `${assocType}CurrentCountryList`, `${assocType}CountryLi`);
 }
 
 function updateMultiSelectList(dropdown, selOptClass, ulID, liClass, useSelToLookupDisplay=true) {
@@ -585,6 +591,15 @@ function updateMultiSelectList(dropdown, selOptClass, ulID, liClass, useSelToLoo
       var valName = useSelToLookupDisplay ? $("." + selOptClass + "[value='" + newValue + "']").prop("text") : newValue;
       var tempLi = "<li class='" + liClassTemp + "' id=" + newValue + ">" + addLiHTML + valName + "</li>";
       $("ul#" + ulID).append(tempLi);
+    }
+  }
+}
+
+function initialiseCountrySelects() {
+  for (let assocType of ["aggressor", "victim"]) {
+    let selectedRegionIds = $(`#${assocType}RegionSelect`).val();
+    if (selectedRegionIds.length) {
+      updateCountrySelect(assocType);
     }
   }
 }
@@ -795,4 +810,5 @@ $(document).ready(function() {
   });
   addDeleteListener();
   importFont();
+  initialiseCountrySelects();
 });
