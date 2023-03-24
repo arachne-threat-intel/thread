@@ -511,6 +511,10 @@ class WebAPI:
                 ioc_table['body'].append([sentence['text']])
         dd['content'].append(dict(table=ioc_table))
 
+        note = 'Any countries listed in this report - from predefined lists by Arachne Digital; excluding those ' \
+               'quoted from the article text - have been taken from open-source lists.'
+        dd['content'].append(dict(text='\n' + note))
+
         # Expansion on regions if applicable
         if all_regions:
             dd['content'].append(dict(text='\n*Arachne Digital defines these regions as follows:\n\n', pageBreak='before'))
