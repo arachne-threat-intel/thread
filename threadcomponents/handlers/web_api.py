@@ -422,7 +422,7 @@ class WebAPI:
         keywords = dict(aggressors=report_data['aggressors'], victims=report_data['victims'])
         indicators_of_compromise = await self.data_svc.get_report_sentence_indicators_of_compromise(report_id=report_id)
         all_regions = {r for sub_r in [keywords[k].get('region_ids', []) for k in ['aggressors', 'victims']] for r in sub_r}
-        regions_col_name = 'Regions' + ('*' if all_regions else '')
+        regions_col_name = 'Regions & Political Groups' + ('*' if all_regions else '')
 
         dd = dict()
         # Default background which will be replaced by logo via client-side
@@ -458,7 +458,7 @@ class WebAPI:
         dd['content'].append(dict(text='\n'))  # Blank line after technique dates
 
         # Table for keywords
-        k_table = dict(widths=['16%', '42%', '42%'], body=[])
+        k_table = dict(widths=['28%', '36%', '36%'], body=[])
         k_table['body'].append(['', dict(text='Aggressors', style='bold'), dict(text='Victims', style='bold')])
         k_table_cols = ['aggressors', 'victims']
         # For each row, build up the column values based on the keywords dictionary
@@ -516,9 +516,10 @@ class WebAPI:
             dd['content'].append(dict(text='\n*Arachne Digital defines these regions as follows:\n\n', pageBreak='before'))
             regions_table = dict(widths=['35%', '65%'], body=[])
             for region_id in all_regions:
-                r_row = [dict(text=self.data_svc.region_dict.get(region_id))]
                 country_codes = self.data_svc.region_countries_dict.get(region_id, [])
-                r_row.append(dict(ul=[self.data_svc.country_dict.get(c, '') for c in country_codes]))
+                country_list = [self.data_svc.country_dict.get(c, '') for c in country_codes]
+                country_list.sort()
+                r_row = [dict(text=self.data_svc.region_dict.get(region_id)), dict(ul=country_list)]
                 regions_table['body'].append(r_row)
             dd['content'].append(dict(table=regions_table))
 
