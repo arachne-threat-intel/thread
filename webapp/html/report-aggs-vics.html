@@ -55,8 +55,7 @@
               title="Select countries" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
               onchange="{{onchangeCountry}}(this)">
         {% for country_key in country_list %}
-          <option class="{{assoc_type}}CountryOpt" value="{{country_key}}" data-region-ids="{{country_region_list[country_key]}}"
-                  {% if country_key in db_country_list %}selected{% endif %}>
+          <option class="{{assoc_type}}CountryOpt" value="{{country_key}}" {% if country_key in db_country_list %}selected{% endif %}>
             {{country_list[country_key]}}
           </option>
         {% endfor %}

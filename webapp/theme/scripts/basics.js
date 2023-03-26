@@ -487,7 +487,7 @@ function onchangeAggressorGroups(e) {
 function onchangeAggressorRegions(e) {
   updateMultiSelectList(e, "aggressorRegionOpt", "aggressorCurrentRegionList", "aggressorRegionLi");
 
-  setTimeout(() => updateCountrySelect("aggressor"));
+  updateCountrySelect("aggressor");
 }
 
 function onchangeAggressorCountries(e) {
@@ -497,7 +497,7 @@ function onchangeAggressorCountries(e) {
 function onchangeVictimRegions(e) {
   updateMultiSelectList(e, "victimRegionOpt", "victimCurrentRegionList", "victimRegionLi");
 
-  setTimeout(() => updateCountrySelect("victim"));
+  updateCountrySelect("victim");
 }
 
 function onchangeVictimCountries(e) {
@@ -531,7 +531,7 @@ function updateCountrySelect(assocType) {
   if (selectedRegionIds.length === 0) {
     for (let countryKey in countryRegions) {
       $(`#${assocType}CountrySelect`).append(
-        `<option class='${assocType}CountryOpt' value='${countryKey}' data-region-ids='${countryRegions[countryKey]}'>
+        `<option class='${assocType}CountryOpt' value='${countryKey}'>
           ${countries[countryKey]}
         </option>`);
     }
@@ -543,7 +543,7 @@ function updateCountrySelect(assocType) {
       let listOverlap = selectedRegionIds.filter(function (item) { return countryRegions[countryKey].includes(item); });
       if (listOverlap.length) {
         $(`#${assocType}CountrySelect`).append(
-          `<option class='${assocType}CountryOpt' value='${countryKey}' data-region-ids='${countryRegions[countryKey]}'>
+          `<option class='${assocType}CountryOpt' value='${countryKey}'>
             ${countries[countryKey]}
           </option>`);
         displayedCountries.push(countryKey);
