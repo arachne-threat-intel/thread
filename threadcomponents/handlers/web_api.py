@@ -422,7 +422,7 @@ class WebAPI:
         keywords = dict(aggressors=report_data['aggressors'], victims=report_data['victims'])
         indicators_of_compromise = await self.data_svc.get_report_sentence_indicators_of_compromise(report_id=report_id)
         all_regions = {r for sub_r in [keywords[k].get('region_ids', []) for k in ['aggressors', 'victims']] for r in sub_r}
-        regions_col_name = 'Regions & Political Groups' + ('*' if all_regions else '')
+        regions_col_name = 'Regions & Political Blocs' + ('*' if all_regions else '')
 
         dd = dict()
         # Default background which will be replaced by logo via client-side
