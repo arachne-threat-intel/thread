@@ -598,7 +598,7 @@ function updateMultiSelectList(dropdown, selOptClass, ulID, liClass, useSelToLoo
 function initialiseCountrySelects() {
   for (let assocType of ["aggressor", "victim"]) {
     let selectedRegionIds = $(`#${assocType}RegionSelect`).val();
-    if (selectedRegionIds.length) {
+    if (selectedRegionIds && selectedRegionIds.length) {
       updateCountrySelect(assocType);
     }
   }
