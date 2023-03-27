@@ -841,7 +841,7 @@ class RestService:
         # Remove report if amount of unique techniques found doesn't reach the minimum
         if unique_techniques_count < REPORT_TECHNIQUES_MINIMUM:
             await self.data_svc.remove_report_by_id(report_id=report_id)
-            logging.info('Deleted report ' + report_id + ' with ' + str(unique_techniques_count) + ' technique(s) found')
+            logging.info('Deleted report with ' + str(unique_techniques_count) + ' technique(s) found: ' + report[URL])
             return
         
         logging.info(str(unique_techniques_count) + ' technique(s) found for report ' + report_id)
@@ -857,7 +857,7 @@ class RestService:
             return
         
         await self.data_svc.remove_report_by_id(report_id=report_id)
-        logging.info('Deleted skipped report ' + report_id)
+        logging.info('Deleted skipped report: ' + report[URL])
 
     async def add_attack(self, request, criteria=None):
         try:
