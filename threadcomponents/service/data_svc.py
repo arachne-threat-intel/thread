@@ -69,7 +69,10 @@ class DataService:
         self.dao = dao
         self.web_svc = web_svc
         self.dir_prefix = dir_prefix
+        self.region_dict = {}
         self.country_dict = {}
+        self.country_region_dict = {}
+        self.region_countries_dict = {}
         # SQL queries below use a string-pos function which differs across DB engines; obtain the correct one
         str_pos = self.dao.db_func(self.dao.db.FUNC_STR_POS)
         # SQL query to obtain attack records where sub-techniques are returned with their parent-technique info
@@ -307,6 +310,16 @@ class DataService:
                     'true_positives', dict(attack_uid=k, true_positive=self.dao.truncate_str(defang_text(x), 800)))
                  for x in v['example_uses']]
 
+    async def set_regions_data(self, buildfile=os.path.join('threadcomponents', 'conf', 'country-regions.json')):
+        """Function to read in the regions json file."""
+        buildfile = os.path.join(self.dir_prefix, buildfile)
+        with open(buildfile, 'r') as regions_file:
+            loaded_regions = json.load(regions_file)
+
+        self.region_dict = {}
+        for region in loaded_regions:
+            self.region_dict[region['id']] = region['name']
+
     async def set_countries_data(self, buildfile=os.path.join('threadcomponents', 'conf', 'countries-iso2.json')):
         """Function to read in the countries json file."""
         buildfile = os.path.join(self.dir_prefix, buildfile)  # prefix directory path if there is one
@@ -314,8 +327,16 @@ class DataService:
         with open(buildfile, 'r') as infile:
             loaded_countries = json.load(infile)
         self.country_dict = {}
+        self.country_region_dict = {}
+        self.region_countries_dict = {}
         for entry in loaded_countries:
-            self.country_dict[entry['alpha-2']] = entry['name']
+            country_code, region_ids = entry['alpha-2'], set(entry.get('region-ids', []))
+            self.country_dict[country_code] = entry['name']
+            self.country_region_dict[country_code] = list(region_ids)
+            for region_id in region_ids:
+                region_countries_list = set(self.region_countries_dict.get(region_id, []))
+                region_countries_list.add(country_code)
+                self.region_countries_dict[region_id] = region_countries_list
 
     async def insert_category_json_data(self, buildfile=os.path.join('threadcomponents', 'conf', 'categories',
                                                                      'industry.json')):
@@ -431,18 +452,26 @@ class DataService:
 
     async def get_report_aggressors_victims(self, report_id, include_display=False):
         """Function to retrieve the aggressors and victims for a report given a report ID."""
-        # Obtain all groups and countries for this report
-        query = "SELECT keyword, NULL AS country, association_type FROM report_keywords WHERE report_uid = {sel} " \
-                "UNION SELECT NULL AS keyword, country, association_type " \
-                "FROM report_countries WHERE report_uid = {sel}".format(sel=self.dao.db_qparam)
-        db_results = await self.dao.raw_select(query, parameters=tuple([report_id, report_id]))
+        # Obtain all groups,  and countries for this report
+        query = "SELECT keyword, NULL AS region, NULL AS country, association_type " \
+                "FROM report_keywords " \
+                "WHERE report_uid = {sel} " \
+                "UNION " \
+                "SELECT NULL AS keyword, region, NULL AS country, association_type " \
+                "FROM report_regions " \
+                "WHERE report_uid = {sel} " \
+                "UNION " \
+                "SELECT NULL AS keyword, NULL AS region, country, association_type " \
+                "FROM report_countries " \
+                "WHERE report_uid = {sel}".format(sel=self.dao.db_qparam)
+        db_results = await self.dao.raw_select(query, parameters=tuple([report_id, report_id, report_id]))
         # Check if this report is flagged at having all victims
         query = 'SELECT association_type, association_with FROM report_all_assoc WHERE report_uid = %s' % self.dao.db_qparam
         all_assoc = await self.dao.raw_select(query, parameters=tuple([report_id]))
         # Set up the dictionary to return the results split by aggressor and victim
-        r_template = dict(groups=[], categories_all=False, country_codes=[], countries_all=False)
+        r_template = dict(groups=[], categories_all=False, region_ids=[], regions_all=False, country_codes=[], countries_all=False)
         if include_display:
-            r_template.update(dict(countries=[]))
+            r_template.update(dict(countries=[], regions=[]))
         results = dict(aggressors=deepcopy(r_template), victims=deepcopy(r_template))
         # Flag select-all in results: only doing this for victims
         for results_key, db_assoc_type in [('victims', 'victim')]:
@@ -461,13 +490,17 @@ class DataService:
             else:
                 logging.error('INVALID report association `%s` saved in db, uid `%s`' % (assoc_type, entry.get('uid')))
                 continue
-            # Then determine if this result is for a group or country: append value if not already flagged as select-all
-            assoc_value_g, assoc_value_c = entry.get('keyword'), entry.get('country')
-            if not (assoc_value_g or assoc_value_c):
-                logging.error('GROUP or COUNTRY missing in db entry uid `%s`' % entry.get('uid'))
+            # Then determine if this result is for a group, region or country: append value if not already flagged as select-all
+            assoc_value_g, assoc_value_r, assoc_value_c = entry.get('keyword'), entry.get('region'), entry.get('country')
+            if not (assoc_value_g or assoc_value_r or assoc_value_c):
+                logging.error('GROUP, REGION or COUNTRY missing in db entry uid `%s`' % entry.get('uid'))
                 continue
             if assoc_value_g:
                 updating['groups'].append(assoc_value_g)
+            elif assoc_value_r and not updating['regions_all']:
+                updating['region_ids'].append(str(assoc_value_r))
+                if include_display:
+                    updating['regions'].append(self.region_dict.get(str(assoc_value_r)))
             elif assoc_value_c and not updating['countries_all']:
                 updating['country_codes'].append(assoc_value_c)
                 if include_display:

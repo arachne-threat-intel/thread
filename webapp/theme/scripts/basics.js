@@ -425,14 +425,30 @@ function updateAttackTime(reportTitle) {
 
 function setReportKeywords(reportTitle) {
   // Get selected aggressors and victims and send request for updating
-  var assocObj = {country: [], countries_all: false, group: [], categories_all: false};
-  var requestData = {aggressors: JSON.parse(JSON.stringify(assocObj)), victims: JSON.parse(JSON.stringify(assocObj))};
+  var assocObj = {
+    country: [],
+    countries_all: false,
+    region: [],
+    regions_all: false,
+    group: [],
+    categories_all: false
+  };
+  var requestData = {
+    aggressors: JSON.parse(JSON.stringify(assocObj)),
+    victims: JSON.parse(JSON.stringify(assocObj))
+  };
   requestData.victims.category = [];
   $(".aggressorGroupOpt:selected").each(function() {
     requestData.aggressors.group.push($(this).prop("value"));
   });
+  $(".aggressorRegionOpt:selected").each(function() {
+    requestData.aggressors.region.push($(this).prop("value"));
+  });
   $(".aggressorCountryOpt:selected").each(function() {
     requestData.aggressors.country.push($(this).prop("value"));
+  });
+  $(".victimRegionOpt:selected").each(function() {
+    requestData.victims.region.push($(this).prop("value"));
   });
   $(".victimCountryOpt:selected").each(function() {
     requestData.victims.country.push($(this).prop("value"));
@@ -449,6 +465,8 @@ function setReportKeywords(reportTitle) {
 function setAggressorsVictimsLists() {
   generateMultiSelectList("aggressorGroupOpt", "aggressorCurrentGroupList", "aggressorGroupLi");
   generateMultiSelectList("aggressorCountryOpt", "aggressorCurrentCountryList", "aggressorCountryLi");
+  generateMultiSelectList("aggressorRegionOpt", "aggressorCurrentRegionList", "aggressorRegionLi");
+  generateMultiSelectList("victimRegionOpt", "victimCurrentRegionList", "victimRegionLi");
   generateMultiSelectList("victimCountryOpt", "victimCurrentCountryList", "victimCountryLi");
   generateMultiSelectList("categoryOpt", "currentCategoryList", "reportCategoryLi");
 }
@@ -466,8 +484,20 @@ function onchangeAggressorGroups(e) {
   updateMultiSelectList(e, "aggressorGroupOpt", "aggressorCurrentGroupList", "aggressorGroupLi", false);
 }
 
+function onchangeAggressorRegions(e) {
+  updateMultiSelectList(e, "aggressorRegionOpt", "aggressorCurrentRegionList", "aggressorRegionLi");
+
+  updateCountrySelect("aggressor");
+}
+
 function onchangeAggressorCountries(e) {
   updateMultiSelectList(e, "aggressorCountryOpt", "aggressorCurrentCountryList", "aggressorCountryLi");
+}
+
+function onchangeVictimRegions(e) {
+  updateMultiSelectList(e, "victimRegionOpt", "victimCurrentRegionList", "victimRegionLi");
+
+  updateCountrySelect("victim");
 }
 
 function onchangeVictimCountries(e) {
@@ -489,6 +519,43 @@ function onchangeSelectAllKeywords(e, assocType, assocWith) {
     // Ensure the checkbox stays checked (as unselect-onchange-triggers will revert this)
     $("#" + selectId + "SelAll").prop("checked", true);
   }
+}
+
+function updateCountrySelect(assocType) {
+  const currentCountrySelection = $(`#${assocType}CountrySelect`).val();
+  $(`#${assocType}CountrySelect`).empty();
+  $(`#${assocType}CountrySelect`).selectpicker("destroy");
+
+  const selectedRegionIds = $(`#${assocType}RegionSelect`).val();
+  // If there are no selected regions, display all countries
+  if (selectedRegionIds.length === 0) {
+    for (let countryKey in countryRegions) {
+      $(`#${assocType}CountrySelect`).append(
+        `<option class='${assocType}CountryOpt' value='${countryKey}'>
+          ${countries[countryKey]}
+        </option>`);
+    }
+    $(`#${assocType}CountrySelect`).selectpicker('val', currentCountrySelection);
+  } else {
+    // Display countries from selected regions
+    let displayedCountries = [];
+    for (let countryKey in countryRegions) {
+      let listOverlap = selectedRegionIds.filter(function (item) { return countryRegions[countryKey].includes(item); });
+      if (listOverlap.length) {
+        $(`#${assocType}CountrySelect`).append(
+          `<option class='${assocType}CountryOpt' value='${countryKey}'>
+            ${countries[countryKey]}
+          </option>`);
+        displayedCountries.push(countryKey);
+      }
+    }
+    let selectedDisplayed = displayedCountries.filter(function (item) { return currentCountrySelection.includes(item); });
+    $(`#${assocType}CountrySelect`).selectpicker('val', selectedDisplayed);
+  }
+
+  $(`#${assocType}CountrySelect`).selectpicker("render");
+  updateMultiSelectList(document.getElementById(`${assocType}CountrySelect`), `${assocType}CountryOpt`,
+    `${assocType}CurrentCountryList`, `${assocType}CountryLi`);
 }
 
 function updateMultiSelectList(dropdown, selOptClass, ulID, liClass, useSelToLookupDisplay=true) {
@@ -524,6 +591,15 @@ function updateMultiSelectList(dropdown, selOptClass, ulID, liClass, useSelToLoo
       var valName = useSelToLookupDisplay ? $("." + selOptClass + "[value='" + newValue + "']").prop("text") : newValue;
       var tempLi = "<li class='" + liClassTemp + "' id=" + newValue + ">" + addLiHTML + valName + "</li>";
       $("ul#" + ulID).append(tempLi);
+    }
+  }
+}
+
+function initialiseCountrySelects() {
+  for (let assocType of ["aggressor", "victim"]) {
+    let selectedRegionIds = $(`#${assocType}RegionSelect`).val();
+    if (selectedRegionIds.length) {
+      updateCountrySelect(assocType);
     }
   }
 }
@@ -734,4 +810,5 @@ $(document).ready(function() {
   });
   addDeleteListener();
   importFont();
+  initialiseCountrySelects();
 });

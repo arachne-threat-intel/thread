@@ -49,6 +49,7 @@ class ReportStatus(Enum):
 class AssociationWith(Enum):
     CA = 'category'
     CN = 'country'
+    RG = 'region'
     GR = 'group'
 
 
@@ -321,7 +322,7 @@ class RestService:
         for associate_dict in [aggressors, victims]:
             for association_type, associations in associate_dict.items():
                 # Check a valid association type has been given (unless we are selecting-all)
-                if association_type in ['countries_all', 'categories_all']:
+                if association_type in ['countries_all', 'regions_all', 'categories_all']:
                     continue
                 try:
                     AssociationWith(association_type)
@@ -337,13 +338,15 @@ class RestService:
         categories = await self.data_svc.get_report_category_keynames(report_id)
         current['victims']['categories'] = categories or []
         # For each aggressor and victim, have the current-data and request-data ready to compare
-        aggressor_assoc = [AssociationWith.CN.value, AssociationWith.GR.value]
-        victim_assoc = [AssociationWith.CN.value, AssociationWith.CA.value, AssociationWith.GR.value]
+        aggressor_assoc = [AssociationWith.CN.value, AssociationWith.RG.value, AssociationWith.GR.value]
+        victim_assoc = [AssociationWith.CN.value, AssociationWith.RG.value, AssociationWith.CA.value, AssociationWith.GR.value]
         to_compare = [('aggressor', current['aggressors'], aggressors, False, aggressor_assoc),
                       ('victim', current['victims'], victims, True, victim_assoc)]
         # For each aggressor and victim, we know we need to go through countries and groups
         to_process = [('report_countries', 'country', 'country_codes', AssociationWith.CN.value, 'countries_all',
                        self.data_svc.country_dict.keys()),
+                      ('report_regions', 'region', 'region_ids', AssociationWith.RG.value, 'regions_all',
+                       self.data_svc.region_dict.keys()),
                       ('report_categories', 'category_keyname', 'categories', AssociationWith.CA.value, 'categories_all',
                        self.web_svc.categories_dict.keys()),
                       ('report_keywords', 'keyword', 'groups', AssociationWith.GR.value, None,

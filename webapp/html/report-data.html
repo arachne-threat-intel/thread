@@ -45,6 +45,11 @@
           {% endif %}
         </form><hr>
         <form id="reportAggressorsVictimsForm">{# Report aggressors and victims #}
+          <script>
+            const regions = {{region_list|tojson}};
+            const countries = {{country_list|tojson}};
+            const countryRegions = {{country_region_list|tojson}};
+          </script>
           {% with assoc_type = "aggressor" %}{% include "report-aggs-vics.html" %}{% endwith %}
           {% with assoc_type = "victim" %}{% include "report-aggs-vics.html" %}{% endwith %}
           <br>
