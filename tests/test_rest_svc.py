@@ -52,7 +52,7 @@ class TestRestService(ThreadAppTest):
         """
         # Arrange
         report_id = str(uuid4())
-        report = dict(automatically_generated=self.dao.db_true_val)
+        report = dict(automatically_generated=self.dao.db_true_val, url='oh.no/low-quality')
         self.data_svc.get_report_by_id_or_title = AsyncMock(return_value=[report])
         unique_techniques_count = REPORT_TECHNIQUES_MINIMUM - 1
         self.data_svc.get_report_unique_techniques_count = AsyncMock(return_value=unique_techniques_count)
@@ -68,7 +68,7 @@ class TestRestService(ThreadAppTest):
         self.data_svc.remove_report_by_id.assert_called_once_with(report_id=report_id)
         self.assertEqual(len(captured.records), 1)
         self.assertIn(
-            f"Deleted report {report_id} with {unique_techniques_count} technique(s) found",
+            f"Deleted report with {unique_techniques_count} technique(s) found: {report['url']}",
             captured.records[0].getMessage()
         )
 
