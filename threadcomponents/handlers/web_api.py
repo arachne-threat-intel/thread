@@ -420,7 +420,7 @@ class WebAPI:
         report_data = await self.data_svc.export_report_data(report=report[0], report_id=report_id)
         sentences = report_data.get('sentences', [])
         keywords = dict(aggressors=report_data['aggressors'], victims=report_data['victims'])
-        indicators_of_compromise = await self.data_svc.get_report_sentence_indicators_of_compromise(report_id=report_id)
+        indicators_of_compromise = report_data.get('indicators_of_compromise', [])
         all_regions = {r for sub_r in [keywords[k].get('region_ids', []) for k in ['aggressors', 'victims']] for r in sub_r}
         regions_col_name = 'Regions & Political Blocs' + ('*' if all_regions else '')
 
@@ -484,6 +484,14 @@ class WebAPI:
         for column_header in ['ID', 'Name', 'Identified Sentence', 'Start Date', 'End Date']:
             header_row.append(dict(text=column_header, style='bold'))
         table = dict(widths=['10%', '16%', '50%', '12%', '12%'], body=[header_row])
+
+        # Table for indicators of compromise
+        ioc_header_row = []
+        for column_header in ['Indicators of Compromise']:
+            ioc_header_row.append(dict(text=column_header, style='bold'))
+        ioc_table = dict(widths=['100%'], body=[ioc_header_row])
+        ioc_table_rows = []
+
         seen_sentences = set()  # set to prevent duplicate sentences being exported
         for sentence in sentences:
             sen_id, sen_text = sentence['uid'], sentence['text']
@@ -497,18 +505,13 @@ class WebAPI:
                 tech_name = "%s: %s" % (parent_tech, tech_name) if parent_tech else tech_name
                 table['body'].append([sentence['attack_tid'], tech_name, sen_text, sentence.get('tech_start_date'),
                                       sentence.get('tech_end_date')])
-        # Append table to the end
+            # Check if IoC
+            if any(ioc['sentence_id'] == sentence['uid'] for ioc in indicators_of_compromise):
+                ioc_table_rows.append([sentence['text']])
+        # Append tables to the end
         dd['content'].append(dict(table=table))
         dd['content'].append(dict(text='\n'))
-
-        # Table for indicators of compromise
-        ioc_header_row = []
-        for column_header in ['Indicators of Compromise']:
-            ioc_header_row.append(dict(text=column_header, style='bold'))
-        ioc_table = dict(widths=['100%'], body=[ioc_header_row])
-        for sentence in sentences:
-            if any(ioc['sentence_id'] == sentence['uid'] for ioc in indicators_of_compromise):
-                ioc_table['body'].append([sentence['text']])
+        ioc_table['body'] += ioc_table_rows if ioc_table_rows else [['-']]
         dd['content'].append(dict(table=ioc_table))
 
         note = 'Any countries listed in this report - from predefined lists by Arachne Digital; excluding those ' \
