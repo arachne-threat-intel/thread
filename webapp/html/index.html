@@ -11,15 +11,11 @@
               <span><b>Viewing: {% if username %}{{username}}{% else %}Public{% endif %}</b></span>
             </h6>
             {% if token %}{# If we have a token, display a button to exit user's view and switch to Public view #}
-              <button type="button" onclick='myReportsExit()' class="mt-2 btn btn-primary">Exit to Public View</button>
+              <button type="button" onclick="myReports('exit')" class="mt-2 btn btn-primary">Exit to Public View</button>
             {% else %}{# If there is no token, display a form to input to a token #}
-              <form>
-                <label for="token">My Thread Token</label>
-                <input type="text" class="form-control" id="token" required>
-                <small>View <a href="https://arachne.digital/account/profile/" target="_blank">your Arachne profile</a> to obtain your Thread token.</small>
-                <br>
-                <button type="button" onclick='myReports()' class="mt-2 btn btn-primary">View My Reports</button>
-              </form>
+              <button type="button" onclick="myReports('view')" class="mt-2 btn btn-primary">View My Reports</button>
+              <br><br>
+              <small>Please ensure you are logged into <a href="https://arachne.digital/" target="_blank">Arachne</a> before proceeding.</small>
             {% endif %}
           </div>
           <hr>

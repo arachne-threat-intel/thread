@@ -724,18 +724,9 @@ function addMissingTechnique() {
   }
 }
 
-function myReports() {
+function myReports(action) {
   if (!isLocal) {
-    var tokenField = document.getElementById("token");
-    if (tokenField.reportValidity()) {
-      restRequest("POST", {"token": tokenField.value}, page_refresh, "/thread/myreports/view");
-    }
-  }
-}
-
-function myReportsExit() {
-  if (!isLocal) {
-    restRequest("POST", {}, page_refresh, "/thread/myreports/exit");
+    restRequest("POST", {}, page_refresh, "/thread/myreports/" + action);
   }
 }
 

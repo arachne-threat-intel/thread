@@ -7,6 +7,7 @@ import logging
 
 from aiohttp.web_exceptions import HTTPException
 from aiohttp_jinja2 import template, web
+from aiohttp_security import authorized_userid
 from aiohttp_session import get_session
 from datetime import datetime
 from urllib.parse import quote
@@ -169,9 +170,10 @@ class WebAPI:
         token = None
         # Adding user details if this is not a local session
         if not self.is_local:
-            token = await self.web_svc.get_current_token(request)
-            username = await self.web_svc.get_username_from_token(request, token)
-            template_data.update(token=token, username=username)
+            token = await authorized_userid(request)
+            if token:
+                username, verified_token = await self.web_svc.get_current_arachne_user(request)
+                template_data.update(token=verified_token, username=username)
         # For each report status, get the reports for the index page
         for status in self.report_statuses:
             is_complete_status = status.value == self.report_statuses.COMPLETED.value
