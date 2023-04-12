@@ -167,13 +167,13 @@ class WebAPI:
         # Add base page data to overall template data
         await self.add_base_page_data(request, data=template_data)
         # The token used for this session
-        token = None
+        token, verified_token = None, None
         # Adding user details if this is not a local session
         if not self.is_local:
             token = await authorized_userid(request)
             if token:
                 username, verified_token = await self.web_svc.get_current_arachne_user(request)
-                template_data.update(token=verified_token, username=username)
+                template_data.update(username=username)
         # For each report status, get the reports for the index page
         for status in self.report_statuses:
             is_complete_status = status.value == self.report_statuses.COMPLETED.value
@@ -185,9 +185,9 @@ class WebAPI:
             # If the status is 'queue', obtain errored reports separately so we can provide info without these
             if status.value == self.report_statuses.QUEUE.value:
                 pending = await self.data_svc.status_grouper(
-                    status.value, criteria=dict(error=self.dao.db_false_val, token=token))
+                    status.value, criteria=dict(error=self.dao.db_false_val, token=verified_token))
                 errored = await self.data_svc.status_grouper(
-                    status.value, criteria=dict(error=self.dao.db_true_val, token=token))
+                    status.value, criteria=dict(error=self.dao.db_true_val, token=verified_token))
                 page_data[status.value]['reports'] = pending + errored
                 if self.rest_svc.QUEUE_LIMIT:
                     template_data['queue_set'] = 1
@@ -206,7 +206,7 @@ class WebAPI:
             # Else proceed to obtain the reports for this status as normal
             else:
                 page_data[status.value]['reports'] = \
-                    await self.data_svc.status_grouper(status.value, criteria=dict(token=token))
+                    await self.data_svc.status_grouper(status.value, criteria=dict(token=verified_token))
             # Allow only mid-review reports to be rollbacked
             page_data[status.value]['allow_rollback'] = status.value == self.report_statuses.IN_REVIEW.value
         # Update overall template data and return

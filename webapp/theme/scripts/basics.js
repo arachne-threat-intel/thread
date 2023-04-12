@@ -218,17 +218,17 @@ function updateReportDates(reportTitle) {
 function submit(data, submitButton) {
   // Do extra checks if this is not locally run
   if(!isLocal) {
-    // IDs of fields related to input of Thread token
-    var tokenFieldID = $(submitButton).data("token-field-id");
-    var checkboxID = $(tokenFieldID).data("paired-checkbox");
-    var consentCheckboxID = $(tokenFieldID).data("paired-consent-checkbox-id");
+    // IDs of fields related to private-report switch
+    var privateSwitchID = $(submitButton).data("private-switch-id");
+    var checkboxID = $(privateSwitchID).data("paired-checkbox");
+    var consentCheckboxID = $(privateSwitchID).data("paired-consent-checkbox-id");
     // Check confirmation checkbox
     if (!document.getElementById(checkboxID.replace("#", "")).reportValidity()
         || !document.getElementById(consentCheckboxID).reportValidity()) {
       return;
     }
-    // Update request-data with token
-    data.token = $(tokenFieldID).val();
+    // Update request-data with private-report boolean
+    data.private = $(privateSwitchID).is(":checked");
   }
   restRequest("POST", data, page_refresh);
 }
@@ -730,22 +730,22 @@ function myReports(action) {
   }
 }
 
-function tokenFieldCheck(field) {
+function privateReportCheck(field) {
   if (!isLocal) {
-    // Check the token field has a value; change the public-confirmation required and hidden properties based on this
-    var hasValue = Boolean($(field).val().length);
-    // Make the confirmation checkbox required if there is no value for the token field
+    // Check if submitting a private report; change the public-confirmation required and hidden properties based on this
+    var isPrivate = $(field).is(":checked");
+    // Make the confirmation checkbox required if not a private submission
     var checkboxID = $(field).data("paired-checkbox");
-    $(checkboxID).prop("required", !hasValue);
-    // Hide the checkbox and accompanying label if there is a value
+    $(checkboxID).prop("required", !isPrivate);
+    // Hide the checkbox and accompanying label if a private submission
     var checkboxDivID = $(checkboxID).data("parent-div");
     var wasHidden = $(checkboxDivID).prop("hidden");
     // If we are changing the hidden property (i.e. going from display > hidden and vice-versa), uncheck the box
-    if (wasHidden != hasValue) {
+    if (wasHidden != isPrivate) {
       $(checkboxID).prop("checked", false);
     }
     // Finish by hiding or displaying the confirmation checkbox
-    $(checkboxDivID).prop("hidden", hasValue);
+    $(checkboxDivID).prop("hidden", isPrivate);
   }
 }
 

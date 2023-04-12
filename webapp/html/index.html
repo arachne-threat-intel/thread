@@ -10,9 +10,9 @@
             <h6>
               <span><b>Viewing: {% if username %}{{username}}{% else %}Public{% endif %}</b></span>
             </h6>
-            {% if token %}{# If we have a token, display a button to exit user's view and switch to Public view #}
+            {% if username %}{# If we have a username, display a button to exit user's view and switch to Public view #}
               <button type="button" onclick="myReports('exit')" class="mt-2 btn btn-primary">Exit to Public View</button>
-            {% else %}{# If there is no token, display a form to input to a token #}
+            {% else %}{# If there is no username, display a button to switch to user's view #}
               <button type="button" onclick="myReports('view')" class="mt-2 btn btn-primary">View My Reports</button>
               <br><br>
               <small>Please ensure you are logged into <a href="https://arachne.digital/" target="_blank">Arachne</a> before proceeding.</small>
