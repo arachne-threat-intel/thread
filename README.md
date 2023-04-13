@@ -61,7 +61,7 @@ You will also have the option to delete reports that 1. are not in the queue or 
 ## Shared vs. Local
 You are able to use Thread via https://arachne.digital/thread.
 
-If you use Thread via our Arachne website, your reports will be visible to others and accessible by the Arachne team. To reduce its visibility, you can use a token when submitting reports (please note, these reports will still be accessible by the Arachne team); a token is available when you sign up for an account on the Arachne website.
+If you use Thread via our Arachne website, your reports will be visible to others and accessible by the Arachne team. To reduce its visibility, you can flag reports as private on report-submission (please note, these reports will still be accessible by the Arachne team); you will need to sign up for an account on the Arachne website and remain logged-in during report-submission.
 
 Alternatively, you can clone this repo, set it up, and use it locally to ensure all your reports stay only on your machine.
 

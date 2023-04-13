@@ -295,8 +295,8 @@ class WebAPI:
         # Add some help-text
         help_text = None
         if report[0]['token']:
-            help_text = 'This is a token-protected report. If this page becomes unresponsive, please refresh or ' \
-                        'visit the homepage to check your session has not expired.'
+            help_text = 'This is a private report. If this page becomes unresponsive, please refresh or ' \
+                        'visit the Arachne site to check your session has not expired.'
         # Get the list of sentences with techniques that need to be confirmed
         unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id, return_detail=True)
         # Update overall template data and return
