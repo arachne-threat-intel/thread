@@ -18,6 +18,8 @@ var senTTPForm = "#ttpDatesForm";
 var restUrl = $("script#basicsScript").data("rest-url");
 // If this script is being run locally
 var isLocal = $("script#basicsScript").data("run-local");
+// Is this report completed?
+var isCompleted = false;
 // External-font-loading: pdfMake-config and boolean to represent if we loaded the font
 var exoConfig = {
   normal: "Exo-Light.ttf",
@@ -381,8 +383,8 @@ function updateConfirmedContext(data) {
     datesHTML += `<span class="fa-regular fa-clock glyphicon glyphicon-time btn-sm float-right ps-1"></span></a>`;
     // The checkbox to update the mappings
     var checkbox = `<div class="d-flex"><input type="checkbox" id="${op.mapping_id}" `;
-    checkbox += `class="confirmed-technique report-submission-checkbox"><label for="${op.mapping_id}"`;
-    checkbox += `<small>${techLabel}</small></label>${datesHTML}</div>`;
+    checkbox += `class="confirmed-technique report-submission-checkbox"${isCompleted ? " disabled" : ""}>`;
+    checkbox += `<label for="${op.mapping_id}"<small>${techLabel}</small></label>${datesHTML}</div>`;
     // Before the attack-name, flag if deprecated/revoked
     var td1 = "<td>" + (op.inactive ? "<b>!</b> " : "") + checkbox + "</td>";
     var tmp = "<tr>" + td1 + "</tr>";
@@ -806,6 +808,7 @@ $(document).ready(function() {
     autoHeight();
   });
   addDeleteListener();
+  isCompleted = $("script#reportDetails").data("completed");
   importFont();
   initialiseCountrySelects();
 });
