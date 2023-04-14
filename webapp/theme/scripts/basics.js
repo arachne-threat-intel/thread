@@ -724,9 +724,15 @@ function addMissingTechnique() {
   }
 }
 
-function myReports(action) {
+function viewMyReports() {
   if (!isLocal) {
-    restRequest("POST", {}, page_refresh, "/thread/myreports/" + action);
+    restRequest("POST", {}, page_refresh, "/thread/myreports/view");
+  }
+}
+
+function exitMyReports() {
+  if (!isLocal) {
+    restRequest("POST", {}, page_refresh, "/thread/myreports/exit");
   }
 }
 
