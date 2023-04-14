@@ -293,10 +293,16 @@ class WebAPI:
         pdf_link = self.web_svc.get_route(self.web_svc.EXPORT_PDF_KEY, param=title_quoted)
         nav_link = self.web_svc.get_route(self.web_svc.EXPORT_NAV_KEY, param=title_quoted)
         # Add some help-text
-        help_text = None
+        completed_info, private_info = None, None
+        is_completed = int(report_status == self.report_statuses.COMPLETED.value)
         if report[0]['token']:
-            help_text = 'This is a private report. If this page becomes unresponsive, please refresh or ' \
-                        'visit the Arachne site to check your session has not expired.'
+            private_info = 'This is a private report. If this page becomes unresponsive, please refresh or ' \
+                           'visit the Arachne site to check your session has not expired.'
+        if is_completed:
+            completed_info = 'This is a <b>completed</b> report. You can still click on sentences to view confirmed ' \
+                + 'techniques. You can also click the Export PDF button to generate a PDF of this completed report.'
+            if not self.is_local:
+                completed_info += '<br><br><b>Completed reports will expire 24 hours after completion.</b>'
         # Get the list of sentences with techniques that need to be confirmed
         unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id, return_detail=True)
         # Update overall template data and return
@@ -311,8 +317,9 @@ class WebAPI:
             pdf_link=pdf_link,
             nav_link=nav_link,
             unchecked=unchecked,
-            help_text=help_text,
-            completed=int(report_status == self.report_statuses.COMPLETED.value),
+            completed_help_text=completed_info,
+            private_help_text=private_info,
+            completed=is_completed,
             categories=categories,
             category_list=self.cat_dropdown_list,
             group_list=self.web_svc.keyword_dropdown_list,

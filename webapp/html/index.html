@@ -8,7 +8,7 @@
         {% if not is_local %}{# Display 'Viewing: username or Public' #}
           <div>
             <h6>
-              <span><b>Viewing: {% if username %}{{username}}{% else %}Public{% endif %}</b></span>
+              <span><b>Viewing: {% if username %}{{username}}<i class="ps-2 fa-solid fa-lock"></i>{% else %}Public{% endif %}</b></span>
             </h6>
             {% if username %}{# If we have a username, display a button to exit user's view and switch to Public view #}
               <button type="button" onclick="exitMyReports()" class="mt-2 btn btn-primary">Exit to Public View</button>
@@ -24,6 +24,21 @@
       </nav>
       <main role="main" class="ml-sm-auto px-4 col-md-10 col-lg-10">
         {% include "submission-form.html" %}{# Add report-submission forms #}
+        {% if not is_local %}
+          <div class="pt-3">{# Public-reports warning #}
+            {% if username %}
+              <div class="alert alert-primary d-flex align-items-center" role="alert">
+                <i class="pe-3 fa-solid fa-lock"></i>
+                <div>These are your private reports (only visible and editable whilst you are logged into Arachne).</div>
+              </div>
+            {% else %}
+              <div class="alert alert-warning d-flex align-items-center" role="alert">
+                <i class="pe-3 fa-solid fa-triangle-exclamation"></i>
+                <div>You are viewing Public reports.</div>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
         <div class="row flex-row flex-sm-nowrap py-3">
           {% for key, value in reports_by_status.items() %}{# Loop through each report status #}
             <div class="col">
