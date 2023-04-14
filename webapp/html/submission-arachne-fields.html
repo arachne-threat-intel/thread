@@ -8,10 +8,9 @@
       {% set plural_suffix = "" %}
     {% endif %}
     {# Include the switch to toggle submission privacy #}
-    <div class="form-check form-switch ps-0">
-      <input class="form-check-input report-submission-checkbox" type="checkbox" role="switch"
-             id="reportPrivate{{attr_suffix}}" onchange="privateReportCheck(this)"
-             data-paired-checkbox="#publicReportCheck{{attr_suffix}}"
+    <div class="d-flex">
+      <input type="checkbox" id="reportPrivate{{attr_suffix}}" class="report-submission-checkbox mb-3"
+             onchange="privateReportCheck(this)" data-paired-checkbox="#publicReportCheck{{attr_suffix}}"
              data-paired-consent-checkbox-id="userConsentCheck{{attr_suffix}}" {% if username %}checked{% endif %}>
       <label class="form-check-label ps-1" for="reportPrivate{{attr_suffix}}">
         <small>Make this report <b>private</b>. (Remain logged-in via Arachne.)</small>
