@@ -7,6 +7,7 @@ import logging
 
 from aiohttp.web_exceptions import HTTPException
 from aiohttp_jinja2 import template, web
+from aiohttp_security import authorized_userid
 from aiohttp_session import get_session
 from datetime import datetime
 from urllib.parse import quote
@@ -166,12 +167,13 @@ class WebAPI:
         # Add base page data to overall template data
         await self.add_base_page_data(request, data=template_data)
         # The token used for this session
-        token = None
+        token, verified_token = None, None
         # Adding user details if this is not a local session
         if not self.is_local:
-            token = await self.web_svc.get_current_token(request)
-            username = await self.web_svc.get_username_from_token(request, token)
-            template_data.update(token=token, username=username)
+            token = await authorized_userid(request)
+            if token:
+                username, verified_token = await self.web_svc.get_current_arachne_user(request)
+                template_data.update(username=username)
         # For each report status, get the reports for the index page
         for status in self.report_statuses:
             is_complete_status = status.value == self.report_statuses.COMPLETED.value
@@ -183,9 +185,9 @@ class WebAPI:
             # If the status is 'queue', obtain errored reports separately so we can provide info without these
             if status.value == self.report_statuses.QUEUE.value:
                 pending = await self.data_svc.status_grouper(
-                    status.value, criteria=dict(error=self.dao.db_false_val, token=token))
+                    status.value, criteria=dict(error=self.dao.db_false_val, token=verified_token))
                 errored = await self.data_svc.status_grouper(
-                    status.value, criteria=dict(error=self.dao.db_true_val, token=token))
+                    status.value, criteria=dict(error=self.dao.db_true_val, token=verified_token))
                 page_data[status.value]['reports'] = pending + errored
                 if self.rest_svc.QUEUE_LIMIT:
                     template_data['queue_set'] = 1
@@ -204,7 +206,7 @@ class WebAPI:
             # Else proceed to obtain the reports for this status as normal
             else:
                 page_data[status.value]['reports'] = \
-                    await self.data_svc.status_grouper(status.value, criteria=dict(token=token))
+                    await self.data_svc.status_grouper(status.value, criteria=dict(token=verified_token))
             # Allow only mid-review reports to be rollbacked
             page_data[status.value]['allow_rollback'] = status.value == self.report_statuses.IN_REVIEW.value
         # Update overall template data and return
@@ -291,10 +293,16 @@ class WebAPI:
         pdf_link = self.web_svc.get_route(self.web_svc.EXPORT_PDF_KEY, param=title_quoted)
         nav_link = self.web_svc.get_route(self.web_svc.EXPORT_NAV_KEY, param=title_quoted)
         # Add some help-text
-        help_text = None
+        completed_info, private_info = None, None
+        is_completed = int(report_status == self.report_statuses.COMPLETED.value)
         if report[0]['token']:
-            help_text = 'This is a token-protected report. If this page becomes unresponsive, please refresh or ' \
-                        'visit the homepage to check your session has not expired.'
+            private_info = 'This is a private report. If this page becomes unresponsive, please refresh or ' \
+                           'visit the Arachne site to check your session has not expired.'
+        if is_completed:
+            completed_info = 'This is a <b>completed</b> report. You can still click on sentences to view confirmed ' \
+                + 'techniques. You can also click the Export PDF button to generate a PDF of this completed report.'
+            if not self.is_local:
+                completed_info += '<br><br><b>Completed reports will expire 24 hours after completion.</b>'
         # Get the list of sentences with techniques that need to be confirmed
         unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id, return_detail=True)
         # Update overall template data and return
@@ -309,8 +317,9 @@ class WebAPI:
             pdf_link=pdf_link,
             nav_link=nav_link,
             unchecked=unchecked,
-            help_text=help_text,
-            completed=int(report_status == self.report_statuses.COMPLETED.value),
+            completed_help_text=completed_info,
+            private_help_text=private_info,
+            completed=is_completed,
             categories=categories,
             category_list=self.cat_dropdown_list,
             group_list=self.web_svc.keyword_dropdown_list,

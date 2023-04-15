@@ -10,7 +10,6 @@ import re
 import requests
 
 from aiohttp import web
-from aiohttp_security import authorized_userid
 from bs4 import BeautifulSoup
 from contextlib import suppress
 from html2text import html2text
@@ -142,22 +141,16 @@ class WebService:
         except (TypeError, AttributeError) as e:
             logging.error('Misconfigured app: on_report_complete() error: ' + str(e))
 
-    async def get_current_token(self, request):
-        """Function to obtain the current user-token given a request."""
+    async def get_current_arachne_user(self, request):
+        """Function to obtain the current Arachne username and token given a request."""
         if self.is_local:
-            return None
-        return await authorized_userid(request)
-
-    async def get_username_from_token(self, request, token=''):
-        """Function to obtain the current username given a token."""
-        if self.is_local:
-            return None
+            return None, None
         try:
-            # Attempt to use app's method to obtain the username; log if this couldn't be done
-            return await request.app.token_to_username(token)
+            # Attempt to use app's method to obtain the username & token; log if this couldn't be done
+            return await request.app.get_current_arachne_user(request)
         except (TypeError, AttributeError) as e:
-            logging.error('Misconfigured app: token_to_username() error: ' + str(e))
-            return None
+            logging.error('Misconfigured app: get_current_arachne_user() error: ' + str(e))
+            return None, None
 
     async def arachne_token_is_valid(self, request, token='') -> bool:
         """Function to confirm an Arachne token is valid."""

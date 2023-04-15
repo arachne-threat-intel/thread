@@ -1,4 +1,4 @@
-{% if not is_local %}{# Display fields for token-protection and non-token-use confirmation #}
+{% if not is_local %}{# Display fields for public/privacy confirmation #}
   {% with %}{# Keep variables set below, visible just within this scope #}
     {% if is_csv %}{# Determine an attribute suffix to distinguish when these fields are in the CSV tab or not #}
       {% set attr_suffix = "CSV" %}
@@ -7,32 +7,30 @@
       {% set attr_suffix = "" %}
       {% set plural_suffix = "" %}
     {% endif %}
-    {# Include the input box to enter a Thread token #}
-    <div class="row">
-      <label for="reportToken{{attr_suffix}}" class="col-sm-2 col-form-label">Thread Token</label>
-      <div class="col-sm-10">
-        <input type="text" class="form-control" id="reportToken{{attr_suffix}}" onchange="tokenFieldCheck(this)"
-               placeholder="Token for private report{{plural_suffix}}"
-               data-paired-checkbox="#publicReportCheck{{attr_suffix}}"
-               data-paired-consent-checkbox-id="userConsentCheck{{attr_suffix}}"
-               value="{% if token %}{{token}}{% endif %}">
-      </div>
+    {# Include the switch to toggle submission privacy #}
+    <div class="d-flex">
+      <input type="checkbox" id="reportPrivate{{attr_suffix}}" class="report-submission-checkbox mb-3"
+             onchange="privateReportCheck(this)" data-paired-checkbox="#publicReportCheck{{attr_suffix}}"
+             data-paired-consent-checkbox-id="userConsentCheck{{attr_suffix}}" {% if username %}checked{% endif %}>
+      <label class="form-check-label ps-1" for="reportPrivate{{attr_suffix}}">
+        <small>Make this report <b>private</b>. (Remain logged-in via Arachne.)</small>
+      </label>
     </div>
     {# Include the checkbox to acknowledge a public-report submission #}
-    <div id="publicReportConf{{attr_suffix}}" {% if token %}hidden{% endif %}>
+    <div id="publicReportConf{{attr_suffix}}" {% if username %}hidden{% endif %}>
       {# Need to have wrapper-div as .d-flex has !important display style so will clash with hidden property #}
       <div class="d-flex">
-        <input type="checkbox" id="publicReportCheck{{attr_suffix}}" class="report-submission-checkbox"
-               data-parent-div="#publicReportConf{{attr_suffix}}" {% if not token %}required{% endif %}>
-        <label for="publicReportCheck{{attr_suffix}}">
+        <input type="checkbox" id="publicReportCheck{{attr_suffix}}" class="report-submission-checkbox mb-3"
+               data-parent-div="#publicReportConf{{attr_suffix}}" {% if not username %}required{% endif %}>
+        <label class="ps-1" for="publicReportCheck{{attr_suffix}}">
           <small>I confirm I am making the report{{plural_suffix}} created from this submission <b>public</b>.</small>
         </label>
       </div>
     </div>
     {# Include the checkbox to confirm user-consent #}
     <div class="d-flex">
-      <input type="checkbox" id="userConsentCheck{{attr_suffix}}" class="report-submission-checkbox" required>
-      <label for="userConsentCheck{{attr_suffix}}">
+      <input type="checkbox" id="userConsentCheck{{attr_suffix}}" class="report-submission-checkbox mb-3" required>
+      <label class="ps-1" for="userConsentCheck{{attr_suffix}}">
         <small>I consent to giving the information (in this submission) freely to Arachne Digital; I confirm that I have
           the legal right to provide this information; and I acknowledge that the information will be viewable by Arachne
           Digital and its customers.

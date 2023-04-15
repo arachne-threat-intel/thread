@@ -12,10 +12,28 @@
   <script src="{{static_url}}scripts/vfs_fonts.js"></script>
 {% endif %}
 <script id="arachneVfsJson" data-json-path="{{static_url}}misc/arachne_vfs.json"></script>
+<script id="reportDetails" data-completed="{{completed}}"></script>
 {% endblock %}
 
 {% block content %}
-<br>
+
+{% if private_help_text %}{# Add help-text if given #}
+  <div class="p-3 px-5">
+    <div class="alert alert-primary d-flex align-items-center" role="alert">
+      <i class="pe-3 fa-solid fa-lock"></i>
+      <div>{{private_help_text}}</div>
+    </div>
+  </div>
+{% endif %}
+{% if completed_help_text %}
+  <div class="p-3 px-5">
+    <div class="alert alert-primary d-flex align-items-center" role="alert">
+      <i class="pe-3 fas fa-info-circle"></i>
+      <div>{{completed_help_text|safe}}</div>
+    </div>
+  </div>
+{% endif %}
+
 <h3 class="display-4 text-center">{{ file }}</h3>
 
 <div class="row justify-content-center pb-3">
@@ -60,19 +78,7 @@
   </div>
   <div class="col col-sm-4 ">
     <div class="missingTechniquesView bg-dark" id="sentenceContextSection">
-      {% if help_text %}{# Add any help-text to the side-panel of the report (so it is always visible) #}
-        <span><b>{{help_text}}</b></span><hr>
-      {% endif %}
-      {% if completed %}{# Completed reports: display message on what user can still do #}
-        <span>
-          This is a <b>completed</b> report. You can still click on the sentences to view confirmed techniques.
-          You can also click the <b>Export PDF</b> button to generate a PDF of this completed report.
-        </span>
-        <hr>
-          {% if not is_local %}{# Notice about expiry-date #}
-            <span><b>Completed reports will expire 24 hours after completion.</b></span>
-          {% endif %}
-      {% else %}{# Incomplete reports: list techniques user still needs to review #}
+      {% if not completed %}{# Incomplete reports: list techniques user still needs to review #}
         <span class='spanAwaitingTechniqueView'><b>Techniques Awaiting Confirmation</b></span>
         <br><br>
         <span id="techsNoMoreConfNote" {% if unchecked|length > 0 %}hidden{% endif %}>None awaiting review.</span>
@@ -89,9 +95,7 @@
             </li>
           {% endfor %}
         </ul>
-      {% endif %}
-      <hr>
-      {% if not completed %}{# Incomplete reports: display 'Techniques Found' panel to approve/reject attacks #}
+        <hr>{# Incomplete reports: display 'Techniques Found' panel to approve/reject attacks #}
         <span class='spanMissingTechniqueView'><b>Techniques Found</b></span>
         <br><br>
         <div id="sentenceInformation">
@@ -124,7 +128,7 @@
       {% endif %}
       <small>Any techniques listed with <b>!</b> are deprecated or revoked from the MITRE ATT&CK® framework.</small>
       <hr>
-      {% if completed == 0 %}{# Incomplete reports: display option to add missing attacks; delete sentences; and complete report #}
+      {% if not completed %}{# Incomplete reports: display option to add missing attacks; delete sentences; and complete report #}
         <span class='spanAddMissingTechnique'><b>Add A Missing Technique</b></span>
         <br><br>
         <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true" data-size="5"

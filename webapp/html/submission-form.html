@@ -44,7 +44,7 @@
                 </div>
               </div>
               {% with is_csv = false %}{% include "submission-arachne-fields.html" %}{% endwith %}
-              <button type="button" onclick="submit_report(this)" class="btn btn-primary" data-token-field-id="#reportToken">Submit</button>
+              <button type="button" onclick="submit_report(this)" class="btn btn-primary" data-private-switch-id="#reportPrivate">Submit</button>
             </form>
           </div>
           <div class="tab-pane fade" id="csv-div" role="tabpanel" aria-labelledby="csv-tab">{# Next tab: CSVs #}
@@ -65,7 +65,7 @@
                 </a>
               </div>
               {% with is_csv = true %}{% include "submission-arachne-fields.html" %}{% endwith %}
-              <button type="button" onclick="upload_file(this)" class="btn btn-primary" data-token-field-id="#reportTokenCSV">Upload CSV File</button>
+              <button type="button" onclick="upload_file(this)" class="btn btn-primary" data-private-switch-id="#reportPrivateCSV">Upload CSV File</button>
             </form>
           </div>
         </div>
