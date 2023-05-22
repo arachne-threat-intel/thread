@@ -844,9 +844,9 @@ class RestService:
             await self.data_svc.remove_report_by_id(report_id=report_id)
             logging.info('Deleted report with ' + str(unique_techniques_count) + ' technique(s) found: ' + report[URL])
             return
-        
+
         logging.info(str(unique_techniques_count) + ' technique(s) found for report ' + report_id)
-    
+
     async def remove_report_if_automatically_generated(self, report_id):
         """Function that removes a report if it has been automatically generated."""
         reports_found = await self.data_svc.get_report_by_id_or_title(by_id=True, report=report_id)
@@ -856,7 +856,7 @@ class RestService:
         report = reports_found[0]
         if str(report['automatically_generated']).upper() != str(self.dao.db_true_val).upper():
             return
-        
+
         await self.data_svc.remove_report_by_id(report_id=report_id)
         logging.info('Deleted skipped report: ' + report[URL])
 
@@ -1064,14 +1064,20 @@ class RestService:
 
     def __refang(self, ioc_text):
         """Function to remove artifacts from common defangs."""
-        return ioc_text.replace('[dot]', '.') \
-                .replace('(dot)', '.') \
-                .replace('[.]', '.') \
-                .replace('(', '') \
-                .replace(')', '') \
-                .replace(',', '.') \
-                .replace(' ', '') \
-                .replace(u'\u30fb', '.')
+        if not ioc_text:
+            return
+        # Replace only first occurrence of 'hxxp(s)' if applicable
+        if ioc_text.startswith('hxxp'):
+            ioc_text = ioc_text.replace('hxxp', 'http', 1)
+
+        return ioc_text.replace(' ', '') \
+            .replace('[dot]', '.') \
+            .replace('(dot)', '.') \
+            .replace('(', '') \
+            .replace(')', '') \
+            .replace(',', '.') \
+            .replace(u'\u30fb', '.') \
+            .replace('[.]', '.')
 
     async def add_indicator_of_compromise(self, request, criteria=None):
         """Function to add a sentence as an indicator of compromise."""
@@ -1085,7 +1091,7 @@ class RestService:
                                                 report_id=report_id,
                                                 refanged_sentence_text=self.__refang(sentence_data['text']).strip()))
         return REST_SUCCESS
-    
+
     async def remove_indicator_of_compromise(self, request, criteria=None):
         """Function to remove a sentence as an indicator of compromise."""
         sentence_data, report_id, error = await self.check_edit_sentence_permission(
