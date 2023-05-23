@@ -1071,13 +1071,11 @@ class RestService:
             ioc_text = ioc_text.replace('hxxp', 'http', 1)
 
         return ioc_text.replace(' ', '') \
-            .replace('[dot]', '.') \
-            .replace('(dot)', '.') \
-            .replace('(', '') \
-            .replace(')', '') \
+            .replace('[dot]', '.').replace('(dot)', '.').replace('[.]', '.') \
+            .replace('(', '').replace(')', '') \
+            .replace('[', '').replace(']', '') \
             .replace(',', '.') \
-            .replace(u'\u30fb', '.') \
-            .replace('[.]', '.')
+            .replace(u'\u30fb', '.')
 
     async def add_indicator_of_compromise(self, request, criteria=None):
         """Function to add a sentence as an indicator of compromise."""
