@@ -1066,16 +1066,42 @@ class RestService:
         """Function to remove artifacts from common defangs."""
         if not ioc_text:
             return
-        # Replace only first occurrence of 'hxxp(s)' if applicable
-        if ioc_text.startswith('hxxp'):
-            ioc_text = ioc_text.replace('hxxp', 'http', 1)
 
-        return ioc_text.replace(' ', '') \
+        # Variations of punctuation we want to note
+        hyphens = ['-', u'\u058A', u'\u05BE', u'\u2010', u'\u2011', u'\u2012', u'\u2013', u'\u2014', u'\u2015',
+                   u'\u2E3A', u'\u2E3B', u'\uFE5B', u'\uFE63', u'\uFF0D']
+        periods = [u'\uFE52', u'\uFF0E']  # not including '.' as we are replacing these and keeping them
+        quotes = ['"', "''", u'\u02BA', u'\u02DD', u'\u02EE', u'\u02F6', u'\u05F2', u'\u05F4', u'\u201C', u'\u201D',
+                  u'\u201F', u'\u2033', u'\u2036', u'\u3003', u'\uFF02']
+        bullet_points = [u'\u2022', u'\u2023', u'\u2043', u'\u2219', u'\u25CB', u'\u25CF', u'\u25E6', u'\u30fb']
+
+        ioc_text = ioc_text.replace(' ', '') \
             .replace('[dot]', '.').replace('(dot)', '.').replace('[.]', '.') \
             .replace('(', '').replace(')', '') \
             .replace('[', '').replace(']', '') \
             .replace(',', '.') \
             .replace(u'\u30fb', '.')
+
+        for period in periods:
+            ioc_text = ioc_text.replace(period, '.')
+        for quote in quotes:
+            ioc_text = ioc_text.replace(quote, '')
+
+        # Replacements to make at the beginning and end of the string
+        replace_start = ['*'] + bullet_points + hyphens
+        replace_end = ['.'] + hyphens
+
+        for remove_start in replace_start:
+            if ioc_text.startswith(remove_start):
+                ioc_text = ioc_text.replace(remove_start, '', 1)
+        # Special case: not removing but replacing leading 'hxxp'
+        if ioc_text.startswith('hxxp'):
+            ioc_text = ioc_text.replace('hxxp', 'http', 1)
+        for remove_end in replace_end:
+            if ioc_text.endswith(remove_end):
+                ioc_text = ioc_text[:len(ioc_text)-1]
+
+        return ioc_text
 
     async def add_indicator_of_compromise(self, request, criteria=None):
         """Function to add a sentence as an indicator of compromise."""
