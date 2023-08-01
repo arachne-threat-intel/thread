@@ -143,11 +143,10 @@
         </select>
         <br><br>
         <button disabled id="missingTechBtn" onclick="addMissingTechnique()" class="btn btn-primary">Add Technique</button> <br><br>
+        <button disabled id="iocSwitch" onclick="toggleIoc()" class="btn btn-primary">
+          <i class="fas fa-shield-alt"></i>&nbsp;Toggle Indicator<br>of Compromise
+        </button> <br><br>
         <button disabled id="delSenBtn" onclick="remove_sentence()" class="btn btn-danger">Remove Selected</button> <br><br>
-        <div class="form-check form-switch ioc-switch">
-          <input class="form-check-input" type="checkbox" role="switch" id="iocSwitch" onclick="toggleIoc()" disabled>
-          <label class="form-check-label" for="iocSwitch">Indicator of Compromise</label>
-        </div>
         <button onclick="finish_analysis('{{title_quoted}}')" class="btn btn-success">Finish Analysis</button> <br><br>
       {% endif %}
     </div>
