@@ -16,6 +16,7 @@ from enum import Enum, unique
 from functools import partial
 from htmldate import find_date
 from io import StringIO
+from ipaddress import AddressValueError, IPv4Address, IPv6Address
 from urllib.parse import unquote
 
 PUBLIC = 'public'
@@ -28,6 +29,19 @@ REST_SUCCESS = dict(success=1)
 
 # The minimum amount of tecniques for a report to not be discarded
 REPORT_TECHNIQUES_MINIMUM = 5
+
+
+def is_public_ip(ip_address):
+    """Function to check if an IP address is public. Returns True, False or None (not an IP address)."""
+    address_obj = None
+    try:
+        address_obj = IPv4Address(ip_address)
+    except AddressValueError:
+        try:
+            address_obj = IPv6Address(ip_address)
+        except AddressValueError:
+            return
+    return not (address_obj.is_link_local or address_obj.is_multicast or address_obj.is_private)
 
 
 @unique
@@ -1062,7 +1076,8 @@ class RestService:
         success.update(dict(info=info, alert_user=1, refresh_page=refresh_page, updated_attacks=bool(updates)))
         return success
 
-    def __refang(self, ioc_text):
+    @staticmethod
+    def __refang(ioc_text):
         """Function to remove artifacts from common defangs."""
         if not ioc_text:
             return
@@ -1110,10 +1125,16 @@ class RestService:
         if error:
             return error
 
+        cleaned_ioc_text = self.__refang(sentence_data['text'])
+        if is_public_ip(cleaned_ioc_text) is False:  # avoid `if not` because None means not an IP address
+            error_msg = ('This appears to be a link-local, multicast, or private IP address. '
+                         'This cannot be flagged as an IoC. (Contact us if this is incorrect!)')
+            return dict(error=error_msg, alert_user=1)
+
         await self.dao.insert_generate_uid('report_sentence_indicators_of_compromise',
                                            dict(sentence_id=sentence_data['uid'],
                                                 report_id=report_id,
-                                                refanged_sentence_text=self.__refang(sentence_data['text']).strip()))
+                                                refanged_sentence_text=cleaned_ioc_text))
         return REST_SUCCESS
 
     async def remove_indicator_of_compromise(self, request, criteria=None):

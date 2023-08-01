@@ -148,7 +148,6 @@ function remove_sentence() {
       $(missingTechBtn).prop("disabled", true);
       $(delSenBtn).prop("disabled", true);
       $(iocSwitchSelector).prop("disabled", true);
-      $(iocSwitchSelector).prop("checked", false);
       $(`#ioc-icon-${sentence_id}`).remove();
       $(senTTPForm).prop("hidden", true);
       // Reset any sentence-techniques lists
@@ -358,12 +357,9 @@ function updateSentenceContext(data) {
   }
   // Permit clicking missing techniques button depending if an image is currently highlighted
   $(missingTechBtn).prop("disabled", $(`.${highlightClassImg}`).length > 0 || !enableSenButtons);
-  // Allow 'remove selected' button
+  // Allow sentence-action buttons
   $(delSenBtn).prop("disabled", !enableSenButtons);
-  // Allow 'Indicator of Compromise' switch
   $(iocSwitchSelector).prop("disabled", !enableSenButtons);
-  const sentenceIsIoc = $(`#elmt${sentence_id}`).attr("data-ioc") === "true";
-  $(iocSwitchSelector).prop("checked", sentenceIsIoc);
 }
 
 function updateConfirmedContext(data) {
@@ -773,28 +769,18 @@ function scrollAndSelectSentence(sentenceId) {
   }
 }
 
-function addIndicatorOfCompromise(sentenceId) {
-  if (sentenceId) {
-    restRequest("POST", {"index": "add_indicator_of_compromise", "sentence_id": sentenceId});
-  }
-}
-
-function removeIndicatorOfCompromise(sentenceId) {
-  if (sentenceId) {
-    restRequest("POST", {"index": "remove_indicator_of_compromise", "sentence_id": sentenceId});
-  }
-}
-
 function toggleIoc() {
   if (sentence_id) {
     if ($(`#elmt${sentence_id}`).attr("data-ioc") === "true") {
-      $(`#elmt${sentence_id}`).attr("data-ioc", "false");
-      $(`#ioc-icon-${sentence_id}`).hide();
-      removeIndicatorOfCompromise(sentence_id);
+      restRequest("POST", {"index": "remove_indicator_of_compromise", "sentence_id": sentence_id}, function() {
+        $(`#elmt${sentence_id}`).attr("data-ioc", "false");
+        $(`#ioc-icon-${sentence_id}`).hide();
+      });
     } else {
-      $(`#elmt${sentence_id}`).attr("data-ioc", "true");
-      $(`#ioc-icon-${sentence_id}`).show();
-      addIndicatorOfCompromise(sentence_id);
+      restRequest("POST", {"index": "add_indicator_of_compromise", "sentence_id": sentence_id}, function() {
+        $(`#elmt${sentence_id}`).attr("data-ioc", "true");
+        $(`#ioc-icon-${sentence_id}`).show();
+      });
     }
   }
 }
