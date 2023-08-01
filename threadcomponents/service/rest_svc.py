@@ -31,19 +31,6 @@ REST_SUCCESS = dict(success=1)
 REPORT_TECHNIQUES_MINIMUM = 5
 
 
-def is_public_ip(ip_address):
-    """Function to check if an IP address is public. Returns True, False or None (not an IP address)."""
-    address_obj = None
-    try:
-        address_obj = IPv4Address(ip_address)
-    except AddressValueError:
-        try:
-            address_obj = IPv6Address(ip_address)
-        except AddressValueError:
-            return
-    return not (address_obj.is_link_local or address_obj.is_multicast or address_obj.is_private)
-
-
 @unique
 class ReportStatus(Enum):
     QUEUE = ('queue', 'In Queue')
@@ -1118,6 +1105,19 @@ class RestService:
 
         return ioc_text
 
+    @staticmethod
+    def is_public_ip(ip_address):
+        """Function to check if an IP address is public. Returns True, False or None (not an IP address)."""
+        address_obj = None
+        try:
+            address_obj = IPv4Address(ip_address)
+        except AddressValueError:
+            try:
+                address_obj = IPv6Address(ip_address)
+            except AddressValueError:
+                return
+        return not (address_obj.is_link_local or address_obj.is_multicast or address_obj.is_private)
+
     async def add_indicator_of_compromise(self, request, criteria=None):
         """Function to add a sentence as an indicator of compromise."""
         sentence_data, report_id, error = await self.check_edit_sentence_permission(
@@ -1126,7 +1126,7 @@ class RestService:
             return error
 
         cleaned_ioc_text = self.__refang(sentence_data['text'])
-        if is_public_ip(cleaned_ioc_text) is False:  # avoid `if not` because None means not an IP address
+        if self.is_public_ip(cleaned_ioc_text) is False:  # avoid `if not` because None means not an IP address
             error_msg = ('This appears to be a link-local, multicast, or private IP address. '
                          'This cannot be flagged as an IoC. (Contact us if this is incorrect!)')
             return dict(error=error_msg, alert_user=1)
