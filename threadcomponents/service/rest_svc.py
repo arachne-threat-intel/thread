@@ -1093,15 +1093,16 @@ class RestService:
         replace_start = ['*'] + bullet_points + hyphens
         replace_end = ['.'] + hyphens
 
-        for remove_start in replace_start:
-            if ioc_text.startswith(remove_start):
-                ioc_text = ioc_text.replace(remove_start, '', 1)
+        replace_start_flat = re.escape(''.join(replace_start))
+        replace_end_flat = re.escape(''.join(replace_end))
+        replace_start_pattern = '^[%s]*' % replace_start_flat
+        replace_end_pattern = '[%s]*$' % replace_end_flat
+
+        ioc_text = re.sub(replace_start_pattern, '', ioc_text)
         # Special case: not removing but replacing leading 'hxxp'
         if ioc_text.startswith('hxxp'):
             ioc_text = ioc_text.replace('hxxp', 'http', 1)
-        for remove_end in replace_end:
-            if ioc_text.endswith(remove_end):
-                ioc_text = ioc_text[:len(ioc_text)-1]
+        ioc_text = re.sub(replace_end_pattern, '', ioc_text)
 
         return ioc_text
 
@@ -1126,6 +1127,10 @@ class RestService:
             return error
 
         cleaned_ioc_text = self.__refang(sentence_data['text'])
+        if not cleaned_ioc_text:
+            error_msg = ('This text was cleaned and appeared to be empty afterwards. This is usually when the text '
+                         'consists of only special characters. (Contact us if this is incorrect!)')
+            return dict(error=error_msg, alert_user=1)
         if self.is_public_ip(cleaned_ioc_text) is False:  # avoid `if not` because None means not an IP address
             error_msg = ('This appears to be a link-local, multicast, or private IP address. '
                          'This cannot be flagged as an IoC. (Contact us if this is incorrect!)')
