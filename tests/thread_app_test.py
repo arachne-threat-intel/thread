@@ -136,22 +136,28 @@ class ThreadAppTest(AioHTTPTestCase):
         # We don't want the queue to be checked after this test; mock this to return (and do) nothing
         self.create_patch(target=RestService, attribute='check_queue', return_value=None)
 
-    async def submit_test_report(self, report, attacks_found=None, fail_map_html=False, post_confirm_attack=False):
+    async def submit_test_report(self, report, sentences=None, attacks_found=None, fail_map_html=False,
+                                 post_confirm_attack=False, confirm_attack='d99999'):
         """A helper method to submit a test report and create some associated test-sentences."""
         # Some test sentences and expected analysed html for them
-        sen1 = 'When Creating Test Data...'
-        sen2 = 'i. It can be quite draining'
-        attacks_found = attacks_found or ([], [('d99999', 'Drain')])
-        sen1_a, sen2_a = attacks_found
-        html = [{'html': sen1, 'text': sen1, 'tag': 'p', 'ml_techniques_found': sen1_a, 'res_techniques_found': []},
-                {'html': sen2, 'text': sen2, 'tag': 'li', 'ml_techniques_found': sen2_a,
-                 'res_techniques_found': []}]
+        sentences = sentences or ['When Creating Test Data...', 'i. It can be quite draining']
+        no_attack, has_attack = ([], [('d99999', 'Drain')])
+        attacks_found = attacks_found or []
+        html = []
+        for sen_index, sentence in enumerate(sentences):
+            # Assign attack for this sentence if provided else for every second sentence, assign it an attack
+            try:
+                attack = attacks_found[sen_index]
+            except IndexError:
+                attack = no_attack if sen_index % 2 else has_attack
+            html.append({'html': sentence, 'text': sentence, 'tag': 'p', 'ml_techniques_found': attack,
+                         'res_techniques_found': []})
         # The result of the mapping function (no html, no Article object)
         map_result = None, None
         if not fail_map_html:
             # If we are not failing the mapping stage, mock the newspaper.Article for the mapping returned object
             mocked_article = MagicMock()
-            mocked_article.text = '%s\n%s' % (sen1, sen2)
+            mocked_article.text = '\n'.join(sentences)
             map_result = html, mocked_article
         # Patches for when RestService.start_analysis() is called
         self.create_patch(target=WebService, attribute='map_all_html', return_value=map_result)
@@ -167,15 +173,15 @@ class ThreadAppTest(AioHTTPTestCase):
         await self.rest_svc.start_analysis(criteria=report)
         if post_confirm_attack:
             # Get the report sentences for this report
-            sentences = await self.db.get('report_sentences', equal=dict(report_uid=report[UID_KEY]))
+            db_sentences = await self.db.get('report_sentences', equal=dict(report_uid=report[UID_KEY]))
             sen_id = None
-            for sen in sentences:
+            for sen in db_sentences:
                 # Find the sentence that has an attack for this test
                 if sen.get('found_status') == self.db.val_as_true:
                     sen_id = sen.get(UID_KEY)
             if not sen_id:
                 return
-            await self.client.post('/rest', json=dict(index='add_attack', sentence_id=sen_id, attack_uid='d99999'))
+            await self.client.post('/rest', json=dict(index='add_attack', sentence_id=sen_id, attack_uid=confirm_attack))
 
     def mock_current_attack_data(self, attack_list=None):
         """Helper-method to mock the retrieval of the current Att%ck data by returning a specified attack-list."""
