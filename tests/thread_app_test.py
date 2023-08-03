@@ -17,7 +17,7 @@ from threadcomponents.service import data_svc
 from threadcomponents.service.data_svc import DataService, NO_DESC
 from threadcomponents.service.ml_svc import MLService
 from threadcomponents.service.reg_svc import RegService
-from threadcomponents.service.rest_svc import RestService, UID as UID_KEY
+from threadcomponents.service.rest_svc import ReportStatus, RestService, UID as UID_KEY
 from threadcomponents.service.web_svc import WebService
 from unittest.mock import MagicMock, patch
 
@@ -139,6 +139,8 @@ class ThreadAppTest(AioHTTPTestCase):
     async def submit_test_report(self, report, sentences=None, attacks_found=None, fail_map_html=False,
                                  post_confirm_attack=False, confirm_attack='d99999'):
         """A helper method to submit a test report and create some associated test-sentences."""
+        if not report.get('current_status'):
+            report['current_status'] = ReportStatus.QUEUE.value
         # Some test sentences and expected analysed html for them
         sentences = sentences or ['When Creating Test Data...', 'i. It can be quite draining']
         no_attack, has_attack = ([], [('d99999', 'Drain')])
