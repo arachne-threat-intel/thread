@@ -1104,6 +1104,9 @@ class RestService:
     def is_public_ip(ip_address):
         """Function to check if an IP address is public. Returns True, False or None (not an IP address)."""
         address_obj = None
+        # Special case for 'localhost', make the string compatible with the IPv4Address class
+        if ip_address == 'localhost':
+            ip_address = '127.0.0.1'
         try:
             address_obj = IPv4Address(ip_address)
         except AddressValueError:
@@ -1120,6 +1123,12 @@ class RestService:
         if error:
             return error
 
+        # Prevent duplicates
+        table = 'report_sentence_indicators_of_compromise'
+        existing = await self.dao.get(table, dict(report_id=report_id, sentence_id=sentence_data[UID]))
+        if existing:
+            return REST_IGNORED
+
         cleaned_ioc_text = self.__refang(sentence_data['text'])
         if not cleaned_ioc_text:
             error_msg = ('This text was cleaned and appeared to be empty afterwards. This is usually when the text '
@@ -1130,10 +1139,8 @@ class RestService:
                          'This cannot be flagged as an IoC. (Contact us if this is incorrect!)')
             return dict(error=error_msg, alert_user=1)
 
-        await self.dao.insert_generate_uid('report_sentence_indicators_of_compromise',
-                                           dict(sentence_id=sentence_data['uid'],
-                                                report_id=report_id,
-                                                refanged_sentence_text=cleaned_ioc_text))
+        await self.dao.insert_generate_uid(table, dict(sentence_id=sentence_data[UID], report_id=report_id,
+                                                       refanged_sentence_text=cleaned_ioc_text))
         return REST_SUCCESS
 
     async def remove_indicator_of_compromise(self, request, criteria=None):
@@ -1144,7 +1151,7 @@ class RestService:
             return error
 
         await self.dao.delete('report_sentence_indicators_of_compromise',
-                              dict(sentence_id=sentence_data['uid'], report_id=report_id))
+                              dict(sentence_id=sentence_data[UID], report_id=report_id))
         return REST_SUCCESS
 
     async def _pre_add_reject_attack_checks(self, request, sen_id='', sentence_dict=None, attack_id='', attack_dict=None):
@@ -1211,7 +1218,7 @@ class RestService:
         # Obtain the report from the db
         report = await self.data_svc.get_report_by_id(report_id=report_id, add_expiry_bool=(not self.is_local))
         try:
-            report[0]['uid'], report[0]['date_written_str']
+            report[0][UID], report[0]['date_written_str']
         except (KeyError, IndexError):
             # No report exists or db record malformed
             raise web.HTTPBadRequest()
