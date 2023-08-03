@@ -153,7 +153,7 @@ class ThreadAppTest(AioHTTPTestCase):
             except IndexError:
                 attack = no_attack if sen_index % 2 else has_attack
             html.append({'html': sentence, 'text': sentence, 'tag': 'p', 'ml_techniques_found': attack,
-                         'res_techniques_found': []})
+                         'reg_techniques_found': []})
         # The result of the mapping function (no html, no Article object)
         map_result = None, None
         if not fail_map_html:
