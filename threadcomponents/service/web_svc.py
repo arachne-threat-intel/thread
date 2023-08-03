@@ -52,6 +52,13 @@ class WebService:
     EXPORT_PDF_KEY, EXPORT_NAV_KEY, STATIC_KEY = 'export_pdf', 'export_nav', 'static'
     HOW_IT_WORKS_KEY, WHAT_TO_SUBMIT_KEY = 'how_it_works', 'what_to_submit'
     REPORT_PARAM = 'file'
+    # Variations of punctuation we want to note
+    HYPHENS = ['-', u'\u058A', u'\u05BE', u'\u2010', u'\u2011', u'\u2012', u'\u2013', u'\u2014', u'\u2015', u'\u2E3A',
+               u'\u2E3B', u'\uFE5B', u'\uFE63', u'\uFF0D']
+    PERIODS = ['.', u'\uFE52', u'\uFF0E']
+    QUOTES = ['"', "''", u'\u02BA', u'\u02DD', u'\u02EE', u'\u02F6', u'\u05F2', u'\u05F4', u'\u201C', u'\u201D',
+              u'\u201F', u'\u2033', u'\u2036', u'\u3003', u'\uFF02']
+    BULLET_POINTS = [u'\u2022', u'\u2023', u'\u2043', u'\u2219', u'\u25CB', u'\u25CF', u'\u25E6', u'\u30fb']
 
     def __init__(self, route_prefix=None, is_local=True):
         self.is_local = is_local

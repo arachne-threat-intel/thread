@@ -1063,19 +1063,10 @@ class RestService:
         success.update(dict(info=info, alert_user=1, refresh_page=refresh_page, updated_attacks=bool(updates)))
         return success
 
-    @staticmethod
-    def __refang(ioc_text):
+    def __refang(self, ioc_text):
         """Function to remove artifacts from common defangs."""
         if not ioc_text:
             return
-
-        # Variations of punctuation we want to note
-        hyphens = ['-', u'\u058A', u'\u05BE', u'\u2010', u'\u2011', u'\u2012', u'\u2013', u'\u2014', u'\u2015',
-                   u'\u2E3A', u'\u2E3B', u'\uFE5B', u'\uFE63', u'\uFF0D']
-        periods = [u'\uFE52', u'\uFF0E']  # not including '.' as we are replacing these and keeping them
-        quotes = ['"', "''", u'\u02BA', u'\u02DD', u'\u02EE', u'\u02F6', u'\u05F2', u'\u05F4', u'\u201C', u'\u201D',
-                  u'\u201F', u'\u2033', u'\u2036', u'\u3003', u'\uFF02']
-        bullet_points = [u'\u2022', u'\u2023', u'\u2043', u'\u2219', u'\u25CB', u'\u25CF', u'\u25E6', u'\u30fb']
 
         ioc_text = ioc_text.replace(' ', '') \
             .replace('[dot]', '.').replace('(dot)', '.').replace('[.]', '.') \
@@ -1084,14 +1075,17 @@ class RestService:
             .replace(',', '.') \
             .replace(u'\u30fb', '.')
 
-        for period in periods:
+        for period in self.web_svc.PERIODS:
+            if period == '.':
+                continue
             ioc_text = ioc_text.replace(period, '.')
-        for quote in quotes:
+        for quote in self.web_svc.QUOTES:
             ioc_text = ioc_text.replace(quote, '')
 
         # Replacements to make at the beginning and end of the string
-        replace_start = ['*'] + bullet_points + hyphens
-        replace_end = ['.'] + periods + hyphens
+        replace_start = ['*'] + self.web_svc.BULLET_POINTS + self.web_svc.HYPHENS
+        # All periods have been replaced to '.' so we do not need to include period-list here
+        replace_end = ['.'] + self.web_svc.HYPHENS
 
         replace_start_flat = re.escape(''.join(replace_start))
         replace_end_flat = re.escape(''.join(replace_end))
