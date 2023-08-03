@@ -552,7 +552,7 @@ class WebService:
         img_dict['text'] = source
         img_dict['tag'] = 'img'
         img_dict['ml_techniques_found'] = []
-        img_dict['res_techniques_found'] = []
+        img_dict['reg_techniques_found'] = []
         return img_dict
 
     @staticmethod
@@ -561,5 +561,5 @@ class WebService:
         res_dict['text'] = plaintext
         res_dict['tag'] = tag
         res_dict['ml_techniques_found'] = []
-        res_dict['res_techniques_found'] = []
+        res_dict['reg_techniques_found'] = []
         return res_dict
