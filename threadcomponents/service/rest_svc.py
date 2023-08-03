@@ -1091,7 +1091,7 @@ class RestService:
 
         # Replacements to make at the beginning and end of the string
         replace_start = ['*'] + bullet_points + hyphens
-        replace_end = ['.'] + hyphens
+        replace_end = ['.'] + periods + hyphens
 
         replace_start_flat = re.escape(''.join(replace_start))
         replace_end_flat = re.escape(''.join(replace_end))
