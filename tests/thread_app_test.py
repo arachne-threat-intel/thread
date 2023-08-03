@@ -151,7 +151,7 @@ class ThreadAppTest(AioHTTPTestCase):
             try:
                 attack = attacks_found[sen_index]
             except IndexError:
-                attack = no_attack if sen_index % 2 else has_attack
+                attack = has_attack if sen_index % 2 else no_attack
             html.append({'html': sentence, 'text': sentence, 'tag': 'p', 'ml_techniques_found': attack,
                          'reg_techniques_found': []})
         # The result of the mapping function (no html, no Article object)
@@ -163,6 +163,7 @@ class ThreadAppTest(AioHTTPTestCase):
             map_result = html, mocked_article
         # Patches for when RestService.start_analysis() is called
         self.create_patch(target=WebService, attribute='map_all_html', return_value=map_result)
+        self.create_patch(target=WebService, attribute='tokenize_sentence', return_value=html)
         self.create_patch(target=DataService, attribute='ml_reg_split', return_value=([], list(self.attacks.items())))
         self.create_patch(target=MLService, attribute='build_pickle_file', return_value=(False, dict()))
         self.create_patch(target=MLService, attribute='analyze_html', return_value=html)
