@@ -137,8 +137,7 @@ class TestReports(ThreadAppTest):
         """Function to test the behaviour of start analysis when successful."""
         report_id = str(uuid4())
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this',
-                                           current_status=ReportStatus.QUEUE.value))
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this'))
         # Check in the DB that the status got updated
         report_db = await self.db.get('reports', equal=dict(uid=report_id))
         self.assertEqual(report_db[0].get('current_status'), ReportStatus.NEEDS_REVIEW.value,
@@ -156,8 +155,7 @@ class TestReports(ThreadAppTest):
         """Function to test the behaviour of start analysis when there is an error."""
         report_id = str(uuid4())
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this',
-                                           current_status=ReportStatus.QUEUE.value), fail_map_html=True)
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this'), fail_map_html=True)
         # Check in the DB that the status did not change
         report_db = await self.db.get('reports', equal=dict(uid=report_id))
         self.assertEqual(report_db[0].get('current_status'), ReportStatus.QUEUE.value,
@@ -170,8 +168,7 @@ class TestReports(ThreadAppTest):
         """Function to test setting the status of a report."""
         report_id, report_title = str(uuid4()), 'To Set or Not to Set'
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url='analysing.this',
-                                           current_status=ReportStatus.QUEUE.value))
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='analysing.this'))
         # Attempt to complete this newly-analysed report
         data = dict(index='set_status', set_status=ReportStatus.COMPLETED.value, report_title=report_title)
         resp = await self.client.post('/rest', json=data)
@@ -202,9 +199,8 @@ class TestReports(ThreadAppTest):
         """Function to test the counts of report-techniques awaiting review."""
         report_id, report_title = str(uuid4()), 'Look For The Light'
         # Submit and analyse a test report
-        report = dict(uid=report_id, title=report_title, url='fire.flies', current_status=ReportStatus.QUEUE.value)
         attacks = ([('d99999', 'Drain')], [('d99999', 'Drain'), ('f12345', 'Fire')])
-        await self.submit_test_report(report, attacks_found=attacks)
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='fire.flies'), attacks_found=attacks)
         # Check the unreviewed attack counts are correct
         unchecked_count = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id)
         unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id, return_detail=True)
@@ -233,8 +229,7 @@ class TestReports(ThreadAppTest):
         """Function to test setting the status of a report back to its initial status of 'Queue'."""
         report_id, report_title = str(uuid4()), 'To Set or Not to Set: The Sequel'
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url='analysing.this',
-                                           current_status=ReportStatus.QUEUE.value))
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='analysing.this'))
         # Attempt to revert the status for this newly-analysed report back into the queue
         data = dict(index='set_status', set_status=ReportStatus.QUEUE.value, report_title=report_title)
         resp = await self.client.post('/rest', json=data)
@@ -248,8 +243,7 @@ class TestReports(ThreadAppTest):
         """Function to test adding a new attack to a sentence."""
         report_id, attack_id = str(uuid4()), 'f12345'
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this',
-                                           current_status=ReportStatus.QUEUE.value))
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this'))
         # Get the report sentences for this report
         sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id))
         sen_id = None
@@ -276,8 +270,7 @@ class TestReports(ThreadAppTest):
         """Function to test adding an invalid attack to a sentence."""
         report_id, attack_id = str(uuid4()), 's00001'
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this',
-                                           current_status=ReportStatus.QUEUE.value))
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this'))
         # Pick any sentence from this report
         sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id))
         sen_id = sentences[0][UID_KEY]
@@ -295,8 +288,7 @@ class TestReports(ThreadAppTest):
         """Function to test confirming a predicted attack of a sentence."""
         report_id, attack_id = str(uuid4()), 'd99999'
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this',
-                                           current_status=ReportStatus.QUEUE.value))
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this'))
         # Get the report sentences for this report
         sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id))
         sen_id = None
@@ -323,8 +315,7 @@ class TestReports(ThreadAppTest):
         """Function to test rejecting an attack to a sentence."""
         report_id, attack_id = str(uuid4()), 'd99999'
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this',
-                                           current_status=ReportStatus.QUEUE.value))
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this'))
         # Get the report sentences for this report
         sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id))
         sen_id = None
@@ -351,8 +342,7 @@ class TestReports(ThreadAppTest):
         """Function to test obtaining the data for a report sentence."""
         report_id = str(uuid4())
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this',
-                                           current_status=ReportStatus.QUEUE.value))
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this'))
         # Get the report sentences for this report
         sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id))
         sen_id = None
@@ -393,7 +383,7 @@ class TestReports(ThreadAppTest):
         report_id, report_title = str(uuid4()), 'Never Gonna Rollback This Up'
         # Submit and analyse a test report
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='analysing.this',
-                                           current_status=ReportStatus.QUEUE.value, date_written='2022-08-15'))
+                                           date_written='2022-08-15'))
         # Get the report sentences for this report
         sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id),
                                       order_by_asc=dict(sen_index=1))
@@ -424,8 +414,7 @@ class TestReports(ThreadAppTest):
         """Function to test successfully adding categories to a report."""
         report_id, report_title = str(uuid4()), 'Add Categories to Me!'
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url='add.categories',
-                                           current_status=ReportStatus.QUEUE.value))
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='add.categories'))
         # Add an invalid category
         data = dict(index='set_report_keywords', report_title=report_title,
                     victims=dict(category=['notACategory', 'reallyNot']))
@@ -445,8 +434,7 @@ class TestReports(ThreadAppTest):
         """Function to test successfully removing categories from a report."""
         report_id, report_title = str(uuid4()), 'Remove Categories From Me!'
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url='remove.categories',
-                                           current_status=ReportStatus.QUEUE.value))
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='remove.categories'))
         # Add categories
         data = dict(index='set_report_keywords', report_title=report_title,
                     victims=dict(category=['aerospace', 'music', 'film']))
@@ -468,8 +456,7 @@ class TestReports(ThreadAppTest):
         """Function to test successfully adding keywords to a report."""
         report_id, report_title = str(uuid4()), 'Add Keywords To Me!'
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url='add.keywords',
-                                           current_status=ReportStatus.QUEUE.value))
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='add.keywords'))
         # Add keywords
         data = dict(index='set_report_keywords', report_title=report_title,
                     aggressors=dict(country=['HB', 'TA'], group=['APT1']), victims=dict(countries_all=True))
@@ -494,8 +481,7 @@ class TestReports(ThreadAppTest):
         """Function to test successfully removing keywords from a report."""
         report_id, report_title = str(uuid4()), 'Remove Keywords From Me!'
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url='remove.keywords',
-                                           current_status=ReportStatus.QUEUE.value))
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='remove.keywords'))
         # Add keywords
         data = dict(index='set_report_keywords', report_title=report_title,
                     aggressors=dict(country=['HB', 'TA'], group=['APT1']), victims=dict(countries_all=True))
