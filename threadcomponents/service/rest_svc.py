@@ -1072,8 +1072,7 @@ class RestService:
             .replace('[dot]', '.').replace('(dot)', '.').replace('[.]', '.') \
             .replace('(', '').replace(')', '') \
             .replace('[', '').replace(']', '') \
-            .replace(',', '.') \
-            .replace(u'\u30fb', '.')
+            .replace(',', '.')
 
         for period in self.web_svc.PERIODS:
             if period == '.':

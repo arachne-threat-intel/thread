@@ -30,11 +30,11 @@ class TestIoCs(ThreadAppTest):
         return '%s%s%s%s%s%s%s%s%s' % (leading_char_1, leading_char_2, leading_char_2, leading_char_3,
                                        ip_address, trailing_char_1, trailing_char_2, trailing_char_3, trailing_char_2)
 
-    async def check_denied_ip_address_ioc(self, ip_address):
+    async def check_denied_ip_address_ioc(self, ip_address, text=None):
         """Function to test responses when an IP address cannot be flagged as an IoC."""
         report_id, report_title = str(uuid4()), 'Are You Not Entertain- Denied?'
-        # Submit and analyse a test report
-        text = [self.dirty_ip_address(ip_address)]
+        # Submit and analyse a test report; use text parameter when debugging previously-failed randomised strings
+        text = text or [self.dirty_ip_address(ip_address)]
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='thumbs.down'), sentences=text)
 
         # Get the sentence-ID to use in the endpoint
@@ -50,17 +50,17 @@ class TestIoCs(ThreadAppTest):
         try:
             error_msg, alert_user = resp_json.get('error'), resp_json.get('alert_user')
         except AttributeError:
-            self.fail('IP address `%s` was able to be flagged as IoC.' % ip_address)
+            self.fail('Text `%s` was able to be flagged as IoC.' % text[0])
         self.assertTrue(resp.status == 500, msg='Flagging unsuccessful IoC resulted in a non-500 response.')
         self.assertTrue('This cannot be flagged as an IoC' in error_msg,
                         msg='Error message for unsuccessful IoC is different than expected.')
         self.assertEqual(alert_user, 1, msg='User is not notified over unsuccessful IoC flagging.')
 
-    async def check_allowed_ip_address_ioc(self, ip_address):
+    async def check_allowed_ip_address_ioc(self, ip_address, text=None):
         """Function to test responses when an IP address can be flagged as an IoC. Returns db info of IoC."""
         report_id, report_title = str(uuid4()), 'Are You Not Entertain- Allowed?'
         # Submit and analyse a test report
-        text = [self.dirty_ip_address(ip_address)]
+        text = text or [self.dirty_ip_address(ip_address)]
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='thumbs.up'), sentences=text)
 
         # Get the sentence-ID to use in the endpoint
@@ -70,12 +70,12 @@ class TestIoCs(ThreadAppTest):
         # Attempt to flag this sentence as an IoC
         data = dict(index='add_indicator_of_compromise', sentence_id=sen_id)
         resp = await self.client.post('/rest', json=data)
-        self.assertTrue(resp.status < 300, msg='Flagging an IoC resulted in a non-200 response.')
+        self.assertTrue(resp.status < 300, msg='Flagging `%s` as an IoC resulted in a non-200 response.' % text[0])
 
         # Check IP address is saved as expected in the db
         existing = await self.dao.get(self.TABLE, dict(report_id=report_id, sentence_id=sen_id))
         saved_ioc = existing[0]['refanged_sentence_text']
-        self.assertEqual(ip_address, saved_ioc, 'IoC was not cleaned as expected before saved as one.')
+        self.assertEqual(ip_address, saved_ioc, '`%s` was not cleaned as expected before saved as IoC.' % text[0])
         return report_id, sen_id
 
     async def test_deny_link_local_ipv4(self):
