@@ -16,7 +16,7 @@ from enum import Enum, unique
 from functools import partial
 from htmldate import find_date
 from io import StringIO
-from ipaddress import AddressValueError, IPv4Address, IPv6Address
+from ipaddress import IPv4Address, IPv4Interface, IPv6Address, IPv6Interface
 from urllib.parse import unquote
 
 PUBLIC = 'public'
@@ -1100,20 +1100,44 @@ class RestService:
         return ioc_text
 
     @staticmethod
-    def is_public_ip(ip_address):
-        """Function to check if an IP address is public. Returns True, False or None (not an IP address)."""
+    def clean_and_check_if_public_ip(ip_address):
+        """Function to clean and check if an IP address is public. Returns (True/False/None (invalid), IP address)."""
         address_obj = None
         # Special case for 'localhost', make the string compatible with the IPv4Address class
         if ip_address == 'localhost':
             ip_address = '127.0.0.1'
-        try:
-            address_obj = IPv4Address(ip_address)
-        except AddressValueError:
-            try:
-                address_obj = IPv6Address(ip_address)
-            except AddressValueError:
-                return
-        return not (address_obj.is_link_local or address_obj.is_multicast or address_obj.is_private)
+        cleaned_ip = ip_address
+        to_check = [('.', IPv4Address, IPv4Interface), (None, IPv6Address, IPv6Interface)]
+
+        # Further tidying up if this is an IP address; not doing this in __refang() in case this breaks URLs
+        for replace_delimiter, address_class, interface_class in to_check:
+            # Not replacing non-numbers to ':' for IPv6 for now
+            if replace_delimiter:
+                slash_pos = ip_address.rfind('/')
+                prefix = ip_address[:slash_pos] if slash_pos > 0 else ip_address
+                suffix = ip_address[slash_pos:] if slash_pos > 0 else ''
+                # Replace any non-number with the delimiter; then remove any trailing/leading delimiters
+                cleaned_prefix = re.sub('\\D+', replace_delimiter, prefix)
+                cleaned_prefix = re.sub(re.escape(replace_delimiter) + '+$', '', cleaned_prefix)
+                cleaned_prefix = re.sub('^' + re.escape(replace_delimiter) + '+', '', cleaned_prefix)
+                cleaned_ip = cleaned_prefix + suffix
+            else:
+                cleaned_ip = ip_address
+
+            # Attempt Address class before Interface class
+            for obj_class in [address_class, interface_class]:
+                try:
+                    address_obj = obj_class(cleaned_ip)
+                    break
+                except Exception:
+                    continue
+            if address_obj:
+                break
+
+        if not address_obj:
+            # Don't return cleaned-changes as it is not applicable
+            return None, ip_address
+        return (not (address_obj.is_link_local or address_obj.is_multicast or address_obj.is_private)), cleaned_ip
 
     async def add_indicator_of_compromise(self, request, criteria=None):
         """Function to add a sentence as an indicator of compromise."""
@@ -1129,11 +1153,16 @@ class RestService:
             return REST_IGNORED
 
         cleaned_ioc_text = self.__refang(sentence_data['text'])
+        is_public_ip, cleaned_ip = self.clean_and_check_if_public_ip(cleaned_ioc_text)
+        if is_public_ip is not None:  # text managed to be parsed as an IP address
+            cleaned_ioc_text = cleaned_ip
+
         if not cleaned_ioc_text:
             error_msg = ('This text was cleaned and appeared to be empty afterwards. This is usually when the text '
                          'consists of only special characters. (Contact us if this is incorrect!)')
             return dict(error=error_msg, alert_user=1)
-        if self.is_public_ip(cleaned_ioc_text) is False:  # avoid `if not` because None means not an IP address
+
+        if is_public_ip is False:  # avoid `if not` because None means not an IP address
             error_msg = ('This appears to be a link-local, multicast, or private IP address. '
                          'This cannot be flagged as an IoC. (Contact us if this is incorrect!)')
             return dict(error=error_msg, alert_user=1)

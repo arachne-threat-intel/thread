@@ -56,11 +56,12 @@ class TestIoCs(ThreadAppTest):
                         msg='Error message for unsuccessful IoC is different than expected.')
         self.assertEqual(alert_user, 1, msg='User is not notified over unsuccessful IoC flagging.')
 
-    async def check_allowed_ip_address_ioc(self, ip_address, text=None):
+    async def check_allowed_ip_address_ioc(self, ip_address, text=None, cleaned=None):
         """Function to test responses when an IP address can be flagged as an IoC. Returns db info of IoC."""
         report_id, report_title = str(uuid4()), 'Are You Not Entertain- Allowed?'
         # Submit and analyse a test report
         text = text or [self.dirty_ip_address(ip_address)]
+        cleaned = cleaned or ip_address
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='thumbs.up'), sentences=text)
 
         # Get the sentence-ID to use in the endpoint
@@ -75,7 +76,7 @@ class TestIoCs(ThreadAppTest):
         # Check IP address is saved as expected in the db
         existing = await self.dao.get(self.TABLE, dict(report_id=report_id, sentence_id=sen_id))
         saved_ioc = existing[0]['refanged_sentence_text']
-        self.assertEqual(ip_address, saved_ioc, '`%s` was not cleaned as expected before saved as IoC.' % text[0])
+        self.assertEqual(cleaned, saved_ioc, '`%s` was not cleaned as expected before saved as IoC.' % text[0])
         return report_id, sen_id
 
     async def test_deny_link_local_ipv4(self):
@@ -90,6 +91,8 @@ class TestIoCs(ThreadAppTest):
         """Function to test a private IPv4 address cannot be flagged as an IoC."""
         await self.check_denied_ip_address_ioc('10.16.5.5')
         await self.check_denied_ip_address_ioc('localhost')
+        some_bullet_points = self.bullet_points[4] + self.bullet_points[5] + self.bullet_points[4]
+        await self.check_denied_ip_address_ioc('127.0.0.1'.replace('.', some_bullet_points))
 
     async def test_deny_link_local_ipv6(self):
         """Function to test a link-local IPv6 address cannot be flagged as an IoC."""
@@ -101,11 +104,14 @@ class TestIoCs(ThreadAppTest):
 
     async def test_deny_private_ipv6(self):
         """Function to test a private IPv6 address cannot be flagged as an IoC."""
-        await self.check_denied_ip_address_ioc('fd00::4:120')
+        await self.check_denied_ip_address_ioc('fd00::4:120/62')
 
     async def test_allow_public_ipv4(self):
         """Function to test a public IPv4 address can be flagged as an IoC."""
-        await self.check_allowed_ip_address_ioc('192.30.252.0')
+        testing = '192.30.252.0'
+        await self.check_allowed_ip_address_ioc(testing)
+        some_bullet_points = self.bullet_points[1] + self.bullet_points[2] + self.bullet_points[3]
+        await self.check_allowed_ip_address_ioc(testing.replace('.', some_bullet_points), cleaned=testing)
 
     async def test_allow_public_ipv6(self):
         """Function to test a public IPv6 address can be flagged as an IoC."""
