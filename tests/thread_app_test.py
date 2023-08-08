@@ -1,6 +1,7 @@
 import aiohttp_jinja2
 import asyncio
 import jinja2
+import logging
 import os
 import random
 import sqlite3
@@ -25,10 +26,23 @@ from unittest.mock import MagicMock, patch
 class ThreadAppTest(AioHTTPTestCase):
     """A Thread test case that involves interacting with the application."""
     DB_TEST_FILE = os.path.join('tests', 'threadtest.db')
+    # Any loggers to mute during test
+    mute_logger_warnings = []
+    mute_logger_errors = []
 
     @classmethod
     def setUpClass(cls):
         """Any setting-up before all the test methods."""
+        super().setUpClass()
+        # Log only errors to omit warnings when triggering bad/not-allowed requests and executing asyncio Tasks
+        # Ignore htmldate errors as we are testing with non-existent URLs
+        to_mute = [(cls.mute_logger_warnings + ['asyncio'], logging.ERROR),
+                   (cls.mute_logger_errors + ['htmldate'], logging.CRITICAL)]
+        for logger_names, logger_level in to_mute:
+            for logger_name in logger_names:
+                logger = logging.getLogger(logger_name)
+                logger.setLevel(logger_level)
+
         cls.db = ThreadSQLite(cls.DB_TEST_FILE)
         with open(SCHEMA_FILE) as schema_opened:
             cls.schema = schema_opened.read()
