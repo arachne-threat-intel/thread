@@ -1128,8 +1128,8 @@ class RestService:
                 slash_pos = cleaned_ip.rfind('/')
                 prefix = cleaned_ip[:slash_pos] if slash_pos > 0 else cleaned_ip
                 suffix = cleaned_ip[slash_pos:] if slash_pos > 0 else ''
-                # Replace any non-number with the delimiter; then remove any trailing/leading delimiters
-                cleaned_prefix = re.sub('\\D+', replace_delimiter, prefix)
+                # Replace any non-word character with the delimiter; then remove any trailing/leading delimiters
+                cleaned_prefix = re.sub('\\W+', replace_delimiter, prefix)
                 cleaned_prefix = re.sub(re.escape(replace_delimiter) + '+$', '', cleaned_prefix)
                 cleaned_prefix = re.sub('^' + re.escape(replace_delimiter) + '+', '', cleaned_prefix)
                 cleaned_ip = cleaned_prefix + suffix
