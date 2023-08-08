@@ -117,6 +117,37 @@ class TestIoCs(ThreadAppTest):
         """Function to test a public IPv6 address can be flagged as an IoC."""
         await self.check_allowed_ioc('2603:1030:9:2c4::/62')
 
+    async def test_allow_spacy_ip_address(self):
+        """Function to test an IP address with whitespace can be flagged as an IoC."""
+        await self.check_allowed_ioc(' 192 [.] 30 [.] 252 [.] 0 ', cleaned='192.30.252.0')
+
+    async def test_allow_spacy_url(self):
+        """Function to test a URL with whitespace can be flagged as an IoC."""
+        testing = 'https://en.wikipedia.org/wiki/Barbie_(film)'.replace('_', ' ')
+        await self.check_allowed_ioc(' %s ' % testing, cleaned=testing)
+
+    async def test_url_with_hxxp(self):
+        """Function to test a URL with 'hxxp' can be flagged as an IoC and is correctly edited."""
+        testing = "https://en.wikipedia.org/wiki/Horse"
+        await self.check_allowed_ioc(' %s ' % testing.replace('http', 'hxxp'), cleaned=testing)
+
+    async def test_url_with_quotes(self):
+        """Function to test a URL with quotes can be flagged as an IoC and is not over-edited."""
+        q1, q2 = u'\u275D', u'\u275E'
+        testing = f"https://en.wikipedia.org/wiki/I'm_Just_Ken?feelings={q1}kenergy{q2}&number="
+        testing1 = testing + '10'
+        await self.check_allowed_ioc(testing1, cleaned=testing1.replace(q1, '"').replace(q2, '"'))
+        testing2 = testing + f"{q1}ten{q2}"
+        await self.check_allowed_ioc(testing2, cleaned=testing2.replace(q1, '"').replace(q2, '"'))
+
+    async def test_hash_with_quotes(self):
+        """Function to test a hash with quotes can be flagged as an IoC and is not over-edited."""
+        await self.check_allowed_ioc('uWuHitcvVnC"du1Yo4c6hjQ==')
+
+    async def test_allow_wildcard_url(self):
+        """Function to test a wildcard URL can be flagged as an IoC."""
+        await self.check_allowed_ioc('*.i-am.kenough')
+
     async def test_allow_non_ip_address(self):
         """Function to test regular text can be flagged as an IoC."""
         await self.check_allowed_ioc('I-want-this-to-be-my-IoC')
