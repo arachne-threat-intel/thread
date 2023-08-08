@@ -140,6 +140,10 @@ class TestIoCs(ThreadAppTest):
         testing2 = testing + f"{q1}ten{q2}"
         await self.check_allowed_ioc(testing2, cleaned=testing2.replace(q1, '"').replace(q2, '"'))
 
+    async def test_url_with_digits(self):
+        """Function to test a URL with digits can be flagged as an IoC and is not over-edited."""
+        await self.check_allowed_ioc('look192at30this252ta0da.my.ioc')
+
     async def test_hash_with_quotes(self):
         """Function to test a hash with quotes can be flagged as an IoC and is not over-edited."""
         await self.check_allowed_ioc('uWuHitcvVnC"du1Yo4c6hjQ==')
