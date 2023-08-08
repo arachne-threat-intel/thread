@@ -17,7 +17,7 @@ from functools import partial
 from htmldate import find_date
 from io import StringIO
 from ipaddress import IPv4Address, IPv4Interface, IPv6Address, IPv6Interface
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
 
 PUBLIC = 'public'
 UID = 'uid'
@@ -1068,40 +1068,49 @@ class RestService:
         if not ioc_text:
             return
 
-        ioc_text = ioc_text.replace(' ', '') \
-            .replace('[dot]', '.').replace('(dot)', '.').replace('[.]', '.') \
-            .replace('(', '').replace(')', '') \
-            .replace('[', '').replace(']', '') \
-            .replace(',', '.')
-
-        for period in self.web_svc.PERIODS:
-            if period == '.':
-                continue
-            ioc_text = ioc_text.replace(period, '.')
-        for quote in self.web_svc.QUOTES:
-            ioc_text = ioc_text.replace(quote, '')
+        wildcard = '*.'
+        # Make some characters consistent
+        replace_periods = '[%s]+' % re.escape(''.join(self.web_svc.PERIODS))
+        ioc_text = re.sub(replace_periods, '.', ioc_text)
+        # 2 x single quotes in the regex below adds the single quote to the character set; do a separate replace
+        replace_quotes = '[%s]+' % re.escape(''.join(set(self.web_svc.QUOTES) - {"''"}))
+        ioc_text = re.sub(replace_quotes, '"', ioc_text)
+        ioc_text = re.sub('(%s)+' % re.escape("''"), '"', ioc_text)
 
         # Replacements to make at the beginning and end of the string
-        replace_start = ['*'] + self.web_svc.BULLET_POINTS + self.web_svc.HYPHENS
-        # All periods have been replaced to '.' so we do not need to include period-list here
-        replace_end = ['.'] + self.web_svc.HYPHENS
+        replace_start = ['*', ' ', '"'] + self.web_svc.BULLET_POINTS + self.web_svc.HYPHENS
+        replace_end = ['.', ' ', '"'] + self.web_svc.HYPHENS
 
-        replace_start_flat = re.escape(''.join(replace_start))
-        replace_end_flat = re.escape(''.join(replace_end))
-        replace_start_pattern = '^[%s]*' % replace_start_flat
-        replace_end_pattern = '[%s]*$' % replace_end_flat
+        replace_start_pattern = '^[%s]+' % re.escape(''.join(replace_start))
+        replace_start_pattern_wildcard = replace_start_pattern + re.escape(wildcard)
+        replace_end_pattern = '[%s]+$' % re.escape(''.join(replace_end))
 
-        ioc_text = re.sub(replace_start_pattern, '', ioc_text)
+        # Special case: keep URL wildcards intact
+        ioc_text = re.sub(replace_start_pattern_wildcard, wildcard, ioc_text)
+        prefix = ''
+        if ioc_text.startswith(wildcard):
+            prefix = wildcard
+            ioc_text = ioc_text[len(wildcard):]
+        # Remove other leading characters
+        ioc_text = prefix + re.sub(replace_start_pattern, '', ioc_text)
         # Special case: not removing but replacing leading 'hxxp'
         if ioc_text.startswith('hxxp'):
             ioc_text = ioc_text.replace('hxxp', 'http', 1)
         ioc_text = re.sub(replace_end_pattern, '', ioc_text)
+        # Special case: URLs ending with quotes have had their last character removed; check if odd number of quotes
+        if ioc_text.count('"') % 2:
+            with suppress(Exception):
+                parsed_url = urlparse(ioc_text if ioc_text.startswith('http') else ('http://' + ioc_text))
+                if all([parsed_url.scheme, parsed_url.netloc, parsed_url.path]):
+                    ioc_text = ioc_text + '"'
 
         return ioc_text
 
     @staticmethod
     def clean_and_check_if_public_ip(ip_address):
         """Function to clean and check if an IP address is public. Returns (True/False/None (invalid), IP address)."""
+        if not ip_address:
+            return None, None
         address_obj = None
         # Special case for 'localhost', make the string compatible with the IPv4Address class
         if ip_address == 'localhost':
@@ -1111,18 +1120,19 @@ class RestService:
 
         # Further tidying up if this is an IP address; not doing this in __refang() in case this breaks URLs
         for replace_delimiter, address_class, interface_class in to_check:
+            cleaned_ip = (ip_address.replace(' ', '').replace('"', '')
+                          .replace('[dot]', '.').replace('(dot)', '.').replace('[.]', '.')
+                          .replace('(', '').replace(')', '').replace('[', '').replace(']', '').replace(',', '.'))
             # Not replacing non-numbers to ':' for IPv6 for now
             if replace_delimiter:
-                slash_pos = ip_address.rfind('/')
-                prefix = ip_address[:slash_pos] if slash_pos > 0 else ip_address
-                suffix = ip_address[slash_pos:] if slash_pos > 0 else ''
+                slash_pos = cleaned_ip.rfind('/')
+                prefix = cleaned_ip[:slash_pos] if slash_pos > 0 else cleaned_ip
+                suffix = cleaned_ip[slash_pos:] if slash_pos > 0 else ''
                 # Replace any non-number with the delimiter; then remove any trailing/leading delimiters
                 cleaned_prefix = re.sub('\\D+', replace_delimiter, prefix)
                 cleaned_prefix = re.sub(re.escape(replace_delimiter) + '+$', '', cleaned_prefix)
                 cleaned_prefix = re.sub('^' + re.escape(replace_delimiter) + '+', '', cleaned_prefix)
                 cleaned_ip = cleaned_prefix + suffix
-            else:
-                cleaned_ip = ip_address
 
             # Attempt Address class before Interface class
             for obj_class in [address_class, interface_class]:
