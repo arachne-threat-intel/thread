@@ -1069,7 +1069,7 @@ class RestService:
             return
 
         wildcard = '*.'
-        ioc_text = ioc_text.replace(' ', '')
+        ioc_text = ioc_text.replace('\n', '').replace(' ', '')
         # Make some characters consistent
         replace_periods = '[%s]+' % re.escape(''.join(self.web_svc.PERIODS))
         ioc_text = re.sub(replace_periods, '.', ioc_text)
