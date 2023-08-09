@@ -56,6 +56,33 @@ class TestIoCs(ThreadAppTest):
                         msg='Error message for unsuccessful IoC is different than expected.')
         self.assertEqual(alert_user, 1, msg='User is not notified over unsuccessful IoC flagging.')
 
+    async def check_denied_empty_ioc(self, ioc_text=None, dirty_text=None):
+        """Function to test cleaned text resulting in an empty string cannot be flagged as an IoC."""
+        report_id, report_title = str(uuid4()), 'Are You Not Entertain- Empty?'
+        # Submit and analyse a test report
+        ioc_text = ioc_text or ''
+        text = dirty_text or [self.dirty_ioc_text(ioc_text)]
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url='thumbs.down'), sentences=text)
+
+        # Get the sentence-ID to use in the endpoint
+        sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id))
+        sen_id = sentences[0][UID_KEY]
+
+        # Attempt to flag this sentence as an IoC
+        data = dict(index='add_indicator_of_compromise', sentence_id=sen_id)
+        resp = await self.client.post('/rest', json=data)
+        resp_json = await resp.json()
+        # Check an unsuccessful response was sent
+        error_msg, alert_user = None, None
+        try:
+            error_msg, alert_user = resp_json.get('error'), resp_json.get('alert_user')
+        except AttributeError:
+            self.fail('Special-characters IoC `%s` was able to be flagged as IoC.' % text[0])
+        self.assertTrue(resp.status == 500, msg='Flagging empty IoC resulted in a non-500 response.')
+        self.assertTrue('This text was cleaned and appeared to be empty afterwards' in error_msg,
+                        msg='Error message for empty IoC is different than expected.')
+        self.assertEqual(alert_user, 1, msg='User is not notified over flagging an empty IoC.')
+
     async def check_allowed_ioc(self, ioc_text, dirty_text=None, cleaned=None):
         """Function to test responses when an IoC string can be flagged as an IoC. Returns db info of IoC."""
         report_id, report_title = str(uuid4()), 'Are You Not Entertain- Allowed?'
@@ -173,26 +200,8 @@ class TestIoCs(ThreadAppTest):
 
     async def test_deny_empty_ioc(self):
         """Function to test cleaned text resulting in an empty string cannot be flagged as an IoC."""
-        report_id, report_title = str(uuid4()), 'Are You Not Entertain- Empty?'
-        # Submit and analyse a test report
-        text = [self.dirty_ioc_text('')]
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url='thumbs.down'), sentences=text)
+        await self.check_denied_empty_ioc()
 
-        # Get the sentence-ID to use in the endpoint
-        sentences = await self.db.get('report_sentences', equal=dict(report_uid=report_id))
-        sen_id = sentences[0][UID_KEY]
-
-        # Attempt to flag this sentence as an IoC
-        data = dict(index='add_indicator_of_compromise', sentence_id=sen_id)
-        resp = await self.client.post('/rest', json=data)
-        resp_json = await resp.json()
-        # Check an unsuccessful response was sent
-        error_msg, alert_user = None, None
-        try:
-            error_msg, alert_user = resp_json.get('error'), resp_json.get('alert_user')
-        except AttributeError:
-            self.fail('Special-characters IoC `%s` was able to be flagged as IoC.' % text[0])
-        self.assertTrue(resp.status == 500, msg='Flagging empty IoC resulted in a non-500 response.')
-        self.assertTrue('This text was cleaned and appeared to be empty afterwards' in error_msg,
-                        msg='Error message for empty IoC is different than expected.')
-        self.assertEqual(alert_user, 1, msg='User is not notified over flagging an empty IoC.')
+    async def test_deny_wildcard_ioc(self):
+        """Function to test the wildcard string by itself cannot be flagged as an IoC."""
+        await self.check_denied_empty_ioc('*.')
