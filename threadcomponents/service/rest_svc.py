@@ -1069,6 +1069,7 @@ class RestService:
             return
 
         wildcard = '*.'
+        ioc_text = ioc_text.replace(' ', '')
         # Make some characters consistent
         replace_periods = '[%s]+' % re.escape(''.join(self.web_svc.PERIODS))
         ioc_text = re.sub(replace_periods, '.', ioc_text)
@@ -1077,9 +1078,12 @@ class RestService:
         ioc_text = re.sub(replace_quotes, '"', ioc_text)
         ioc_text = re.sub('(%s)+' % re.escape("''"), '"', ioc_text)
 
+        ioc_text = (ioc_text.replace('[dot]', '.').replace('(dot)', '.')
+                    .replace('[.]', '.').replace('(.)', '.').replace('[:]', ':').replace('(:)', ':'))
+
         # Replacements to make at the beginning and end of the string
-        replace_start = ['*', ' ', '"'] + self.web_svc.BULLET_POINTS + self.web_svc.HYPHENS
-        replace_end = ['.', ' ', '"'] + self.web_svc.HYPHENS
+        replace_start = ['*', '"'] + self.web_svc.BULLET_POINTS + self.web_svc.HYPHENS
+        replace_end = ['.', '"'] + self.web_svc.HYPHENS
 
         replace_start_pattern = '^[%s]+' % re.escape(''.join(replace_start))
         replace_start_pattern_wildcard = replace_start_pattern + re.escape(wildcard)
@@ -1120,9 +1124,8 @@ class RestService:
 
         # Further tidying up if this is an IP address; not doing this in __refang() in case this breaks URLs
         for replace_delimiter, address_class, interface_class in to_check:
-            cleaned_ip = (ip_address.replace(' ', '').replace('"', '')
-                          .replace('[dot]', '.').replace('(dot)', '.').replace('[.]', '.')
-                          .replace('(', '').replace(')', '').replace('[', '').replace(']', '').replace(',', '.'))
+            cleaned_ip = (ip_address.replace('"', '').replace('(', '').replace(')', '')
+                          .replace('[', '').replace(']', '').replace(',', '.'))
             # Not replacing non-numbers to ':' for IPv6 for now
             if replace_delimiter:
                 slash_pos = cleaned_ip.rfind('/')

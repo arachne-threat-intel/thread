@@ -56,12 +56,12 @@ class TestIoCs(ThreadAppTest):
                         msg='Error message for unsuccessful IoC is different than expected.')
         self.assertEqual(alert_user, 1, msg='User is not notified over unsuccessful IoC flagging.')
 
-    async def check_allowed_ioc(self, ip_address, dirty_text=None, cleaned=None):
+    async def check_allowed_ioc(self, ioc_text, dirty_text=None, cleaned=None):
         """Function to test responses when an IoC string can be flagged as an IoC. Returns db info of IoC."""
         report_id, report_title = str(uuid4()), 'Are You Not Entertain- Allowed?'
         # Submit and analyse a test report
-        text = dirty_text or [self.dirty_ioc_text(ip_address)]
-        cleaned = cleaned or ip_address
+        text = dirty_text or [self.dirty_ioc_text(ioc_text)]
+        cleaned = cleaned or ioc_text
         await self.submit_test_report(dict(uid=report_id, title=report_title, url='thumbs.up'), sentences=text)
 
         # Get the sentence-ID to use in the endpoint
@@ -123,8 +123,9 @@ class TestIoCs(ThreadAppTest):
 
     async def test_allow_spacy_url(self):
         """Function to test a URL with whitespace can be flagged as an IoC."""
-        testing = 'https://en.wikipedia.org/wiki/Barbie_(film)'.replace('_', ' ')
-        await self.check_allowed_ioc(' %s ' % testing, cleaned=testing)
+        link = 'https://en.wikipedia.org/wiki/Barbie_(film)?life=plastic#fantastic'
+        testing = ' https : // en . wikipedia . org / wiki / Barbie _(film) ?life=plastic #fantastic '
+        await self.check_allowed_ioc(testing, cleaned=link)
 
     async def test_url_with_hxxp(self):
         """Function to test a URL with 'hxxp' can be flagged as an IoC and is correctly edited."""
@@ -155,6 +156,12 @@ class TestIoCs(ThreadAppTest):
     async def test_allow_non_ip_address(self):
         """Function to test regular text can be flagged as an IoC."""
         await self.check_allowed_ioc('I-want-this-to-be-my-IoC')
+
+    async def test_allow_defanged_url(self):
+        """Function to test a defanged URL can be flagged as an IoC."""
+        await self.check_allowed_ioc('*[.]dance(dot)the[dot]night(.)away', cleaned='*.dance.the.night.away')
+        await self.check_allowed_ioc('https [ : ] // dance ( dot ) the [ dot ] night ( . ) away',
+                                     cleaned='https://dance.the.night.away')
 
     async def test_deny_duplicate(self):
         """Function to test IoC entries are not duplicated."""
