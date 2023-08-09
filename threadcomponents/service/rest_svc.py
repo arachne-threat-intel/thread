@@ -1101,6 +1101,8 @@ class RestService:
         if ioc_text.startswith('hxxp'):
             ioc_text = ioc_text.replace('hxxp', 'http', 1)
         ioc_text = re.sub(replace_end_pattern, '', ioc_text)
+        # Because of the wildcard preservation, avoid strings that are only this
+        ioc_text = ioc_text if ioc_text != '*' else ''
         # Special case: URLs ending with quotes have had their last character removed; check if odd number of quotes
         if ioc_text.count('"') % 2:
             with suppress(Exception):
