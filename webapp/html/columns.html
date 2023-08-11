@@ -150,7 +150,7 @@
         groups/activities suggested from sentence-IoC text.
       </span> <br><br>
       <span>Saved As:</span>
-      <textarea id="iocSavedBox" class="ioc-box form-control" rows="2" cols="50" {% if completed %}readonly{% endif %}></textarea>
+      <textarea id="iocSavedBox" class="ioc-box form-control" rows="2" cols="50" required {% if completed %}readonly{% endif %}></textarea>
       {% if not completed %}
         <button disabled id="iocUpdateBtn" onclick="updateIoC()" class="btn btn-primary me-2">Update IoC Text</button>
         <button disabled id="iocSwitch" onclick="toggleIoc()" class="btn btn-primary">Toggle as IoC</button> <br><br>
