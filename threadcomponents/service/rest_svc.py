@@ -1136,7 +1136,7 @@ class RestService:
             return None, ip_address
         return (not (address_obj.is_link_local or address_obj.is_multicast or address_obj.is_private)), cleaned_ip
 
-    async def suggest_indicator_of_compromise(self, request, criteria=None):
+    async def suggest_ioc(self, request, criteria=None):
         """Function to predict a sentence as an indicator of compromise."""
         default_error = dict(error='Error predicting IoC.')
         sentence_data, report_id, error = await self.check_edit_sentence_permission(
@@ -1150,19 +1150,27 @@ class RestService:
         is_public_ip, cleaned_ioc_text = self.check_if_public_ip(cleaned_ioc_text, clean=True)
         return cleaned_ioc_text
 
-    async def add_indicator_of_compromise(self, request, criteria=None):
-        """Function to add a sentence as an indicator of compromise."""
-        default_error = dict(error='Error adding IoC.')
+    async def update_ioc(self, request, criteria=None, adding=False, deleting=False):
+        """Function to update a sentence as an indicator of compromise."""
+        if adding and deleting:
+            raise ValueError('Parameters for adding and deleting are both set to True.')
+        default_error, success = dict(error='Error updating IoC.'), REST_SUCCESS.copy()
         sentence_data, report_id, error = await self.check_edit_sentence_permission(
-            request, criteria, default_error, 'add-remove-ioc', strict=True)
+            request, criteria, default_error, 'update-ioc', strict=True)
         if error:
             return error
 
-        # Prevent duplicates
         table = 'report_sentence_indicators_of_compromise'
-        text = criteria.get('ioc_text')
-        existing = await self.dao.get(table, dict(report_id=report_id, sentence_id=sentence_data[UID]))
-        if existing or not text:
+        db_query = dict(report_id=report_id, sentence_id=sentence_data[UID])
+
+        if deleting:
+            await self.dao.delete(table, db_query)
+            success.update(dict(info='The selected sentence is no longer flagged as an IoC.', alert_user=1))
+            return success
+
+        text = criteria.get('ioc_text', '').strip()
+        existing = await self.dao.get(table, db_query)
+        if (adding and existing) or (not text):  # prevent duplicates
             return default_error
         # Don't automatically clean IoC for the user
         is_public_ip, cleaned_ip = self.check_if_public_ip(text, clean=False)
@@ -1172,21 +1180,15 @@ class RestService:
                          'This cannot be flagged as an IoC. (Contact us if this is incorrect!)')
             return dict(error=error_msg, alert_user=1)
 
-        await self.dao.insert_generate_uid(table, dict(sentence_id=sentence_data[UID], report_id=report_id,
-                                                       refanged_sentence_text=text))
-        return REST_SUCCESS
-
-    async def remove_indicator_of_compromise(self, request, criteria=None):
-        """Function to remove a sentence as an indicator of compromise."""
-        default_error = dict(error='Error removing IoC.')
-        sentence_data, report_id, error = await self.check_edit_sentence_permission(
-            request, criteria, default_error, 'add-remove-ioc', strict=True)
-        if error:
-            return error
-
-        await self.dao.delete('report_sentence_indicators_of_compromise',
-                              dict(sentence_id=sentence_data[UID], report_id=report_id))
-        return REST_SUCCESS
+        if existing and not adding:
+            if existing[0]['refanged_sentence_text'] == text:
+                return REST_IGNORED
+            await self.dao.update(table, where=db_query, data=dict(refanged_sentence_text=text))
+            success.update(dict(info='This sentence-IoC text has been updated.', alert_user=1))
+        else:
+            await self.dao.insert_generate_uid(table, dict(**db_query, refanged_sentence_text=text))
+            success.update(dict(info='The selected sentence has been flagged as an IoC.', alert_user=1))
+        return success
 
     async def _pre_add_reject_attack_checks(self, request, sen_id='', sentence_dict=None, attack_id='', attack_dict=None):
         """Function to check for adding or rejecting attacks, enough sentence and attack data has been given."""
