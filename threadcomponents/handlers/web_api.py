@@ -237,9 +237,10 @@ class WebAPI:
                     update_report_dates=lambda d: self.rest_svc.update_report_dates(request=request, criteria=d),
                     update_attack_time=lambda d: self.rest_svc.update_attack_time(request=request, criteria=d),
                     set_report_keywords=lambda d: self.rest_svc.set_report_keywords(request=request, criteria=d),
-                    suggest_indicator_of_compromise=lambda d: self.rest_svc.suggest_indicator_of_compromise(request=request, criteria=d),
-                    add_indicator_of_compromise=lambda d: self.rest_svc.add_indicator_of_compromise(request=request, criteria=d),
-                    remove_indicator_of_compromise=lambda d: self.rest_svc.remove_indicator_of_compromise(request=request, criteria=d),
+                    suggest_indicator_of_compromise=lambda d: self.rest_svc.suggest_ioc(request=request, criteria=d),
+                    add_indicator_of_compromise=lambda d: self.rest_svc.update_ioc(request=request, criteria=d, adding=True),
+                    update_indicator_of_compromise=lambda d: self.rest_svc.update_ioc(request=request, criteria=d),
+                    remove_indicator_of_compromise=lambda d: self.rest_svc.update_ioc(request=request, criteria=d, deleting=True),
                 ))
             method = options[request.method][index]
         except KeyError:

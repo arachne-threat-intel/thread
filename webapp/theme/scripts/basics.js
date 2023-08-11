@@ -785,6 +785,20 @@ function suggestIoC() {
   }
 }
 
+function addIoC(updating=false) {
+  if (sentence_id && document.getElementById(iocSavedBoxId).reportValidity()) {
+    var endpoint = updating ? "update_indicator_of_compromise" : "add_indicator_of_compromise";
+    restRequest("POST",
+      {"index": endpoint, "sentence_id": sentence_id, "ioc_text": $("#" + iocSavedBoxId).val()},
+      function() {
+        $(`#elmt${sentence_id}`).attr("data-ioc", "true");
+        $(`#ioc-icon-${sentence_id}`).show();
+        $(iocSuggestionBoxSelector).val("");
+      }
+    );
+  }
+}
+
 function toggleIoc() {
   if (sentence_id) {
     if ($(`#elmt${sentence_id}`).attr("data-ioc") === "true") {
@@ -792,22 +806,10 @@ function toggleIoc() {
         $(`#elmt${sentence_id}`).attr("data-ioc", "false");
         $(`#ioc-icon-${sentence_id}`).hide();
         $(iocSuggestionBoxSelector).val("");
+        $("#" + iocSavedBoxId).val("");
       });
     } else {
-      if(document.getElementById(iocSavedBoxId).reportValidity()) {
-        restRequest("POST",
-          {
-            "index": "add_indicator_of_compromise",
-            "sentence_id": sentence_id,
-            "ioc_text": $("#" + iocSavedBoxId).val()
-          },
-          function() {
-            $(`#elmt${sentence_id}`).attr("data-ioc", "true");
-            $(`#ioc-icon-${sentence_id}`).show();
-            $(iocSuggestionBoxSelector).val("");
-          }
-        );
-      }
+      addIoC();
     }
   }
 }
