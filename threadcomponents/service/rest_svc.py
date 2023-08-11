@@ -1068,71 +1068,53 @@ class RestService:
         if not ioc_text:
             return
 
-        wildcard = '*.'
         ioc_text = ioc_text.replace('\n', '').replace(' ', '')
         # Make some characters consistent
         replace_periods = '[%s]+' % re.escape(''.join(self.web_svc.PERIODS))
         ioc_text = re.sub(replace_periods, '.', ioc_text)
-        # 2 x single quotes in the regex below adds the single quote to the character set; do a separate replace
-        replace_quotes = '[%s]+' % re.escape(''.join(set(self.web_svc.QUOTES) - {"''"}))
-        ioc_text = re.sub(replace_quotes, '"', ioc_text)
-        ioc_text = re.sub('(%s)+' % re.escape("''"), '"', ioc_text)
+        # 2 x single quotes in the regex below adds the single quote to the character set; do a separate remove
+        remove_quotes = '[%s]+' % re.escape(''.join(set(self.web_svc.QUOTES) - {"''"}))
+        ioc_text = re.sub(remove_quotes, '', ioc_text)
+        ioc_text = re.sub('(%s)+' % re.escape("''"), '', ioc_text)
 
-        ioc_text = (ioc_text.replace('[dot]', '.').replace('(dot)', '.')
-                    .replace('[.]', '.').replace('(.)', '.').replace('[:]', ':').replace('(:)', ':'))
+        ioc_text = (ioc_text.replace(',', '.')
+                    .replace('[dot]', '.').replace('(dot)', '.').replace('[.]', '.').replace('(.)', '.')
+                    .replace('[at]', '@').replace('(at)', '@').replace('[@]', '@').replace('(@)', '@')
+                    .replace('[:]', ':').replace('(:)', ':')
+                    .replace('(', '').replace(')', '').replace('[', '').replace(']', ''))
 
         # Replacements to make at the beginning and end of the string
-        replace_start = ['*', '"'] + self.web_svc.BULLET_POINTS + self.web_svc.HYPHENS
-        replace_end = ['.', '"'] + self.web_svc.HYPHENS
-
+        replace_start = ['*'] + self.web_svc.BULLET_POINTS + self.web_svc.HYPHENS
+        replace_end = ['.'] + self.web_svc.HYPHENS
         replace_start_pattern = '^[%s]+' % re.escape(''.join(replace_start))
-        replace_start_pattern_wildcard = replace_start_pattern + re.escape(wildcard)
         replace_end_pattern = '[%s]+$' % re.escape(''.join(replace_end))
 
-        # Special case: keep URL wildcards intact
-        ioc_text = re.sub(replace_start_pattern_wildcard, wildcard, ioc_text)
-        prefix = ''
-        if ioc_text.startswith(wildcard):
-            prefix = wildcard
-            ioc_text = ioc_text[len(wildcard):]
-        # Remove other leading characters
-        ioc_text = prefix + re.sub(replace_start_pattern, '', ioc_text)
+        ioc_text = re.sub(replace_start_pattern, '', ioc_text)
         # Special case: not removing but replacing leading 'hxxp'
         if ioc_text.startswith('hxxp'):
             ioc_text = ioc_text.replace('hxxp', 'http', 1)
         ioc_text = re.sub(replace_end_pattern, '', ioc_text)
-        # Because of the wildcard preservation, avoid strings that are only this
-        ioc_text = ioc_text if ioc_text != '*' else ''
-        # Special case: URLs ending with quotes have had their last character removed; check if odd number of quotes
-        if ioc_text.count('"') % 2:
-            with suppress(Exception):
-                parsed_url = urlparse(ioc_text if ioc_text.startswith('http') else ('http://' + ioc_text))
-                if all([parsed_url.scheme, parsed_url.netloc, parsed_url.path]):
-                    ioc_text = ioc_text + '"'
 
         return ioc_text
 
     @staticmethod
-    def clean_and_check_if_public_ip(ip_address):
-        """Function to clean and check if an IP address is public. Returns (True/False/None (invalid), IP address)."""
+    def check_if_public_ip(ip_address, clean=False):
+        """Function to check if an IP address is public. Returns (True/False/None (invalid), IP address)."""
         if not ip_address:
             return None, None
         address_obj = None
-        # Special case for 'localhost', make the string compatible with the IPv4Address class
-        if ip_address == 'localhost':
-            ip_address = '127.0.0.1'
         cleaned_ip = ip_address
+        # Special case for 'localhost', make the string compatible with the IPv4Address class
+        if clean and ip_address == 'localhost':
+            cleaned_ip = '127.0.0.1'
         to_check = [('.', IPv4Address, IPv4Interface), (None, IPv6Address, IPv6Interface)]
 
-        # Further tidying up if this is an IP address; not doing this in __refang() in case this breaks URLs
+        # Further tidying up if this is an IP address
         for replace_delimiter, address_class, interface_class in to_check:
-            cleaned_ip = (ip_address.replace('"', '').replace('(', '').replace(')', '')
-                          .replace('[', '').replace(']', '').replace(',', '.'))
-            # Not replacing non-numbers to ':' for IPv6 for now
-            if replace_delimiter:
-                slash_pos = cleaned_ip.rfind('/')
-                prefix = cleaned_ip[:slash_pos] if slash_pos > 0 else cleaned_ip
-                suffix = cleaned_ip[slash_pos:] if slash_pos > 0 else ''
+            if clean and replace_delimiter:
+                slash_pos = ip_address.rfind('/')
+                prefix = ip_address[:slash_pos] if slash_pos > 0 else ip_address
+                suffix = ip_address[slash_pos:] if slash_pos > 0 else ''
                 # Replace any non-word character with the delimiter; then remove any trailing/leading delimiters
                 cleaned_prefix = re.sub('\\W+', replace_delimiter, prefix)
                 cleaned_prefix = re.sub(re.escape(replace_delimiter) + '+$', '', cleaned_prefix)
@@ -1154,28 +1136,36 @@ class RestService:
             return None, ip_address
         return (not (address_obj.is_link_local or address_obj.is_multicast or address_obj.is_private)), cleaned_ip
 
+    async def predict_indicator_of_compromise(self, request, criteria=None):
+        """Function to predict a sentence as an indicator of compromise."""
+        default_error = dict(error='Error predicting IoC.')
+        sentence_data, report_id, error = await self.check_edit_sentence_permission(
+            request, criteria, default_error, 'predict-ioc', strict=True)
+        if error:
+            return error
+        text = sentence_data['text']
+        if not text:
+            return REST_IGNORED
+        cleaned_ioc_text = self.__refang(sentence_data['text'])
+        is_public_ip, cleaned_ioc_text = self.check_if_public_ip(cleaned_ioc_text, clean=True)
+        return cleaned_ioc_text
+
     async def add_indicator_of_compromise(self, request, criteria=None):
         """Function to add a sentence as an indicator of compromise."""
+        default_error = dict(error='Error adding IoC.')
         sentence_data, report_id, error = await self.check_edit_sentence_permission(
-            request, criteria, 'add-remove-ioc', strict=True)
+            request, criteria, default_error, 'add-remove-ioc', strict=True)
         if error:
             return error
 
         # Prevent duplicates
         table = 'report_sentence_indicators_of_compromise'
+        text = criteria.get('ioc_text')
         existing = await self.dao.get(table, dict(report_id=report_id, sentence_id=sentence_data[UID]))
-        if existing:
-            return REST_IGNORED
-
-        cleaned_ioc_text = self.__refang(sentence_data['text'])
-        is_public_ip, cleaned_ip = self.clean_and_check_if_public_ip(cleaned_ioc_text)
-        if is_public_ip is not None:  # text managed to be parsed as an IP address
-            cleaned_ioc_text = cleaned_ip
-
-        if not cleaned_ioc_text:
-            error_msg = ('This text was cleaned and appeared to be empty afterwards. This is usually when the text '
-                         'consists of only special characters. (Contact us if this is incorrect!)')
-            return dict(error=error_msg, alert_user=1)
+        if existing or not text:
+            return default_error
+        # Don't automatically clean IoC for the user
+        is_public_ip, cleaned_ip = self.check_if_public_ip(text, clean=False)
 
         if is_public_ip is False:  # avoid `if not` because None means not an IP address
             error_msg = ('This appears to be a link-local, multicast, or private IP address. '
@@ -1183,13 +1173,14 @@ class RestService:
             return dict(error=error_msg, alert_user=1)
 
         await self.dao.insert_generate_uid(table, dict(sentence_id=sentence_data[UID], report_id=report_id,
-                                                       refanged_sentence_text=cleaned_ioc_text))
+                                                       refanged_sentence_text=text))
         return REST_SUCCESS
 
     async def remove_indicator_of_compromise(self, request, criteria=None):
         """Function to remove a sentence as an indicator of compromise."""
+        default_error = dict(error='Error removing IoC.')
         sentence_data, report_id, error = await self.check_edit_sentence_permission(
-            request, criteria, 'add-remove-ioc', strict=True)
+            request, criteria, default_error, 'add-remove-ioc', strict=True)
         if error:
             return error
 
@@ -1286,7 +1277,7 @@ class RestService:
             sentences = await self.dao.get('report_sentences', dict(uid=sen_id))
             try:
                 sentence_data = sentences[0]
-                report_id = sentence_data['report_uid']
+                report_id, sentence_text = sentence_data['report_uid'], sentence_data['text']
             except (KeyError, TypeError):
                 return None, None, default_error
         else:
