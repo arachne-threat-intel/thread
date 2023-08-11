@@ -1136,7 +1136,7 @@ class RestService:
             return None, ip_address
         return (not (address_obj.is_link_local or address_obj.is_multicast or address_obj.is_private)), cleaned_ip
 
-    async def predict_indicator_of_compromise(self, request, criteria=None):
+    async def suggest_indicator_of_compromise(self, request, criteria=None):
         """Function to predict a sentence as an indicator of compromise."""
         default_error = dict(error='Error predicting IoC.')
         sentence_data, report_id, error = await self.check_edit_sentence_permission(
