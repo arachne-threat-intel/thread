@@ -129,7 +129,7 @@
       <small>Any techniques listed with <b>!</b> are deprecated or revoked from the MITRE ATT&CK® framework.</small>
       <hr>
       {% if not completed %}{# Incomplete reports: display option to add missing attacks; delete sentences; and complete report #}
-        <span class='spanAddMissingTechnique'><b>Add A Missing Technique</b></span>
+        <span><b>Add A Missing Technique</b></span>
         <br><br>
         <select id="missingTechniqueSelect" class="selectpicker" data-show-subtext="true" data-size="5"
                 data-live-search="true" data-width="100%" title="Select a technique" required>
@@ -142,10 +142,22 @@
           {% endfor %}
         </select>
         <br><br>
-        <button disabled id="missingTechBtn" onclick="addMissingTechnique()" class="btn btn-primary">Add Technique</button> <br><br>
-        <button disabled id="iocSwitch" onclick="toggleIoc()" class="btn btn-primary">
-          <i class="fas fa-shield-alt"></i>&nbsp;Toggle Indicator<br>of Compromise
-        </button> <br><br>
+        <button disabled id="missingTechBtn" onclick="addMissingTechnique()" class="btn btn-primary">Add Technique</button>
+        <hr>
+      {% endif %}
+      <span><i class="fas fa-shield-alt"></i>&nbsp;<b>Indicator of Compromise (IoC)</b></span> <br><br>
+      <span><b>Warning</b>: Please refrain from interacting with IoCs. Thread does not advocate for any
+        groups/activities suggested from sentence-IoC text.
+      </span> <br><br>
+      <span>Saved As:</span>
+      <textarea id="iocSavedBox" class="ioc-box form-control" rows="2" cols="50" {% if completed %}readonly{% endif %}></textarea>
+      {% if not completed %}
+        <button disabled id="iocUpdateBtn" onclick="updateIoC()" class="btn btn-primary me-2">Update IoC Text</button>
+        <button disabled id="iocSwitch" onclick="toggleIoc()" class="btn btn-primary">Toggle as IoC</button> <br><br>
+        <span>Sentence-IoC Suggestion</span>
+        <textarea id="iocSuggestionBox" class="ioc-box form-control" rows="2" cols="50"></textarea>
+        <button disabled id="iocSuggestionBtn" onclick="suggestIoC()" class="btn btn-primary">Suggest Sentence-IoC</button>
+        <hr>
         <button disabled id="delSenBtn" onclick="remove_sentence()" class="btn btn-danger">Remove Selected</button> <br><br>
         <button onclick="finish_analysis('{{title_quoted}}')" class="btn btn-success">Finish Analysis</button> <br><br>
       {% endif %}

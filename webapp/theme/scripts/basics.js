@@ -13,6 +13,10 @@ var clickedClass = "report-sentence-clicked";
 var delSenBtn = "#delSenBtn";
 var missingTechBtn = "#missingTechBtn";
 const iocSwitchSelector = "#iocSwitch";
+const iocSavedBoxId = "#iocSavedBox";
+const iocSuggestionBoxId = "#iocSuggestionBox";
+const iocSuggestionBtnId = "#iocSuggestionBtn";
+const iocUpdateBtnId = "#iocUpdateBtn";
 var senTTPForm = "#ttpDatesForm";
 // The URL for the rest requests
 var restUrl = $("script#basicsScript").data("rest-url");
@@ -148,6 +152,8 @@ function remove_sentence() {
       $(missingTechBtn).prop("disabled", true);
       $(delSenBtn).prop("disabled", true);
       $(iocSwitchSelector).prop("disabled", true);
+      $(iocSuggestionBtnId).prop("disabled", true);
+      $(iocUpdateBtnId).prop("disabled", true);
       $(`#ioc-icon-${sentence_id}`).remove();
       $(senTTPForm).prop("hidden", true);
       // Reset any sentence-techniques lists
@@ -360,6 +366,8 @@ function updateSentenceContext(data) {
   // Allow sentence-action buttons
   $(delSenBtn).prop("disabled", !enableSenButtons);
   $(iocSwitchSelector).prop("disabled", !enableSenButtons);
+  $(iocSuggestionBtnId).prop("disabled", !enableSenButtons);
+  $(iocUpdateBtnId).prop("disabled", !enableSenButtons);
 }
 
 function updateConfirmedContext(data) {
@@ -769,6 +777,14 @@ function scrollAndSelectSentence(sentenceId) {
   }
 }
 
+function suggestIoC() {
+  if (sentence_id) {
+    restRequest("POST", {"index": "suggest_indicator_of_compromise", "sentence_id": sentence_id}, function(data) {
+      $(iocSuggestionBoxId).val(data);
+    });
+  }
+}
+
 function toggleIoc() {
   if (sentence_id) {
     if ($(`#elmt${sentence_id}`).attr("data-ioc") === "true") {
@@ -793,7 +809,7 @@ $(document).ready(function() {
   $(window).resize(function() {
     autoHeight();
   });
-  addDeleteListener();
+  // addDeleteListener(); inputs are now interacted with when a sentence is selected
   isCompleted = $("script#reportDetails").data("completed");
   importFont();
   initialiseCountrySelects();

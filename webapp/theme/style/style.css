@@ -422,3 +422,8 @@ table#confirmedSentenceInfo td {
   padding-right: 0.2rem;
   cursor: help;
 }
+
+.ioc-box {
+  margin: 1rem;
+  margin-left: unset;
+}
