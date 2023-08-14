@@ -356,11 +356,12 @@ class TestReports(ThreadAppTest):
         resp_context = await self.client.post('/rest', json=dict(index='sentence_context', sentence_id=sen_id))
         resp_attacks = await self.client.post('/rest', json=dict(index='confirmed_attacks', sentence_id=sen_id))
         resp_context_json = await resp_context.json()
+        resp_all_techniques = resp_context_json['techniques']
         resp_attacks_json = await resp_attacks.json()
         # This sentence has 1 unconfirmed attack; check results reflect this
         self.assertTrue(resp_context.status < 300, msg='Obtaining sentence data resulted in a non-200 response.')
         self.assertTrue(resp_attacks.status < 300, msg='Obtaining sentence attack-data resulted in a non-200 response.')
-        self.assertEqual(resp_context_json[0].get('attack_uid'), 'd99999',
+        self.assertEqual(resp_all_techniques[0].get('attack_uid'), 'd99999',
                          msg='Predicted attack not associated with sentence as expected.')
         self.assertEqual(len(resp_attacks_json), 0, msg='Confirmed attacks associated with sentence unexpectedly.')
         # Confirm attack
@@ -369,10 +370,11 @@ class TestReports(ThreadAppTest):
         resp_context = await self.client.post('/rest', json=dict(index='sentence_context', sentence_id=sen_id))
         resp_attacks = await self.client.post('/rest', json=dict(index='confirmed_attacks', sentence_id=sen_id))
         resp_context_json = await resp_context.json()
+        resp_all_techniques = resp_context_json['techniques']
         resp_attacks_json = await resp_attacks.json()
         self.assertTrue(resp_context.status < 300, msg='Obtaining sentence data resulted in a non-200 response.')
         self.assertTrue(resp_attacks.status < 300, msg='Obtaining sentence attack-data resulted in a non-200 response.')
-        self.assertEqual(resp_context_json[0].get('attack_uid'), 'd99999',
+        self.assertEqual(resp_all_techniques[0].get('attack_uid'), 'd99999',
                          msg='Confirmed attack not associated with sentence as expected.')
         self.assertTrue(len(resp_attacks_json) > 0, msg='No confirmed attacks appearing for sentence.')
         self.assertEqual(resp_attacks_json[0].get(UID_KEY), 'd99999',
