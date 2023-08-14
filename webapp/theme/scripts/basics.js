@@ -38,7 +38,7 @@ addLiHTML += "<span class='fa-solid fa-circle-plus glyphicon glyphicon-plus-sign
 var remLiHTML = "<a class= 'list-delta' data-bs-toggle='tooltip' data-bs-placement='top' title='Pending: This has been unselected.'>";
 remLiHTML += "<span class='fas fa-trash-alt glyphicon glyphicon-trash text-danger'></span></a>";
 
-function restRequest(type, data, callback=null, url=restUrl) {
+function restRequest(type, data, callback=null, url=restUrl, onError=null) {
   $.ajax({
     url: url,
     type: type,
@@ -55,6 +55,9 @@ function restRequest(type, data, callback=null, url=restUrl) {
     error: function (xhr, ajaxOptions, thrownError) {
       if (xhr?.responseJSON?.alert_user && xhr?.responseJSON?.error) {
         alert(xhr.responseJSON.error);
+      }
+      if (onError instanceof Function) {
+        onError();
       }
    }
   });
@@ -311,7 +314,7 @@ function sentenceContext(data) {
   restRequest("POST", {"index":"confirmed_attacks", "sentence_id": data}, updateConfirmedContext);
 }
 
-function updateSentenceContext(data) {
+function updateSentenceContext(responseData) {
   // If we previously highlighted a sentence before and this is a new sentence, remove the previous highlighting
   if (tempHighlighted !== undefined && tempHighlighted !== sentence_id) {
     $("#elmt" + tempHighlighted).removeClass(highlightClass);
@@ -320,11 +323,15 @@ function updateSentenceContext(data) {
   }
   // Regardless of what is clicked, remove any previous clicked-styling for report sentences
   $(".report-sentence").removeClass(clickedClass);
-  // Reset any 'Techniques Found' list
+  // Reset any sentence data
   $("#tableSentenceInfo tr").remove();
+  $(iocSuggestionBoxSelector).val("");
+  $("#" + iocSavedBoxId).val("");
   // Flag we will enable any disabled sentence buttons
   enableSenButtons = true;
   // If this sentence has attacks, display the attacks as normal
+  data = responseData.techniques || [];
+  iocText = responseData.ioc || "";
   if (data && data.length > 0) {
     // Highlight to the user this sentence has been clicked
     $("#elmt" + sentence_id).addClass(clickedClass);
@@ -368,6 +375,9 @@ function updateSentenceContext(data) {
   $(iocSwitchSelector).prop("disabled", !enableSenButtons);
   $(iocSuggestionBtnSelector).prop("disabled", !enableSenButtons);
   $(iocUpdateBtnSelector).prop("disabled", !enableSenButtons);
+  if (enableSenButtons && iocText) {
+    $("#" + iocSavedBoxId).val(iocText);
+  }
 }
 
 function updateConfirmedContext(data) {
@@ -794,6 +804,8 @@ function addIoC(updating=false) {
         $(`#elmt${sentence_id}`).attr("data-ioc", "true");
         $(`#ioc-icon-${sentence_id}`).show();
         $(iocSuggestionBoxSelector).val("");
+      }, restUrl, onError=function() {
+        $("#" + iocSavedBoxId).val("");
       }
     );
   }

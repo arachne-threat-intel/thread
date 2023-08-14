@@ -513,7 +513,10 @@ class RestService:
 
     async def sentence_context(self, request, criteria=None):
         sen_id = await self.check_and_get_sentence_id(request, request_data=criteria)
-        return await self.data_svc.get_active_sentence_hits(sentence_id=sen_id)
+        ioc = await self.dao.get('report_sentence_indicators_of_compromise', dict(sentence_id=sen_id))
+        ioc = '' if not ioc else ioc[0]['refanged_sentence_text']
+        techniques = await self.data_svc.get_active_sentence_hits(sentence_id=sen_id)
+        return dict(techniques=techniques, ioc=ioc)
 
     async def confirmed_attacks(self, request, criteria=None):
         sen_id = await self.check_and_get_sentence_id(request, request_data=criteria)
