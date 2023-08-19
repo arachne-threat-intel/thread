@@ -28,7 +28,7 @@ Community Collaboration: Thread is being built into an open-source community com
 * [Required resources](#required-resources)
 * [How do I contribute?](#how-do-i-contribute)
 * [Contact us](#contact-us)
-* [Understanding MITRE ATT&CK®, TTPs and how to leverage them](#understanding-mitre-att&ck-ttps-and-how-to-leverage-them)
+* [Understanding MITRE ATT&CK, TTPs and how to leverage them](#understanding-mitre-att&ck-ttps-and-how-to-leverage-them)
 * [Notice](#notice)
 
 # Thread in simple terms
@@ -130,7 +130,7 @@ If you have found any other bugs with Thread, please feel free to contact us or 
 
 If you have any questions or comments about Thread, please feel free to contact us via the email address above.
 
-## Understanding MITRE ATT&CK®, TTPs and how to leverage them
+## Understanding MITRE ATT&CK, TTPs and how to leverage them
 We've mentioned MITRE ATT&CK, TTPs and CTI mapping a great deal, but why are these things even relevant to cybersecurity? What does CTI mapping actually yield?
 
 ### MITRE ATT&CK®:
