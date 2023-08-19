@@ -1,6 +1,22 @@
 <!-- NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital -->
 
-# Thread
+# Welcome to Thread - Your Path to Precise Threat Intelligence
+Hello and welcome to Thread, the innovative open-source project that's changing threat intelligence mapping! We're thrilled that you've dropped by to learn more about what Thread has to offer and how you can get involved in this exciting community.
+
+Behind Thread is a passionate team of cybersecurity enthusiasts who believe in the power of collaborative, open-source solutions. Our aim is to empower individuals, security professionals, and organisations with streamlined threat intelligence processes, making the digital world a safer place for all.
+
+Whether you're here to explore Thread as a user, potential contributor, or simply out of curiosity, we extend a warm welcome. Your interest and involvement mean a lot to us, and we can't wait to embark on this cybersecurity journey together. So, let's dive in and discover how Thread can revolutionize the way we approach threat intelligence!
+
+# Efficient, Empowering, and Community-Driven
+Thread isn't just another cybersecurity tool; it redefines how we approach threat intelligence mapping. We've distilled the essence of Thread's unique value proposition into an experience that's efficient, empowering, and community-driven.
+
+Efficiency Unleashed: Bid farewell to tedious, manual processes that consume hours of your valuable time. Thread's intelligent algorithms work tirelessly to automate the mapping of tactics, techniques, and procedures (TTPs). What used to be a painstaking endeavor now takes mere minutes. With Thread, you'll liberate yourself from data wrangling and reclaim your focus for strategic insights.
+
+Empowerment in Your Hands: Thread is all about putting the power of threat intelligence back where it belongs – in your hands. Take control of your cybersecurity defenses by refining and verifying threat data. Our platform ensures that your decisions are based on the most accurate and up-to-date insights available. Say goodbye to relying on outdated or inaccurate information; with Thread, you're in control.
+
+Community Collaboration: Thread is more than a tool; it is being built into an open-source community committed to advancing the field of threat intelligence. By choosing Thread, you become part of a network of cybersecurity experts who share your passion for creating a safer digital world. Together, we forge a path towards a future where threat intelligence is agile, collaborative, and precise.
+
+# Thread in simple terms
 Thread is a tool for analysts to map finished reports and articles to [MITRE ATT&CK<sup>®</sup>](https://attack.mitre.org).
 
 Thread was originally forked from TRAM when it was in its beta phase, and we wanted to build upon it. Therefore, further changes to the original TRAM repo may not be incorporated into Thread as the codebases have largely diverged. 
@@ -12,6 +28,8 @@ Thread was originally forked from TRAM when it was in its beta phase, and we wan
 * [Shared vs. Local](#shared-vs-local)
 * [Analysing a Report](#analysing-a-report)
 * [Exporting a Report](#exporting-a-report)
+* [Project Description](#project-description)
+* [Required Resources](#required-resources)
 * [How do I contribute?](#how-do-i-contribute)
 * [Contact Us](#contact-us)
 * [Notice](#notice)
@@ -79,6 +97,26 @@ If you have made changes you are not happy with and cannot undo easily (e.g. del
 
 ## Exporting a Report
 Once you have reviewed the entire report, Thread’s results can be exported as a PDF by clicking the **Export PDF** button on the top centre of the page. This will create a PDF containing a raw text version of the report, and a table with the ATT&CK technique and its corresponding sentence. This can be done for all reports out of the queue but those not in the **Completed** column will be considered draft reports.
+
+## Project Description
+Thread is a project that brings together a diverse and passionate community of cybersecurity experts to start to revolutionise the world of threat intelligence. At its core, Thread aims to simplify and expedite the process of threat intelligence mapping, a crucial component of effective cybersecurity. By collaborating with this vibrant community, we're on a mission to empower not only cybersecurity professionals but also organisations and analysts across the globe. Our primary goal is to provide them with the tools they need to swiftly and accurately map tactics, techniques, and procedures (TTPs) to the MITRE ATT&CK framework.
+
+This initiative doesn't stop at mere efficiency; it's about fundamentally enhancing threat detection and fortifying cybersecurity defenses. We recognise that time-consuming manual mapping has long been a significant hurdle in the world of cybersecurity. By harnessing the collective expertise of our community, we're determined to tackle this issue head-on. Our commitment to working open is a testament to our belief in the power of collaboration and giving back to the open-source community.
+
+Arachne Digital's ethos revolves around supporting the very projects we utilise. We've pledged to contribute in various ways, from sharing a portion of our profits to dedicating developer resources for bug fixes and maintenance. Moreover, when we encounter abandoned projects, we will attempt to step in, fork, and maintain these repositories. Our mission is clear: to ensure the longevity of valuable open-source resources and foster a thriving ecosystem of collaborative cybersecurity research. Thread is more than just a tool; it's a catalyst for change in the world of cybersecurity, and we invite everyone, regardless of their background, to join us on this exciting journey of discovery and innovation. Together, we can strengthen our collective defense against the ever-evolving landscape of cyber threats.
+
+## Required Resources
+Creating and maintaining Thread, your go-to platform for threat intelligence mapping, requires a diverse set of resources. From design and development to community building and infrastructure, here's what powers Thread:
+
+Design: Craft an intuitive user experience with UI/UX design and establish Thread's unique identity through branding and visual elements.
+
+Development: Skilled developers, machine learning experts, data managers, cybersecurity specialists, and quality assurance testers bring Thread's software to life, ensuring it's robust and secure. CI/CD pipelines keep everything running smoothly.
+
+Community Building: Our community thrives with dedicated managers, vigilant moderators, and technical writers who create comprehensive documentation and tutorials for Thread's users and contributors.
+
+Infrastructure and Hardware: Server infrastructure, data backup, scalability measures, and cloud resources guarantee a seamless experience for Thread's users.
+
+Additional Resources: Thread also commits to legal compliance, marketing, outreach, community events, maintenance, and support. Plus, we actively contribute to other open-source projects, fostering collaboration across the ecosystem.
 
 ## How do I contribute?
 We welcome your help in improving Thread.
