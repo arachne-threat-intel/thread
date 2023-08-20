@@ -7,11 +7,19 @@ Thread is an open-source initiative dedicated to enhancing cyber threat intellig
 
 ### Milestone 1: Enhanced IoC Capture 
 1. Conduct customer feedback analysis to identify IoC capture improvement areas.
-Objective: To align our IoC capture capabilities with the specific needs of our user community. As part of the feedback we received, there were IoCs being captured that needed further parsing, and there was also private, multicast and link-local addresses being captured as they are included in the reports Thread is consuming. This highlights the need for transparency in CTI, but also means that Thread needs to improve capabilities to improve the quality of IoCs.
+
+- Objective: To align our IoC capture capabilities with the specific needs of our user community.
+- Notes: As part of the feedback we received, there were IoCs being captured that needed further parsing, and there was also private, multicast and link-local addresses being captured as they are included in the reports Thread is consuming. This highlights the need for transparency in CTI, but also means that Thread needs to improve capabilities to improve the quality of IoCs.
+
 2. Develop and implement IoC capture improvements based on feedback.
-Objective: Enhance Thread's ability to capture and catalog Indicators of Compromise (IoCs) from analyzed reports. This is currently being worked on.
+
+- Objective: Enhance Thread's ability to capture and catalog Indicators of Compromise (IoCs) from analyzed reports.
+- Notes: This is currently being worked on.
+  
 3. Run a comprehensive testing and validation phase for the IoC capture enhancements.
-Objective: Ensure the reliability and accuracy of the IoC capture feature. We have performed user acceptance testing of some functionality changes and will continue to do so as the IoC work is refined.
+
+- Objective: Ensure the reliability and accuracy of the IoC capture feature.
+- Notes: We have performed user acceptance testing of some functionality changes and will continue to do so as the IoC work is refined.
 
 Milestone 2: UX Design Optimization (Duration: 4 months)
 
