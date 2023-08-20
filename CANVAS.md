@@ -4,7 +4,7 @@
 * [Problem](#problem)
 * [Solution](#solution)
 * [Key metrics](#key-metrics)
-* [Resources required](#Resources required)
+* [Resources required](#resources-required)
 * [Contributor profiles](#contributor-profiles)
 * [User profiles](#user-profiles)
 * [Contributor channels](#contributor-channels)
