@@ -5,7 +5,7 @@ Thread is an open-source initiative dedicated to enhancing cyber threat intellig
 
 ## Milestones:
 
-### Milestone 1: Enhanced IoC Capture 
+### Milestone 1: Enhanced IoC capture 
 1. Conduct customer feedback analysis to identify IoC capture improvement areas.
 
 - Objective: To align our IoC capture capabilities with the specific needs of our user community.
@@ -21,34 +21,49 @@ Thread is an open-source initiative dedicated to enhancing cyber threat intellig
 - Objective: Ensure the reliability and accuracy of the IoC capture feature.
 - Notes: We have performed user acceptance testing of some functionality changes and will continue to do so as the IoC work is refined.
 
-Milestone 2: UX Design Optimization (Duration: 4 months)
+### Milestone 2: UX design optimisation
+1. Conduct a thorough UX audit of the current Thread interface.
 
-    Task 1: Conduct a thorough UX audit of the current Thread interface.
-        Objective: Identify pain points and areas of improvement in the user experience.
-    Task 2: Collaborate with UI/UX designers to revamp the Thread interface for improved usability.
-        Objective: Streamline the user interface to simplify navigation and user interactions.
-    Task 3: Implement user testing to gather feedback on the redesigned UX.
-        Objective: Validate the effectiveness of the UX improvements based on user feedback.
-    Task 4: Continuously iterate on the design based on user input and further testing.
-        Objective: Ensure that the Thread interface aligns with user preferences and needs.
+- Objective: Identify pain points and areas of improvement in the user experience.
 
-Milestone 3: Documentation Update (Duration: 2 months)
+2. Collaborate with UI/UX designers to revamp the Thread interface for improved usability.
 
-    Task 1: Review and assess existing documentation to identify gaps and outdated information.
-        Objective: Ensure that Thread users have access to accurate and up-to-date resources.
-    Task 2: Revise and expand documentation to encompass recent functionality changes.
-        Objective: Provide comprehensive guidance on Thread's enhanced capabilities.
-    Task 3: Create new tutorials and guides to assist users in maximizing Thread's potential.
-        Objective: Empower users to leverage Thread effectively for their threat intelligence needs.
+- Objective: Streamline the user interface to simplify navigation and user interactions.
 
-Milestone 4: Performance Optimization (Duration: Ongoing)
+3. Implement user testing to gather feedback on the redesigned UX.
 
-    Task 1: Investigate and diagnose performance bottlenecks causing Thread to hang during concurrent operations.
-        Objective: Enhance Thread's overall stability and responsiveness.
-    Task 2: Implement optimizations to address identified performance issues.
-        Objective: Ensure that Thread operates smoothly, even when handling multiple tasks concurrently.
-    Task 3: Continuous monitoring and fine-tuning to maintain optimal performance.
-        Objective: Sustain Thread's responsiveness and reliability as usage scales.
+- Objective: Validate the effectiveness of the UX improvements based on user feedback.
 
-Get Involved:
-Contributors, developers, UI/UX designers, cybersecurity experts, and documentation writers are welcome to join the Thread project. If you're passionate about improving threat intelligence mapping, enhancing user experience, or strengthening cybersecurity defenses, please refer to our Contributor Guidelines to get started.
+4. Continuously iterate on the design based on user input and further testing.
+
+- Objective: Ensure that the Thread interface aligns with user preferences and needs.
+
+### Milestone 3: Documentation update 
+1. Review and assess existing documentation to identify gaps and outdated information.
+
+- Objective: Ensure that Thread users have access to accurate and up-to-date resources.
+
+2. Revise and expand documentation to encompass recent functionality changes.
+
+- Objective: Provide comprehensive guidance on Thread's enhanced capabilities.
+
+3. Create new tutorials and guides to assist users in maximising Thread's potential.
+
+- Objective: Empower users to leverage Thread effectively for their threat intelligence needs.
+- Notes: This might be covered in the second task. Once the documentation review is completed it can be determined if further guides and tutorials are needed.
+
+### Milestone 4: Performance optimisation
+1. Investigate and diagnose performance bottlenecks causing Thread to hang during concurrent operations.
+
+- Objective: Enhance Thread's overall stability and responsiveness.
+
+2. Implement optimisations to address identified performance issues.
+
+- Objective: Ensure that Thread operates smoothly, even when handling multiple tasks concurrently.
+
+3. Continuous monitoring and fine-tuning to maintain optimal performance.
+
+- Objective: Sustain Thread's responsiveness and reliability as usage scales.
+
+### Get Involved
+Anyone is welcome to join the Thread project. If you're passionate about improving CTI mapping, enhancing user experience, or strengthening cybersecurity defenses, please refer to our [Contributor Guidelines](https://github.com/arachne-threat-intel/thread/blob/main/CONTRIBUTING.md) to get started.
