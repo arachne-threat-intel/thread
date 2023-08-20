@@ -184,7 +184,7 @@ The channels for gaining users.
 ## Unique value proposition for Thread
 - Section: Community
 
-Thread, your path to precise cyber threat intelligence (CTI).
+Thread, your path to efficient, empowering and community driven cyber threat intelligence (CTI).
 
 Thread revolutionises CTI mapping by automating the laborious task of linking cybersecurity reports and articles to MITRE ATT&CK®. Say goodbye to manual, time-consuming processes. With Thread, you gain the power to swiftly and accurately identify tactics, techniques, and procedures (TTPs) buried within vast volumes of threat data.
 
