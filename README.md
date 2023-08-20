@@ -1,6 +1,6 @@
 <!-- NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital -->
 
-# Welcome to Thread - your path to precise threat intelligence
+# Welcome to the Thread project!
 Hello and welcome to Thread, the innovative open-source project that's changing cyber threat intelligence (CTI) mapping! We're thrilled that you've dropped by to learn more about what Thread has to offer and how you can get involved in this exciting community.
 
 Behind Thread is a passionate team of cybersecurity enthusiasts who believe in the power of collaborative, open-source solutions. Our aim is to empower individuals, security professionals, and organisations with streamlined threat intelligence processes, making the digital world a safer place for all.
