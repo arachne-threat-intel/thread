@@ -191,7 +191,7 @@ The channels for gaining users.
 
 Thread, your path to efficient, empowering and community driven cyber threat intelligence (CTI).
 
-Thread revolutionises CTI mapping by automating the laborious task of linking cybersecurity reports and articles to MITRE ATT&CK®. Say goodbye to manual, time-consuming processes. With Thread, you gain the power to swiftly and accurately identify tactics, techniques, and procedures (TTPs) buried within vast volumes of threat data.
+Thread automates the laborious task of linking cybersecurity reports and articles to MITRE ATT&CK®. Say goodbye to manual, time-consuming processes. With Thread, you gain the power to swiftly and accurately identify tactics, techniques, and procedures (TTPs) buried within vast volumes of threat data.
 
 Experience the Thread advantage:
 - Efficiency unleashed: Thread's intelligent algorithms slash mapping time, transforming hours of work into minutes. Focus on strategic insights, not data wrangling.
@@ -199,3 +199,5 @@ Experience the Thread advantage:
 - Community collaboration: Join a thriving open source community committed to advancing CTI. With Thread, you're part of a network of cybersecurity experts dedicated to a safer digital world.
 
 Choose Thread and journey towards a future where CTI is agile, collaborative, and precise. Make every cybersecurity decision with confidence.
+
+Thread streamlines CTI, making it efficient, empowering and community led. Know who your threats are, what they do, when they are targeting you and how to stop them. Focus your security spend on relevant controls and empower your defenders to find malicious behaviour. 
