@@ -26,6 +26,7 @@ Community Collaboration: Thread is being built into an open-source community com
 * [Exporting a report](#exporting-a-report)
 * [Project description](#project-description)
 * [Required resources](#required-resources)
+* [Code of Conduct](#code-of-conduct)
 * [How do I contribute?](#how-do-i-contribute)
 * [Contact us](#contact-us)
 * [Understanding MITRE ATT&CK, TTPs and how to leverage them](#understanding-mitre-att&ck-ttps-and-how-to-leverage-them)
@@ -116,10 +117,13 @@ Creating and maintaining Thread, your go-to platform for CTI mapping, requires a
 - Infrastructure and Hardware: Server infrastructure, data backup, scalability measures, and cloud resources guarantee a seamless experience for Thread's users.
 - Additional Resources: Thread also commits to legal compliance, marketing, outreach, community events, maintenance, and support. Plus, we actively contribute to other open-source projects, fostering collaboration across the ecosystem.
 
+## Code of Conduct
+The Thread community has adopted the Contributor Covenant. Before contributing, please read the [code of conduct](CODE_OF_CONDUCT.md). By contributing to the Thread community you agree to the code of conduct.
+
 ## How do I contribute?
 We welcome your help in improving Thread.
 
-Read our [contribution guidelines](CONTRIBUTING.md) for further information. There's also a Developer Certificate of Origin that you'll need to sign off on.
+Read our [contribution guidelines](CONTRIBUTING.md) for further information. 
 
 ## Contact us
 You can contact us by emailing us at contact[at]arachne[dot]digital.
