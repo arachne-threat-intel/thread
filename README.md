@@ -7,6 +7,11 @@ Behind Thread is a passionate team of cybersecurity enthusiasts who believe in t
 
 Whether you're here to explore Thread as a user, potential contributor, or simply out of curiosity, we extend a warm welcome. Your interest and involvement mean a lot to us, and we can't wait to embark on this cybersecurity journey together. So, let's dive in and discover how Thread can revolutionise the way we approach CTI!
 
+## The vision for Thread and the Thread community
+We are collaborating with cybersecurity experts an open source enthusiasts to enhance Thread, an open-source threat intelligence mapping platform. Our mission is to empower organizations and analysts, enabling them to efficiently map tactics, techniques, and procedures (TTPs) to MITRE ATT&CK, leading to improved threat detection capabilities.
+
+We are working open because Arachne Digital is firmly committed to the principles of open source. We actively support the open-source projects we rely on, whether by contributing a portion of profits or dedicating developer resources to address bugs and provide ongoing maintenance. Our dedication to the open-source ethos extends to situations where projects have been abandoned; in such cases, we take the initiative to fork and maintain repositories, ensuring that valuable open-source resources continue to thrive and benefit the community.
+
 * [Thread in simple terms](#thread-in-simple-terms)
 * [Why Thread?](#why-thread)
 * [Website](#website)
