@@ -1,15 +1,27 @@
 <!-- NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital -->
 
 # Contribute
-You can help contribute to Thread! Below are the contribution guidelines for the original repo Thread is forked from, TRAM. We have no major differences for these guidelines, so they have remained the same:
+Thank you for wanting to contribute to Thread! 
 
-## Submission Guidelines
+## Project Mission & Summary:
+Thread is an open-source initiative dedicated to enhancing cyber threat intelligence (CTI) mapping by automating the process of linking cybersecurity reports and articles to MITRE ATT&CK®. Our mission is to empower security professionals, organizations, and analysts by providing efficient, empowering, and community driven CTI capabilities.
+
+## Code of Conduct
+The Thread community has adopted the Contributor Covenant. Before contributing, please read the [code of conduct](CODE_OF_CONDUCT.md). By contributing to the Thread community you agree to the code of conduct.
+
+## Resources
+Please see the [README](README.md) for high level information about Thread, and the [ROADMAP](ROADMAP.md) to get an understanding of where the project is going.
+
+## Communication channels
+Coming Soon!
+
+## Submission guidelines
 
 You are welcome to comment on issues, open new issues, and open pull requests.
 
 Also, if you contribute any source code, we need you to agree to the following Developer's Certificate of Origin below.
 
-
+Below are the contribution guidelines for the original repo Thread is forked from, TRAM. We have no major differences for these guidelines, so they have remained the same:
 ### Developer's Certificate of Origin v1.1
 
 ```
