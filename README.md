@@ -1,22 +1,14 @@
 <!-- NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital -->
 
 # Welcome to the Thread project!
-Hello and welcome to Thread, the innovative open-source project that's changing cyber threat intelligence (CTI) mapping! We're thrilled that you've dropped by to learn more about what Thread has to offer and how you can get involved in this exciting community.
+Hello and welcome to Thread, the open-source project that's changing cyber threat intelligence (CTI) mapping! We're thrilled that you've dropped by to learn more about what Thread has to offer and how you can get involved in this exciting community.
 
 Behind Thread is a passionate team of cybersecurity enthusiasts who believe in the power of collaborative, open-source solutions. Our aim is to empower individuals, security professionals, and organisations with streamlined threat intelligence processes, making the digital world a safer place for all.
 
 Whether you're here to explore Thread as a user, potential contributor, or simply out of curiosity, we extend a warm welcome. Your interest and involvement mean a lot to us, and we can't wait to embark on this cybersecurity journey together. So, let's dive in and discover how Thread can revolutionise the way we approach CTI!
 
-# Efficient, empowering, and community-driven
-Thread isn't just another cybersecurity tool; it redefines how we approach CTI mapping. We've distilled the essence of Thread's unique value proposition into an experience that's efficient, empowering, and community-driven.
-
-Efficiency Unleashed: Bid farewell to tedious, manual processes of mapping reports to MITRE ATT&CK tactics, techniques and procedures (TTPs) that consume hours of your valuable time. Thread's intelligent algorithms work tirelessly to automate the mapping of TTPs. What used to be a painstaking endeavor now takes mere minutes. With Thread, you'll liberate yourself from data wrangling and reclaim your focus for strategic insights.
-
-Empowerment in Your Hands: Thread is all about putting the power of threat intelligence back where it belongs – in your hands. Take control of your security posture by refining and verifying threat data. Our platform ensures that your decisions are based on data that you know is relevant to you. Say goodbye to relying on outdated or inaccurate information; with Thread, you're in control.
-
-Community Collaboration: Thread is being built into an open-source community committed to advancing the field of CTI. By choosing Thread, you become part of a network of cybersecurity experts who share your passion for creating a safer digital world. Together, we forge a path towards a future where CTI is agile, collaborative, and precise.
-
 * [Thread in simple terms](#thread-in-simple-terms)
+* [Why Thread?](#why-thread)
 * [Website](#website)
 * [Requirements](#requirements)
 * [Installation](#installation)
@@ -32,10 +24,19 @@ Community Collaboration: Thread is being built into an open-source community com
 * [Understanding MITRE ATT&CK, TTPs and how to leverage them](#understanding-mitre-att&ck-ttps-and-how-to-leverage-them)
 * [Notice](#notice)
 
-# Thread in simple terms
-Thread is a tool for analysts to map finished reports and articles to [MITRE ATT&CK<sup>®</sup>](https://attack.mitre.org).
+## Thread in simple terms
+Thread is a tool for analysts to map finished reports and articles about cyber attacks to [MITRE ATT&CK<sup>®</sup>](https://attack.mitre.org).
 
 Thread was originally forked from TRAM when it was in its beta phase, and we wanted to build upon it. Therefore, further changes to the original TRAM repo may not be incorporated into Thread as the codebases have largely diverged. 
+
+## Why Thread?
+Thread isn't just another cybersecurity tool; it redefines how we approach CTI mapping. We've distilled the essence of Thread's unique value proposition into an experience that's efficient, empowering, and community-driven.
+
+Efficiency Unleashed: Bid farewell to tedious, manual processes of mapping reports to MITRE ATT&CK tactics, techniques and procedures (TTPs) that consume hours of your valuable time. Thread's intelligent algorithms work tirelessly to automate the mapping of TTPs. What used to be a painstaking endeavor now takes mere minutes. With Thread, you'll liberate yourself from data wrangling and reclaim your focus for strategic insights.
+
+Empowerment in Your Hands: Thread is all about putting the power of threat intelligence back where it belongs – in your hands. Take control of your security posture by refining and verifying threat data. Our platform ensures that your decisions are based on data that you know is relevant to you. Say goodbye to relying on outdated or inaccurate information; with Thread, you're in control.
+
+Community Collaboration: Thread is being built into an open-source community committed to advancing the field of CTI. By choosing Thread, you become part of a network of cybersecurity experts who share your passion for creating a safer digital world. Together, we forge a path towards a future where CTI is agile, collaborative, and precise.
 
 ## Website
 If you want to use Thread right now, feel free to use the web version at https://arachne.digital/thread.
