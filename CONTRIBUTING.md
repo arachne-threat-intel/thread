@@ -7,7 +7,7 @@ Thank you for wanting to contribute to Thread!
 Thread is an open-source initiative dedicated to enhancing cyber threat intelligence (CTI) mapping by automating the process of linking cybersecurity reports and articles to MITRE ATT&CK®. Our mission is to empower security professionals, organizations, and analysts by providing efficient, empowering, and community driven CTI capabilities.
 
 ## Code of Conduct
-The Thread community has adopted the Contributor Covenant. Before contributing, please read the [code of conduct](CODE_OF_CONDUCT.md). By contributing to the Thread community you agree to the code of conduct.
+The Thread community has adopted the Contributor Covenant. Before contributing, please read the [CODE OF CONDUCT](CODE_OF_CONDUCT.md). By contributing to the Thread community you agree to the code of conduct.
 
 ## Resources
 Please see the [README](README.md) for high level information about Thread, and the [ROADMAP](ROADMAP.md) to get an understanding of where the project is going.
