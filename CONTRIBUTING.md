@@ -25,7 +25,7 @@ Coming Soon!
 * The types of contributions we would like, such as code, documentation, bug reports, feature requests. Anything else?
 * We will need guidelines for each type of contribution.
 
-## Coding stanards
+## Coding standards
 Anything to add here?
 
 ## Issue tracking
