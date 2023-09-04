@@ -24,7 +24,7 @@ Thread is an open-source initiative dedicated to enhancing cyber threat intellig
 * [Code of Conduct](#code-of-conduct)
 * [How do I contribute?](#how-do-i-contribute)
 * [Contact us](#contact-us)
-* [Understanding MITRE ATT&CK, TTPs and how to leverage them](#understanding-mitre-att&ck-ttps-and-how-to-leverage-them)
+* [Understanding MITRE ATT&CK, TTPs and how to leverage them](#understanding-mitre-attck-ttps-and-how-to-leverage-them)
 * [Notice](#notice)
 
 ## Thread in simple terms

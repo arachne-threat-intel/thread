@@ -46,7 +46,7 @@ Solutions for Vivi:
 - Stumbling Block: Integration with Existing Tools
 - Solution: Thread provides integration guides and compatibility with common SOC tools to ensure seamless adoption.
 
-### Persona 3: Beatrix, IT Administrator
+## Persona 3: Beatrix, IT Administrator
 Background: Beatrix works as an IT administrator at a medium-sized manufacturing company. Her role involves managing the organisation's network and ensuring its security. Beatrix has a strong technical background but is not a cybersecurity expert.
 
 Motivations and Needs: Beatrix needs accessible cybersecurity tools that can assist her in identifying potential threats within the organization's network. While she isn't a dedicated CTI analyst, she values solutions that can enhance security.
