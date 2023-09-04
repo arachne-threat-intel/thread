@@ -1,7 +1,7 @@
 # Thread Roadmap
 
 ## Project Mission & Summary:
-Thread is an open-source initiative dedicated to enhancing cyber threat intelligence (CTI) mapping by automating the process of linking cybersecurity reports and articles to MITRE ATT&CK®. Our mission is to empower security professionals, organizations, and analysts by providing efficient, empowering, and community driven CTI capabilities.
+Thread is an open-source initiative dedicated to enhancing cyber threat intelligence (CTI) mapping by automating the process of linking cybersecurity reports and articles to MITRE ATT&CK®. Our mission is to empower security professionals, organisations, and analysts by providing efficient, empowering, and community driven CTI capabilities.
 
 ## Milestones:
 
@@ -13,7 +13,7 @@ Thread is an open-source initiative dedicated to enhancing cyber threat intellig
 
 2. Develop and implement IoC capture improvements based on feedback.
 
-   - Objective: Enhance Thread's ability to capture and catalog Indicators of Compromise (IoCs) from analyzed reports.
+   - Objective: Enhance Thread's ability to capture and catalogue Indicators of Compromise (IoCs) from analysed reports.
    - Notes: This is currently being worked on.
   
 3. Run a comprehensive testing and validation phase for the IoC capture enhancements.
@@ -66,4 +66,4 @@ Thread is an open-source initiative dedicated to enhancing cyber threat intellig
    - Objective: Sustain Thread's responsiveness and reliability as usage scales.
 
 ### Get Involved
-Anyone is welcome to join the Thread project. If you're passionate about improving CTI mapping, enhancing user experience, or strengthening cybersecurity defenses, please refer to our [Contributor Guidelines](CONTRIBUTING.md) to get started.
+Anyone is welcome to join the Thread project. If you're passionate about improving CTI mapping, enhancing user experience, or strengthening cybersecurity defences, please refer to our [Contributor Guidelines](CONTRIBUTING.md) to get started.

@@ -1,6 +1,6 @@
 # Personas for Thread
 
-Personas are powerful tools in the realm of user-centered design, helping us understand and empathise with the diverse individuals who engage with our project. They provide us with fictional yet highly detailed representations of real-world users and contributors. By crafting personas, we can gain deep insights into the motivations, needs, and challenges that these individuals face.
+Personas are powerful tools in the realm of user-centred design, helping us understand and empathise with the diverse individuals who engage with our project. They provide us with fictional yet highly detailed representations of real-world users and contributors. By crafting personas, we can gain deep insights into the motivations, needs, and challenges that these individuals face.
 
 For Thread, personas are instrumental in shaping pathways for both contributors and users. They help us tailor our project's features, documentation, and community engagement efforts to cater to the unique requirements of various stakeholders. Personas ensure that Thread is not a one-size-fits-all solution but a versatile platform that can be embraced and enriched by a wide range of cybersecurity professionals. Ultimately, these personas empower us to create a more inclusive, supportive, and user-friendly ecosystem around Thread.
 
@@ -14,7 +14,7 @@ Pathway for Garnet:
 2. First Contact: She visits the Thread website, explores its features, and reads user testimonials.
 3. Participation: Garnet decides to use Thread as a supplementary tool for threat intelligence mapping. She downloads the software and starts analysing reports.
 4. Sustained Participation: Impressed with Thread's efficiency, Garnet becomes a regular user and engages in the community discussions to share her experiences and insights.
-5. Networked Participation: Garnet collaborates with other CTI analysts within her organization, encouraging them to incorporate Thread into their workflows.
+5. Networked Participation: Garnet collaborates with other CTI analysts within her organisation, encouraging them to incorporate Thread into their workflows.
 6. Leadership: Recognising her expertise, Garnet contributes to Thread's development by providing feedback, sharing best practices, and possibly contributing to the open source project.
 
 Solutions for Garnet:
@@ -25,7 +25,7 @@ Solutions for Garnet:
 - Stumbling Block: Integration Challenges
 - Solution: Thread provides integration guides and support for seamlessly incorporating its capabilities into Garnet's existing threat intelligence tools and systems.
 
-## Persona 2: Vivi, Security Operations Center (SOC) Analyst
+## Persona 2: Vivi, Security Operations Centre (SOC) Analyst
 Background: Vivi works as a SOC analyst at a mid-sized financial institution. Although not specialised in CTI, Vivi is responsible for monitoring security alerts and responding to potential threats. A bachelor's degree in cybersecurity backs up Vivi's knowledge.
 
 Motivations and Needs: Vivi seeks efficient tools to enhance threat detection and incident response capabilities. While not a dedicated CTI analyst, Vivi understands the value of MITRE ATT&CK® and wants an accessible solution to map threat intelligence.
@@ -36,7 +36,7 @@ Pathway for Vivi:
 3. Participation: Intrigued by Thread's capabilities, Vivi downloads and installs the software to start mapping TTPs to incoming reports.
 4. Sustained Participation: Vivi integrates Thread into the SOC workflow, using it regularly to enhance threat detection capabilities and expedite incident response.
 5. Networked Participation: Vivi shares insights about Thread's value with colleagues in the SOC team, encouraging them to adopt it.
-6. Leadership: Over time, Vivi becomes a resource within the SOC team for utilizing Thread effectively and contributes to the user community with tips and advice.
+6. Leadership: Over time, Vivi becomes a resource within the SOC team for utilising Thread effectively and contributes to the user community with tips and advice.
 
 Solutions for Vivi:
 
@@ -49,7 +49,7 @@ Solutions for Vivi:
 ## Persona 3: Beatrix, IT Administrator
 Background: Beatrix works as an IT administrator at a medium-sized manufacturing company. Her role involves managing the organisation's network and ensuring its security. Beatrix has a strong technical background but is not a cybersecurity expert.
 
-Motivations and Needs: Beatrix needs accessible cybersecurity tools that can assist her in identifying potential threats within the organization's network. While she isn't a dedicated CTI analyst, she values solutions that can enhance security.
+Motivations and Needs: Beatrix needs accessible cybersecurity tools that can assist her in identifying potential threats within the organisation's network. While she isn't a dedicated CTI analyst, she values solutions that can enhance security.
 
 Pathway for Beatrix:
 1. Discovery: Beatrix stumbles upon Thread while researching cybersecurity solutions suitable for her role.

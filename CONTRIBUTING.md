@@ -4,7 +4,7 @@
 Thank you for wanting to contribute to Thread! 
 
 ## Project Mission & Summary:
-Thread is an open-source initiative dedicated to enhancing cyber threat intelligence (CTI) mapping by automating the process of linking cybersecurity reports and articles to MITRE ATT&CK®. Our mission is to empower security professionals, organizations, and analysts by providing efficient, empowering, and community driven CTI capabilities.
+Thread is an open-source initiative dedicated to enhancing cyber threat intelligence (CTI) mapping by automating the process of linking cybersecurity reports and articles to MITRE ATT&CK®. Our mission is to empower security professionals, organisations, and analysts by providing efficient, empowering, and community driven CTI capabilities.
 
 ## Code of Conduct
 The Thread community has adopted the Contributor Covenant. Before contributing, please read the [CODE OF CONDUCT](CODE_OF_CONDUCT.md). By contributing to the Thread community you agree to the code of conduct.
@@ -61,7 +61,7 @@ Thread is offered under the original TRAM licence, the [Apache License 2.0](LICE
 
 ## Recognition and Attribution
 * How will contributors be recognised and attributed for their work?
-* What contributor acknowledgment or rewards system will we put in place?
+* What contributor acknowledgement or rewards system will we put in place?
 
 ## Contact information
 How do we want to manage questions people want to ask before contributing? Do we want to have a shared mailbox that we both have access to, and can add others to if they become maintainers over time? Or do we want to handle this in a dedicated channel in our Slack or Discord (if we go with either of those)?
