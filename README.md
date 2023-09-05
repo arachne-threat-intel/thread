@@ -54,7 +54,7 @@ Start by cloning this repository.
 ```
 git clone https://github.com/arachne-threat-intel/thread.git
 ```
-From the root of this project, install the PIP requirements.
+From the root of this project, install the PIP requirements.**
 ```
 pip install -r requirements.txt
 ```
@@ -70,6 +70,12 @@ Configuration defaults can be changed [here](https://github.com/arachne-threat-i
 You are also welcome to check our test-suite via:
 ```
 python -m unittest discover tests/
+```
+
+** For package maintenance, you may find the command below useful. Please be warned this has risks such as code-breakages from an upgraded package version where this command upgraded multiple packages at once causing debugging to be difficult.
+
+```
+pip install --upgrade -r requirements.txt
 ```
 
 ## Submitting a report
