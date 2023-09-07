@@ -39,7 +39,7 @@ The top three problems Thread is trying to solve.
 The proposed solutions to the above problems.
 
 1. Efficient CTI mapping: Thread streamlines the mapping process, automating the identification of TTPs in cybersecurity reports and articles. By leveraging machine learning, Thread accelerates this task, enabling analysts to swiftly pinpoint TTPs mentioned in threat intelligence sources, thereby expediting threat detection and response.
-2. Empowering informed cybersecurity defences: Thread empowers security professionals by allowing them to conduct their own research and access up-to-date, actionable threat data. This self-reliance ensures that cybersecurity defences are built on accurate, real-time insights, addressing the limitations of opaque and potentially unreliable threat intelligence sources.
+2. Empowering informed cybersecurity defences: Thread empowers security professionals by allowing them to conduct their own research and access up-to-date, actionable threat data. This self-reliance ensures that cybersecurity defences are built on accurate, real-time insights, addressing the limitations of opaque and potentially unreliable threat intelligence sources. There is also a paid service if groups want Arachne Digital to do the research for them.
 3. Fostering collaborative open source cybersecurity: Thread actively promotes open source cybersecurity research and collaboration. As a free, open-source tool, it encourages security experts to work together, refine threat intelligence, and enhance the collective security landscape. Thread's commitment to citing original sources and facilitating knowledge sharing supports a thriving community dedicated to strengthening defences against evolving cyber threats.
 
 ## Key metrics
@@ -70,21 +70,21 @@ For fostering collaborative open source cybersecurity:
 What Thread needs to be successful. Some of these resources are supplied by Arache Digital, but contributons are also sought from the Thread community.
 
 Design:
-- UI/UX design: Expertise in user interface and user experience design to create an intuitive and user-friendly interface for Thread.
+- UI/UX design: User interface and user experience design to create an intuitive and user-friendly interface for Thread.
 - Branding and identity: Development of branding elements such as logos, icons, and visual assets to represent Thread.
 
 Development:
-- Software development: Skilled developers proficient in programming languages, frameworks, and tools required to build and maintain Thread's software components.
-- Machine learning expertise: Expertise in machine learning to develop and refine the models used for threat intelligence mapping.
+- Software development: People skilled in, or willing to learn programming languages, frameworks, and tools required to build and maintain Thread's software components.
+- Machine learning: People skilled in, or willing to learn machine learning to develop and refine the models used for threat intelligence mapping.
 - Data management: Resources to manage and maintain the data and databases used by Thread for analysis and reporting.
-- Security expertise: Cybersecurity experts to ensure the security of Thread's infrastructure and data.
-- Quality assurance: QA testers to identify and address software bugs and issues.
+- Security expertise: People skilled in, or willing to learn cybersecurity to ensure the security of Thread's infrastructure and data.
+- Quality assurance: People skilled in, or willing to learn the QA process to identify and address software bugs and issues.
 - Continuous integration/continuous deployment (CI/CD): Tools and processes to automate software testing, integration, and deployment.
 
 Community building:
-- Community managers: Individuals responsible for fostering a collaborative and engaged community around Thread.
+- Community managers: People skilled in, or willing to learn how to foster a collaborative and engaged community around Thread.
 - Community moderation: Moderators to ensure that discussions and contributions align with community guidelines.
-- Documentation and tutorials: Technical writers to create documentation, tutorials, and guides for Thread users and contributors.
+- Documentation and tutorials: People skilled in, or willing to learn how to create documentation, tutorials, and guides for Thread users and contributors.
 
 Infrastructure and hardware:
 - Server infrastructure: Hardware and cloud resources to host and run the web version of Thread's services and databases.
@@ -103,12 +103,12 @@ Other costs:
 
 The different types of contributors that the Thread community is looking for.
 
-- Software Developers: These contributors have expertise in programming languages (e.g., Python, JavaScript) and frameworks used in Thread's software development. They work on coding, implementing new features, fixing bugs, and optimising the software.
-- Machine Learning Specialists: Experts in machine learning and natural language processing (NLP) contribute to improving Thread's prediction models. They refine algorithms to enhance the accuracy of mapping tactics, techniques, and procedures (TTPs).
-- Cybersecurity Analysts: Cybersecurity professionals with a deep understanding of threat intelligence and MITRE ATT&CK® framework actively participate in Thread's community. They review and validate TTP mappings, ensuring that threat data is precise and relevant.
-- UI/UX Designers: Design experts focus on improving Thread's user interface and user experience. They enhance the platform's usability, making it more intuitive for users.
-- Quality Assurance Testers: QA testers play a crucial role in identifying and reporting software bugs and issues. They help maintain the quality and reliability of Thread's codebase.
-- Technical Writers: Technical writers create documentation, tutorials, and guides to support Thread users and contributors. They ensure that information is accessible and well-documented.
+- Software Developers: Contributors that either have expertise in, or are willing to learn programming languages (e.g., Python, JavaScript) and frameworks used in Thread's software development. They work on coding, implementing new features, fixing bugs, and optimising the software.
+- Machine Learning Specialists: Contributors that either have expertise in, or are willing to learn machine learning and natural language processing (NLP) to contribute to improving Thread's prediction models. They refine algorithms to enhance the accuracy of mapping tactics, techniques, and procedures (TTPs).
+- Cybersecurity Analysts: Contributors that either have expertise in, or are willing to learn cybersecurity with a passion for threat intelligence and the MITRE ATT&CK® framework. They review and validate TTP mappings, ensuring that threat data is precise and relevant.
+- UI/UX Designers: Contributors that either have expertise in, or are willing to learn design to improving Thread's user interface and user experience. They enhance the platform's usability, making it more intuitive for users.
+- Quality Assurance Testers: Contributors that either have expertise in, or are willing to learn the QA tester role to help identify and report software bugs and issues. They help maintain the quality and reliability of Thread's codebase.
+- Technical Writers: Contributors that either have expertise in, or are willing to learn technical writing to create documentation, tutorials, and guides to support Thread users and contributors. They ensure that information is accessible and well-documented.
 
 Contribution types:
 - Code Contributions: Ideal for software developers, this involves writing, testing, and submitting code changes to enhance Thread's functionality. Contributions may include implementing new features, optimising algorithms, and resolving issues.
