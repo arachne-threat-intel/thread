@@ -13,7 +13,7 @@ The Thread community has adopted the Contributor Covenant. Before contributing, 
 Please see the [README](README.md) for high level information about Thread, and the [ROADMAP](ROADMAP.md) to get an understanding of where the project is going.
 
 ## Communication channels
-Coming Soon!
+Arachne Digital uses Slack to discuss everything to do with our open source projects. To get access, please email contact[at]arachne[dot]digital with a bit about who you are and how you would like to contribute.
 
 # Ideas for possible topics
 
