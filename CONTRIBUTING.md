@@ -1,6 +1,6 @@
 <!-- NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital -->
 
-# Contribute
+# Contribute to Thread
 Thank you for wanting to contribute to Thread! 
 
 ## Project Mission & Summary:
@@ -19,7 +19,6 @@ Arachne Digital uses Slack to discuss everything to do with our open source proj
 
 ## Getting started
 * Is there anything we've not already said that someone needs to know to help them get started?
-* Do we need to give them instructions on setting up their dev environment for any Thread particulars?
 
 ## Types of contributions
 * The types of contributions we would like, such as code, documentation, bug reports, feature requests. Anything else?
@@ -29,7 +28,34 @@ Arachne Digital uses Slack to discuss everything to do with our open source proj
 Anything to add here?
 
 ## Issue tracking
-* How will issues are tracked? We will use a tagging system, anything else? 
+
+### GitHub Issue Tags
+We use GitHub issue tags to categorise our issues and pull requests. Please use these tags when creating or working on issues to help streamline the work that goes into building Thread and the community.
+
+Below are the tags we use:
+* bug: If something isn't working as expected or there's a malfunction, tag the issue as a bug. Be sure to provide detailed information about the problem.
+* community: These tags are used for community building efforts, such as organising events, discussions, or initiatives aimed at fostering our community.
+* config change: Use this tag for requests to change configuration settings. Clearly describe the requested changes in the issue.
+* dependencies: Tag for pull requests that update a dependency file, such as libraries or external resources. Provide information on the dependency and the reason for the update.
+* documentation: Issues related to improvements or additions to documentation. Use this tag for discussions and tasks related to enhancing our documentation.
+* duplicate: If you find that an issue or pull request already exists for the same problem or request, tag it as a duplicate.
+* enhancement: Tag for issues related to performance improvements, code refactoring, or enhancing usability without introducing new features.
+* feature request: Tag for new feature requests to our software or services. Please provide clear details about the proposed feature.
+* good first issue: This tag identifies issues suitable for newcomers to the project. If you're new to our community, consider starting with these issues to get acquainted with contributing.
+* help wanted: Tag for issues that require extra attention or assistance from the community. If you're looking for a way to contribute, check out these issues.
+* invalid: If an issue doesn't seem valid or relevant, tag it as invalid. Provide a brief explanation of why the issue is considered invalid.
+* question: If you have questions or need further information about an issue or topic, tag it as a question. Feel free to ask and engage in discussions.
+* review: Issues or pull requests that are pending review. Use this tag when you've submitted your work, and it's awaiting feedback or approval from maintainers. Alternatively feel free to add the tag at any time you would like a maintainer to look over the issue.
+* testing: Issues related to software testing, test cases, or compatibility checks. Use this tag when discussing testing procedures or reporting test-related problems.
+* ui/ux: Issues related to user interface (UI) and user experience (UX) design. Use this tag when discussing design improvements or reporting UI/UX issues.
+* wontfix: Tag for issues that will not be addressed or worked on. Use this tag when a proposed change or feature doesn't align with project goals or priorities.
+
+If you're unsure which tag to use, feel free to ask for guidance in the comments.
+
+
+
+
+
 * How will reported bugs be handled?
 * How feature requests are handled? I'm happy for there to be a process where both of us discuss features and build them into our roadmap. We may need something like "Features will be discussed at our fortnightly maintainers catchup and we will reply to the request to let you know if it is something that will be incorporated into Thread, and if so where it fits into the roadmap." This gives people a cadence they can expect, and it means we will also need to formalise calls and put regular review calls in place.
 * What will the workflow be for submitting, reviewing, and merging contributions?
