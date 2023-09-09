@@ -131,9 +131,11 @@ Creating and maintaining Thread, your go-to platform for CTI mapping, requires a
 The Thread community has adopted the Contributor Covenant. Before contributing, please read the [code of conduct](CODE_OF_CONDUCT.md). By contributing to the Thread community you agree to the code of conduct.
 
 ## How do I contribute?
-We welcome your help in improving Thread.
+We welcome your help as part of the Thread community!
 
 Read our [contribution guidelines](CONTRIBUTING.md) for further information. 
+
+To get access to our Arachne Digital Slack channel, email contact[at]arachne[dot]digital with a bit about who you are and how you want to get involved.
 
 ## Contact us
 You can contact us by emailing us at contact[at]arachne[dot]digital.
