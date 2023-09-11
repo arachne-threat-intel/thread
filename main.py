@@ -152,7 +152,7 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
         pass
 
 
-def main(directory_prefix='', route_prefix=None, app_setup_func=None):
+def main(directory_prefix='', route_prefix=None, app_setup_func=None, db_connection_func=None):
     global data_svc, dir_prefix, ml_svc, rest_svc, web_svc, website_handler
 
     dir_prefix = directory_prefix
@@ -207,7 +207,7 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None):
     elif db_conf == DB_POSTGRESQL:
         # Import here to avoid PostgreSQL requirements needed for non-PostgreSQL use
         from threadcomponents.database.thread_postgresql import ThreadPostgreSQL
-        db_obj = ThreadPostgreSQL()
+        db_obj = ThreadPostgreSQL(db_connection_func=db_connection_func)
 
     # Initialise DAO, start services and initiate main function
     dao = Dao(engine=db_obj)
@@ -234,6 +234,6 @@ if __name__ == '__main__':
         schema = given_args.get('schema')
         # Import here to avoid PostgreSQL requirements needed for non-PostgreSQL use
         from threadcomponents.database.thread_postgresql import build_db as build_postgresql
-        build_postgresql() if schema is None else build_postgresql(schema)
+        build_postgresql(schema)
     else:
         main()

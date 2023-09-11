@@ -7,39 +7,37 @@ from .thread_db import ThreadDB
 from getpass import getpass
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
-DB_NAME = ''
-
 
 def get_db_info():
     """Function to get database information from a user (launching Thread)."""
-    global DB_NAME
-    DB_NAME = input('Enter name of DB:\n')
+    db_name = input('Enter name of DB:\n')
     username = input('Enter DB-server username:\n')
     password = getpass('Enter DB-server password:\n')
     host = input('Enter DB-server host (leave blank/skip for localhost):\n') or '127.0.0.1'
     port = input('Enter DB-server port (check with command `pg_lsclusters`):\n')
-    return username, password, host, port
+    return db_name, username, password, host, port
 
 
-def build_db(schema=os.path.join('threadcomponents', 'conf', 'schema.sql')):
+def build_db(schema):
     """The function to set up the Thread database (DB)."""
+    schema = schema or os.path.join('threadcomponents', 'conf', 'schema.sql')
     # Begin by obtaining the text from the schema file
     with open(schema) as schema_opened:
         schema_text = schema_opened.read()
     # Ask for the required DB info/credentials to proceed
-    username, password, host, port = get_db_info()
+    db_name, username, password, host, port = get_db_info()
     # print() statements are used rather than logging for this function because it is not running via the launched app
     # Create the database itself
-    _create_db(username, password, host, port)
+    _create_db(db_name, username, password, host, port)
     # Use the schema to generate a new schema for tables that need to have a copied structure
     copied_tables_schema = ThreadDB.generate_copied_tables(schema=schema_text)
     # Proceed to build both schemas
-    _create_tables(username, password, host, port, schema=schema_text)
-    _create_tables(username, password, host, port, schema=copied_tables_schema, is_partial=True)
+    _create_tables(db_name, username, password, host, port, schema=schema_text)
+    _create_tables(db_name, username, password, host, port, schema=copied_tables_schema, is_partial=True)
     print('Build scripts completed; don\'t forget to GRANT permissions to less-privileged users where applicable.')
 
 
-def _create_db(username, password, host, port):
+def _create_db(db_name, username, password, host, port):
     """The function to create the Thread DB on the server."""
     connection = None
     try:
@@ -50,18 +48,18 @@ def _create_db(username, password, host, port):
         # Create the db on the server (ignoring if it's already created)
         with connection.cursor() as cursor:
             try:
-                cursor.execute('CREATE DATABASE ' + DB_NAME)
-                print('Database %s created.' % DB_NAME)
+                cursor.execute('CREATE DATABASE ' + db_name)
+                print('Database %s created.' % db_name)
             # noinspection PyUnresolvedReferences
             except psycopg2.errors.DuplicateDatabase:
-                print('Database %s already created.' % DB_NAME)
+                print('Database %s already created.' % db_name)
     # Ensure the connection closes if anything went wrong
     finally:
         if connection:
             connection.close()
 
 
-def _create_tables(username, password, host, port, schema='', is_partial=False):
+def _create_tables(db_name, username, password, host, port, schema='', is_partial=False):
     """The function to create the tables in the Thread DB on the server."""
     # Booleans are not integers in PostgreSQL; replace any default boolean integers with True/False
     boolean_default = 'BOOLEAN DEFAULT'
@@ -99,7 +97,7 @@ def _create_tables(username, password, host, port, schema='', is_partial=False):
     connection = None
     try:
         # Set up a connection to the specified database
-        connection = psycopg2.connect(database=DB_NAME, user=username, password=password, host=host, port=port)
+        connection = psycopg2.connect(database=db_name, user=username, password=password, host=host, port=port)
         with connection:  # use 'with' here to commit transaction at the end of this block
             with connection.cursor() as cursor:
                 cursor.execute(schema)  # run the parsed schema
@@ -111,14 +109,17 @@ def _create_tables(username, password, host, port, schema='', is_partial=False):
 
 
 class ThreadPostgreSQL(ThreadDB):
-    def __init__(self):
+    db_name = None
+
+    def __init__(self, db_connection_func=None):
         # Define the PostgreSQL function to find a substring position in a string
         function_name_map = dict()
         function_name_map[self.FUNC_STR_POS] = 'STRPOS'
         function_name_map[self.FUNC_TIME_NOW] = 'NOW'
         function_name_map[self.FUNC_DATE_TO_STR] = 'TO_CHAR'
         super().__init__(mapped_functions=function_name_map)
-        self.username, self.password, self.host, self.port = get_db_info()
+        db_connection_func = db_connection_func if callable(db_connection_func) else get_db_info
+        self.db_name, self.username, self.password, self.host, self.port = db_connection_func()
 
     @property
     def query_param(self):
@@ -148,7 +149,7 @@ class ThreadPostgreSQL(ThreadDB):
         connection, return_val, success = None, None, True
         try:
             # Set up the connection
-            connection = psycopg2.connect(database=DB_NAME, user=self.username, password=self.password,
+            connection = psycopg2.connect(database=self.db_name, user=self.username, password=self.password,
                                           host=self.host, port=self.port)
             with connection:
                 with connection.cursor(cursor_factory=cursor_factory) as cursor:

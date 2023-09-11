@@ -1149,7 +1149,7 @@ class RestService:
         text = sentence_data['text']
         if not text:
             return REST_IGNORED
-        cleaned_ioc_text = self.__refang(sentence_data['text'])
+        cleaned_ioc_text = self.__refang(text)
         is_public_ip, cleaned_ioc_text = self.check_if_public_ip(cleaned_ioc_text, clean=True)
         return cleaned_ioc_text
 
