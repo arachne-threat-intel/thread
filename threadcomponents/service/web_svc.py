@@ -171,7 +171,7 @@ class WebService:
         a = newspaper.Article(url_input, keep_article_html=True)
         a.config.MAX_TEXT = None
         a.download()
-        if a.download_state == ArticleDownloadState.FAILED_RESPONSE:
+        if a.download_state != ArticleDownloadState.SUCCESS:
             return None, None
         a.parse()
         if not a.text:  # HTML may have been retrieved but if there is no text, ignore this url
