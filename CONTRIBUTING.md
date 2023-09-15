@@ -20,10 +20,6 @@ Please see the [README](README.md) for high level information about Thread, and 
 
 Arachne Digital uses Slack to discuss everything to do with our open source projects. To get access, please email contact[at]arachne[dot]digital with a bit about who you are and how you would like to contribute.
 
-## Getting started
-
-* Is there anything we've not already said that someone needs to know to help them get started?
-
 ## Types of contributions
 
 Thread welcomes contributions from individuals with diverse skills and backgrounds. You can contribute to Thread in various ways, depending on your interests. Below is a non exhuastive list of some of the different types of contributions you can make:
@@ -37,7 +33,6 @@ Thread welcomes contributions from individuals with diverse skills and backgroun
 * Review: Review code changes submitted by other contributors, provide constructive feedback, and help maintain code quality.
 * Config Changes: Propose and implement changes to configuration settings that can enhance Thread's performance and usability.
 * Dependencies: Contribute by updating and managing the project's dependencies to keep it up-to-date and secure.
-
 
 **Community Contributions**
 
