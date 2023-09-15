@@ -163,29 +163,62 @@ We value your contributions, including feature requests. Contributors who active
 
 Thank you for helping us enhance our project. Your feature requests play a vital role in shaping the future of Thread.
 
-* What will the workflow be for submitting, reviewing, and merging contributions?
+## Contribution Workflow
 
-For the tagging system, here are some suggested tags as a first pass:
-* Good first issue
-* Bug
-* Feature Request
-* Documentation: Issues related to improving or updating documentation, such as README files, user guides, or API documentation
-* UI/UX: This tag is for issues related to user interface (UI) or user experience (UX) improvements. It can cover design changes, layout enhancements, and usability suggestions.
-* Enhancement: We can use this tag for general enhancements or improvements that don't fit strictly into the "feature request" category. It can include performance optimisations, code refactoring, or usability improvements.
-* Help Wanted: Indicate issues where help from the community is needed. This tag can be applied to issues that may require additional expertise or effort. We should have a process for monitoring for these if we use this, and state that people should reach out in whatever channel we go with as well.
-* Testing: Tag issues that involve testing the software, creating test cases, or ensuring compatibility with different environments or configurations.
-* Community: This tag can be used for issues related to community building, collaboration, or discussions. It may include proposals for events, community guidelines, or discussions about project direction. Might seem strange but this is a contribution to the community, not all contributions take the form of code. We should decide if we want this discussion to occur on GitHub, or in anothe channel such as Slack/Discord. Either way it should be called out in these guidelines so people who want to make non-code contributions know what to do.
-* Priority
-* Security: We have said we want things disclosed to us privately, do we reiterate that here? Do we formalise what that process is?
-* Question
-* Review Needed
-* Duplicate: If an issue is a duplicate of another, we can mark it with this tag to avoid redundancy and track the original issue.
-* Invalid: We can use this tag for issues that are deemed invalid or not relevant to Thread.
-* Wontfix
+Thread follows a structured workflow to ensure that contributions are thoroughly reviewed, tested, and integrated effectively. This process is designed to maintain code quality, reliability, and alignment with the project's goals. Here are the key steps in the contribution workflow:
 
-## Testing and quality assurance
-* How do you want testing handled?
-* We will need to talk about what our QA process will be, as in you reviewing code, and how often that will occur so people know when their pull request will be merged in.
+1. Submission
+
+* Create a Fork: If you want to contribute to our project, start by creating a fork of our repository on GitHub.
+* Clone Your Fork: Clone your forked repository to your local development environment using Git.
+* Branching: Create a new branch in your fork with a descriptive name that relates to your contribution. This branch will contain your changes.
+
+2. Development
+
+* Work on Your Contribution: Make your code changes, enhancements, or bug fixes within your branch. Ensure your code follows our coding guidelines.
+* Commit Changes: Regularly commit your changes with meaningful commit messages. Be sure to explain what the commit does.
+
+3. Testing and Documentation
+
+* Test Your Code: Thoroughly test your changes to ensure they work as expected and do not introduce new issues.
+* Update Documentation: If your contribution affects documentation, make the necessary updates to keep it accurate.
+
+4. Pull Request
+
+* Create a Pull Request: When your contribution is ready, open a Pull Request (PR) from your branch to the original project's repository.
+* Provide Information: Describe your changes, why they are needed, and any relevant details in the PR description. Reference any related issues.
+
+5. Review
+
+* Reviewers: Our project maintainers and contributors will review your PR. They will examine your code, provide feedback, and suggest improvements.
+* Discussion: Engage in discussions with reviewers to address feedback, make necessary adjustments, and refine your contribution.
+
+6. Continuous Integration (CI)
+
+* Automated Tests: Our CI system will run automated tests on your PR to ensure that it meets our quality standards. Make any required fixes based on CI results.
+
+7. Approval
+
+* Approval: Once your PR meets the project's criteria, it will receive approvals from maintainers or designated reviewers.
+
+8. Merge
+
+* Merge: A project maintainer will merge your PR into the main project repository.
+
+9. Closure
+
+* Closing Issues: If your PR addresses specific issues, they will be automatically closed upon merging.
+* Thank You: We appreciate your contribution and will thank you for your effort!
+
+10. Continuous Improvement
+
+* Feedback: We encourage feedback on the contribution process. Share your thoughts on how it can be improved or streamlined.
+
+11. Contributor Recognition
+
+* Recognition: Contributors who actively participate and make significant contributions may be recognised and credited in our project.
+
+By following this structured workflow, you can contribute effectively to Thread, collaborate with the community, and ensure that your contributions align with our quality and coding standards. Thank you for your contributions to Thread!
 
 ## Licence 
 Thread is offered under the original TRAM licence, the [Apache License 2.0](LICENSE.txt). Please note that all contributions to Thread fall under the Apache License 2.0.
