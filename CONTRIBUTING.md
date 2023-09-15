@@ -1,38 +1,44 @@
 <!-- NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital -->
 
 # Contribute to Thread
+
 Thank you for wanting to contribute to Thread! 
 
 ## Project Mission & Summary:
+
 Thread is an open-source initiative dedicated to enhancing cyber threat intelligence (CTI) mapping by automating the process of linking cybersecurity reports and articles to MITRE ATT&CK®. Our mission is to empower security professionals, organisations, and analysts by providing efficient, empowering, and community driven CTI capabilities.
 
 ## Code of Conduct
+
 The Thread community has adopted the Contributor Covenant. Before contributing, please read the [CODE OF CONDUCT](CODE_OF_CONDUCT.md). By contributing to the Thread community you agree to the code of conduct.
 
 ## Resources
+
 Please see the [README](README.md) for high level information about Thread, and the [ROADMAP](ROADMAP.md) to get an understanding of where the project is going.
 
 ## Communication channels
+
 Arachne Digital uses Slack to discuss everything to do with our open source projects. To get access, please email contact[at]arachne[dot]digital with a bit about who you are and how you would like to contribute.
 
-# Ideas for possible topics
-
 ## Getting started
+
 * Is there anything we've not already said that someone needs to know to help them get started?
 
 ## Types of contributions
+
 * The types of contributions we would like, such as code, documentation, bug reports, feature requests. Anything else?
 * We will need guidelines for each type of contribution.
 
 ## Coding standards
+
 Anything to add here?
 
 ## Issue tracking
 
-### GitHub Issue Tags
 We use GitHub issue tags to categorise our issues and pull requests. Please use these tags when creating or working on issues to help streamline the work that goes into building Thread and the community.
 
 Below are the tags we use:
+
 * bug: If something isn't working as expected or there's a malfunction, tag the issue as a bug. Be sure to provide detailed information about the problem.
 * community: These tags are used for community building efforts, such as organising events, discussions, or initiatives aimed at fostering our community.
 * config change: Use this tag for requests to change configuration settings. Clearly describe the requested changes in the issue.
@@ -52,11 +58,61 @@ Below are the tags we use:
 
 If you're unsure which tag to use, feel free to ask for guidance in the comments.
 
+## Bug Handling Process
+
+Bugs are inevitable in any software project, and we appreciate your help in identifying and resolving them. To streamline bug reporting and resolution, we follow a structured process:
+
+1. Check for Existing Issues. 
+
+Before reporting a new bug, please search our issue tracker on GitHub to see if someone has already reported the same issue. If you find a similar issue, you can add a comment with additional information if necessary.
+
+2. Create a New Issue.
+
+If you couldn't find an existing report for your bug:
+
+* Go to our GitHub repository and click on the "Issues" tab.
+* Click "New Issue" to create a new bug report.
+* Use the Bug Report Template: We have provided a bug report template to ensure you include essential information for our team to understand and reproduce the issue.
+
+3. Provide Detailed Information
+
+When creating a bug report, please provide as much detail as possible:
+
+* Title: A concise, descriptive title.
+* Description: A detailed description of the bug, including what you expected to happen and what actually happened.
+* Reproduction Steps: Clear steps to reproduce the bug. This helps us isolate the issue.
+* Environment Information: Include details about your environment, such as operating system, browser version, or software version.
+* Screenshots or Error Logs: If applicable, include screenshots or error logs to illustrate the problem.
+
+4. Label the Issue
+
+Our team will review your bug report and apply appropriate labels, such as "bug" and any relevant tags (e.g., "ui/ux," "dependencies").
+
+5. Discussion and Resolution
+
+Once the bug report is submitted, our team will review it and engage in discussion if additional information or clarification is needed. 
+
+6. Fix and Testing
+
+If the bug is confirmed, a contributor or maintainer will work on a fix. After implementing the fix, it will undergo testing to ensure the issue is resolved without introducing new problems.
+
+7. Closed and Verified
+
+Once the fix is confirmed and tested, the issue will be marked as "closed." You will be notified of the resolution, and you can verify the fix on your end.
+
+8. Participate in Discussions
+
+Feel free to participate in discussions related to the bug. Your insights and suggestions are valuable in making the project better.
+
+9. Contributor Recognition
+
+As a token of our appreciation, contributors who actively help identify and resolve bugs may be recognised and credited in our project.
+
+Thank you for helping us improve our software. Your diligence in reporting and verifying bugs contributes to the stability and reliability of our project.
 
 
 
 
-* How will reported bugs be handled?
 * How feature requests are handled? I'm happy for there to be a process where both of us discuss features and build them into our roadmap. We may need something like "Features will be discussed at our fortnightly maintainers catchup and we will reply to the request to let you know if it is something that will be incorporated into Thread, and if so where it fits into the roadmap." This gives people a cadence they can expect, and it means we will also need to formalise calls and put regular review calls in place.
 * What will the workflow be for submitting, reviewing, and merging contributions?
 
