@@ -221,22 +221,59 @@ Thread follows a structured workflow to ensure that contributions are thoroughly
 By following this structured workflow, you can contribute effectively to Thread, collaborate with the community, and ensure that your contributions align with our quality and coding standards. Thank you for your contributions to Thread!
 
 ## Licence 
+
 Thread is offered under the original TRAM licence, the [Apache License 2.0](LICENSE.txt). Please note that all contributions to Thread fall under the Apache License 2.0.
 
 ## Recognition and Attribution
-* How will contributors be recognised and attributed for their work?
-* What contributor acknowledgement or rewards system will we put in place?
+
+At Arachne Digital, we greatly value the contributions of our community members. Your dedication and hard work drive the success of Thread. To show our appreciation, we have established several ways to recognise and attribute your contributions.
+
+**Contributor Hall of Fame**
+
+Our Contributor Hall of Fame is a dedicated page on our website where we highlight the exceptional contributions made by community members. This is where your name and profile can shine, alongside a description of your significant contributions.
+
+**Authorship and Credits**
+
+Within the codebase, we encourage the use of author tags or comments to give direct attribution to contributors for specific sections or features they have authored. For example, a comment like // Authored by [Your Name] within the code provides clear attribution.
+
+**Commit Messages and Changelogs**
+
+Our detailed changelog includes the names of contributors next to the changes or features they have introduced. This makes it easy for users and fellow contributors to see who contributed what in each release.
+
+**Project Credits**
+
+In our README file, you will find an "[Acknowledgments](https://github.com/arachne-threat-intel/thread/blob/main/README.md#acknowledgements)" section that lists the names of individuals who have made substantial contributions. 
+
+**Social Media Shoutouts**
+
+We use our project's social media channels to publicly acknowledge and thank contributors. We share their profiles, contributions, and achievements with our followers.
+
+**Personal Thank-You Notes**
+
+As a token of our appreciation, we may send personalised thank-you notes or emails to contributors. These messages will express our gratitude for your efforts and acknowledge your unique contributions.
+
+By contributing to Thread, you are not only helping us advance the project but also becoming an integral part of our open-source community. Your contributions are essential, and we want to ensure that you receive the recognition and attribution you deserve.
+
+Thank you for being a valued member of the Thread community!
 
 ## Contact information
-How do we want to manage questions people want to ask before contributing? Do we want to have a shared mailbox that we both have access to, and can add others to if they become maintainers over time? Or do we want to handle this in a dedicated channel in our Slack or Discord (if we go with either of those)?
+
+If you have questions or need clarifications about contributing to Thread, we encourage you to reach out and ask. Our community is here to support you on your journey to become a contributor. Here's how you can get help:
+
+* Slack Community: Join our Slack community and visit the #questions-about-contributing channel. This channel is dedicated to answering your questions and providing guidance on the contribution process. To get access, please email contact[at]arachne[dot]digital with a bit about who you are and how you would like to contribute.
+* GitHub Issues: If you have a specific question related to an ongoing issue or pull request on GitHub, feel free to comment directly on the relevant thread. Our maintainers and contributors will do their best to assist you.
+* Documentation: Check our documentation for answers to common questions. We strive to maintain comprehensive and up-to-date documentation to help you get started.
+* Contributor Guidelines: Review these Contributor Guidelines for detailed information on the contribution process, coding standards, and more.
+* Contact Us: If you have a question that's not covered by the above options, you can contact us directly via contact[at]arachne[dot]digital. We're here to assist you in any way we can.
+
+Remember, there are no silly questions, and we value your curiosity and engagement. Don't hesitate to ask if you're unsure about anything. We appreciate your interest in contributing to Thread!
 
 ## Submission guidelines
 
-You are welcome to comment on issues, open new issues, and open pull requests.
+If you contribute any source code, we need you to agree to the following Developer's Certificate of Origin (DCO) below.
 
-Also, if you contribute any source code, we need you to agree to the following Developer's Certificate of Origin below.
+The DCO was originally adopted from the TRAM project. It's a standard declaration ensuring that contributors have the right to submit their work, protecting both the project and our contributors. When making contributions to Thread, please keep in mind that agreeing to the DCO is part of the submission process.
 
-Below are the contribution guidelines for the original repo Thread is forked from, TRAM. We have no major differences for these guidelines, so they have remained the same:
 ### Developer's Certificate of Origin v1.1
 
 ```
