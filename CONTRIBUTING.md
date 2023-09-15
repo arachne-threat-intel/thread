@@ -26,8 +26,29 @@ Arachne Digital uses Slack to discuss everything to do with our open source proj
 
 ## Types of contributions
 
-* The types of contributions we would like, such as code, documentation, bug reports, feature requests. Anything else?
-* We will need guidelines for each type of contribution.
+Thread welcomes contributions from individuals with diverse skills and backgrounds. You can contribute to Thread in various ways, depending on your interests. Below is a non exhuastive list of some of the different types of contributions you can make:
+
+**Technical Contributions**
+
+* Code Contributions: If you want to code, you can contribute to the development of Thread by submitting pull requests to add new features, fix bugs, or enhance existing functionalities.
+* Documentation: Help improve our documentation by fixing typos, clarifying instructions, or adding new content to make it more accessible and informative.
+* Testing: Assist in testing Thread by running test cases, identifying issues, and providing feedback to ensure the software's reliability.
+* UI/UX Design: If you're a UI/UX designer, you can contribute by enhancing the user interface and user experience of Thread.
+* Review: Review code changes submitted by other contributors, provide constructive feedback, and help maintain code quality.
+* Config Changes: Propose and implement changes to configuration settings that can enhance Thread's performance and usability.
+* Dependencies: Contribute by updating and managing the project's dependencies to keep it up-to-date and secure.
+
+
+**Community Contributions**
+
+* Community Building: Engage with our community on platforms like Slack, participate in discussions, and help newcomers navigate Thread.
+* Event Organisation: Organise or participate in events related to Thread, such as webinars, workshops, or meetups, to foster collaboration and knowledge sharing.
+* Content Creation: Contribute to our blog, write articles, or create tutorials that can benefit the community.
+* Bug Reporting: If you encounter issues while using Thread, report them on our GitHub repository with detailed information to help us improve.
+* Feature Requests: Share your ideas for new features or enhancements on our GitHub repository by opening feature request issues.
+* Community Support: Provide support to fellow community members by answering questions, offering guidance, and sharing your expertise.
+
+Remember that every contribution, regardless of its size or nature, is valuable to us and helps strengthen the Thread community. We appreciate your willingness to contribute in any way you would like!
 
 ## Coding standards
 
