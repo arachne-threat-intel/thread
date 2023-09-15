@@ -110,10 +110,59 @@ As a token of our appreciation, contributors who actively help identify and reso
 
 Thank you for helping us improve our software. Your diligence in reporting and verifying bugs contributes to the stability and reliability of our project.
 
+## Feature Request Process
 
+Feature requests are a valuable way to improve Thread's functionality and meet the needs of our users. We follow a similar structued process for features:
 
+1. Check for Existing Requests
 
-* How feature requests are handled? I'm happy for there to be a process where both of us discuss features and build them into our roadmap. We may need something like "Features will be discussed at our fortnightly maintainers catchup and we will reply to the request to let you know if it is something that will be incorporated into Thread, and if so where it fits into the roadmap." This gives people a cadence they can expect, and it means we will also need to formalise calls and put regular review calls in place.
+Before submitting a new feature request, please search our GitHub issue tracker to see if someone has already proposed a similar feature. If you find a similar request, you can add a comment with additional thoughts or use cases.
+
+2. Create a New Feature Request
+
+If you couldn't find an existing feature request for your idea:
+
+* Go to our GitHub repository and click on the "Issues" tab.
+* Click "New Issue" to create a new feature request.
+* Use the Feature Request Template: We have provided a feature request template to help you include essential details about your proposal.
+
+3. Provide Detailed Information
+
+When creating a feature request, please provide as much detail as possible:
+
+* Title: A concise, descriptive title that summarises the proposed feature.
+* Description: A detailed description of the feature, including its purpose, benefits, and use cases.
+* Use Cases: Explain scenarios where this feature would be valuable or necessary.
+* Implementation Ideas: If you have suggestions on how to implement the feature, please share them.
+* Alternatives: Mention any alternative solutions or workarounds you've considered.
+* Visual Aids: If applicable, include diagrams, mock-ups, or screenshots to visualize the feature.
+
+4. Label the Issue
+
+Our team will review your feature request and apply appropriate labels, such as "feature request" and any relevant tags (e.g., "ui/ux," "enhancement").
+
+5. Discussion and Feedback
+
+Once your feature request is submitted, our team and the community may engage in discussions to better understand the proposal, refine the idea, or explore alternative approaches. Feedback from the community is invaluable in this process.
+
+6. Evaluation
+
+Feature requests will be evaluated based on their alignment with project goals, technical feasibility, and potential impact on users. Not all feature requests may be implemented, but each one will be carefully considered.
+
+7. Implementation and Testing
+
+If a feature request is approved for implementation, it will be added to the project's development roadmap. A contributor or maintainer will work on implementing the feature, followed by testing to ensure it functions as intended.
+
+8. Notification
+
+You will be notified about the progress of your feature request, including when it's assigned, in development, and tested. You can follow the discussion and implementation process on GitHub.
+
+9. Contributor Recognition
+
+We value your contributions, including feature requests. Contributors who actively participate in discussions and provide valuable input may be recognised and credited in our project.
+
+Thank you for helping us enhance our project. Your feature requests play a vital role in shaping the future of Thread.
+
 * What will the workflow be for submitting, reviewing, and merging contributions?
 
 For the tagging system, here are some suggested tags as a first pass:
