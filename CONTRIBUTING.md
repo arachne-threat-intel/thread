@@ -185,54 +185,43 @@ Thread follows a structured workflow to ensure that contributions are thoroughly
 
 1. Submission
 
-* Create a Fork: If you want to contribute to our project, start by creating a fork of our repository on GitHub.
-* Clone Your Fork: Clone your forked repository to your local development environment using Git.
-* Branching: Create a new branch in your fork with a descriptive name that relates to your contribution. This branch will contain your changes.
+Begin by creating a fork of our repository on GitHub. Next, clone your forked repository to your local development environment using Git. Once you have your local copy, create a new branch within your fork, giving it a descriptive name that relates to your contribution. This branch will serve as the container for the changes you make.
 
 2. Development
 
-* Work on Your Contribution: Make your code changes, enhancements, or bug fixes within your branch. Ensure your code follows our coding guidelines.
-* Commit Changes: Regularly commit your changes with meaningful commit messages. Be sure to explain what the commit does.
+To work on your contribution, make your code changes, enhancements, or bug fixes within your dedicated branch. As you make progress, remember to commit your changes regularly, accompanied by meaningful commit messages that describe the purpose and functionality of each commit. This practice helps maintain clarity and transparency throughout the development process.
 
 3. Testing and Documentation
 
-* Test Your Code: Thoroughly test your changes to ensure they work as expected and do not introduce new issues.
-* Update Documentation: If your contribution affects documentation, make the necessary updates to keep it accurate.
+After implementing your code changes, it's crucial to conduct testing to ensure they function as intended and don't introduce new issues. Additionally, if your contribution impacts documentation in any way, please update the relevant documentation to ensure it remains accurate and aligned with the changes you've made. This ensures that users and contributors have access to up-to-date and reliable information.
 
-4. Pull Request
+4. Pull Request (PR)
 
-* Create a Pull Request: When your contribution is ready, open a Pull Request (PR) from your branch to the original project's repository.
-* Provide Information: Describe your changes, why they are needed, and any relevant details in the PR description. Reference any related issues.
+Once your contribution is ready, it's time to create a PR from your branch to the original project's repository. When doing so, make sure to provide a clear and informative description of your changes within the PR. Explain why these changes are necessary and offer any pertinent details. If your contribution addresses specific issues, be sure to reference those issues in the PR description to facilitate a more efficient review process.
 
 5. Review
 
-* Reviewers: Our project maintainers and contributors will review your PR. They will examine your code, provide feedback, and suggest improvements.
-* Discussion: Engage in discussions with reviewers to address feedback, make necessary adjustments, and refine your contribution.
+After you've submitted your PR, our project maintainers and fellow contributors will review your changes. They will assess your code, offer feedback, and suggest potential improvements. You can engage in discussions with the reviewers. This collaborative process ensures that your work aligns with project standards and objectives.
 
 6. Continuous Integration (CI)
 
-* Automated Tests: Our CI system will run automated tests on your PR to ensure that it meets our quality standards. Make any required fixes based on CI results.
+Once you've submitted your PR, our CI system will automatically run tests to evaluate its adherence to our quality standards. Please review the CI results and address any issues or necessary fixes. This step helps maintain the project's overall integrity.
 
 7. Approval
 
-* Approval: Once your PR meets the project's criteria, it will receive approvals from maintainers or designated reviewers.
+After your PR aligns with the project's criteria and requirements, it will undergo review and receive approvals from project maintainers or designated reviewers. This step signifies that your contribution has been accepted and is on track for inclusion in Thread.
 
 8. Merge
 
-* Merge: A project maintainer will merge your PR into the main project repository.
+Once the PR is approved, a project maintainer will merge your changes into the main Thread repository, incorporating your contribution into Thread.
 
 9. Closure
 
-* Closing Issues: If your PR addresses specific issues, they will be automatically closed upon merging.
-* Thank You: We appreciate your contribution and will thank you for your effort!
+Upon merging your Pull Request (PR), any related issues that were addressed by your contribution will be automatically closed. We genuinely appreciate your valuable contribution, and our team extends heartfelt thanks for your effort and commitment to the project!
 
-10. Continuous Improvement
+10. Contributor Recognition
 
-* Feedback: We encourage feedback on the contribution process. Share your thoughts on how it can be improved or streamlined.
-
-11. Contributor Recognition
-
-* Recognition: Contributors who actively participate and make significant contributions may be recognised and credited in our project.
+Contributors who actively participate and make significant contributions may be recognised and credited in our project.
 
 By following this structured workflow, you can contribute effectively to Thread, collaborate with the community, and ensure that your contributions align with our quality and coding standards. Thank you for your contributions to Thread!
 
@@ -244,29 +233,12 @@ Thread is offered under the original TRAM licence, the [Apache License 2.0](LICE
 
 At Arachne Digital, we greatly value the contributions of our community members. Your dedication and hard work drive the success of Thread. To show our appreciation, we have established several ways to recognise and attribute your contributions.
 
-**Contributor Hall of Fame**
-
-Our Contributor Hall of Fame is a dedicated page on our website where we highlight the exceptional contributions made by community members. This is where your name and profile can shine, alongside a description of your significant contributions.
-
-**Authorship and Credits**
-
-Within the codebase, we encourage the use of author tags or comments to give direct attribution to contributors for specific sections or features they have authored. For example, a comment like // Authored by [Your Name] within the code provides clear attribution.
-
-**Commit Messages and Changelogs**
-
-Our detailed changelog includes the names of contributors next to the changes or features they have introduced. This makes it easy for users and fellow contributors to see who contributed what in each release.
-
-**Project Credits**
-
-In our README file, you will find an "[Acknowledgments](https://github.com/arachne-threat-intel/thread/blob/main/README.md#acknowledgements)" section that lists the names of individuals who have made substantial contributions. 
-
-**Social Media Shoutouts**
-
-We use our project's social media channels to publicly acknowledge and thank contributors. We share their profiles, contributions, and achievements with our followers.
-
-**Personal Thank-You Notes**
-
-As a token of our appreciation, we may send personalised thank-you notes or emails to contributors. These messages will express our gratitude for your efforts and acknowledge your unique contributions.
+* Contributor Hall of Fame: Our Contributor Hall of Fame is a dedicated page on our website where we highlight the exceptional contributions made by community members. This is where your name and profile can shine, alongside a description of your significant contributions.
+* Authorship and Credits: Within the codebase, we encourage the use of author tags or comments to give direct attribution to contributors for specific sections or features they have authored. For example, a comment like // Authored by [Your Name] within the code provides clear attribution.
+* Commit Messages and Changelogs: Our detailed changelog includes the names of contributors next to the changes or features they have introduced. This makes it easy for users and fellow contributors to see who contributed what in each release.
+* Project Credits: In our README file, you will find an "[Acknowledgments](https://github.com/arachne-threat-intel/thread/blob/main/README.md#acknowledgements)" section that lists the names of individuals who have made substantial contributions.
+* Social Media Shoutouts: We use our project's social media channels to publicly acknowledge and thank contributors. We share their profiles, contributions, and achievements with our followers.
+* Personal Thank-You Notes: As a token of our appreciation, we may send personalised thank-you notes or emails to contributors. These messages will express our gratitude for your efforts and acknowledge your unique contributions.
 
 By contributing to Thread, you are not only helping us advance the project but also becoming an integral part of our open-source community. Your contributions are essential, and we want to ensure that you receive the recognition and attribution you deserve.
 
