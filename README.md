@@ -25,6 +25,7 @@ Thread is an open-source initiative dedicated to enhancing cyber threat intellig
 * [How do I contribute?](#how-do-i-contribute)
 * [Contact us](#contact-us)
 * [Understanding MITRE ATT&CK, TTPs and how to leverage them](#understanding-mitre-attck-ttps-and-how-to-leverage-them)
+* [Acknowledgments](#acknowledgments)
 * [Notice](#notice)
 
 ## Thread in simple terms
@@ -168,8 +169,12 @@ TTPs are like the DNA of cyber threats. By identifying and understanding them, y
 
 To give you a primer in these concepts, or if videos are just more your thing, check out [Putting MITRE ATT&CK™ into Action with What You Have, Where You Are](https://www.youtube.com/watch?v=bkfwMADar0M), an amazing presentation by Katie Nickels.
 
+## Acknowledgments
+
+We extend our sincere appreciation to the dedicated individuals whose contributions have made Thread a thriving open-source community and a valuable resource for the cybersecurity community!
+
 ## Notice
-Copyright 2021 Arachne Digital
+Copyright 2023 Arachne Digital
 
 Licensed under the Apache License, Version 2.0.
 
