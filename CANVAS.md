@@ -22,7 +22,7 @@ You can see the Open Canvas templates [here](https://drive.google.com/file/d/0B9
 
 Alternatively, if you just want to get an understanding of how the information in this document flows, here is a diagram:
 
-![image](https://github.com/arachne-threat-intel/Periculum/assets/24201238/14a6be8d-0dbd-4254-8efe-419bb73f20e6)
+![image](https://github.com/arachne-threat-intel/thread/assets/24201238/f88edadb-7a4f-4906-9389-cd84952fc0dc)
 
 ## Problem
 - Sections: Product
