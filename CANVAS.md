@@ -16,7 +16,7 @@ Open Canvas is a strategic planning tool designed to refine and crystallise proj
 
 An Open Canvas is a one-page template with essential project details, considering both a project's product aspects and its community dynamics. This tool serves as a bridge between a project vision and a concrete plan, fostering clarity and resource alignment.
 
-The Open Canvas concept was developed by [Abby Cabunoc Mayes](https://github.com/abbycabs) as part of the [Mozilla Open Leaders Programme](https://mozilla.github.io/open-leadership-training-series/articles/opening-your-project/develop-an-open-project-strategy-with-open-canvas/)
+The Open Canvas concept was developed by [Abby Cabunoc Mayes](https://github.com/abbycabs) as part of the [Mozilla Open Leaders Programme](https://mozilla.github.io/open-leadership-training-series/articles/opening-your-project/develop-an-open-project-strategy-with-open-canvas/).
 
 You can see the Open Canvas templates [here](https://drive.google.com/file/d/0B9UZnVcaoMU6Mmtwc3dzOVQ4LW8/view?resourcekey=0-sPUfyGywW059_G-AyD0_-w) and [here](https://docs.google.com/presentation/d/1_eya6vVXpaZOpXFZsZNbVHboROI4IPWy-poCnYTNtnQ/edit#slide=id.g1b30ce0bb1_0_90).
 
