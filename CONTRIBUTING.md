@@ -116,11 +116,7 @@ If the bug is confirmed, a contributor or maintainer will work on a fix. After i
 
 Once the fix is confirmed and tested, the issue will be marked as "closed." You will be notified of the resolution, and you can verify the fix on your end.
 
-8. Participate in Discussions
-
-Feel free to participate in discussions related to the bug. Your insights and suggestions are valuable in making the project better.
-
-9. Contributor Recognition
+8. Contributor Recognition
 
 As a token of our appreciation, contributors who actively help identify and resolve bugs may be recognised and credited in our project.
 
