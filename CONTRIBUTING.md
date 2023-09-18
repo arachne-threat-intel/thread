@@ -4,32 +4,47 @@
 
 Thank you for wanting to contribute to Thread! 
 
-## Project Mission & Summary:
+* [Project Mission and Summary](#project-mission-and-summary)
+* [Code of Conduct](#code-of-conduct)
+* [Resources](#resources)
+* [Communication Channels](#communication-channels)
+* [Types of Contributions](#types-of-contributions)
+* [Coding Standards](#coding-standards)
+* [Issue Tracking](#issue-tracking)
+* [Bug Handling Process](#bug-handling-process)
+* [Feature Request Process](#feature-request-process)
+* [Code Contribution Workflow](#code-contribution-workflow)
+* [Licence](#licence)
+* [Recognition and Attribution](#recognition-and-attribution)
+* [Contact Information](#contact-information)
+* [Developer's Certificate of Origin v1.1](#developers-certificate-of-origin-v11)
+
+## Project Mission and Summary
 
 Thread is an open-source initiative dedicated to enhancing cyber threat intelligence (CTI) mapping by automating the process of linking cybersecurity reports and articles to MITRE ATT&CK®. Our mission is to empower security professionals, organisations, and analysts by providing efficient, empowering, and community driven CTI capabilities.
 
 ## Code of Conduct
 
-The Thread community has adopted the Contributor Covenant. Before contributing, please read the [CODE OF CONDUCT](CODE_OF_CONDUCT.md). By contributing to the Thread community you agree to the code of conduct.
+The Thread community has adopted the Contributor Covenant. Before contributing, please read the [CODE OF CONDUCT](CODE_OF_CONDUCT.md). By contributing to the Thread community, you agree to the code of conduct.
 
 ## Resources
 
 Please see the [README](README.md) for high level information about Thread, and the [ROADMAP](ROADMAP.md) to get an understanding of where the project is going.
 
-## Communication channels
+## Communication Channels
 
 Arachne Digital uses Slack to discuss everything to do with our open source projects. To get access, please email contact[at]arachne[dot]digital with a bit about who you are and how you would like to contribute.
 
-## Types of contributions
+## Types of Contributions
 
-Thread welcomes contributions from individuals with diverse skills and backgrounds. You can contribute to Thread in various ways, depending on your interests. Below is a non exhuastive list of some of the different types of contributions you can make:
+Thread welcomes contributions from individuals with diverse skills and backgrounds. You can contribute to Thread in various ways, depending on your interests. Below is a non-exhaustive list of some of the different types of contributions you can make:
 
 **Technical Contributions**
 
 * Code Contributions: If you want to code, you can contribute to the development of Thread by submitting pull requests to add new features, fix bugs, or enhance existing functionalities.
 * Documentation: Help improve our documentation by fixing typos, clarifying instructions, or adding new content to make it more accessible and informative.
 * Testing: Assist in testing Thread by running test cases, identifying issues, and providing feedback to ensure the software's reliability.
-* UI/UX Design: If you're a UI/UX designer, you can contribute by enhancing the user interface and user experience of Thread.
+* UI/UX Design: If you are a UI/UX designer, you can contribute by enhancing the user interface and user experience of Thread.
 * Review: Review code changes submitted by other contributors, provide constructive feedback, and help maintain code quality.
 * Config Changes: Propose and implement changes to configuration settings that can enhance Thread's performance and usability.
 * Dependencies: Contribute by updating and managing the project's dependencies to keep it up-to-date and secure.
@@ -45,11 +60,11 @@ Thread welcomes contributions from individuals with diverse skills and backgroun
 
 Remember that every contribution, regardless of its size or nature, is valuable to us and helps strengthen the Thread community. We appreciate your willingness to contribute in any way you would like!
 
-## Coding standards
+## Coding Standards
 
 Anything to add here?
 
-## Issue tracking
+## Issue Tracking
 
 We use GitHub issue tags to categorise our issues and pull requests. Please use these tags when creating or working on issues to help streamline the work that goes into building Thread and the community.
 
@@ -63,16 +78,16 @@ Below are the tags we use:
 * duplicate: If you find that an issue or pull request already exists for the same problem or request, tag it as a duplicate.
 * enhancement: Tag for issues related to performance improvements, code refactoring, or enhancing usability without introducing new features.
 * feature request: Tag for new feature requests to our software or services. Please provide clear details about the proposed feature.
-* good first issue: This tag identifies issues suitable for newcomers to the project. If you're new to our community, consider starting with these issues to get acquainted with contributing.
-* help wanted: Tag for issues that require extra attention or assistance from the community. If you're looking for a way to contribute, check out these issues.
+* good first issue: This tag identifies issues suitable for newcomers to the project. If you are new to our community, consider starting with these issues to get acquainted with contributing.
+* help wanted: Tag for issues that require extra attention or assistance from the community. If you are looking for a way to contribute, check out these issues.
 * invalid: If an issue doesn't seem valid or relevant, tag it as invalid. Provide a brief explanation of why the issue is considered invalid.
 * question: If you have questions or need further information about an issue or topic, tag it as a question. Feel free to ask and engage in discussions.
-* review: Issues or pull requests that are pending review. Use this tag when you've submitted your work, and it's awaiting feedback or approval from maintainers. Alternatively feel free to add the tag at any time you would like a maintainer to look over the issue.
+* review: Issues or pull requests that are pending review. Use this tag when you have submitted your work, and it is awaiting feedback or approval from maintainers. Alternatively feel free to add the tag at any time you would like a maintainer to look over the issue.
 * testing: Issues related to software testing, test cases, or compatibility checks. Use this tag when discussing testing procedures or reporting test-related problems.
 * ui/ux: Issues related to user interface (UI) and user experience (UX) design. Use this tag when discussing design improvements or reporting UI/UX issues.
-* wontfix: Tag for issues that will not be addressed or worked on. Use this tag when a proposed change or feature doesn't align with project goals or priorities.
+* wontfix: Tag for issues that will not be addressed or worked on. Use this tag when a proposed change or feature does not align with project goals or priorities.
 
-If you're unsure which tag to use, feel free to ask for guidance in the comments.
+If you are unsure which tag to use, feel free to ask for guidance in the comments.
 
 ## Bug Handling Process
 
@@ -84,7 +99,7 @@ Before reporting a new bug, please search our issue tracker on GitHub to see if 
 
 2. Create a New Issue.
 
-If you couldn't find an existing report for your bug:
+If you could not find an existing report for your bug:
 
 * Go to our GitHub repository and click on the "Issues" tab.
 * Click "New Issue" to create a new bug report.
@@ -124,7 +139,7 @@ Thank you for helping us improve our software. Your diligence in reporting and v
 
 ## Feature Request Process
 
-Feature requests are a valuable way to improve Thread's functionality and meet the needs of our users. We follow a similar structued process for features:
+Feature requests are a valuable way to improve Thread's functionality and meet the needs of our users. We follow a similar structured process for features:
 
 1. Check for Existing Requests
 
@@ -132,7 +147,7 @@ Before submitting a new feature request, please search our GitHub issue tracker 
 
 2. Create a New Feature Request
 
-If you couldn't find an existing feature request for your idea:
+If you could not find an existing feature request for your idea:
 
 * Go to our GitHub repository and click on the "Issues" tab.
 * Click "New Issue" to create a new feature request.
@@ -146,8 +161,8 @@ When creating a feature request, please provide as much detail as possible:
 * Description: A detailed description of the feature, including its purpose, benefits, and use cases.
 * Use Cases: Explain scenarios where this feature would be valuable or necessary.
 * Implementation Ideas: If you have suggestions on how to implement the feature, please share them.
-* Alternatives: Mention any alternative solutions or workarounds you've considered.
-* Visual Aids: If applicable, include diagrams, mock-ups, or screenshots to visualize the feature.
+* Alternatives: Mention any alternative solutions or workarounds you have considered.
+* Visual Aids: If applicable, include diagrams, mock-ups, or screenshots to visualise the feature.
 
 4. Label the Issue
 
@@ -167,7 +182,7 @@ If a feature request is approved for implementation, it will be added to the pro
 
 8. Notification
 
-You will be notified about the progress of your feature request, including when it's assigned, in development, and tested. You can follow the discussion and implementation process on GitHub.
+You will be notified about the progress of your feature request, including when it is assigned, in development, and tested. You can follow the discussion and implementation process on GitHub.
 
 9. Contributor Recognition
 
@@ -175,9 +190,9 @@ We value your contributions, including feature requests. Contributors who active
 
 Thank you for helping us enhance our project. Your feature requests play a vital role in shaping the future of Thread.
 
-## Contribution Workflow
+## Code Contribution Workflow
 
-Thread follows a structured workflow to ensure that contributions are thoroughly reviewed, tested, and integrated effectively. This process is designed to maintain code quality, reliability, and alignment with the project's goals. Here are the key steps in the contribution workflow:
+Thread follows a structured workflow to ensure that code contributions are thoroughly reviewed, tested, and integrated effectively. This process is designed to maintain code quality, reliability, and alignment with the project's goals. Here are the key steps in the contribution workflow:
 
 1. Submission
 
@@ -189,19 +204,19 @@ To work on your contribution, make your code changes, enhancements, or bug fixes
 
 3. Testing and Documentation
 
-After implementing your code changes, it's crucial to conduct testing to ensure they function as intended and don't introduce new issues. Additionally, if your contribution impacts documentation in any way, please update the relevant documentation to ensure it remains accurate and aligned with the changes you've made. This ensures that users and contributors have access to up-to-date and reliable information.
+After implementing your code changes, it is crucial to conduct testing to ensure they function as intended and do not introduce new issues. Additionally, if your contribution impacts documentation in any way, please update the relevant documentation to ensure it remains accurate and aligned with the changes you have made. This ensures that users and contributors have access to up-to-date and reliable information.
 
 4. Pull Request (PR)
 
-Once your contribution is ready, it's time to create a PR from your branch to the original project's repository. When doing so, make sure to provide a clear and informative description of your changes within the PR. Explain why these changes are necessary and offer any pertinent details. If your contribution addresses specific issues, be sure to reference those issues in the PR description to facilitate a more efficient review process.
+Once your contribution is ready, it is time to create a PR from your branch to the original project's repository. When doing so, make sure to provide a clear and informative description of your changes within the PR. Explain why these changes are necessary and offer any pertinent details. If your contribution addresses specific issues, be sure to reference those issues in the PR description to facilitate a more efficient review process.
 
 5. Review
 
-After you've submitted your PR, our project maintainers and fellow contributors will review your changes. They will assess your code, offer feedback, and suggest potential improvements. You can engage in discussions with the reviewers. This collaborative process ensures that your work aligns with project standards and objectives.
+After you have submitted your PR, our project maintainers and fellow contributors will review your changes. They will assess your code, offer feedback, and suggest potential improvements. You can engage in discussions with the reviewers. This collaborative process ensures that your work aligns with project standards and objectives.
 
 6. Continuous Integration (CI)
 
-Once you've submitted your PR, our CI system will automatically run tests to evaluate its adherence to our quality standards. Please review the CI results and address any issues or necessary fixes. This step helps maintain the project's overall integrity.
+Once you have submitted your PR, our CI system will automatically run tests to evaluate its adherence to our quality standards. Please review the CI results and address any issues or necessary fixes. This step helps maintain the project's overall integrity.
 
 7. Approval
 
@@ -240,25 +255,23 @@ By contributing to Thread, you are not only helping us advance the project but a
 
 Thank you for being a valued member of the Thread community!
 
-## Contact information
+## Contact Information
 
-If you have questions or need clarifications about contributing to Thread, we encourage you to reach out and ask. Our community is here to support you on your journey to become a contributor. Here's how you can get help:
+If you have questions or need clarifications about contributing to Thread, we encourage you to reach out and ask. Our community is here to support you on your journey to become a contributor. Here is how you can get help:
 
 * Slack Community: Join our Slack community and visit the #questions-about-contributing channel. This channel is dedicated to answering your questions and providing guidance on the contribution process. To get access, please email contact[at]arachne[dot]digital with a bit about who you are and how you would like to contribute.
 * GitHub Issues: If you have a specific question related to an ongoing issue or pull request on GitHub, feel free to comment directly on the relevant thread. Our maintainers and contributors will do their best to assist you.
 * Documentation: Check our documentation for answers to common questions. We strive to maintain comprehensive and up-to-date documentation to help you get started.
 * Contributor Guidelines: Review these Contributor Guidelines for detailed information on the contribution process, coding standards, and more.
-* Contact Us: If you have a question that's not covered by the above options, you can contact us directly via contact[at]arachne[dot]digital. We're here to assist you in any way we can.
+* Contact Us: If you have a question that is not covered by the above options, you can contact us directly via contact[at]arachne[dot]digital. We are here to assist you in any way we can.
 
-Remember, there are no silly questions, and we value your curiosity and engagement. Don't hesitate to ask if you're unsure about anything. We appreciate your interest in contributing to Thread!
+Remember, there are no silly questions, and we value your curiosity and engagement. Do not hesitate to ask if you are unsure about anything. We appreciate your interest in contributing to Thread!
 
-## Submission guidelines
+## Developer's Certificate of Origin v1.1
 
 If you contribute any source code, we need you to agree to the following Developer's Certificate of Origin (DCO) below.
 
-The DCO was originally adopted from the TRAM project. It's a standard declaration ensuring that contributors have the right to submit their work, protecting both the project and our contributors. When making contributions to Thread, please keep in mind that agreeing to the DCO is part of the submission process.
-
-### Developer's Certificate of Origin v1.1
+The DCO was originally adopted from the TRAM project. It is a standard declaration ensuring that contributors have the right to submit their work, protecting both the project and our contributors. When making contributions to Thread, please keep in mind that agreeing to the DCO is part of the submission process.
 
 ```
 By making a contribution to this project, I certify that:
