@@ -67,7 +67,7 @@ For fostering collaborative open source cybersecurity:
 ## Resources required
 - Sections: Product and project execution
 
-What Thread needs to be successful. Some of these resources are supplied by Arache Digital, but contributons are also sought from the Thread community.
+What Thread needs to be successful. Some of these resources are supplied by Arachne Digital, but contributions are also sought from the Thread community.
 
 Design:
 - UI/UX design: User interface and user experience design to create an intuitive and user-friendly interface for Thread.
@@ -195,8 +195,8 @@ Thread automates the laborious task of linking cybersecurity reports and article
 Experience the Thread advantage:
 - Efficiency unleashed: Thread's intelligent algorithms slash mapping time, transforming hours of work into minutes. Focus on strategic insights, not data wrangling.
 - Empowerment in your hands: Take control of your threat intelligence. Thread empowers you to refine and verify threat data, ensuring your cybersecurity defences are rooted in the most accurate and up-to-date insights.
-- Community collaboration: Join an open source community committed to advancing CTI. With Thread, you're part of a network of cybersecurity experts dedicated to a safer digital world.
+- Community collaboration: Join an open source community committed to advancing CTI. With Thread, you are part of a network of cybersecurity experts dedicated to a safer digital world.
 
 Choose Thread and journey towards a future where CTI is agile, collaborative, and precise. Make every cybersecurity decision with confidence.
 
-Thread streamlines CTI, making it efficient, empowering and community led. Know who your threats are, what they do, and when they are targeting you. Learn how to stop them. Focus your security spend on relevant controls and empower your defenders to find malicious behaviour. 
+Thread streamlines CTI, making it efficient, empowering and community led. Know who your threats are, what they do, and when they are targeting you. Learn how to stop them. Focus your security spend on relevant controls and empower your defenders to find malicious behaviour.
