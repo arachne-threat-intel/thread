@@ -5,7 +5,7 @@ Thread is an open-source initiative dedicated to enhancing cyber threat intellig
 
 ## Milestones:
 
-### Milestone 1: Enhanced IoC capture 
+### Milestone 1: Enhanced Indicators of Compromise (IoCs) capture 
 1. Conduct customer feedback analysis to identify IoC capture improvement areas.
 
    - Objective: To align our IoC capture capabilities with the specific needs of our user community.
@@ -13,7 +13,7 @@ Thread is an open-source initiative dedicated to enhancing cyber threat intellig
 
 2. Develop and implement IoC capture improvements based on feedback.
 
-   - Objective: Enhance Thread's ability to capture and catalogue Indicators of Compromise (IoCs) from analysed reports.
+   - Objective: Enhance Thread's ability to capture and catalogue IoCs from analysed reports.
    - Notes: This is currently being worked on.
   
 3. Run a comprehensive testing and validation phase for the IoC capture enhancements.
