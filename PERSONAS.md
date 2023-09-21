@@ -49,7 +49,7 @@ Solutions for Vivi:
 ## Persona 3: Beatrix, IT Administrator
 Background: Beatrix works as an IT administrator at a medium-sized manufacturing company. Her role involves managing the organisation's network and ensuring its security. Beatrix has a strong technical background but is not a cybersecurity expert.
 
-Motivations and Needs: Beatrix needs accessible cybersecurity tools that can assist her in identifying potential threats within the organisation's network. While she isn't a dedicated CTI analyst, she values solutions that can enhance security.
+Motivations and Needs: Beatrix needs accessible cybersecurity tools that can assist her in identifying potential threats within the organisation's network. While she is not a dedicated CTI analyst, she values solutions that can enhance security.
 
 Pathway for Beatrix:
 1. Discovery: Beatrix stumbles upon Thread while researching cybersecurity solutions suitable for her role.
