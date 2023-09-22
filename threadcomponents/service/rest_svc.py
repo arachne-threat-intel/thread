@@ -17,7 +17,7 @@ from functools import partial
 from htmldate import find_date
 from io import StringIO
 from ipaddress import IPv4Address, IPv4Interface, IPv6Address, IPv6Interface
-from urllib.parse import unquote, urlparse
+from urllib.parse import unquote
 
 PUBLIC = 'public'
 UID = 'uid'
@@ -103,7 +103,8 @@ class RestService:
             updates = True
             # We only want to list added attacks after startup because during startup may lead to logging a long list
             if not is_startup:
-                logging.info('Consider adding example uses for %s to %s' % (', '.join(added_attacks), self.attack_dict_loc))
+                logging.info('Consider adding example uses for %s to %s' % (', '.join(added_attacks),
+                                                                            self.attack_dict_loc))
         # If attacks were renamed...
         if name_changes:
             updates = True
@@ -224,7 +225,8 @@ class RestService:
             if unchecked:
                 partial_msg = '%s %s %s' % \
                               ('is' if unchecked == 1 else 'are', unchecked, 'attack' + ('' if unchecked == 1 else 's'))
-                return dict(error='There %s unconfirmed or with no start date for this report.' % partial_msg, alert_user=1)
+                return dict(error='There %s unconfirmed or with no start date for this report.' % partial_msg,
+                            alert_user=1)
             # Check the report status is not queued (because queued reports will have 0 unchecked attacks)
             if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
                 return default_error
@@ -340,7 +342,8 @@ class RestService:
         current['victims']['categories'] = categories or []
         # For each aggressor and victim, have the current-data and request-data ready to compare
         aggressor_assoc = [AssociationWith.CN.value, AssociationWith.RG.value, AssociationWith.GR.value]
-        victim_assoc = [AssociationWith.CN.value, AssociationWith.RG.value, AssociationWith.CA.value, AssociationWith.GR.value]
+        victim_assoc = [AssociationWith.CN.value, AssociationWith.RG.value, AssociationWith.CA.value,
+                        AssociationWith.GR.value]
         to_compare = [('aggressor', current['aggressors'], aggressors, False, aggressor_assoc),
                       ('victim', current['victims'], victims, True, victim_assoc)]
         # For each aggressor and victim, we know we need to go through countries and groups
@@ -348,8 +351,8 @@ class RestService:
                        self.data_svc.country_dict.keys()),
                       ('report_regions', 'region', 'region_ids', AssociationWith.RG.value, 'regions_all',
                        self.data_svc.region_dict.keys()),
-                      ('report_categories', 'category_keyname', 'categories', AssociationWith.CA.value, 'categories_all',
-                       self.web_svc.categories_dict.keys()),
+                      ('report_categories', 'category_keyname', 'categories', AssociationWith.CA.value,
+                       'categories_all', self.web_svc.categories_dict.keys()),
                       ('report_keywords', 'keyword', 'groups', AssociationWith.GR.value, None,
                        self.web_svc.keyword_dropdown_list)]
         sql_list = []
@@ -369,7 +372,8 @@ class RestService:
                     if not currently_is_all:
                         # Requesting all when not currently-all: add an entry in the select-all table for this report
                         db_entry = dict(report_uid=report_id, association_type=assoc_type, association_with=request_k)
-                        sql_list.append(await self.dao.insert_generate_uid('report_all_assoc', db_entry, return_sql=True))
+                        sql_list.append(await self.dao.insert_generate_uid('report_all_assoc', db_entry,
+                                                                           return_sql=True))
                 if currently_is_all:
                     # Currently all when not requesting all and values specified...
                     if (not requesting_is_all) and request_assoc_dict.get(request_k):
@@ -439,9 +443,13 @@ class RestService:
         if (start_date_conv and end_date_conv) and same_dates and (end_date_conv != start_date_conv):
             return dict(error='Specified same dates but different dates provided.', alert_user=1)
         # Check that if one date in the date range is given, it fits with previously-saved/other date in range
-        if (start_date_conv and (not end_date_conv) and r_end and (start_date_conv > r_end.replace(tzinfo=None))) or \
-                (end_date_conv and (not start_date_conv) and r_start and (end_date_conv < r_start.replace(tzinfo=None))):
-            return dict(error='The start/end dates do not follow the order of the existing start/end dates.', alert_user=1)
+        far_start_date = (start_date_conv and (not end_date_conv) and r_end and
+                          (start_date_conv > r_end.replace(tzinfo=None)))
+        near_end_date = (end_date_conv and (not start_date_conv) and r_start and
+                         (end_date_conv < r_start.replace(tzinfo=None)))
+        if far_start_date or near_end_date:
+            return dict(error='The start/end dates do not follow the order of the existing start/end dates.',
+                        alert_user=1)
         # Are there any techniques that have start/end dates that don't fit with these new report dates?
         if (not apply_to_all) and (start_date or end_date):
             start_date_lt, start_date_gt = 'start_date < {par_holder}', 'start_date > {par_holder}'
@@ -451,11 +459,13 @@ class RestService:
                                                                  c=start_date_gt, d=end_date_lt)
                 date_params = [start_date, end_date, end_date, start_date]
             elif start_date:
-                date_query, date_params = '({a} OR {b})'.format(a=start_date_lt, b=end_date_lt), [start_date, start_date]
+                date_query = '({a} OR {b})'.format(a=start_date_lt, b=end_date_lt)
+                date_params = [start_date, start_date]
             else:
                 date_query, date_params = '({a} OR {b})'.format(a=end_date_gt, b=start_date_gt), [end_date, end_date]
-            bounds_query = ("SELECT * FROM report_sentence_hits WHERE " + date_query + " AND report_uid = "
-                            "{par_holder} AND confirmed = %s" % self.dao.db_true_val).format(par_holder=self.dao.db_qparam)
+            bounds_query = (("SELECT * FROM report_sentence_hits WHERE " + date_query + " AND report_uid = "
+                            "{par_holder} AND confirmed = %s" % self.dao.db_true_val)
+                            .format(par_holder=self.dao.db_qparam))
             out_of_bounds = await self.dao.raw_select(bounds_query, parameters=tuple(date_params + [report_id]))
             if out_of_bounds:
                 number = len(out_of_bounds)
@@ -486,7 +496,8 @@ class RestService:
     async def rollback_report(self, request, criteria=None):
         default_error = dict(error='Error completing rollback of report.')
         # Do initial report checks
-        report, error = await self._report_pre_check(request, criteria, 'rollback-report', [UID, 'current_status'], None)
+        report, error = await self._report_pre_check(request, criteria, 'rollback-report', [UID, 'current_status'],
+                                                     None)
         if error:
             return default_error
         report_id, r_status = report[UID], report['current_status']
@@ -622,7 +633,8 @@ class RestService:
                 break
             try:
                 title, url = batch['title'][row].strip(), batch[URL][row].strip()
-                automatically_generated = batch['automatically_generated'][row] if 'automatically_generated' in batch.keys() else False
+                automatically_generated = batch['automatically_generated'][row] \
+                    if 'automatically_generated' in batch.keys() else False
             # Check for malformed request parameters; AttributeError thrown if not strings
             except (AttributeError, KeyError):
                 return default_error
@@ -1193,11 +1205,12 @@ class RestService:
             success.update(dict(info='The selected sentence has been flagged as an IoC.', alert_user=1))
         return success
 
-    async def _pre_add_reject_attack_checks(self, request, sen_id='', sentence_dict=None, attack_id='', attack_dict=None):
+    async def _pre_add_reject_attack_checks(self, request, sen_id='', sentence_dict=None, attack_id='',
+                                            attack_dict=None):
         """Function to check for adding or rejecting attacks, enough sentence and attack data has been given."""
         # Check there is sentence data to access
         try:
-            a, b = sentence_dict[0]['text'], sentence_dict[0]['found_status']
+            _, _ = sentence_dict[0]['text'], sentence_dict[0]['found_status']
             report_id = sentence_dict[0]['report_uid']
         except (KeyError, IndexError):  # sentence error (SE) occurred
             return dict(error='Error. Please quote SE%s when contacting admin.' % sen_id, alert_user=1), None
@@ -1282,7 +1295,7 @@ class RestService:
             sentences = await self.dao.get('report_sentences', dict(uid=sen_id))
             try:
                 sentence_data = sentences[0]
-                report_id, sentence_text = sentence_data['report_uid'], sentence_data['text']
+                report_id, _ = sentence_data['report_uid'], sentence_data['text']
             except (KeyError, TypeError):
                 return None, None, default_error
         else:

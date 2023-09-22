@@ -92,10 +92,12 @@ class DataService:
             # Union the sub-tech query with one for all other techniques (where the tid does not contain a '.')
             # Need to pass in two NULLs so the number of columns for the UNION is the same
             # (and parent_name & parent_tid doesn't exist for these techniques which are not sub-techniques)
-            "UNION SELECT uid, name, tid, inactive, NULL, NULL FROM attack_uids WHERE tid NOT LIKE '%%.%%'{inactive_AND}")
+            "UNION SELECT uid, name, tid, inactive, NULL, NULL FROM attack_uids "
+            "WHERE tid NOT LIKE '%%.%%'{inactive_AND}")
         # Use this query to omit any 'inactive' attacks
         exc_inactive = 'inactive = %s' % self.dao.db_false_val
-        with_par_attack = 'WITH %s(uid, name, tid, inactive, parent_tid, parent_name) AS (%s) ' % (FULL_ATTACK_INFO, '%s')
+        with_par_attack = ('WITH %s(uid, name, tid, inactive, parent_tid, parent_name) AS (%s) ' %
+                           (FULL_ATTACK_INFO, '%s'))
         self.SQL_PAR_ATTACK = sql_par_attack_base.format(inactive_AND=' AND ' + exc_inactive,
                                                          inactive_WHERE=' WHERE attack_uids.' + exc_inactive)
         # A prefix SQL statement to use with queries that want the full attack info
@@ -187,7 +189,8 @@ class DataService:
         attack_data = references
         logging.info('Finished...now creating the database.')
 
-        cur_attacks = (await self.dao.get_dict_value_as_key('uid', table='attack_uids', columns=['name', 'inactive'])) or dict()
+        cur_attacks = ((await self.dao.get_dict_value_as_key('uid', table='attack_uids', columns=['name', 'inactive']))
+                       or dict())
         cur_uids = set(cur_attacks.keys())
         retrieved_uids = set(attack_data.keys())
         added_attacks = retrieved_uids - cur_uids
@@ -298,7 +301,8 @@ class DataService:
                                 if item['target_ref'] in loaded_items:
                                     loaded_items[item['target_ref']]['example_uses'].append(normalized_example)
                                 else:
-                                    logging.critical('[!] Found target_ref not in loaded data: {}'.format(item['target_ref']))
+                                    logging.critical('[!] Found target_ref not in loaded data: {}'
+                                                     .format(item['target_ref']))
         logging.info("[#] {} Techniques found in input file".format(len(loaded_items)))
         # Deduplicate input data from existing items in the DB
         to_add = {x: y for x, y in loaded_items.items() if x not in cur_uids}
@@ -408,7 +412,7 @@ class DataService:
         # The search based on the given status
         search = dict(current_status=status)
         # If extra search criteria has been passed, update the current search dictionary
-        if type(criteria) is dict:
+        if isinstance(criteria, dict):
             search.update(criteria)
         # Execute the search on the reports table
         reports = await self.dao.get('reports', search)
@@ -466,17 +470,20 @@ class DataService:
                 "WHERE report_uid = {sel}".format(sel=self.dao.db_qparam)
         db_results = await self.dao.raw_select(query, parameters=tuple([report_id, report_id, report_id]))
         # Check if this report is flagged at having all victims
-        query = 'SELECT association_type, association_with FROM report_all_assoc WHERE report_uid = %s' % self.dao.db_qparam
+        query = ('SELECT association_type, association_with FROM report_all_assoc WHERE report_uid = %s' %
+                 self.dao.db_qparam)
         all_assoc = await self.dao.raw_select(query, parameters=tuple([report_id]))
         # Set up the dictionary to return the results split by aggressor and victim
-        r_template = dict(groups=[], categories_all=False, region_ids=[], regions_all=False, country_codes=[], countries_all=False)
+        r_template = dict(groups=[], categories_all=False, region_ids=[], regions_all=False, country_codes=[],
+                          countries_all=False)
         if include_display:
             r_template.update(dict(countries=[], regions=[]))
         results = dict(aggressors=deepcopy(r_template), victims=deepcopy(r_template))
         # Flag select-all in results: only doing this for victims
         for results_key, db_assoc_type in [('victims', 'victim')]:
-            results[results_key]['categories_all'] = any((r.get('association_with') == 'category') and
-                                                         (r.get('association_type') == db_assoc_type) for r in all_assoc)
+            results[results_key]['categories_all'] = any(
+                (r.get('association_with') == 'category') and
+                (r.get('association_type') == db_assoc_type) for r in all_assoc)
             results[results_key]['countries_all'] = any((r.get('association_with') == 'country') and
                                                         (r.get('association_type') == db_assoc_type) for r in all_assoc)
         # Go through the retrieved database results and place result in appropriate dictionary/list
@@ -490,8 +497,9 @@ class DataService:
             else:
                 logging.error('INVALID report association `%s` saved in db, uid `%s`' % (assoc_type, entry.get('uid')))
                 continue
-            # Then determine if this result is for a group, region or country: append value if not already flagged as select-all
-            assoc_value_g, assoc_value_r, assoc_value_c = entry.get('keyword'), entry.get('region'), entry.get('country')
+            # Then determine if this result is for a group, region or country: append value if not flagged as select-all
+            assoc_value_g, assoc_value_r = entry.get('keyword'), entry.get('region')
+            assoc_value_c = entry.get('country')
             if not (assoc_value_g or assoc_value_r or assoc_value_c):
                 logging.error('GROUP, REGION or COUNTRY missing in db entry uid `%s`' % entry.get('uid'))
                 continue
@@ -518,7 +526,8 @@ class DataService:
     async def get_report_sentences_with_attacks(self, report_id=''):
         """Function to retrieve all report sentences and any attacks they may have given a report ID."""
         # Ensure date fields are converted into strings
-        start_date = self.dao.db.sql_date_field_to_str('report_sentence_hits.start_date', field_name_as='tech_start_date')
+        start_date = self.dao.db.sql_date_field_to_str('report_sentence_hits.start_date',
+                                                       field_name_as='tech_start_date')
         end_date = self.dao.db.sql_date_field_to_str('report_sentence_hits.end_date', field_name_as='tech_end_date')
         select_join_query = (
             # Using the temporary table with parent-technique info
@@ -621,7 +630,8 @@ class DataService:
 
     async def get_confirmed_techniques_for_nav_export(self, report_id):
         # Ensure date fields are converted into strings
-        start_date = self.dao.db.sql_date_field_to_str('report_sentence_hits.start_date', field_name_as='tech_start_date')
+        start_date = self.dao.db.sql_date_field_to_str('report_sentence_hits.start_date',
+                                                       field_name_as='tech_start_date')
         end_date = self.dao.db.sql_date_field_to_str('report_sentence_hits.end_date', field_name_as='tech_end_date')
         # The SQL select join query to retrieve the confirmed techniques for the nav export
         select_join_query = (
@@ -831,6 +841,6 @@ class DataService:
                     list_of_techs.append((v['id'], v['name']))
                 else:
                     list_of_legacy.append(v['id'])
-            except:
+            except Exception:
                 print(v)
         return list_of_legacy, list_of_techs

@@ -93,7 +93,7 @@ class WebAPI:
     async def add_base_page_data(self, request, data=None):
         """Function to add the base page data to context data given a request."""
         # If there is no data dictionary to update, there is nothing to do
-        if type(data) != dict:
+        if not isinstance(data, dict):
             return
         # Update data with the base page data
         data.update(self.BASE_PAGE_DATA)
@@ -238,18 +238,20 @@ class WebAPI:
                     update_attack_time=lambda d: self.rest_svc.update_attack_time(request=request, criteria=d),
                     set_report_keywords=lambda d: self.rest_svc.set_report_keywords(request=request, criteria=d),
                     suggest_indicator_of_compromise=lambda d: self.rest_svc.suggest_ioc(request=request, criteria=d),
-                    add_indicator_of_compromise=lambda d: self.rest_svc.update_ioc(request=request, criteria=d, adding=True),
+                    add_indicator_of_compromise=lambda d: self.rest_svc.update_ioc(request=request, criteria=d,
+                                                                                   adding=True),
                     update_indicator_of_compromise=lambda d: self.rest_svc.update_ioc(request=request, criteria=d),
-                    remove_indicator_of_compromise=lambda d: self.rest_svc.update_ioc(request=request, criteria=d, deleting=True),
+                    remove_indicator_of_compromise=lambda d: self.rest_svc.update_ioc(request=request, criteria=d,
+                                                                                      deleting=True),
                 ))
             method = options[request.method][index]
         except KeyError:
             return web.json_response(None, status=404)
         output = await method(data)
         status = 200
-        if output is not None and type(output) != dict:
+        if (output is not None) and (not isinstance(output, dict)):
             pass
-        elif output is None or (output.get('success') and not output.get('alert_user')):
+        elif (output is None) or (output.get('success') and not output.get('alert_user')):
             status = 204
         elif output.get('ignored'):
             status = 202
@@ -432,7 +434,8 @@ class WebAPI:
         sentences = report_data.get('sentences', [])
         keywords = dict(aggressors=report_data['aggressors'], victims=report_data['victims'])
         indicators_of_compromise = report_data.get('indicators_of_compromise', [])
-        all_regions = {r for sub_r in [keywords[k].get('region_ids', []) for k in ['aggressors', 'victims']] for r in sub_r}
+        all_regions = {r for sub_r in [keywords[k].get('region_ids', []) for k in ['aggressors', 'victims']]
+                       for r in sub_r}
         regions_col_name = 'Regions & Political Blocs' + ('*' if all_regions else '')
 
         dd = dict()
@@ -531,7 +534,8 @@ class WebAPI:
 
         # Expansion on regions if applicable
         if all_regions:
-            dd['content'].append(dict(text='\n*Arachne Digital defines these regions as follows:\n\n', pageBreak='before'))
+            dd['content'].append(dict(text='\n*Arachne Digital defines these regions as follows:\n\n',
+                                      pageBreak='before'))
             regions_table = dict(widths=['35%', '65%'], body=[])
             for region_id in all_regions:
                 country_codes = self.data_svc.region_countries_dict.get(region_id, [])
@@ -545,7 +549,8 @@ class WebAPI:
 
     async def rebuild_ml(self, request):
         """
-        This is a new api function to force a rebuild of the ML models. This is intended to be kicked off in the background at some point
+        This is a new api function to force a rebuild of the ML models.
+        This is intended to be kicked off in the background at some point.
         :param request: uh, nothing?
         :return: status of rebuild
         """
