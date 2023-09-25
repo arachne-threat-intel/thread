@@ -747,8 +747,10 @@ class RestService:
         input: nil
         output: nil
         """
+        logging.info('CHECKING QUEUE')
         self.clean_current_tasks()
         while self.queue.qsize() > 0:  # while there are still tasks to do...
+            logging.info('QUEUE SIZE: ' + str(self.queue.qsize()))
             await asyncio.sleep(1)  # allow other tasks to run while waiting
             while len(self.current_tasks) >= self.MAX_TASKS:  # check resource pool until a task is finished
                 self.clean_current_tasks()
@@ -756,7 +758,12 @@ class RestService:
             criteria = await self.queue.get()  # get next task off queue and run it
             # Use run_in_executor (due to event loop potentially blocked otherwise) to start analysis
             loop = asyncio.get_running_loop()
-            task = loop.run_in_executor(None, partial(self.run_start_analysis, criteria=criteria))
+            try:
+                task = loop.run_in_executor(None, partial(self.run_start_analysis, criteria=criteria))
+            except Exception as e:
+                logging.error('Report analysis failed: ' + str(e))
+                await self.error_report(criteria)
+                continue
             self.current_tasks.append(task)
 
     def run_start_analysis(self, criteria=None):
@@ -770,6 +777,13 @@ class RestService:
         finally:
             loop.close()
 
+    async def error_report(self, report):
+        """Function to error a given report."""
+        report_id = report[UID]
+        await self.dao.update('reports', where=dict(uid=report_id), data=dict(error=self.dao.db_true_val))
+        self.remove_report_from_queue_map(report)
+        await self.remove_report_if_automatically_generated(report_id)
+
     async def start_analysis(self, criteria=None):
         report_id = criteria[UID]
         logging.info('Beginning analysis for ' + report_id)
@@ -777,9 +791,7 @@ class RestService:
         original_html, newspaper_article = await self.web_svc.map_all_html(criteria[URL])
         if original_html is None and newspaper_article is None:
             logging.error('Skipping report; could not download url ' + criteria[URL])
-            await self.dao.update('reports', where=dict(uid=report_id), data=dict(error=self.dao.db_true_val))
-            self.remove_report_from_queue_map(criteria)
-            await self.remove_report_if_automatically_generated(report_id)
+            await self.error_report(criteria)
             return
 
         html_data = newspaper_article.text.replace('\n', '<br>')
@@ -796,9 +808,7 @@ class RestService:
         html_sentences = self.web_svc.tokenize_sentence(article['html_text'])
         if not html_sentences:
             logging.error('Skipping report; could not retrieve sentences from url ' + criteria[URL])
-            await self.dao.update('reports', where=dict(uid=report_id), data=dict(error=self.dao.db_true_val))
-            self.remove_report_from_queue_map(criteria)
-            await self.remove_report_if_automatically_generated(report_id)
+            await self.error_report(criteria)
             return
 
         rebuilt, model_dict = await self.ml_svc.build_pickle_file(self.list_of_techs, self.json_tech)

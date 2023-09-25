@@ -687,6 +687,7 @@ class DataService:
     async def remove_expired_reports(self):
         """Function to delete expired reports."""
         # The query below uses a timestamp function which differs across DB engines; obtain the correct one
+        logging.info('DELETE EXPIRED REPORTS: START')
         time_now = self.dao.db_func(self.dao.db.FUNC_TIME_NOW) + '()'
         # Expired reports are where its timestamp is behind the current time (hence less-than)
         query = ' FROM reports WHERE expires_on < %s' % time_now
@@ -697,6 +698,7 @@ class DataService:
                 logging.info('Expired URL will be deleted: `%s`' % url)
         delete_query = 'DELETE' + query
         await self.dao.run_sql_list(sql_list=[(delete_query,)])
+        logging.info('DELETE EXPIRED REPORTS: END')
 
     async def remove_report_by_id(self, report_id=''):
         """Function to delete a report by its ID."""

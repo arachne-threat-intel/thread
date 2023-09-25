@@ -85,10 +85,12 @@ class WebAPI:
 
     async def fetch_and_update_keywords(self):
         """Function to fetch and update the list of keywords."""
+        logging.info('UPDATE FROM R-STONE: START')
         # If updates occurred when fetching the keywords, we need to update the dropdown list
         updates = await self.data_svc.insert_keyword_json_data()
         if updates:
             await self.set_keyword_dropdown_list()
+        logging.info('UPDATE FROM R-STONE: END')
 
     async def add_base_page_data(self, request, data=None):
         """Function to add the base page data to context data given a request."""
