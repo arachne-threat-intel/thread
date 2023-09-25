@@ -28,7 +28,6 @@ class MLService:
     async def build_models(self, tech_id, tech_name, techniques):
         """Function to build Logistic Regression Classification models based off of the examples provided."""
         lst1, lst2, false_list, sampling = [], [], [], []
-        getuid = ''
         len_truelabels = 0
 
         for k, v in techniques.items():
@@ -37,7 +36,6 @@ class MLService:
                     lst1.append(await self.web_svc.tokenize(i))
                     lst2.append(True)
                     len_truelabels += 1
-                    getuid = k
                 # Collect the false_positive samples here too, which are the incorrectly labeled texts from
                 # reviewed reports, we will include these in the Negative Class.
                 if 'false_positives' in v.keys():
@@ -170,7 +168,7 @@ class MLService:
             count = 0
             for vals in final_df['category']:
                 await asyncio.sleep(0.001)
-                if vals == True:
+                if vals:
                     list_of_sentences[count]['ml_techniques_found'].append((tech_id, tech_name))
                 count += 1
         return list_of_sentences

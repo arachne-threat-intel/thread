@@ -5,7 +5,7 @@ from uuid import uuid4
 
 
 class TestRestService(ThreadAppTest):
-    async def test_remove_report_if_low_quality_should_return_when_report_does_not_exist(self):
+    async def test_low_quality_check_should_return_when_report_does_not_exist(self):
         """
         Function to check if `remove_report_if_low_quality` method returns
         when there is no report with the provided ID.
@@ -24,7 +24,7 @@ class TestRestService(ThreadAppTest):
         self.data_svc.get_report_unique_techniques_count.assert_not_called()
         self.data_svc.remove_report_by_id.assert_not_called()
 
-    async def test_remove_report_if_low_quality_should_not_remove_report_when_not_automatically_generated(self):
+    async def test_low_quality_check_should_not_remove_report_when_not_automatically_generated(self):
         """
         Function to check if `remove_report_if_low_quality` method does not remove the report
         when it has not been automatically generated.
@@ -44,7 +44,7 @@ class TestRestService(ThreadAppTest):
         self.data_svc.get_report_unique_techniques_count.assert_not_called()
         self.data_svc.remove_report_by_id.assert_not_called()
 
-    async def test_remove_report_if_low_quality_should_remove_report_when_techniques_found_less_than_minimum(self):
+    async def test_low_quality_check_should_remove_report_when_techniques_found_less_than_minimum(self):
         """
         Function to check if `remove_report_if_low_quality` method removes the report
         when it has been automatically generated and
@@ -72,7 +72,7 @@ class TestRestService(ThreadAppTest):
             captured.records[0].getMessage()
         )
 
-    async def test_remove_report_if_low_quality_should_not_remove_report_when_techniques_found_greater_than_minimum(self):
+    async def test_low_quality_check_should_not_remove_report_when_techniques_found_greater_than_minimum(self):
         """
         Function to check if `remove_report_if_low_quality` method does not remove the report
         when it has been automatically generated and
@@ -100,7 +100,7 @@ class TestRestService(ThreadAppTest):
             captured.records[0].getMessage()
         )
 
-    async def test_remove_report_if_low_quality_should_not_remove_report_when_techniques_found_equals_minimum(self):
+    async def test_low_quality_check_should_not_remove_report_when_techniques_found_equals_minimum(self):
         """"
         Function to check if `remove_report_if_low_quality` method does not remove the report
         when it has been automatically generated and

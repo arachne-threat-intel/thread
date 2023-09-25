@@ -155,7 +155,8 @@ class TestReports(ThreadAppTest):
         """Function to test the behaviour of start analysis when there is an error."""
         report_id = str(uuid4())
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this'), fail_map_html=True)
+        await self.submit_test_report(dict(uid=report_id, title='Analyse This!', url='analysing.this'),
+                                      fail_map_html=True)
         # Check in the DB that the status did not change
         report_db = await self.db.get('reports', equal=dict(uid=report_id))
         self.assertEqual(report_db[0].get('current_status'), ReportStatus.QUEUE.value,
@@ -237,7 +238,8 @@ class TestReports(ThreadAppTest):
         # Check an unsuccessful response was sent
         error_msg = resp_json.get('error')
         self.assertTrue(resp.status == 500, msg='Setting a report status to `Queue` resulted in a non-500 response.')
-        self.assertTrue(error_msg == 'Error setting status.', msg='A different error appeared for re-queueing a report.')
+        self.assertTrue(error_msg == 'Error setting status.',
+                        msg='A different error appeared for re-queueing a report.')
 
     async def test_add_new_attack(self):
         """Function to test adding a new attack to a sentence."""
@@ -500,7 +502,8 @@ class TestReports(ThreadAppTest):
         self.assertEqual(set(k['aggressors']['groups']), {'APT2'}, msg='Aggressor groups' + error_sfx)
         self.assertFalse(k['aggressors']['categories_all'], msg='Aggressor categories select-all' + error_sfx)
         self.assertFalse(k['aggressors']['countries_all'], msg='Aggressor countries select-all' + error_sfx)
-        self.assertEqual(set(k['aggressors']['countries']), {'Wakanda'}, msg='Aggressor countries (display)' + error_sfx)
+        self.assertEqual(set(k['aggressors']['countries']), {'Wakanda'},
+                         msg='Aggressor countries (display)' + error_sfx)
         self.assertEqual(set(k['victims']['country_codes']), {'HB'}, msg='Victim countries' + error_sfx)
         self.assertEqual(set(k['victims']['groups']), set(), msg='Victim groups' + error_sfx)
         self.assertTrue(k['victims']['categories_all'], msg='Victim categories select-all' + error_sfx)

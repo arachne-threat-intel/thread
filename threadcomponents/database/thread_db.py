@@ -101,7 +101,7 @@ class ThreadDB(ABC):
         # If we have args, construct the string f(a, b, ...) (where str args except fields and query params are quoted)
         if args:
             return '%s(%s)' % (func_name, ', '.join(
-                ('\'%s\'' % x if ((type(x) is str) and (x != self.query_param) and (x not in unquote)) else str(x))
+                ('\'%s\'' % x if (isinstance(x, str) and (x != self.query_param) and (x not in unquote)) else str(x))
                 for x in args))
         # Else if no args are supplied, just return the function name
         else:
@@ -195,13 +195,13 @@ class ThreadDB(ABC):
     def _check_method_parameters(table, data, data_allowed_as_none=False, method_name='unspecified'):
         """Function to check parameters passed to CRUD methods."""
         # Check the table is a string
-        if type(table) != str:
+        if not isinstance(table, str):
             raise TypeError('Non-string arg passed for table in ThreadDB.%s(): %s' % (method_name, str(table)))
         # Proceed with checks if data is non-None but allowed to be so
         if data_allowed_as_none and data is None:
             return
         # Check values passed to this method are dictionaries (column=value key-val pairs)
-        if type(data) != dict:
+        if not isinstance(data, dict):
             raise TypeError('Non-dictionary arg passed in ThreadDB.%s(table=%s): %s' % (method_name, table, str(data)))
         # If the data is not allowed to be None (or empty), check data has been provided
         if (not data_allowed_as_none) and (not len(data)):

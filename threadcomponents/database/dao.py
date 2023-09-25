@@ -44,7 +44,8 @@ class Dao:
         return await self.db.get_column_as_list(table, column)
 
     async def get_dict_value_as_key(self, column_key, table=None, columns=None, sql=None, sql_params=None):
-        return await self.db.get_dict_value_as_key(column_key, table=table, columns=columns, sql=sql, sql_params=sql_params)
+        return await self.db.get_dict_value_as_key(column_key, table=table, columns=columns, sql=sql,
+                                                   sql_params=sql_params)
 
     async def update(self, table, where=None, data=None, return_sql=False):
         return await self.db.update(table, where=where, data=data, return_sql=return_sql)
