@@ -55,8 +55,8 @@ class RegService:
             attack_technique = attack_uid[0]['uid']
             attack_technique_name = '{} (r)'.format(attack_uid[0]['name'])
             attack_tid = attack_uid[0]['tid']
-            data = dict(sentence_id=sentence_id, attack_uid=attack_technique, attack_technique_name=attack_technique_name,
-                        report_uid=report_id, attack_tid=attack_tid, initial_model_match=self.dao.db_true_val)
+            data = dict(sentence_id=sentence_id, attack_uid=attack_technique, initial_model_match=self.dao.db_true_val,
+                        attack_technique_name=attack_technique_name, report_uid=report_id, attack_tid=attack_tid)
             if tech_start_date:
                 data.update(dict(start_date=tech_start_date))
             await self.dao.insert_with_backup('report_sentence_hits', data)

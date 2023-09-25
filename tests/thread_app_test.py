@@ -198,7 +198,8 @@ class ThreadAppTest(AioHTTPTestCase):
                     sen_id = sen.get(UID_KEY)
             if not sen_id:
                 return
-            await self.client.post('/rest', json=dict(index='add_attack', sentence_id=sen_id, attack_uid=confirm_attack))
+            await self.client.post('/rest', json=dict(index='add_attack', sentence_id=sen_id,
+                                                      attack_uid=confirm_attack))
 
     def mock_current_attack_data(self, attack_list=None):
         """Helper-method to mock the retrieval of the current Att%ck data by returning a specified attack-list."""

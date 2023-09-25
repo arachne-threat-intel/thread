@@ -50,11 +50,13 @@ async def update_attack_data_scheduler():
     today = datetime.now()
     if today.day != 1:
         return
+    logging.info('UPDATE ATTACK DATA: START')
     # Pick a quiet/suitable time to do the update (early in the next morning)
     update_datetime = datetime(today.year, today.month, today.day + 1, 1, 0, 0)
     update_time_diff = update_datetime - today
     await asyncio.sleep(update_time_diff.seconds)
     await website_handler.fetch_and_update_attack_data()
+    logging.info('UPDATE ATTACK DATA: END')
 
 
 async def background_tasks(taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=None):

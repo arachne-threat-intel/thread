@@ -12,7 +12,8 @@ class TestAttackData(ThreadAppTest):
         # For our test attack data, we predict 2 will not be sub attacks (no Txx.xx TID) and 1 will be
         predicted = [dict(uid='d99999', name='Drain', tid='T1029', inactive=0, parent_tid=None, parent_name=None),
                      dict(uid='f12345', name='Fire', tid='T1562', inactive=0, parent_tid=None, parent_name=None),
-                     dict(uid='f32451', name='Firaga', tid='T1562.004', inactive=0, parent_tid='T1562', parent_name='Fire')]
+                     dict(uid='f32451', name='Firaga', tid='T1562.004', inactive=0, parent_tid='T1562',
+                          parent_name='Fire')]
         # The generated dropdown list to check against our prediction
         result = self.web_api.attack_dropdown_list
         for attack_dict in predicted:
