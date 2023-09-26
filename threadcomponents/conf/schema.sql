@@ -43,6 +43,14 @@ CREATE TABLE IF NOT EXISTS report_sentences (
     FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS report_sentence_queue_progress (
+    -- For queued reports, save the number of sentences expected to be processed
+    uid VARCHAR(60) PRIMARY KEY,
+    report_uid VARCHAR(60),
+    sentence_count INTEGER,
+    FOREIGN KEY(report_uid) REFERENCES reports(uid) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS categories (
     uid VARCHAR(60) PRIMARY KEY,
     -- The category key
