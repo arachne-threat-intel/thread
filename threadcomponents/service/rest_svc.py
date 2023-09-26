@@ -761,7 +761,7 @@ class RestService:
             # Use run_in_executor (due to event loop potentially blocked otherwise) to start analysis
             loop = asyncio.get_running_loop()
             try:
-                task = loop.run_in_executor(None, partial(self.run_start_analysis, criteria=criteria))
+                task = await loop.run_in_executor(None, partial(self.run_start_analysis, criteria=criteria))
             except Exception as e:
                 logging.error('Report analysis failed: ' + str(e))
                 await self.error_report(criteria)
