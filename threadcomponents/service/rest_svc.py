@@ -171,9 +171,11 @@ class RestService:
         for report in reports:
             # Sentences from this report may have previously populated other db tables
             # Being selected from the queue will begin analysis again so delete previous progress
-            await self.dao.delete('report_sentences', dict(report_uid=report[UID]))
-            await self.dao.delete('report_sentence_hits', dict(report_uid=report[UID]))
-            await self.dao.delete('original_html', dict(report_uid=report[UID]))
+            report_id = report[UID]
+            await self.dao.delete('report_sentences', dict(report_uid=report_id))
+            await self.dao.delete('report_sentence_queue_progress', dict(report_uid=report_id))
+            await self.dao.delete('report_sentence_hits', dict(report_uid=report_id))
+            await self.dao.delete('original_html', dict(report_uid=report_id))
             # Get the relevant queue for this user
             queue = self.get_queue_for_user(token=report.get('token'))
             # Add to the queue
@@ -811,6 +813,9 @@ class RestService:
             await self.error_report(criteria)
             return
 
+        await self.dao.insert_generate_uid('report_sentence_queue_progress',
+                                           dict(report_uid=report_id, sentence_count=len(html_sentences)))
+
         rebuilt, model_dict = await self.ml_svc.build_pickle_file(self.list_of_techs, self.json_tech)
 
         ml_analyzed_html = await self.ml_svc.analyze_html(self.list_of_techs, model_dict, html_sentences)
@@ -850,7 +855,8 @@ class RestService:
         # Update the relevant queue for this user
         self.remove_report_from_queue_map(criteria)
         logging.info('Finished analysing report ' + report_id)
-        # Remove report if low quality
+        # DB tidy-up including removing report if low quality
+        await self.dao.delete('report_sentence_queue_progress', dict(report_uid=report_id))
         await self.remove_report_if_low_quality(report_id)
 
     async def remove_report_if_low_quality(self, report_id):
