@@ -62,7 +62,16 @@ Remember that every contribution, regardless of its size or nature, is valuable 
 
 ## Coding Standards
 
-Anything to add here?
+- Please fork Thread to create Pull Requests (PRs) to contribute to our codebase.
+- For Python code, we aim to follow recommended guides (https://peps.python.org/pep-0008/). Your IDE may already enforce these for you.
+- If complex code is required, please comment.
+- When making a commit, please begin your commit message with - if applicable - the tagged Issue number of what you are working on, `#<Issue number>: Added a unicorn to the homepage`.
+- Small & few unrelated changes are fine; numerous or larger ones should be a separate branch and/or Issue, e.g.
+   - whilst working on branch x, I spotted a typo in an unrelated file > commit in branch x.
+      - If I spot a PR where the file or lines-changed includes the small typo, I will consider flagging this in the PR so the PR-owner can do the typo-fix themselves (reducing potential merge conflicts).
+   - whilst working on branch y, I spotted numerous typos in an unrelated file > I'll leave branch y as is and consider raising an Issue for this typo or - if I am ok with branch maintenance - create a new branch to fix this.
+- If you are introducing a new concept - e.g. a new field on a report - please consider updating tests and/or adding a new test case.
+   - Our test-suite currently only covers the back-end of Thread's functionality.
 
 ## Issue Tracking
 
