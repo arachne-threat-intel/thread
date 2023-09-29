@@ -8,7 +8,7 @@ Behind Thread is a passionate team of cybersecurity enthusiasts who believe in t
 Whether you are here to explore Thread as a user, potential contributor, or simply out of curiosity, we extend a warm welcome. Your interest and involvement mean a lot to us, and we cannot wait to embark on this cybersecurity journey together. So, let us dive in and discover how Thread can revolutionise the way we approach CTI!
 
 ## Project Mission & Summary:
-Thread is an open-source initiative dedicated to enhancing cyber threat intelligence (CTI) mapping by automating the process of linking cybersecurity reports and articles to MITRE ATT&CK®. Our mission is to empower security professionals, organisations, and analysts by providing efficient, empowering, and community driven CTI capabilities.
+Thread is an open-source initiative dedicated to enhancing cyber threat intelligence (CTI) mapping by automating the process of linking cybersecurity reports and articles to MITRE ATT&CK®. Our mission is to empower security professionals, organisations, and analysts by providing efficient, empowering, and community-driven CTI capabilities.
 
 * [Thread in Simple Terms](#thread-in-simple-terms)
 * [Why Thread?](#why-thread)
@@ -25,7 +25,7 @@ Thread is an open-source initiative dedicated to enhancing cyber threat intellig
 * [How Do I Contribute?](#how-do-i-contribute)
 * [Contact Us](#contact-us)
 * [Understanding MITRE ATT&CK, TTPs and How to Leverage Them](#understanding-mitre-attck-ttps-and-how-to-leverage-them)
-* [Acknowledgments](#acknowledgments)
+* [Acknowledgements](#acknowledgements)
 * [Notice](#notice)
 
 ## Thread in Simple Terms
@@ -113,7 +113,7 @@ When you click on a sentence in the report, you can do the following:
 
 As more data is fed to the tool and is reviewed, any rebuilt models are expected to become more accurate with these predictions.
 
-If you have made changes, you are not happy with and cannot undo easily (e.g., deleted a sentence), you can rollback a report via the homepage (found in the **In Review** column).
+If you have made changes you are not happy with and cannot undo them easily (e.g., deleted a sentence), you can rollback a report via the homepage (found in the **In Review** column).
 
 ## Exporting a report
 Once you have reviewed the entire report, Thread’s results can be exported as a PDF by clicking the **Export PDF** button on the top centre of the page. This will create a PDF containing a raw text version of the report, and a table with the ATT&CK technique and its corresponding sentence. This can be done for all reports out of the queue but those not in the **Completed** column will be considered draft reports.
@@ -175,7 +175,7 @@ TTPs are like the DNA of cyber threats. By identifying and understanding them, y
 
 To give you a primer in these concepts, or if videos are just more your thing, check out [Putting MITRE ATT&CK™ into Action with What You Have, Where You Are](https://www.youtube.com/watch?v=bkfwMADar0M), an amazing presentation by Katie Nickels.
 
-## Acknowledgments
+## Acknowledgements
 
 We extend our sincere appreciation to the dedicated individuals whose contributions have made Thread a thriving open-source community and a valuable resource for the cybersecurity community!
 

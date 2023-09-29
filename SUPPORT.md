@@ -2,9 +2,9 @@
 
 Are you looking for support with any aspect of Thread?
 
-The [README](https://github.com/arachne-threat-intel/thread/blob/main/README.md) file covers basic information about the installation and usage of Thread, along with information about the Thread community.
+The [README](README.md) file covers basic information about the installation and usage of Thread, along with information about the Thread community.
 
-The [CONTRIBUTING](https://github.com/arachne-threat-intel/thread/blob/main/CONTRIBUTING.md) file covers the guidelines that cover all contributions to the Thread community.
+The [CONTRIBUTING](CONTRIBUTING.md) file covers the guidelines that cover all contributions to the Thread community.
 
 The [Arachne Digital Website](https://arachne.digital/thread) has further information about the usage of Thread.
 

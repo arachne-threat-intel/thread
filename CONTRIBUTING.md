@@ -62,7 +62,7 @@ Remember that every contribution, regardless of its size or nature, is valuable 
 
 ## Coding Standards
 
-- Please fork Thread to create Pull Requests (PRs) to contribute to our codebase.
+- Please fork Thread to create Pull Requests (PRs) to contribute to our codebase. See [Code Contribution Workflow](#code-contribution-workflow) for more details.
 - For Python code, we aim to follow recommended guides (https://peps.python.org/pep-0008/). Your IDE may already enforce these for you.
 - If complex code is required, please comment.
 - When making a commit, please begin your commit message with - if applicable - the tagged Issue number of what you are working on, `#<Issue number>: Added a unicorn to the homepage`.
@@ -121,7 +121,7 @@ When creating a bug report, please provide as much detail as possible:
 * Title: A concise, descriptive title.
 * Description: A detailed description of the bug, including what you expected to happen and what actually happened.
 * Reproduction Steps: Clear steps to reproduce the bug. This helps us isolate the issue.
-* Environment Information: Include details about your environment, such as operating system, browser version, or software version.
+* Environment Information: Include details about your environment, such as Thread-config settings, Thread version, operating system, browser version, or versions of related-software (e.g. Python packages).
 * Screenshots or Error Logs: If applicable, include screenshots or error logs to illustrate the problem.
 
 4. Label the Issue
@@ -254,9 +254,8 @@ Thread is offered under the original TRAM licence, the [Apache License 2.0](LICE
 At Arachne Digital, we greatly value the contributions of our community members. Your dedication and hard work drive the success of Thread. To show our appreciation, we have established several ways to recognise and attribute your contributions.
 
 * Contributor Hall of Fame: Our Contributor Hall of Fame is a dedicated page on our website where we highlight the exceptional contributions made by community members. This is where your name and profile can shine, alongside a description of your significant contributions.
-* Authorship and Credits: Within the codebase, we encourage the use of author tags or comments to give direct attribution to contributors for specific sections or features they have authored. For example, a comment like // Authored by [Your Name] within the code provides clear attribution.
 * Commit Messages and Changelogs: Our detailed changelog includes the names of contributors next to the changes or features they have introduced. This makes it easy for users and fellow contributors to see who contributed what in each release.
-* Project Credits: In our README file, you will find an "[Acknowledgments](https://github.com/arachne-threat-intel/thread/blob/main/README.md#acknowledgements)" section that lists the names of individuals who have made substantial contributions.
+* Project Credits: In our README file, you will find an "[Acknowledgements](README.md#acknowledgements)" section that lists the names of individuals who have made substantial contributions.
 * Social Media Shoutouts: We use our project's social media channels to publicly acknowledge and thank contributors. We share their profiles, contributions, and achievements with our followers.
 * Personal Thank-You Notes: As a token of our appreciation, we may send personalised thank-you notes or emails to contributors. These messages will express our gratitude for your efforts and acknowledge your unique contributions.
 

@@ -199,4 +199,4 @@ Experience the Thread advantage:
 
 Choose Thread and journey towards a future where CTI is agile, collaborative, and precise. Make every cybersecurity decision with confidence.
 
-Thread streamlines CTI, making it efficient, empowering and community led. Know who your threats are, what they do, and when they are targeting you. Learn how to stop them. Focus your security spend on relevant controls and empower your defenders to find malicious behaviour.
+Thread streamlines CTI, making it efficient, empowering and community-led. Know who your threats are, what they do, and when they are targeting you. Learn how to stop them. Focus your security spend on relevant controls and empower your defenders to find malicious behaviour.
