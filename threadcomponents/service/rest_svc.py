@@ -56,9 +56,10 @@ class AssociationWith(Enum):
 
 class RestService:
     def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix='', queue_limit=None, max_tasks=1,
-                 attack_file_settings=None):
+                 sentence_limit=None, attack_file_settings=None):
         self.MAX_TASKS = max_tasks
         self.QUEUE_LIMIT = queue_limit
+        self.SENTENCE_LIMIT = sentence_limit
         self.dao = dao
         self.data_svc = data_svc
         self.web_svc = web_svc
@@ -814,6 +815,7 @@ class RestService:
             await self.error_report(criteria)
             return
 
+        html_sentences = html_sentences[:self.SENTENCE_LIMIT]
         await self.dao.insert_generate_uid('report_sentence_queue_progress',
                                            dict(report_uid=report_id, sentence_count=len(html_sentences)))
 

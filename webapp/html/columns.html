@@ -33,6 +33,14 @@
     </div>
   </div>
 {% endif %}
+{% if sentence_limit_helptext %}
+  <div class="p-3 px-5">
+    <div class="alert alert-primary d-flex align-items-center" role="alert">
+      <i class="pe-3 fa-solid fa-layer-group"></i>
+      <div>{{sentence_limit_helptext}}</div>
+    </div>
+  </div>
+{% endif %}
 
 <h3 class="display-4 text-center">{{ file }}</h3>
 

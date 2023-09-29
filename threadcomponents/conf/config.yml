@@ -40,3 +40,5 @@ update_json_file: False
 json_file_indent: 2
 # The maximum number of reports allowed in the queue; for no limit, remove this field or set value x < 1
 queue_limit: 20
+# The maximum number of sentences to analyse in reports; for no limit, remove this field or set value x < 1
+sentence_limit: 500

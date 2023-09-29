@@ -173,6 +173,7 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None, db_connect
         js_src = config.get('js-libraries', 'js-online-src')
         max_tasks = config.get('max-analysis-tasks', 1)
         queue_limit = config.get('queue_limit', 0)
+        sentence_limit = config.get('sentence_limit', 0)
         json_file = config.get('json_file', None)
         update_json_file = config.get('update_json_file', False)
         json_file_indent = config.get('json_file_indent', 2)
@@ -189,6 +190,11 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None, db_connect
             queue_limit = None
     except TypeError:
         raise ValueError(int_error % 'queue_limit')
+    try:
+        if sentence_limit < 1:
+            sentence_limit = None
+    except TypeError:
+        raise ValueError(int_error % 'sentence_limit')
     try:
         max_tasks = max(1, max_tasks)
     except TypeError:
@@ -219,7 +225,8 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None, db_connect
     ml_svc = MLService(web_svc=web_svc, dao=dao, dir_prefix=dir_prefix)
     attack_file_settings = dict(filepath=json_file_path, update=update_json_file, indent=json_file_indent)
     rest_svc = RestService(web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix=dir_prefix, queue_limit=queue_limit,
-                           max_tasks=max_tasks, attack_file_settings=attack_file_settings)
+                           sentence_limit=sentence_limit, max_tasks=max_tasks,
+                           attack_file_settings=attack_file_settings)
     services = dict(dao=dao, data_svc=data_svc, ml_svc=ml_svc, reg_svc=reg_svc, web_svc=web_svc, rest_svc=rest_svc)
     website_handler = WebAPI(services=services, js_src=js_src)
     start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict, app_setup_func=app_setup_func)
