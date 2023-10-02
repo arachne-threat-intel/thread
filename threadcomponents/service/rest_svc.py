@@ -731,13 +731,11 @@ class RestService:
         # Check that the new columns' length is exactly 2
         if len(new_columns) != 2:
             raise ValueError(columns_error)
-        # Create a new df with renamed columns
+        # Create a new df with renamed columns & validate each row has a value
         new_df = df.rename(columns=new_columns)
-        # Tidy up the values before further checks
-        new_df = new_df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-        # Validate each row has a value
         for col in [title, URL]:
-            values = pd.Series(list(new_df[col].values))
+            new_df[col] = new_df[col].map(lambda x: x.strip() if isinstance(x, str) else x)
+            values = pd.Series(new_df[col].to_list())
             # If any value in this column is an empty string or not a string (missing values become NaNs), raise error
             if (values.map(type) != str).any() or (values.map(len) == 0).any():
                 raise ValueError('Column `%s` in CSV is missing text in at least one row' % col)
@@ -792,7 +790,8 @@ class RestService:
         report_id = criteria[UID]
         logging.info('Beginning analysis for ' + report_id)
 
-        original_html, newspaper_article = await self.web_svc.map_all_html(criteria[URL])
+        original_html, newspaper_article = await self.web_svc.map_all_html(criteria[URL],
+                                                                           sentence_limit=self.SENTENCE_LIMIT)
         if original_html is None and newspaper_article is None:
             logging.error('Skipping report; could not download url ' + criteria[URL])
             await self.error_report(criteria)
@@ -809,7 +808,7 @@ class RestService:
             self.check_input_date(article_date)
 
         # Here we build the sentence dictionary
-        html_sentences = self.web_svc.tokenize_sentence(article['html_text'])
+        html_sentences = self.web_svc.tokenize_sentence(article['html_text'], sentence_limit=self.SENTENCE_LIMIT)
         if not html_sentences:
             logging.error('Skipping report; could not retrieve sentences from url ' + criteria[URL])
             await self.error_report(criteria)
