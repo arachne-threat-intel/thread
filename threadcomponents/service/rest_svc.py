@@ -790,7 +790,8 @@ class RestService:
         report_id = criteria[UID]
         logging.info('Beginning analysis for ' + report_id)
 
-        original_html, newspaper_article = await self.web_svc.map_all_html(criteria[URL])
+        original_html, newspaper_article = await self.web_svc.map_all_html(criteria[URL],
+                                                                           sentence_limit=self.SENTENCE_LIMIT)
         if original_html is None and newspaper_article is None:
             logging.error('Skipping report; could not download url ' + criteria[URL])
             await self.error_report(criteria)
@@ -807,7 +808,7 @@ class RestService:
             self.check_input_date(article_date)
 
         # Here we build the sentence dictionary
-        html_sentences = self.web_svc.tokenize_sentence(article['html_text'])
+        html_sentences = self.web_svc.tokenize_sentence(article['html_text'], sentence_limit=self.SENTENCE_LIMIT)
         if not html_sentences:
             logging.error('Skipping report; could not retrieve sentences from url ' + criteria[URL])
             await self.error_report(criteria)
