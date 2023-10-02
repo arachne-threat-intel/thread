@@ -731,13 +731,11 @@ class RestService:
         # Check that the new columns' length is exactly 2
         if len(new_columns) != 2:
             raise ValueError(columns_error)
-        # Create a new df with renamed columns
+        # Create a new df with renamed columns & validate each row has a value
         new_df = df.rename(columns=new_columns)
-        # Tidy up the values before further checks
-        new_df = new_df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-        # Validate each row has a value
         for col in [title, URL]:
-            values = pd.Series(list(new_df[col].values))
+            new_df[col] = new_df[col].map(lambda x: x.strip() if isinstance(x, str) else x)
+            values = pd.Series(new_df[col].to_list())
             # If any value in this column is an empty string or not a string (missing values become NaNs), raise error
             if (values.map(type) != str).any() or (values.map(len) == 0).any():
                 raise ValueError('Column `%s` in CSV is missing text in at least one row' % col)
