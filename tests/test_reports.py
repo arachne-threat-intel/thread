@@ -107,13 +107,19 @@ class TestReports(ThreadAppTest):
                  (uneven_columns, 'Could not parse file'), (urls_missing, missing_text), (empty_val, missing_text)]
         for test_data, predicted_msg in tests:
             # Call the CSV REST endpoint with the malformed data and check the response
-            data = dict(index='insert_csv')
-            data.update(test_data)
+            data = dict(index='insert_csv', **test_data)
             resp = await self.client.post('/rest', json=data)
             resp_json = await resp.json()
             error_msg = resp_json.get('error')
             self.assertTrue(resp.status >= 400, msg='Malformed CSV data resulted in successful response.')
             self.assertTrue(predicted_msg in error_msg, msg='Malformed CSV error message formed incorrectly.')
+
+    async def test_trimmed_values_in_csv(self):
+        """Function to test if values are trimmed in a CSV."""
+        data = dict(index='insert_csv', file=' title ,  url   \n  t1  , url.1 \n t2  ,  url.2   \n')
+        cleaned = self.rest_svc.verify_csv(data['file'])
+        self.assertEqual(cleaned['title'].to_list(), ['t1', 't2'], msg='CSV title-values not trimmed/unobtainable.')
+        self.assertEqual(cleaned['url'].to_list(), ['url.1', 'url.2'], msg='CSV url-values not trimmed/unobtainable.')
 
     async def test_empty_parameters(self):
         """Function to test the behaviour of submitting a report with empty parameters."""

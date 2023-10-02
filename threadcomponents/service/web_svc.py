@@ -167,7 +167,7 @@ class WebService:
             logging.error('Misconfigured app: arachne_token_is_valid() error: ' + str(e))
         return False
 
-    async def map_all_html(self, url_input):
+    async def map_all_html(self, url_input, sentence_limit=None):
         a = newspaper.Article(url_input, keep_article_html=True)
         a.config.MAX_TEXT = None
         a.download()
@@ -180,6 +180,7 @@ class WebService:
         images = await self._collect_all_images(a.images)
         plaintext = await self._extract_text_as_list(a.text)
         html_elements, htmltags, htmltext = self._extract_html_as_list(a.article_html)
+        text_count = 0
 
         # Loop through pt one by one, matching its line with a forward-advancing pointer on the html
         counter = 0
@@ -224,6 +225,11 @@ class WebService:
                 else:
                     # Add this missing text with default <p> tag
                     results.append(self._construct_text_dict(pt, 'p'))
+                    text_match_found = True
+            if text_match_found:
+                text_count += 1
+            if sentence_limit and (text_count >= sentence_limit):
+                break
         return results, a
 
     async def build_final_html(self, original_html, sentences):
@@ -337,7 +343,7 @@ class WebService:
 
         return sentences_split_by_ip
     
-    def tokenize_sentence(self, data):
+    def tokenize_sentence(self, data, sentence_limit=None):
         """
         :criteria: expects a dictionary of this structure:
         """
@@ -346,6 +352,8 @@ class WebService:
 
         sentences = []
         for current in corrected_html_sentences:
+            if sentence_limit and (len(sentences) >= sentence_limit):
+                break
             # Further split by break tags as this might misplace highlighting in the front end
             no_breaks = [x for x in current.split('<br>') if x]
             for fragment in no_breaks:
