@@ -1169,6 +1169,13 @@ class RestService:
             return None, ip_address
         return (not (address_obj.is_link_local or address_obj.is_multicast or address_obj.is_private)), cleaned_ip
 
+    async def suggest_and_save_ioc(self, request, criteria=None):
+        suggested_ioc_resp = await self.suggest_ioc(request, criteria=criteria)
+        if isinstance(suggested_ioc_resp, str):
+            criteria['ioc_text'] = suggested_ioc_resp
+            return await self.update_ioc(request, criteria=criteria)
+        return suggested_ioc_resp
+
     async def suggest_ioc(self, request, criteria=None):
         """Function to predict a sentence as an indicator of compromise."""
         default_error = dict(error='Error predicting IoC.')
