@@ -42,12 +42,19 @@ class TestIoCs(ThreadAppTest):
         sen_id = sentences[0][UID_KEY]
         return report_id, sen_id
 
-    async def check_denied_ioc(self, text):
+    async def check_denied_ioc(self, text, suggest_and_save=False, dirty_text=None, report_id=None, sen_id=None):
         """Function to test responses when an IoC string cannot be flagged as an IoC."""
-        report_id, sen_id = await self.create_report_with_sentence(text)
+        if suggest_and_save:
+            text = dirty_text or self.dirty_ioc_text(text)
+
+        if not (report_id and sen_id):
+            report_id, sen_id = await self.create_report_with_sentence(text)
 
         # Attempt to flag this sentence as an IoC
-        data = dict(index='add_indicator_of_compromise', sentence_id=sen_id, ioc_text=text)
+        if suggest_and_save:
+            data = dict(index='suggest_and_save_ioc', sentence_id=sen_id)
+        else:
+            data = dict(index='add_indicator_of_compromise', sentence_id=sen_id, ioc_text=text)
         resp = await self.client.post('/rest', json=data)
         resp_json = await resp.json()
         # Check an unsuccessful response was sent
@@ -61,12 +68,21 @@ class TestIoCs(ThreadAppTest):
                         msg='Error message for unsuccessful IoC is different than expected.')
         self.assertEqual(alert_user, 1, msg='User is not notified over unsuccessful IoC flagging.')
 
-    async def check_allowed_ioc(self, text):
+    async def check_allowed_ioc(self, text, suggest_and_save=False, dirty_text=None, cleaned=None, report_id=None,
+                                sen_id=None):
         """Function to test responses when an IoC string can be flagged as an IoC. Returns db info of IoC."""
-        report_id, sen_id = await self.create_report_with_sentence(text)
+        expected_ioc = cleaned or text
+        if suggest_and_save:
+            text = dirty_text or self.dirty_ioc_text(text)
+
+        if not (report_id and sen_id):
+            report_id, sen_id = await self.create_report_with_sentence(text)
 
         # Attempt to flag this sentence as an IoC
-        data = dict(index='add_indicator_of_compromise', sentence_id=sen_id, ioc_text=text)
+        if suggest_and_save:
+            data = dict(index='suggest_and_save_ioc', sentence_id=sen_id)
+        else:
+            data = dict(index='add_indicator_of_compromise', sentence_id=sen_id, ioc_text=text)
         resp = await self.client.post('/rest', json=data)
         resp_json = await resp.json()
         success_msg, alert_user = resp_json.get('info'), resp_json.get('alert_user')
@@ -75,9 +91,13 @@ class TestIoCs(ThreadAppTest):
                         msg='Message for successful IoC is different than expected.')
         self.assertEqual(alert_user, 1, msg='User is not notified over successful IoC flagging.')
 
+        if suggest_and_save:
+            ioc_text_resp = resp_json.get('ioc_text')
+            self.assertEqual(ioc_text_resp, expected_ioc, msg='User is not given correct suggested-saved IoC.')
+
         # Check IoC text is saved as expected in the db
         existing = await self.dao.get(self.TABLE, dict(report_id=report_id, sentence_id=sen_id))
-        self.assertEqual(text, existing[0][self.FIELD], '`%s` was not saved as an IoC.' % text)
+        self.assertEqual(expected_ioc, existing[0][self.FIELD], '`%s` was not saved as an IoC.' % expected_ioc)
         return report_id, sen_id
 
     async def check_suggested_ioc(self, ioc_text, dirty_text=None, cleaned=None):
@@ -256,3 +276,24 @@ class TestIoCs(ThreadAppTest):
         resp = await self.client.post('/rest', json=data)
         sen_data = await resp.json()
         self.assertFalse(sen_data['ioc'], msg='IoC-text from sentence-context is not empty after removal.')
+
+    async def test_suggest_and_save_ioc(self):
+        """Function to test suggest-and-save IoC."""
+        await self.check_allowed_ioc('d414d90f656356636d6d632c8bae3731', suggest_and_save=True)
+
+    async def test_error_suggest_and_save_does_not_override_valid_ioc(self):
+        """Function to test an unsuccessful suggest-and-save IoC does not affect previous IoC text."""
+        valid_ioc = 'f6d49fcb5f29fbe24a0424fa610d62b3'
+        denied_ioc = self.dirty_ioc_text('240.255.255.255')
+
+        # Create and save a sentence which would be invalid as an IoC but give it valid IoC text
+        report_id, sen_id = await self.create_report_with_sentence(denied_ioc)
+        await self.check_allowed_ioc(valid_ioc, report_id=report_id, sen_id=sen_id)
+
+        # Check suggest-&-save does not save initial invalid IoC-sentence as an IoC
+        await self.check_denied_ioc(None, suggest_and_save=True, dirty_text=denied_ioc,
+                                    report_id=report_id, sen_id=sen_id)
+
+        # Check initially-saved valid IoC has not been changed in the db
+        existing = await self.dao.get(self.TABLE, dict(report_id=report_id, sentence_id=sen_id))
+        self.assertEqual(valid_ioc, existing[0][self.FIELD], 'IoC value changed after suggest-&-save.')
