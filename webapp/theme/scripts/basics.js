@@ -16,6 +16,7 @@ const iocSwitchSelector = "#iocSwitch";
 const iocSavedBoxId = "iocSavedBox";
 const iocSuggestionBoxSelector = "#iocSuggestionBox";
 const iocSuggestionBtnSelector = "#iocSuggestionBtn";
+const iocSuggestSaveBtnSelector = "#iocSuggestSaveBtn";
 const iocUpdateBtnSelector = "#iocUpdateBtn";
 var senTTPForm = "#ttpDatesForm";
 // The URL for the rest requests
@@ -156,6 +157,7 @@ function remove_sentence() {
       $(delSenBtn).prop("disabled", true);
       $(iocSwitchSelector).prop("disabled", true);
       $(iocSuggestionBtnSelector).prop("disabled", true);
+      $(iocSuggestSaveBtnSelector).prop("disabled", true);
       $(iocUpdateBtnSelector).prop("disabled", true);
       $(`#ioc-icon-${sentence_id}`).remove();
       $(senTTPForm).prop("hidden", true);
@@ -374,6 +376,7 @@ function updateSentenceContext(responseData) {
   $(delSenBtn).prop("disabled", !enableSenButtons);
   $(iocSwitchSelector).prop("disabled", !enableSenButtons);
   $(iocSuggestionBtnSelector).prop("disabled", !enableSenButtons);
+  $(iocSuggestSaveBtnSelector).prop("disabled", !enableSenButtons);
   $(iocUpdateBtnSelector).prop("disabled", !enableSenButtons);
   if (enableSenButtons && iocText) {
     $("#" + iocSavedBoxId).val(iocText);
@@ -791,6 +794,18 @@ function suggestIoC() {
   if (sentence_id) {
     restRequest("POST", {"index": "suggest_indicator_of_compromise", "sentence_id": sentence_id}, function(data) {
       $(iocSuggestionBoxSelector).val(data);
+    });
+  }
+}
+
+function suggestSaveIoC() {
+  if (sentence_id) {
+    restRequest("POST", {"index": "suggest_and_save_ioc", "sentence_id": sentence_id}, function(data) {
+      if (data?.ioc_text) {
+        $("#" + iocSavedBoxId).val(data.ioc_text);
+        $(`#elmt${sentence_id}`).attr("data-ioc", "true");
+        $(`#ioc-icon-${sentence_id}`).show();
+      }
     });
   }
 }
