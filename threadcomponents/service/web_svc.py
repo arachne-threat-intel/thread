@@ -159,12 +159,14 @@ class WebService:
             logging.error('Misconfigured app: get_current_arachne_user() error: ' + str(e))
             return None, None
 
-    async def arachne_token_is_valid(self, request, token='') -> bool:
-        """Function to confirm an Arachne token is valid."""
+    async def auto_gen_data_is_valid(self, request, request_data) -> bool:
+        """Function to confirm data for an automatically-generated report is valid."""
+        if self.is_local:
+            return True
         try:
-            return await request.app.confirm_arachne_token(token=token)
+            return await request.app.auto_gen_data_is_valid(request, request_data)
         except Exception as e:
-            logging.error('Misconfigured app: arachne_token_is_valid() error: ' + str(e))
+            logging.error('Misconfigured app: auto_gen_data_is_valid() error: ' + str(e))
         return False
 
     async def map_all_html(self, url_input, sentence_limit=None):

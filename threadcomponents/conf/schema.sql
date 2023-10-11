@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS reports (
     -- If applicable, a token to limit who can view this report
     token VARCHAR(60) DEFAULT NULL,
     -- Whether it has been automatically generated
-    automatically_generated BOOLEAN DEFAULT 0
+    automatically_generated VARCHAR(60) DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS report_sentences (

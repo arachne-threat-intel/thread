@@ -566,10 +566,10 @@ class RestService:
                 return dict(error='Missing value for %s.' % column, alert_user=1)
             # Place title and URL in list to be compatible with _insert_batch_reports()
             criteria[column] = [value]
-        if criteria.get('automatically_generated', False):
-            criteria['automatically_generated'] = str(self.dao.db_true_val)
+        if criteria.get('automatically_generated'):
+            criteria['automatically_generated'] = [criteria['automatically_generated']]
         else:
-            criteria['automatically_generated'] = str(self.dao.db_false_val)
+            criteria['automatically_generated'] = [None]
         return await self._insert_batch_reports(request, criteria, 1, token=criteria.get('token'))
 
     async def insert_csv(self, request, criteria=None):
@@ -591,24 +591,17 @@ class RestService:
         except (KeyError, TypeError):
             return dict(error='Error inserting report(s).')
 
-        # If automatically generated, check the token from the request_data is valid
-        if request_data.get('automatically_generated'):
-            arachne_token = request_data.get('token')
-            if arachne_token:
-                if not await self.web_svc.arachne_token_is_valid(request=request, token=arachne_token):
-                    return dict(error='Report(s) not submitted. Arachne token not valid.')
-            else:
-                return dict(error='Report(s) not submitted. Token expected.')
-            return None
-
         # If running locally, there are no further checks but ensure the token is None (to avoid mix of ''s and Nones)
         if self.is_local:
             request_data.update(token=None)
-            return None
+            return
 
+        # If automatically generated, check associated-data is valid
+        if request_data.get('automatically_generated'):
+            if not await self.web_svc.auto_gen_data_is_valid(request, request_data):
+                return dict(error='Report(s) not submitted. Invalid data for automatically-generated submission.')
         # If not running locally, check if the user is requesting a private submission
-        is_private = request_data.get('private')
-        if is_private:
+        elif request_data.get('private'):
             # Obtain the token to make this submission private
             username, token = await self.web_svc.get_current_arachne_user(request)
             # Update report-data with token or alert user if this was not possible
@@ -620,7 +613,6 @@ class RestService:
         # If public (no token), blank data with None (to avoid mix of empty strings and Nones)
         else:
             request_data.update(token=None)
-        return None
 
     async def _insert_batch_reports(self, request, batch, row_count, token=None):
         # Possible responses to the request
@@ -637,7 +629,7 @@ class RestService:
             try:
                 title, url = batch['title'][row].strip(), batch[URL][row].strip()
                 automatically_generated = batch['automatically_generated'][row] \
-                    if 'automatically_generated' in batch.keys() else False
+                    if 'automatically_generated' in batch.keys() else None
             # Check for malformed request parameters; AttributeError thrown if not strings
             except (AttributeError, KeyError):
                 return default_error
@@ -868,7 +860,7 @@ class RestService:
             return
 
         report = reports_found[0]
-        if str(report['automatically_generated']).upper() != str(self.dao.db_true_val).upper():
+        if not report['automatically_generated']:
             return
 
         unique_techniques_count = await self.data_svc.get_report_unique_techniques_count(report_id=report_id)
@@ -888,7 +880,7 @@ class RestService:
             return
 
         report = reports_found[0]
-        if str(report['automatically_generated']).upper() != str(self.dao.db_true_val).upper():
+        if not report['automatically_generated']:
             return
 
         await self.data_svc.remove_report_by_id(report_id=report_id)
