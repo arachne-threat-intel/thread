@@ -436,7 +436,9 @@ class WebAPI:
                                  self.report_statuses.COMPLETED.value]:
             raise web.HTTPNotFound()
         # Continue with the method and retrieve the report's sentences and aggressors/victims
-        report_data = await self.data_svc.export_report_data(report=report[0], report_id=report_id)
+        flatten_sentences = self.is_local or not self.dao.db.IS_POSTGRESQL
+        report_data = await self.data_svc.export_report_data(report=report[0], report_id=report_id,
+                                                             flatten_sentences=flatten_sentences)
         sentences = report_data.get('sentences', [])
         keywords = dict(aggressors=report_data['aggressors'], victims=report_data['victims'])
         indicators_of_compromise = report_data.get('indicators_of_compromise', [])

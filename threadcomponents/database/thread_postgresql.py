@@ -109,6 +109,7 @@ def _create_tables(db_name, username, password, host, port, schema='', is_partia
 
 
 class ThreadPostgreSQL(ThreadDB):
+    IS_POSTGRESQL = True
     db_name = None
 
     def __init__(self, db_connection_func=None):

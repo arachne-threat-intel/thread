@@ -47,6 +47,8 @@ def find_create_statement_in_schema(schema, table, log_error=True, find_closing_
 
 class ThreadDB(ABC):
     """A base class for DB tasks (where the SQL statements are the same across DB engines)."""
+    IS_SQL_LITE = False
+    IS_POSTGRESQL = False
     # Constants to track which SQL functions have different names (between different DB engines)
     FUNC_STR_POS = 'string_pos'
     FUNC_TIME_NOW = 'time_now'

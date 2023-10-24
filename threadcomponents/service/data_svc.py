@@ -523,13 +523,13 @@ class DataService:
         """Function to retrieve all indicators of compromise for a given report ID."""
         return await self.dao.get('report_sentence_indicators_of_compromise', equal=dict(report_id=report_id))
 
-    async def get_report_sentences_with_attacks(self, report_id=''):
+    async def get_report_sentences_with_attacks(self, report_id='', group_by_attack=False):
         """Function to retrieve all report sentences and any attacks they may have given a report ID."""
         # Ensure date fields are converted into strings
         start_date = self.dao.db.sql_date_field_to_str('report_sentence_hits.start_date',
                                                        field_name_as='tech_start_date')
         end_date = self.dao.db.sql_date_field_to_str('report_sentence_hits.end_date', field_name_as='tech_end_date')
-        select_join_query = (
+        query = (
             # Using the temporary table with parent-technique info
             self.SQL_WITH_PAR_ATTACK +
             # The relevant report-sentence fields we want
@@ -549,7 +549,16 @@ class DataService:
             "WHERE report_sentences.report_uid = %s" % self.dao.db_qparam + " "
             # Need to order by for JOIN query (otherwise sentences can be out of order if attacks are updated)
             "ORDER BY report_sentences.sen_index")
-        return await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
+
+        if group_by_attack:
+            query = (f"SELECT attack_tid, attack_technique_name, attack_parent_name, inactive_attack, "
+                     f"jsonb_agg(jsonb_build_object('uid', rs.uid, 'text', rs.text, 'html', rs.html, "
+                     f"'sen_index', rs.sen_index, 'active_hit', rs.active_hit, "
+                     f"'tech_start_date', rs.tech_start_date, 'tech_end_date', rs.tech_end_date)) as mappings "
+                     f"FROM ({query}) AS rs GROUP BY attack_tid, attack_technique_name, "
+                     f"attack_parent_name, inactive_attack")
+
+        return await self.dao.raw_select(query, parameters=tuple([report_id]))
 
     async def get_techniques(self, get_parent_info=False):
         # If we are not getting the parent-attack info (for sub-techniques), then return all results as normal
@@ -753,7 +762,7 @@ class DataService:
         # Run the deletions and insertions for this method altogether; return if it was successful
         return await self.dao.run_sql_list(sql_list=sql_list)
 
-    async def export_report_data(self, report=None, report_id='', report_title=''):
+    async def export_report_data(self, report=None, report_id='', report_title='', flatten_sentences=True):
         """Function to retrieve all the data for a report."""
         # If we have no report, retrieve the report using the ID or title
         if not report:
@@ -768,7 +777,8 @@ class DataService:
             # Be wary, this can raise KeyError
             report_id = report['uid']
         # Retrieve and return the rest of the report data
-        sentences = await self.get_report_sentences_with_attacks(report_id=report_id)
+        sentences = await self.get_report_sentences_with_attacks(report_id=report_id,
+                                                                 group_by_attack=(not flatten_sentences))
         categories = await self.get_report_categories_for_display(report_id, include_keynames=True)
         keywords = await self.get_report_aggressors_victims(report_id, include_display=True)
         indicators_of_compromise = await self.get_report_sentence_indicators_of_compromise(report_id=report_id)
