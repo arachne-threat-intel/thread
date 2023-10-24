@@ -11,6 +11,8 @@ ENABLE_FOREIGN_KEYS = 'PRAGMA foreign_keys = ON;'
 
 
 class ThreadSQLite(ThreadDB):
+    IS_SQL_LITE = True
+
     def __init__(self, database):
         function_name_map = dict()
         function_name_map[self.FUNC_TIME_NOW] = 'DATETIME'
