@@ -196,13 +196,6 @@ class ReportExporter:
 
     def pdfmake_add_sentences_attack_ioc_tables(self, dd, sentences, iocs, flatten_sentences=True):
         """Adds report-sentences to existing pdfmake-dictionary-data, dd."""
-        if flatten_sentences:
-            self._pdfmake_add_flattened_sentences(dd, sentences, iocs)
-        else:
-            self._pdfmake_add_sentences_grouped_by_attacks(dd, sentences, iocs)
-
-    def _pdfmake_add_flattened_sentences(self, dd, sentences, indicators_of_compromise):
-        """Adds a list of report-sentences to existing pdfmake-dictionary-data, dd."""
         # Table for found attacks
         header_row = []
         for column_header in ['ID', 'Name', 'Identified Sentence', 'Start Date', 'End Date']:
@@ -214,6 +207,22 @@ class ReportExporter:
         for column_header in ['Indicators of Compromise']:
             ioc_header_row.append(dict(text=column_header, style='bold'))
         ioc_table = dict(widths=['100%'], body=[ioc_header_row])
+
+        if flatten_sentences:
+            sen_rows, ioc_rows = self._pdfmake_add_flattened_sentences(dd, sentences, iocs)
+        else:
+            sen_rows, ioc_rows = self._pdfmake_add_sentences_grouped_by_attacks(dd, sentences, iocs)
+
+        # Append tables to the end
+        table['body'] += sen_rows if sen_rows else []
+        dd['content'].append(dict(table=table))
+        dd['content'].append(dict(text='\n'))
+        ioc_table['body'] += ioc_rows if ioc_rows else [['-']]
+        dd['content'].append(dict(table=ioc_table))
+
+    def _pdfmake_add_flattened_sentences(self, dd, sentences, indicators_of_compromise):
+        """Adds a list of report-sentences to existing dictionary, dd, and returns table rows for sentences and IoCs."""
+        sen_table_rows = []
         ioc_table_rows = []
 
         seen_sentences = set()  # set to prevent duplicate sentences being exported
@@ -229,21 +238,61 @@ class ReportExporter:
                 # Append any attack for this sentence to the table; prefix parent-tech for any sub-technique
                 tech_name, parent_tech = sentence['attack_technique_name'], sentence.get('attack_parent_name')
                 tech_name = "%s: %s" % (parent_tech, tech_name) if parent_tech else tech_name
-                table['body'].append([sentence['attack_tid'], tech_name, sen_text, sentence.get('tech_start_date'),
-                                      sentence.get('tech_end_date')])
+                sen_table_rows.append([sentence['attack_tid'], tech_name, sen_text, sentence.get('tech_start_date'),
+                                       sentence.get('tech_end_date')])
 
             # Check if IoC
-            if any(ioc['sentence_id'] == sentence['uid'] for ioc in indicators_of_compromise):
-                ioc_table_rows.append([sentence['text']])
+            if any(ioc['sentence_id'] == sen_id for ioc in indicators_of_compromise):
+                ioc_table_rows.append([sen_text])
 
-        # Append tables to the end
-        dd['content'].append(dict(table=table))
-        dd['content'].append(dict(text='\n'))
-        ioc_table['body'] += ioc_table_rows if ioc_table_rows else [['-']]
-        dd['content'].append(dict(table=ioc_table))
+        return sen_table_rows, ioc_table_rows
 
     def _pdfmake_add_sentences_grouped_by_attacks(self, dd, sentences, indicators_of_compromise):
-        """Adds report-sentences grouped-by attack-data to existing pdfmake-dictionary-data, dd."""
+        """Adds grouped-by attack-data to existing dictionary, dd, and returns table rows for sentences and IoCs."""
+        sen_table_rows = []
+        ioc_table_rows = []
+
+        seen_sentences = set()  # set to prevent duplicate sentences being exported
+        for attack in sentences:
+            # Prefix parent-tech for any sub-technique
+            tech_name, parent_tech = attack['attack_technique_name'], attack.get('attack_parent_name')
+            tech_name = "%s: %s" % (parent_tech, tech_name) if parent_tech else tech_name
+            mappings = attack['mappings'] or []
+            mappings_added = 0
+            tid_cell = dict(text=attack['attack_tid'])
+            attack_name_cell = dict(text=tech_name)
+
+            for mapping in mappings:
+                sen_id, sen_text = mapping['uid'], mapping['text']
+
+                # Add the article text to the PDF for local-use only
+                if self.is_local and (sen_id not in seen_sentences):
+                    dd['content'].append(sen_text)
+                    seen_sentences.add(sen_id)
+
+                if attack['attack_tid'] and mapping['active_hit'] and not attack['inactive_attack']:
+                    # If mappings have already been added, this determines if we need to add attack-info
+                    row = [sen_text, mapping.get('tech_start_date'), mapping.get('tech_end_date')]
+                    if mappings_added:
+                        row.insert(0, '')
+                        row.insert(0, '')
+                    else:
+                        row.insert(0, attack_name_cell)
+                        row.insert(0, tid_cell)
+
+                    sen_table_rows.append(row)
+                    mappings_added += 1
+
+                # Check if IoC
+                if any(ioc['sentence_id'] == sen_id for ioc in indicators_of_compromise):
+                    ioc_table_rows.append([sen_text])
+
+            # Have the attack-data cover multiple table-rows for as many mappings there are
+            if mappings_added > 1:
+                tid_cell.update(rowSpan=mappings_added)
+                attack_name_cell.update(rowSpan=mappings_added)
+
+        return sen_table_rows, ioc_table_rows
 
     def pdfmake_add_supporting_country_info(self, dd, all_regions):
         """Adds regions/countries info to existing pdfmake-dictionary-data, dd."""
