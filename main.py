@@ -15,6 +15,7 @@ from aiohttp import web
 from datetime import datetime
 from threadcomponents.database.dao import Dao, DB_POSTGRESQL, DB_SQLITE
 from threadcomponents.handlers.web_api import WebAPI
+from threadcomponents.reports.report_exporter import ReportExporter
 from threadcomponents.service.data_svc import DataService
 from threadcomponents.service.ml_svc import MLService
 from threadcomponents.service.reg_svc import RegService
@@ -228,7 +229,8 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None, db_connect
                            sentence_limit=sentence_limit, max_tasks=max_tasks,
                            attack_file_settings=attack_file_settings)
     services = dict(dao=dao, data_svc=data_svc, ml_svc=ml_svc, reg_svc=reg_svc, web_svc=web_svc, rest_svc=rest_svc)
-    website_handler = WebAPI(services=services, js_src=js_src)
+    report_exporter = ReportExporter(services=services)
+    website_handler = WebAPI(services=services, report_exporter=report_exporter, js_src=js_src)
     start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict, app_setup_func=app_setup_func)
 
 
