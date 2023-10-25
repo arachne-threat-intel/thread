@@ -14,6 +14,7 @@ from tests.misc import delete_db_file, SCHEMA_FILE
 from threadcomponents.database.dao import Dao
 from threadcomponents.database.thread_sqlite3 import ThreadSQLite
 from threadcomponents.handlers.web_api import WebAPI
+from threadcomponents.reports.report_exporter import ReportExporter
 from threadcomponents.service import data_svc
 from threadcomponents.service.data_svc import DataService, NO_DESC
 from threadcomponents.service.ml_svc import MLService
@@ -56,13 +57,15 @@ class ThreadAppTest(AioHTTPTestCase):
                                    attack_file_settings=dict(update=False))
         services = dict(dao=cls.dao, data_svc=cls.data_svc, ml_svc=cls.ml_svc, reg_svc=cls.reg_svc, web_svc=cls.web_svc,
                         rest_svc=cls.rest_svc)
-        cls.web_api = WebAPI(services=services)
+        report_exporter = ReportExporter(services=services)
+        cls.web_api = WebAPI(services=services, report_exporter=report_exporter)
         # Duplicate resources so we can test the queue limit without causing limit-exceeding test failures elsewhere
         cls.rest_svc_with_limit = RestService(cls.web_svc, cls.reg_svc, cls.data_svc, cls.ml_svc, cls.dao,
                                               queue_limit=random.randint(1, 20))
         services_with_limit = dict(services)
         services_with_limit.update(rest_svc=cls.rest_svc_with_limit)
-        cls.web_api_with_limit = WebAPI(services=services_with_limit)
+        report_exporter = ReportExporter(services=services_with_limit)
+        cls.web_api_with_limit = WebAPI(services=services_with_limit, report_exporter=report_exporter)
         # Some test-attack data
         cls.attacks = dict(d99999='Drain', f12345='Fire', f32451='Firaga', s00001='requiem')
 
