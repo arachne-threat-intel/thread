@@ -115,8 +115,17 @@ class ReportExporter:
         indicators_of_compromise = report_data.get('indicators_of_compromise', [])
         all_regions = {r for sub_r in [keywords[k].get('region_ids', []) for k in ['aggressors', 'victims']]
                        for r in sub_r}
-        regions_col_name = 'Regions & Political Blocs' + ('*' if all_regions else '')
 
+        dd = self.pdfmake_create_initial_dd()
+        self.pdfmake_add_base_report_data(dd, title, report_status, report_url, date_of, start_date, end_date)
+        self.pdfmake_add_keywords_table(dd, keywords, all_regions)
+        self.pdfmake_add_sentences_attack_ioc_tables(dd, sentences, indicators_of_compromise, flatten_sentences)
+        self.pdfmake_add_supporting_country_info(dd, all_regions)
+        return dd
+
+    @staticmethod
+    def pdfmake_create_initial_dd():
+        """Initialises and returns a dictionary to use with pdfmake."""
         dd = dict()
         # Default background which will be replaced by logo via client-side
         dd['background'] = 'Report by Arachne Digital'
@@ -124,24 +133,29 @@ class ReportExporter:
         # The styles for this pdf - hyperlink styling needed to be added manually
         dd['styles'] = dict(header=dict(fontSize=25, bold=True, alignment='center'), bold=dict(bold=True),
                             sub_header=dict(fontSize=15, bold=True), url=dict(color='blue', decoration='underline'))
+        return dd
+
+    def pdfmake_add_base_report_data(self, dd, title, status, url, date_of, start_date, end_date):
+        """Adds report data to existing pdfmake-dictionary-data, dd."""
         # Document MetaData Info
         # See https://pdfmake.github.io/docs/document-definition-object/document-medatadata/
         dd['info'] = dict()
         dd['info']['title'] = sanitise_filename(title)
-        dd['info']['creator'] = report_url
+        dd['info']['creator'] = url
 
         # Add the text to the document
         dd['content'].append(dict(text=title, style='header'))  # begin with title of document
         dd['content'].append(dict(text='\n'))  # Blank line after title
         # Extra content if this report hasn't been completed: highlight it's a draft
-        if report_status != self.report_statuses.COMPLETED.value:
+        if status != self.report_statuses.COMPLETED.value:
             dd['content'].append(dict(text='DRAFT: Please note this report is still being analysed. '
                                            'Techniques listed here may change later on.', style='sub_header'))
             dd['content'].append(dict(text='\n'))  # Blank line before report's URL
             dd['watermark'] = dict(text='DRAFT', opacity=0.3, bold=True, angle=70)
+
         dd['content'].append(dict(text='Original work at the below link\n\n', style='sub_header'))
         dd['content'].append(dict(text='URL:', style='bold'))  # State report's source
-        dd['content'].append(dict(text=report_url, style='url'))
+        dd['content'].append(dict(text=url, style='url'))
         dd['content'].append(dict(text='\n'))  # Blank line after URL
         dd['content'].append(dict(text='Article Publication Date: %s' % date_of, style='bold'))
         dd['content'].append(dict(text='\n'))  # Blank line after report date
@@ -150,15 +164,21 @@ class ReportExporter:
         dd['content'].append(dict(text='Techniques End Date: %s' % end_date, style='bold'))
         dd['content'].append(dict(text='\n'))  # Blank line after technique dates
 
+    def pdfmake_add_keywords_table(self, dd, keywords, all_regions):
+        """Adds report-keywords to existing pdfmake-dictionary-data, dd."""
         # Table for keywords
         k_table = dict(widths=['28%', '36%', '36%'], body=[])
         k_table['body'].append(['', dict(text='Aggressors', style='bold'), dict(text='Victims', style='bold')])
         k_table_cols = ['aggressors', 'victims']
+
         # For each row, build up the column values based on the keywords dictionary
+        regions_col_name = 'Regions & Political Blocs' + ('*' if all_regions else '')
         rows = [('Groups', 'groups', None), ('Categories', 'categories', 'categories_all'),
                 (regions_col_name, 'regions', 'regions_all'), ('Countries', 'countries', 'countries_all')]
+
         for r_name, r_key, rk_all in rows:
             row = [dict(text=r_name, style='bold')]
+
             for col in k_table_cols:
                 k_vals, k_is_all = keywords[col].get(r_key, []), keywords[col].get(rk_all)
                 # We're either flagging 'All' values, listing the values or listing no values ('-')
@@ -168,10 +188,21 @@ class ReportExporter:
                     row.append(dict(ul=k_vals))
                 else:
                     row.append('-')
+
             k_table['body'].append(row)
+
         dd['content'].append(dict(table=k_table))
         dd['content'].append(dict(text='\n'))  # Blank line after keywords
 
+    def pdfmake_add_sentences_attack_ioc_tables(self, dd, sentences, iocs, flatten_sentences=True):
+        """Adds report-sentences to existing pdfmake-dictionary-data, dd."""
+        if flatten_sentences:
+            self._pdfmake_add_flattened_sentences(dd, sentences, iocs)
+        else:
+            self._pdfmake_add_sentences_grouped_by_attacks(dd, sentences, iocs)
+
+    def _pdfmake_add_flattened_sentences(self, dd, sentences, indicators_of_compromise):
+        """Adds a list of report-sentences to existing pdfmake-dictionary-data, dd."""
         # Table for found attacks
         header_row = []
         for column_header in ['ID', 'Name', 'Identified Sentence', 'Start Date', 'End Date']:
@@ -188,25 +219,34 @@ class ReportExporter:
         seen_sentences = set()  # set to prevent duplicate sentences being exported
         for sentence in sentences:
             sen_id, sen_text = sentence['uid'], sentence['text']
+
             # Add the article text to the PDF for local-use only
             if self.is_local and (sen_id not in seen_sentences):
                 dd['content'].append(sen_text)
                 seen_sentences.add(sen_id)
+
             if sentence['attack_tid'] and sentence['active_hit'] and not sentence['inactive_attack']:
                 # Append any attack for this sentence to the table; prefix parent-tech for any sub-technique
                 tech_name, parent_tech = sentence['attack_technique_name'], sentence.get('attack_parent_name')
                 tech_name = "%s: %s" % (parent_tech, tech_name) if parent_tech else tech_name
                 table['body'].append([sentence['attack_tid'], tech_name, sen_text, sentence.get('tech_start_date'),
                                       sentence.get('tech_end_date')])
+
             # Check if IoC
             if any(ioc['sentence_id'] == sentence['uid'] for ioc in indicators_of_compromise):
                 ioc_table_rows.append([sentence['text']])
+
         # Append tables to the end
         dd['content'].append(dict(table=table))
         dd['content'].append(dict(text='\n'))
         ioc_table['body'] += ioc_table_rows if ioc_table_rows else [['-']]
         dd['content'].append(dict(table=ioc_table))
 
+    def _pdfmake_add_sentences_grouped_by_attacks(self, dd, sentences, indicators_of_compromise):
+        """Adds report-sentences grouped-by attack-data to existing pdfmake-dictionary-data, dd."""
+
+    def pdfmake_add_supporting_country_info(self, dd, all_regions):
+        """Adds regions/countries info to existing pdfmake-dictionary-data, dd."""
         note = 'Any countries listed in this report - from predefined lists by Arachne Digital; excluding those ' \
                'quoted from the article text - have been taken from open-source lists.'
         dd['content'].append(dict(text='\n' + note))
@@ -216,12 +256,12 @@ class ReportExporter:
             dd['content'].append(dict(text='\n*Arachne Digital defines these regions as follows:\n\n',
                                       pageBreak='before'))
             regions_table = dict(widths=['35%', '65%'], body=[])
+
             for region_id in all_regions:
                 country_codes = self.data_svc.region_countries_dict.get(region_id, [])
                 country_list = [self.data_svc.country_dict.get(c, '') for c in country_codes]
                 country_list.sort()
                 r_row = [dict(text=self.data_svc.region_dict.get(region_id)), dict(ul=country_list)]
                 regions_table['body'].append(r_row)
-            dd['content'].append(dict(table=regions_table))
 
-        return dd
+            dd['content'].append(dict(table=regions_table))
