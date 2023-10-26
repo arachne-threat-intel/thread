@@ -1,3 +1,3 @@
-[submodule "rosettaStone"]
-	path = rosettaStone
-	url = https://github.com/arachne-threat-intel/rosettaStone
+[submodule "spindle"]
+	path = spindle
+	url = https://github.com/arachne-threat-intel/spindle.git

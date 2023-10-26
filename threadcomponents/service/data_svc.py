@@ -388,7 +388,7 @@ class DataService:
             await self.dao.insert_generate_uid('categories', dict(keyname=keyname, name=entry['name'],
                                                                   display_name=display_names[keyname]))
 
-    async def insert_keyword_json_data(self, buildfile=os.path.join('rosettaStone', 'cta_names_mappings.json')):
+    async def insert_keyword_json_data(self, buildfile=os.path.join('spindle', 'cta_names_mappings.json')):
         """Function to read in the keywords json file and insert data into the database."""
         buildfile = os.path.join(self.dir_prefix, buildfile)  # prefix directory path if there is one
         # The current keywords saved in the db
