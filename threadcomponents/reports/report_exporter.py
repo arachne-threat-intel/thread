@@ -167,7 +167,7 @@ class ReportExporter:
     def pdfmake_add_keywords_table(self, dd, keywords, all_regions):
         """Adds report-keywords to existing pdfmake-dictionary-data, dd."""
         # Table for keywords
-        k_table = dict(widths=['28%', '36%', '36%'], body=[])
+        k_table = dict(headerRows=1, widths=['28%', '36%', '36%'], body=[])
         k_table['body'].append(['', dict(text='Aggressors', style='bold'), dict(text='Victims', style='bold')])
         k_table_cols = ['aggressors', 'victims']
 
@@ -200,13 +200,13 @@ class ReportExporter:
         header_row = []
         for column_header in ['ID', 'Name', 'Identified Sentence', 'Start Date', 'End Date']:
             header_row.append(dict(text=column_header, style='bold'))
-        table = dict(widths=['10%', '16%', '50%', '12%', '12%'], body=[header_row])
+        table = dict(headerRows=1, widths=['10%', '16%', '50%', '12%', '12%'], body=[header_row])
 
         # Table for indicators of compromise
         ioc_header_row = []
         for column_header in ['Indicators of Compromise']:
             ioc_header_row.append(dict(text=column_header, style='bold'))
-        ioc_table = dict(widths=['100%'], body=[ioc_header_row])
+        ioc_table = dict(headerRows=1, widths=['100%'], body=[ioc_header_row])
 
         if flatten_sentences:
             sen_rows, ioc_rows = self._pdfmake_add_flattened_sentences(dd, sentences, iocs)
