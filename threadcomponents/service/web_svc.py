@@ -281,6 +281,11 @@ class WebService:
         """
         corrected_sentences = []
         previous_sentence = sentences[0]
+
+        # Don't continue if there aren't later sentences to compare to
+        if not sentences[1:]:
+            return sentences
+
         for idx, sentence in enumerate(sentences[1:]):
             if previous_sentence.endswith('[.') and sentence.startswith(']'):
                 previous_sentence += sentence
@@ -338,7 +343,7 @@ class WebService:
         """
         Correct sentence splitting.
         """
-        rejoined_sentences =  self.__rejoin_defanged(sentences)
+        rejoined_sentences = self.__rejoin_defanged(sentences)
         sentences_split_by_hash = self.__split_by_hash(rejoined_sentences)
         sentences_split_by_url = self.__split_by_url(sentences_split_by_hash)
         sentences_split_by_ip = self.__split_by_ip(sentences_split_by_url)
@@ -350,14 +355,14 @@ class WebService:
         :criteria: expects a dictionary of this structure:
         """
         html_sentences = self.tokenizer_sen.tokenize(data)
-        corrected_html_sentences = self.__correct_sentences(html_sentences)
+        corrected_html_sentences = set(self.__correct_sentences(html_sentences))
 
         sentences = []
         for current in corrected_html_sentences:
             if sentence_limit and (len(sentences) >= sentence_limit):
                 break
             # Further split by break tags as this might misplace highlighting in the front end
-            no_breaks = [x for x in current.split('<br>') if x]
+            no_breaks = set([x for x in current.split('<br>') if x])
             for fragment in no_breaks:
                 sentence_data = dict()
                 sentence_data['html'] = fragment
