@@ -5,66 +5,163 @@
 
 <div class="threadTextPage">
 
-<p>
-  Thread is a tool for analysts to map finished reports and articles to <a href="https://attack.mitre.org" target="_blank">MITRE ATT&CK®</a>. If you are running Thread via our Arachne website, your reports will be visible to others. You can view our GitHub repo to download this version of Thread, set it up, and use it locally to ensure all your reports stay only on your machine.
-</p>
+  <p>
+    Thread is a tool for analysts to map finished reports and articles to
+    <a href="https://attack.mitre.org" target="_blank">MITRE ATT&CK®</a>. If you are running Thread via our Arachne
+    website, your reports will be visible to others. You can view our GitHub repo to download this version of Thread,
+    set it up, and use it locally to ensure all your reports stay only on your machine.
+  </p>
 
-<h3>Submitting a Report</h3>
-<p>
-On Thread's homepage, enter a web page URL (sorry no PDFs yet) to process it and begin a report based on it. It takes a few minutes to analyse a URL, this is dependent on the amount of text found from the URL. You are advised to periodically check if your submission is still in the queue.
-</p>
+  <h3>Submitting a Report</h3>
+  <p>
+    On Thread's homepage, enter a web page URL (sorry no PDFs yet) to process it and begin a report based on it.
+    It takes a few minutes to analyse a URL, this is dependent on the amount of text found from the URL. You are
+    advised to periodically check if your submission is still in the queue.
+  </p>
 
-<p>
-If you see an error in the queue, this means the website did not like us trying to fetch its contents, or something on the site could not be parsed. We will periodically check for these errors and work on improvements to the submission process.
-</p>
+  <p>
+    If you see an error in the queue, this means the website did not like us trying to fetch its contents, or
+    something on the site could not be parsed. We will periodically check for these errors and work on improvements
+    to the submission process.
+  </p>
 
-<p>
-  When the URL has been processed and its report is ready, a new card will appear (in the <b>Needs Review</b> column). Each card will have two buttons:
-  <ul style="list-style-type:none;">
+  <p>
+    When the URL has been processed and its report is ready, a new card will appear (in the <b>Needs Review</b>
+    column). Each card will have two buttons:
+  </p>
+
+  <ul>
     <li><b>Source</b>: this links back to original URL where the report originated from</li>
     <li><b>Analyse</b>: this button links to the Thread-analysed report </li>
   </ul>
-  You will also have the option to delete reports that 1. are not in the queue or 2. those in the queue that have an error.
-</p>
 
-<h3>Analysing a Report</h3>
+  <p>
+    You will also have the option to delete reports that 1. are not in the queue or 2. those in the queue that have an error.
+  </p>
 
-<p>
-  Thread's prediction model will try its best to find ATT&CK techniques in the report, but since our current data set is very limited, our models are not 100% accurate, so the tool requires you to review and refine the technique prediction.
-</p>
-<p>
-  When you click on a sentence in the report, you can do the following:
-  <ul style="list-style-type:none;">
-    <li><b>Accept</b> a technique: the correct technique is in the selected sentence. That sentence and technique will be considered a <b>true positive</b> (if this is not a missing technique you have introduced).</li>
-    <li><b>Reject</b> a technique: the technique is not in the selected sentence. That sentence and technique will be considered a <b>false positive</b> (again, if this is not a missing technique you have introduced).</li>
-    <li><b>Add a Missing Technique</b>: allows you to manually add any techniques that were missed in the selected sentence. Select the missing technique from the provided searchable-dropdown. You can repeat this for numerous missing techniques. When one is added, this is considered a <b>false negative</b> (if this is not a technique you initially rejected).</li>
+  <hr>
+
+  <h3>Analysing a Report</h3>
+
+  <p>
+    Thread will often add an Article Publication Date, which is a best guess of the date the website's content was
+    published. If Thread did not fill this in, you can manually fill it in, and you can also correct it.
+  </p>
+
+  <p>
+    Next, there is a Start Date and an End Date. These are the dates that the malicious activity took place between.
+    Add the earliest date the malicious activity is known to have occurred on as the start date. Add the latest date
+    the malicious activity is known to have occurred on as the end date. If there is no end date listed, and/or the
+    activity is believed to be still occurring, use the article publication date, since the contents of the article
+    cannot refer to activity after it was published. If there is no start date for the activity listed, click the tick
+    box No time range for techniques? Use the article publication date as the single date that refers to the malicious activity.
+  </p>
+
+  <p>
+    By default, the Apply Start/End dates to all confirmed techniques? option is ticked. This means the dates listed
+    here will apply to all of the tactics, techniques and procedures (TTPs). Untick this box if you would like to add
+    date ranges per TTP to be more granular.
+  </p>
+
+  <p>
+    When you are happy with your selections, click Update Report Dates. You can make as many changes you make, just
+    make sure you click Update Report Dates to save your changes.
+  </p>
+
+  <p>
+    For Aggressors, you can select groups, regions/political blocs and countries. If you select regions/political blocs
+    you can't choose groups or countries, but you can choose groups and countries. Add in the information that is known
+    about the aggressor. If you want to know further information about groups, have a look at
+    <a href="https://github.com/arachne-threat-intel/spindle" target="_blank">Spindle</a>. Ensure that the group chosen,
+    if known, has the right country selected, if known. If one or more pieces of information is not known, leave these
+    fields blank. Note, the aggressor country is only for state sponsored aggressors. If the aggressor is not state
+    sponsored - for example they are a cyber crime group and not attributed to an intelligence agency or military -
+    leave the country as blank.
+  </p>
+
+  <p>
+    For Victims, you can select industries, regions/political blocs and countries. If you select regions/political
+    blocs you can't choose countries, but you can choose industries with regions/political blocs groups and industries
+    with countries. Add in the information that is known about the victim. If one or more pieces of information is not
+    known, leave these fields blank. If the report talks about indiscriminate behaviour - such as exploiting vulnerable
+    devices that does not take into account the industry or country of the victim - you can tick Victims > Categories >
+    Select all? and/or Victims > Countries > Select all?
+  </p>
+
+  <p>
+    When you are happy with your selections, click Set Aggressors & Victims. You can make as many changes you make,
+    just make sure you click Update Report Dates to save your changes. If there is information missing from any of
+    these fields, or any information is incorrect, click Missing/Outdated Aggressor & Victim Options for further instructions.
+  </p>
+
+  <p>
+    For assigning TTPs to sentences, Thread's prediction model will try its best to find ATT&CK techniques in the report
+    but our models are not 100% accurate. The tool requires you to review and refine the technique prediction.
+  </p>
+
+  <p>
+    When you click on a sentence in the report, you can do the following:
+  </p>
+
+  <ul>
+    <li>
+      <b>Accept</b> a technique: the correct technique is in the selected sentence. That sentence and technique will
+      be considered a <b>true positive</b> (if this is not a missing technique you have introduced).
+    </li>
+    <li>
+      <b>Reject</b> a technique: the technique is not in the selected sentence. That sentence and technique will be
+      considered a <b>false positive</b> (again, if this is not a missing technique you have introduced).
+    </li>
+    <li>
+      <b>Add a Missing Technique</b>: allows you to manually add any techniques that were missed in the selected
+      sentence. Select the missing technique from the provided searchable-dropdown. You can repeat this for numerous
+      missing techniques. When one is added, this is considered a <b>false negative</b> (if this is not a technique you
+      initially rejected).
+    </li>
   </ul>
-  As more data is fed to the tool and is reviewed, any rebuilt models are expected to become more accurate with these predictions.
-</p>
 
-<p>
-  If you have made changes you are not happy with and cannot undo easily (e.g. deleted a sentence), you can rollback a report via the homepage (found in the <b>In Review</b> column).
-</p>
+  <p>
+    As more data is fed to the tool and is reviewed, any rebuilt models are expected to become more accurate with these predictions.
+  </p>
 
-<h3>Exporting a Report</h3>
-<p>
-  Once you have reviewed the entire report, Thread’s results can be exported as a PDF by clicking the <b>Export PDF</b> button on the top centre of the page. This will create a PDF containing a raw text version of the report, and a table with the ATT&CK technique and its corresponding sentence. This can be done for all reports out of the queue but those not in the <b>Completed</b> column will be considered draft reports.
-</p>
-<br>
+  <p>
+    You can also select indicators of compromise (IoCs). Highlight the sentence where the IoC is present and select
+    Suggest and Save IoC. Thread will do its best to remove extraneous characters, such as
+    <span class="font-monospace">[]</span> used in defanging. If you need to edit the IoC further, edit the IoC in the
+    text box and then select Update IoC Text.
+  </p>
 
-<h3>Contact Us</h3>
-<p>
-  You can contact us by emailing us at contact[at]arachne[dot]digital.
-</p>
-<p>
-  If you have found <b>any security issues</b> with Thread, we ask that you <b>please contact us directly</b> (so we can work on it without it being discovered and exploited). We will be transparent about any security issues in our documentation.
-</p>
-<p>
-  If you have found any other bugs with Thread, please feel free to contact us or raise an issue in our GitHub repo.
-</p>
-<p>
-  If you have any questions or comments about Thread, please feel free to contact us via the email address above.
-</p>
+  <p>
+    If you have made changes you are not happy with and cannot undo easily (e.g. deleted a sentence), you can rollback
+    a report via the homepage (found in the In Review column).
+  </p>
+
+  <hr>
+
+  <h3>Exporting a Report</h3>
+  <p>
+    Once you have reviewed the entire report, Thread’s results can be exported as a PDF by clicking the
+    <b>Export PDF</b> button on the top centre of the page. This will create a PDF containing a raw text version of the
+    report, and a table with the ATT&CK technique and its corresponding sentence. This can be done for all reports out
+    of the queue but those not in the <b>Completed</b> column will be considered draft reports.
+  </p>
+
+  <hr>
+
+  <h3>Contact Us</h3>
+  <p>
+    You can contact us by emailing us at contact[at]arachne[dot]digital.
+  </p>
+  <p>
+    If you have found <b>any security issues</b> with Thread, we ask that you <b>please contact us directly</b> (so we
+    can work on it without it being discovered and exploited). We will be transparent about any security issues in our documentation.
+  </p>
+  <p>
+    If you have found any other bugs with Thread, please feel free to contact us or raise an issue in our GitHub repo.
+  </p>
+  <p>
+    If you have any questions or comments about Thread, please feel free to contact us via the email address above.
+  </p>
 
 </div>
 
