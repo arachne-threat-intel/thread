@@ -158,7 +158,7 @@ class DataService:
                     # remove unnecessary strings, fix unicode errors
                     use = use.replace('<code>', '').replace('</code>', '').replace('"', '').replace(',', '').replace(
                         '\t', '').replace('  ', ' ').replace('\n', '').encode('ascii', 'ignore').decode('ascii')
-                    find_pattern = re.compile('\[.*?\]\(.*?\)')  # get rid of att&ck reference (name)[link to site]
+                    find_pattern = re.compile(r'\[.*?\]\(.*?\)')  # get rid of att&ck reference (name)[link to site]
                     m = find_pattern.findall(use)
                     if len(m) > 0:
                         for j in m:
@@ -296,7 +296,7 @@ class DataService:
                             normalized_example = item['description'].replace('<code>', '').replace('</code>', '')\
                                 .replace('\n', '').encode('ascii', 'ignore').decode('ascii')
                             # Remove att&ck reference (name)[link to site]
-                            normalized_example = re.sub('\[.*?\]\(.*?\)', '', normalized_example)
+                            normalized_example = re.sub(r'\[.*?\]\(.*?\)', '', normalized_example)
                             if item['target_ref'].startswith('attack-pattern'):
                                 if item['target_ref'] in loaded_items:
                                     loaded_items[item['target_ref']]['example_uses'].append(normalized_example)

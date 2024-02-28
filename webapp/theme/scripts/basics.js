@@ -506,7 +506,7 @@ function onchangeAggressorGroups(e) {
 function onchangeAggressorRegions(e) {
   updateMultiSelectList(e, "aggressorRegionOpt", "aggressorCurrentRegionList", "aggressorRegionLi");
 
-  updateCountrySelect("aggressor");
+  // updateCountrySelect("aggressor");
 }
 
 function onchangeAggressorCountries(e) {
@@ -516,7 +516,7 @@ function onchangeAggressorCountries(e) {
 function onchangeVictimRegions(e) {
   updateMultiSelectList(e, "victimRegionOpt", "victimCurrentRegionList", "victimRegionLi");
 
-  updateCountrySelect("victim");
+  // updateCountrySelect("victim");
 }
 
 function onchangeVictimCountries(e) {
@@ -852,5 +852,5 @@ $(document).ready(function() {
   // addDeleteListener(); inputs are now interacted with when a sentence is selected
   isCompleted = $("script#reportDetails").data("completed");
   importFont();
-  initialiseCountrySelects();
+  // initialiseCountrySelects();
 });
