@@ -5,11 +5,11 @@ If changing the JS script imports, please note order is important (and any requi
 
 | Library | Current Version (Date) | Library link(s) | Source (src) URL | Notes <sup>1</sup> |
 | ----------- | ----------- | ----------- | ----------- | ----------- | 
-| `jQuery` | v3.7.0<br/>(11 May '23) | [GitHub repo](https://github.com/jquery/jquery) | Obtained from [here](https://cdnjs.com/libraries/jquery) |  |
-| `Bootstrap` | v5.2.3<br/>(22 Nov '22) | [GitHub repo](https://github.com/twbs/bootstrap) | Obtained from [here](https://cdnjs.com/libraries/bootstrap) | <ul><li>Also requires `bootstrap.min.css`.</li><li>Choose `bootstrap.bundle.min.js` to include `Popper`.</li><li>`bootstrap-glyphicon.min.css` is not required (despite being included via local files) because it is [deprecated](https://github.com/twbs/bootstrap/issues/18749). </li></ul> |
+| `jQuery` | v3.7.1<br/>(28 Aug '23) | [GitHub repo](https://github.com/jquery/jquery) | Obtained from [here](https://cdnjs.com/libraries/jquery) |  |
+| `Bootstrap` | v5.3.3<br/>(20 Feb '24) | [GitHub repo](https://github.com/twbs/bootstrap) | Obtained from [here](https://cdnjs.com/libraries/bootstrap) | <ul><li>Also requires `bootstrap.min.css`.</li><li>Choose `bootstrap.bundle.min.js` to include `Popper`.</li><li>`bootstrap-glyphicon.min.css` is not required (despite being included via local files) because it is [deprecated](https://github.com/twbs/bootstrap/issues/18749). </li></ul> |
 | `bootstrap-select` | v1.13.18<br/>(27 Jun '20)<br/>**Use versions from v1.14.0-beta2** <sup>2</sup> | [GitHub repo](https://github.com/snapappointments/bootstrap-select) | Obtained from [here](https://cdnjs.com/libraries/bootstrap-select) | Requires jQuery, Popper, Bootstrap and `bootstrap-select.min.css`. |
-| `Font Awesome` | v6.2.1<br/>(15 Nov '22) | [GitHub repo](https://github.com/FortAwesome/Font-Awesome) | Obtained from [here](https://cdnjs.com/libraries/font-awesome) | Not available for offline-Thread-use as `bootstrap-glyphicon.min.css` is used instead. |
-| `pdfmake` | v0.2.6<br/>(09 Oct '22) | [GitHub repo](https://github.com/bpampuch/pdfmake) | Obtained from [here](https://cdnjs.com/libraries/pdfmake) | Also requires `vfs_fonts.js`. |
+| `Font Awesome` | v6.5.1<br/>(30 Nov '23) | [GitHub repo](https://github.com/FortAwesome/Font-Awesome) | Obtained from [here](https://cdnjs.com/libraries/font-awesome) | Not available for offline-Thread-use as `bootstrap-glyphicon.min.css` is used instead. |
+| `pdfmake` | v0.2.9<br/>(01 Jan '24) | [GitHub repo](https://github.com/bpampuch/pdfmake) | Obtained from [here](https://cdnjs.com/libraries/pdfmake) | Also requires `vfs_fonts.js`. |
 | `Popper` | - | - | - | <ul><li>Library imported via bundled `Bootstrap`.</li><li>Recording here as original release included local script of this.</li></ul> |
 | `kanban` | - | - | - | <ul><li>Functionality not used.</li><li>Recording here as original release included local script of this.</li></ul> |
 
