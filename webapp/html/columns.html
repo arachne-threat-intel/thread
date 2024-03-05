@@ -5,8 +5,8 @@
 {% block head %}
 {{ super() }}
 {% if js_src_online %}{# Edit-report page is the only page which uses pdfmake so import here #}
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.6/pdfmake.min.js" integrity="sha512-7BzHjLXs8xehClrkJEtJtAwXxcbLast87k+XekuItHxrMr/v6POWkoKS2/8CU6DHdIjY+A4NwvsBQ8PxoRH7xQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.6/vfs_fonts.min.js" integrity="sha512-P0bOMePRS378NwmPDVPU455C/TuxDS+8QwJozdc7PGgN8kLqR4ems0U/3DeJkmiE31749vYWHvBOtR+37qDCZQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.9/pdfmake.min.js" integrity="sha512-5wC3oH3tojdOtHBV6B4TXjlGc0E2uk3YViSrWnv1VUmmVlQDAs1lcupsqqpwjh8jIuodzADYK5xCL5Dkg/ving==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.9/vfs_fonts.min.js" integrity="sha512-EFlschXPq/G5zunGPRSYqazR1CMKj0cQc8v6eMrQwybxgIbhsfoO5NAMQX3xFDQIbFlViv53o7Hy+yCWw6iZxA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 {% else %}
   <script src="{{static_url}}scripts/pdfmake.min.js"></script>
   <script src="{{static_url}}scripts/vfs_fonts.js"></script>
@@ -60,7 +60,7 @@
 {% include "report-data.html" %}
 
 <div class="row">
-  <div class="col reportSentencesDiv">
+  <div class="col reportSentencesDiv rounded">
     {% for elmt in final_html %}
       {% if elmt.tag == 'img' %}
         <img src="{{elmt.text}}" id="img{{elmt.uid}}" class="reportImage" onclick="sentenceContext('{{elmt.uid}}')">
@@ -84,8 +84,8 @@
       {% endif %}
     {% endfor %}
   </div>
-  <div class="col col-sm-4 ">
-    <div class="missingTechniquesView bg-dark" id="sentenceContextSection">
+  <div class="col col-sm-4">
+    <div class="missingTechniquesView bg-dark rounded" id="sentenceContextSection">
       {% if not completed %}{# Incomplete reports: list techniques user still needs to review #}
         <span class='spanAwaitingTechniqueView'><b>Techniques Awaiting Confirmation</b></span>
         <br><br>
@@ -107,13 +107,13 @@
         <span class='spanMissingTechniqueView'><b>Techniques Found</b></span>
         <br><br>
         <div id="sentenceInformation">
-          <table id="tableSentenceInfo" class="table"><tbody></tbody></table>
+          <table id="tableSentenceInfo" class="table table-dark"><tbody></tbody></table>
         </div>
       {% endif %}
       <span class='spanMissingTechniqueView'><b>Confirmed Techniques</b></span>
       <br>
       <div id="confirmedsentenceInformation">
-        <table id="confirmedSentenceInfo" class="table"><tbody></tbody></table>
+        <table id="confirmedSentenceInfo" class="table table-dark"><tbody></tbody></table>
       </div>
       {% if not completed %}
         <form id="ttpDatesForm" hidden>{# Date of TTP mapping #}
