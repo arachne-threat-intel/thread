@@ -20,6 +20,8 @@ from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 from urllib.parse import urlparse
 
+from threadcomponents.helpers.list_helpers import dedup_list
+
 # Abbreviated words for sentence-splitting
 ABBREVIATIONS = {'dr', 'vs', 'mr', 'mrs', 'ms', 'prof', 'inc', 'fig', 'e.g', 'i.e', 'u.s'}
 # Blocked image types
@@ -355,14 +357,14 @@ class WebService:
         :criteria: expects a dictionary of this structure:
         """
         html_sentences = self.tokenizer_sen.tokenize(data)
-        corrected_html_sentences = set(self.__correct_sentences(html_sentences))
+        corrected_html_sentences = dedup_list(self.__correct_sentences(html_sentences))
 
         sentences = []
         for current in corrected_html_sentences:
             if sentence_limit and (len(sentences) >= sentence_limit):
                 break
             # Further split by break tags as this might misplace highlighting in the front end
-            no_breaks = set([x for x in current.split('<br>') if x])
+            no_breaks = dedup_list([x for x in current.split('<br>') if x])
             for fragment in no_breaks:
                 sentence_data = dict()
                 sentence_data['html'] = fragment
@@ -370,6 +372,7 @@ class WebService:
                 sentence_data['ml_techniques_found'] = []
                 sentence_data['reg_techniques_found'] = []
                 sentences.append(sentence_data)
+
         return sentences
 
     @staticmethod
