@@ -9,6 +9,7 @@ DB_SQLITE, DB_POSTGRESQL = 'sqlite3', 'postgresql'
 
 
 class Dao:
+    """A class to handle interactions with the database."""
     def __init__(self, engine=None):
         self.logger = logging.getLogger('DataService')
         self.db = engine

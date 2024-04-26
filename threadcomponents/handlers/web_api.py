@@ -19,6 +19,7 @@ ACCEPT_COOKIE = 'accept_cookie_notice'
 
 
 class WebAPI:
+    """A class to handle receiving requests via the website."""
     def __init__(self, services, report_exporter, js_src=None):
         self.dao = services['dao']
         self.data_svc = services['data_svc']

@@ -64,7 +64,7 @@ def defang_text(text):
 
 
 class DataService:
-
+    """A class to handle report-data or attack-data tasks."""
     def __init__(self, dao, web_svc, dir_prefix=''):
         self.dao = dao
         self.web_svc = web_svc

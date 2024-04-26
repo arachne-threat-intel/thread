@@ -22,7 +22,6 @@ def sanitise_filename(filename=''):
 
 class ReportExporter:
     """A class to help with exporting reports."""
-
     def __init__(self, services):
         self.dao = services['dao']
         self.data_svc = services['data_svc']

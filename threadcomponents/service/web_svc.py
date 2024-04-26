@@ -47,6 +47,7 @@ IPV6_REGEX = re.compile(r"\b((?:[a-f0-9]{1,4}:|:){2,7}(?:[a-f0-9]{1,4}|:))\b", r
 
 
 class WebService:
+    """A class for website-related tasks."""
     # Static class variables for the keys in app_routes
     HOME_KEY, COOKIE_KEY, EDIT_KEY, ABOUT_KEY, REST_KEY = 'home', 'cookies', 'edit', 'about', 'rest'
     EXPORT_PDF_KEY, EXPORT_NAV_KEY, STATIC_KEY = 'export_pdf', 'export_nav', 'static'
@@ -170,6 +171,7 @@ class WebService:
         return False
 
     async def map_all_html(self, url_input, sentence_limit=None):
+        """Function to return the HTML and Newspaper-article for a given URL."""
         a = newspaper.Article(url_input, keep_article_html=True)
         a.config.MAX_TEXT = None
         a.download()
