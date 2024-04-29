@@ -21,4 +21,4 @@ stix2~=3.0
 taxii2-client~=2.3
 tldextract~=3.1
 # Uncomment if using PostgreSQL and have satisfied its requirements
-# psycopg2>=2.9.1
+# psycopg2~=2.9.1
