@@ -6,7 +6,7 @@ import re
 
 
 class RegService:
-
+    """A class to handle tasks related to the regex-analysis of Thread reports."""
     # Service to analyze the text file against the attack-dict to find matches
     def __init__(self, dao):
         self.dao = dao

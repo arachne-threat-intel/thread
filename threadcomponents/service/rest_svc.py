@@ -55,6 +55,7 @@ class AssociationWith(Enum):
 
 
 class RestService:
+    """A class to handle creating/updating reports (and its related data) from REST requests."""
     def __init__(self, web_svc, reg_svc, data_svc, ml_svc, dao, dir_prefix='', queue_limit=None, max_tasks=1,
                  sentence_limit=None, attack_file_settings=None):
         self.MAX_TASKS = max_tasks

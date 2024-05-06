@@ -16,7 +16,7 @@ from sklearn.model_selection import train_test_split
 
 
 class MLService:
-
+    """A class to handle tasks related to the machine-learning-analysis of Thread reports."""
     # Service to perform the machine learning against the pickle file
     def __init__(self, web_svc, dao, dir_prefix=''):
         self.web_svc = web_svc
@@ -153,6 +153,7 @@ class MLService:
         return None
 
     async def analyze_html(self, list_of_techs, model_dict, list_of_sentences):
+        """Function to analyse a list of sentences with our ML models."""
         for tech_id, tech_name in list_of_techs:
             # If this loop takes long, the below logging-statement will help track progress
             # logging.info('%s/%s tech analysed' % (list_of_techs.index((tech_id, tech_name)), len(list_of_techs)))
@@ -174,6 +175,7 @@ class MLService:
         return list_of_sentences
 
     async def ml_techniques_found(self, report_id, sentence, sentence_index, tech_start_date=None):
+        """Function to update the database for sentence-attack-mappings given report-sentence details."""
         sentence_id = await self.dao.insert_with_backup(
             'report_sentences', dict(report_uid=report_id, text=sentence['text'], html=sentence['html'],
                                      sen_index=sentence_index, found_status=self.dao.db_true_val))
