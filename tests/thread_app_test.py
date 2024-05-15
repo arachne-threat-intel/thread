@@ -222,6 +222,6 @@ class ThreadAppTest(AioHTTPTestCase):
                 x_mitre_attack_spec_version='2.1.0', x_mitre_domains=['enterprise-attack'], x_mitre_version='1.0',
             ))
         # Mock the fetch-data method to return our mocked list
-        self.create_patch(target=data_svc, attribute='fetch_attack_data', return_value=dict(objects=new_attack_list))
+        self.create_patch(target=data_svc, attribute='fetch_attack_stix_data_json', return_value=dict(objects=new_attack_list))
         # Prevent the Stix library flagging incorrect data
         self.create_patch(target=_STIXBase, attribute='_check_property', return_value=False)
