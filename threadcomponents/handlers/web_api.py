@@ -70,10 +70,9 @@ class WebAPI:
 
     async def fetch_and_update_attack_data(self):
         """Function to fetch and update the attack data."""
+        await self.rest_svc.fetch_and_update_attack_data()
         # If updates occurred when fetching the attack-data, we need to update the dropdown list
-        updates = await self.rest_svc.fetch_and_update_attack_data()
-        if updates:
-            await self.set_attack_dropdown_list()
+        await self.set_attack_dropdown_list()
 
     async def fetch_and_update_keywords(self):
         """Function to fetch and update the list of keywords."""
@@ -393,8 +392,13 @@ class WebAPI:
                 for fps in false_positives:
                     fp.append(fps['false_positive'])
 
-                techniques[row['uid']] = {'id': row['tid'], 'name': row['name'], 'similar_words': [],
-                                          'example_uses': tp, 'false_positives': fp}
+                techniques[row['uid']] = {
+                    'id': row['tid'],
+                    'name': row['name'],
+                    'similar_words': [],
+                    'example_uses': tp,
+                    'false_positives': fp
+                }
 
         list_of_legacy, list_of_techs = self.data_svc.ml_reg_split(techniques)
         self.ml_svc.build_pickle_file(list_of_techs, techniques, force=True)

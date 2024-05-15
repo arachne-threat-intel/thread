@@ -20,7 +20,7 @@ NO_DESC = 'No description provided'
 FULL_ATTACK_INFO = 'full_attack_info'
 
 
-def fetch_attack_data():
+def fetch_attack_stix_data_json():
     """Function to fetch the latest Att%ck data."""
     url = 'https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/' \
           'enterprise-attack.json'
@@ -122,141 +122,185 @@ class DataService:
         await self.dao.build(schema)
         await self.dao.build(copied_tables_schema, is_partial=True)
 
-    async def fetch_and_update_attack_data(self):
+    def fetch_attack_stix_data(self):
         """
-        Function to retrieve ATT&CK data and insert it into the DB.
-        Further reading on approach: https://github.com/arachne-threat-intel/thread/pull/27#issuecomment-1047456689
+        Function to retrieve ATT&CK data and load it into a Stix memory store
         """
-        logging.info('Downloading ATT&CK data from GitHub repo `mitre-attack/attack-stix-data`...')
-        attack = {}
-        stix_json = fetch_attack_data()
-        ms = MemoryStore(stix_data=stix_json['objects'])
-        filter_objs = {'techniques': Filter('type', '=', 'attack-pattern'),
-                       'groups': Filter('type', '=', 'intrusion-set'), 'malware': Filter('type', '=', 'malware'),
-                       'tools': Filter('type', '=', 'tool'), 'relationships': Filter('type', '=', 'relationship')}
-        for key in filter_objs:
-            # Could pass [filter_objs[key], Filter('x_mitre_deprecated', '!=', True), Filter('revoked', '!=', True)]
-            # But numbers are not adding up when ('=', False) are used
-            attack[key] = ms.query(filter_objs[key])
-        references = {}
+        logging.info('Downloading ATT&CK data from GitHub repo `mitre-attack/attack-stix-data`')
+        stix_json = fetch_attack_stix_data_json()
+        return MemoryStore(stix_data=stix_json['objects'])
 
-        # add all of the patterns and dictionary keys/values for each technique and software
-        for i in attack['techniques']:
-            if attack_data_reject(i):
+    def flatten_attack_stix_data(self, stix_memory_store):
+        """
+        Function that takes a Stix Memory store and flattens the data into something that we work with
+        """
+        logging.info('Flattening stix data into attack data')
+        attack_data = {}
+
+        # Techniques / attack-patterns #
+        # add all the patterns and dictionary keys/values for each technique and software
+        techniques = stix_memory_store.query(Filter('type', '=', 'attack-pattern'))
+        for technique in techniques:
+            if attack_data_reject(technique):
                 continue
-            references[i['id']] = {'name': i['name'], 'tid': attack_data_get_tid(i), 'example_uses': [],
-                                   'description': i.get('description', NO_DESC).replace('<code>', '').replace(
-                                       '</code>', '').replace('\n', '').encode('ascii', 'ignore').decode('ascii'),
-                                   'similar_words': [i['name']]}
 
-        for i in attack['relationships']:
-            if attack_data_reject(i):
+            attack_data[technique['id']] = {
+                'name': technique['name'],
+                'tid': attack_data_get_tid(technique),
+                'example_uses': [],
+                'description': technique.get('description', NO_DESC).replace('<code>', '').replace('</code>', '').replace('\n', '').encode('ascii', 'ignore').decode('ascii'),
+                'similar_words': [technique['name']]
+            }
+
+        # Relationships #
+        relationships = stix_memory_store.query(Filter('type', '=', 'relationship'))
+        # regex to get rid of att&ck reference (name)[link to site] (done once outside loop as compile can be expensive)
+        link_pattern = re.compile(r'\[.*?\]\(.*?\)')
+        citation_pattern = re.compile(r'\(Citation: .*?\)')
+        for relationship in relationships:
+            if attack_data_reject(relationship):
                 continue
-            if i['relationship_type'] == 'uses':
-                if ('attack-pattern' in i['target_ref']) and (i['target_ref'] in references):
-                    use = i.get('description', NO_DESC)
-                    # remove unnecessary strings, fix unicode errors
-                    use = use.replace('<code>', '').replace('</code>', '').replace('"', '').replace(',', '').replace(
-                        '\t', '').replace('  ', ' ').replace('\n', '').encode('ascii', 'ignore').decode('ascii')
-                    find_pattern = re.compile(r'\[.*?\]\(.*?\)')  # get rid of att&ck reference (name)[link to site]
-                    m = find_pattern.findall(use)
-                    if len(m) > 0:
-                        for j in m:
-                            use = use.replace(j, '')
-                            if use[0:2] == '\'s':
-                                use = use[3:]
-                            elif use[0] == ' ':
-                                use = use[1:]
-                    # combine all the examples to one list
-                    references[i['target_ref']]['example_uses'].append(use)
 
-        for i in attack['malware']:
+            if relationship['relationship_type'] != 'uses':
+                continue
+
+            # Continue if it isn't a attack-pattern relationship OR the target ref isn't in our attack_data
+            target_ref = relationship['target_ref']
+            if ('attack-pattern' not in target_ref) or (target_ref not in attack_data):
+                continue
+
+            # remove unnecessary strings, fix unicode errors
+            example_use = relationship.get('description', NO_DESC).replace('<code>', '').replace('</code>', '').replace('"', '').replace(',', '').replace('\t', '').replace('  ', ' ').replace('\n', '').encode('ascii', 'ignore').decode('ascii')
+            example_use = link_pattern.sub('', example_use)  # replace all instances of links with nothing
+            example_use = citation_pattern.sub('', example_use)  # replace all instances of links with nothing
+            if example_use[0:2] == '\'s':  # remove any leading 's
+                example_use = example_use[3:]
+
+            example_use = example_use.strip()  # strip any leading/trailing whitespace
+
+            if len(example_use) > 0:  # if the example_use is not empty, add it to the attack_data
+                attack_data[target_ref]['example_uses'].append(example_use)
+
+        # Malware #
+        all_malware = stix_memory_store.query(Filter('type', '=', 'malware'))
+        for malware in all_malware:
             # TODO check if we should be skipping those without a description?
             # some software do not have description, example: darkmoon https://attack.mitre.org/software/S0209
-            if ('description' not in i) or attack_data_reject(i):
+            if ('description' not in malware) or attack_data_reject(malware):
                 continue
-            else:
-                references[i['id']] = {'tid': attack_data_get_tid(i), 'name': i['name'],
-                                       'description': i.get('description', NO_DESC),
-                                       'examples': [], 'example_uses': [], 'similar_words': [i['name']]}
-        for i in attack['tools']:
-            if attack_data_reject(i):
+
+            attack_data[malware['id']] = {
+                'tid': attack_data_get_tid(malware),
+                'name': malware['name'],
+                'description': malware.get('description', NO_DESC),
+                'examples': [],
+                'example_uses': [],
+                'similar_words': [malware['name']]
+            }
+
+        # Tools #
+        tools = stix_memory_store.query(Filter('type', '=', 'tool'))
+        for tool in tools:
+            if attack_data_reject(tool):
                 continue
-            references[i['id']] = {'tid': attack_data_get_tid(i), 'name': i['name'],
-                                   'description': i.get('description', NO_DESC),
-                                   'examples': [], 'example_uses': [], 'similar_words': [i['name']]}
 
-        attack_data = references
-        logging.info('Finished...now creating the database.')
+            attack_data[tool['id']] = {
+                'tid': attack_data_get_tid(tool),
+                'name': tool['name'],
+                'description': tool.get('description', NO_DESC),
+                'examples': [],
+                'example_uses': [],
+                'similar_words': [tool['name']]
+            }
 
-        cur_attacks = ((await self.dao.get_dict_value_as_key('uid', table='attack_uids', columns=['name', 'inactive']))
-                       or dict())
+        return attack_data
+
+    async def update_db_with_flattened_attack_data(self, attack_data):
+        """
+        Function to take attack_data and update the database
+        """
+        logging.info('Saving attack data to database')
+
+        cur_attacks = await self.dao.get_dict_value_as_key('uid', table='attack_uids', columns=['name', 'inactive'])
         cur_uids = set(cur_attacks.keys())
         retrieved_uids = set(attack_data.keys())
         added_attacks = retrieved_uids - cur_uids
         name_changes = []
-        for k, v in attack_data.items():
+        for attack_uid, attack_item in attack_data.items():
             # If this loop takes long, the below logging-statement will help track progress
             # logging.info('Processing attack %s of %s.' % (list(attack_data.keys()).index(k) + 1, len(attack_data)))
-            if k not in cur_uids:
-                await self.dao.insert('attack_uids', dict(uid=k, tid=v['tid'], name=v['name']))
-                if 'regex_patterns' in v:
-                    [await self.dao.insert_generate_uid('regex_patterns',
-                                                        dict(attack_uid=k, regex_pattern=defang_text(x)))
-                     for x in v['regex_patterns']]
-                if 'similar_words' in v:
-                    [await self.dao.insert_generate_uid('similar_words',
-                                                        dict(attack_uid=k, similar_word=defang_text(x)))
-                     for x in v['similar_words']]
-                if 'false_negatives' in v:
-                    [await self.dao.insert_generate_uid(
-                        'false_negatives',
-                        dict(attack_uid=k, false_negative=self.dao.truncate_str(defang_text(x), 800)))
-                     for x in v['false_negatives']]
-                if 'false_positives' in v:
-                    [await self.dao.insert_generate_uid(
-                        'false_positives',
-                        dict(attack_uid=k, false_positive=self.dao.truncate_str(defang_text(x), 800)))
-                     for x in v['false_positives']]
-                if 'true_positives' in v:
-                    [await self.dao.insert_generate_uid(
-                        'true_positives',
-                        dict(attack_uid=k, true_positive=self.dao.truncate_str(defang_text(x), 800)))
-                     for x in v['true_positives']]
-                if 'example_uses' in v:
-                    [await self.dao.insert_generate_uid(
-                        'true_positives',
-                        dict(attack_uid=k, true_positive=self.dao.truncate_str(defang_text(x), 800)))
-                     for x in v['example_uses']]
+            if attack_uid not in cur_uids:
+                await self.dao.insert('attack_uids', dict(uid=attack_uid, tid=attack_item['tid'], name=attack_item['name']))
+                await self.add_related_attack_data(attack_uid, attack_item, 'regex_patterns', 'regex_pattern')
+                await self.add_related_attack_data(attack_uid, attack_item, 'similar_words', 'similar_word')
+                await self.add_related_attack_data(attack_uid, attack_item, 'false_negatives', 'false_negative')
+                await self.add_related_attack_data(attack_uid, attack_item, 'false_positives', 'false_positive')
+                await self.add_related_attack_data(attack_uid, attack_item, 'false_positives', 'true_positive')
+                await self.add_related_attack_data(attack_uid, attack_item, 'example_uses', 'true_positive', 'true_positives')
             else:
                 # If the attack is already in the DB, check the name hasn't changed; update if so
-                retrieved_name = (attack_data.get(k, dict())).get('name')
-                current_attack_data = cur_attacks.get(k, dict())
+                retrieved_name = (attack_data.get(attack_uid, dict())).get('name')
+                current_attack_data = cur_attacks.get(attack_uid, dict())
                 current_name = current_attack_data.get('name')
                 if retrieved_name and (retrieved_name != current_name):
-                    await self.dao.update('attack_uids', where=dict(uid=k), data=dict(name=retrieved_name))
-                    name_changes.append((k, retrieved_name, current_name))
+                    await self.dao.update('attack_uids', where=dict(uid=attack_uid), data=dict(name=retrieved_name))
+                    name_changes.append((attack_uid, retrieved_name, current_name))
                     # Update the similar-words table if we're updating the attack-entry
                     for name in [retrieved_name, current_name]:
                         if name:  # proceed if there is a value
                             # Check an attack doesn't already have a similar-word with this name
-                            db_criteria = dict(attack_uid=k, similar_word=name)
+                            db_criteria = dict(attack_uid=attack_uid, similar_word=name)
                             stored = await self.dao.get('similar_words', equal=db_criteria)
                             # If not, update the attack's similar-words to include this name
                             if not stored:
                                 await self.dao.insert_generate_uid('similar_words', db_criteria)
                 # Confirm this attack is considered active
                 if current_attack_data.get('inactive'):
-                    await self.dao.update('attack_uids', where=dict(uid=k), data=dict(inactive=self.dao.db_false_val))
+                    await self.dao.update('attack_uids', where=dict(uid=attack_uid), data=dict(inactive=self.dao.db_false_val))
+
         # Inactive attack IDs have been calculated by using what is in the database currently
         # Update the database entries to be inactive if not already flagged as such
         already_inactive = await self.dao.raw_select(
-            ('SELECT uid FROM attack_uids WHERE inactive = %s' % self.dao.db_true_val), single_col=True)
+            ('SELECT uid FROM attack_uids WHERE inactive = %s' % self.dao.db_true_val),
+            single_col=True
+        )
+
         inactive_attacks = (cur_uids - retrieved_uids) - set(already_inactive)
+        # TODO: Could just do a mass update like `UPDATE attack_uids SET inactive = true WHERE uid IN (blah, blah, blah, blah)`
         for inactive_id in inactive_attacks:
             await self.dao.update('attack_uids', where=dict(uid=inactive_id), data=dict(inactive=self.dao.db_true_val))
-        logging.info('[!] DB Item Count: {}'.format(len(await self.dao.get('attack_uids'))))
+
+        db_items = await self.dao.get('attack_uids')
+        db_item_count = len(db_items)
+        logging.info(f'[!] DB Item Count: {db_item_count}')
+
         return added_attacks, inactive_attacks, name_changes
+
+    async def add_related_attack_data(self, attack_uid, attack_item, related_data_type, db_column_name, db_table_name=None):
+        """
+        Function to add related data to an attack_uid
+        :param db_table_name: The name of the table to insert the data into, if it isn't provided, it will be the same as the related_data_type
+        """
+        if related_data_type not in attack_item:
+            return
+
+        if db_table_name is None:
+            db_table_name = related_data_type
+
+        for x in attack_item[related_data_type]:
+            data = {
+                'attack_uid': attack_uid,
+                db_column_name: defang_text(x)
+            }
+            await self.dao.insert_generate_uid(db_table_name, data)
+
+    def fetch_flattened_attack_data(self):
+        """
+        Function to retrieve ATT&CK data and insert it into the DB.
+        Further reading on approach: https://github.com/arachne-threat-intel/thread/pull/27#issuecomment-1047456689
+        """
+        stix_memory_store = self.fetch_attack_stix_data()
+        return self.flatten_attack_stix_data(stix_memory_store)
 
     async def insert_attack_json_data(self, buildfile):
         """
@@ -281,11 +325,14 @@ class DataService:
                             # Add in
                             if tid.startswith('T') and not tid.startswith('TA'):
                                 if item['type'] == "attack-pattern":
-                                    loaded_items[item['id']] = {'id': tid, 'name': item['name'],
-                                                                'examples': [],
-                                                                'similar_words': [],
-                                                                'description': item.get('description', NO_DESC),
-                                                                'example_uses': []}
+                                    loaded_items[item['id']] = {
+                                        'id': tid,
+                                        'name': item['name'],
+                                        'examples': [],
+                                        'similar_words': [],
+                                        'description': item.get('description', NO_DESC),
+                                        'example_uses': []
+                                    }
                         else:
                             logging.critical('[!] Error: multiple MITRE sources: {} {}'.format(item['id'], items))
             # Extract uses for all TIDs
@@ -682,7 +729,7 @@ class DataService:
             "AND report_sentence_hits.active_hit = %s" % self.dao.db_true_val)
         # Run the above query and return its results
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
-    
+
     async def get_report_unique_techniques_count(self, report_id) -> int:
         """Function to return the amount of unique techniques found in a report."""
         count_query = (
@@ -853,6 +900,7 @@ class DataService:
                     list_of_techs.append((v['id'], v['name']))
                 else:
                     list_of_legacy.append(v['id'])
-            except Exception:
-                print(v)
+            except Exception as ex:
+                print(f"Exception {ex=} | {type(ex)=} | {v=}")
+
         return list_of_legacy, list_of_techs

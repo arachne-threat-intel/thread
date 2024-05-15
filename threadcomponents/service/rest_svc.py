@@ -91,53 +91,77 @@ class RestService:
         if load_attack_dict:
             with open(self.attack_dict_loc, 'r', encoding='utf_8') as attack_dict_f:
                 self.json_tech = json.load(attack_dict_f)
+
         self.list_of_legacy, self.list_of_techs = self.data_svc.ml_reg_split(self.json_tech)
 
     async def fetch_and_update_attack_data(self, is_startup=False):
         """Function to fetch and update the attack data."""
         # Did DB-updates occur? Or updates to our internal json-tech dictionary?
-        updates, updated_json_tech = False, False
+        updated_json_tech = False
+
         # The output of the attack-data-updates from data_svc
-        added_attacks, inactive_attacks, name_changes = await self.data_svc.fetch_and_update_attack_data()
-        # If new attacks were added...
-        if added_attacks:
-            updates = True
-            # We only want to list added attacks after startup because during startup may lead to logging a long list
-            if not is_startup:
-                logging.info('Consider adding example uses for %s to %s' % (', '.join(added_attacks),
-                                                                            self.attack_dict_loc))
-        # If attacks were renamed...
-        if name_changes:
-            updates = True
-            # Update the json-tech for each attack with a new name
-            for tech_id, new_name, old_db_name in name_changes:
-                current_entry = self.json_tech.get(tech_id)
-                if current_entry:
-                    # Update the name if the name is different to the json-tech's entry
-                    current_entry_name = current_entry.get('name')
-                    if current_entry_name != new_name:
-                        self.json_tech[tech_id]['name'] = new_name
-                        updated_json_tech = True
-                    # Update similar-words with the old and new names for this attack
-                    similar_words = current_entry.get('similar_words', [])
-                    for name in [new_name, old_db_name, current_entry_name]:
-                        if name not in similar_words:
-                            similar_words.append(name)
-                            updated_json_tech = True
-                    self.json_tech[tech_id]['similar_words'] = similar_words
-        # If the json-tech dictionary was updated...
-        if updated_json_tech:
-            # Ensure any lists dependent on json-tech are updated
-            self.set_internal_attack_data(load_attack_dict=False)
-            # Update the file it came from if boolean is set
-            if self.update_attack_file:
-                with open(self.attack_dict_loc, 'w', encoding='utf-8') as json_file_opened:
-                    json.dump(self.json_tech, json_file_opened, ensure_ascii=False, indent=self.attack_file_indent)
-            else:  # else log the name-changes
-                logging.info('The following name changes have occurred in the DB but not in %s' % self.attack_dict_loc)
-                for tech_id, new_name, old_db_name in name_changes:
-                    logging.info('%s: %s (previously `%s`)' % (tech_id, new_name, old_db_name))
-        return updates
+        attack_data = self.data_svc.fetch_flattened_attack_data()
+        await self.data_svc.update_db_with_flattened_attack_data(attack_data=attack_data)
+        self.update_json_tech_with_flattened_attack_data(attack_data=attack_data, is_startup=is_startup)
+
+    def update_json_tech_with_flattened_attack_data(self, attack_data, is_startup):
+        """Function to update the attack dictionary file."""
+        # Loop the attack data and check if any attacks have been added or renamed or changed in anyway
+        added_count, updated_count = 0, 0
+        for attack_uid, attack_item in attack_data.items():
+            # If the attack is not in the json-tech dictionary, add it
+            if attack_uid not in self.json_tech:
+                added_count += 1
+                self.json_tech[attack_uid] = attack_item
+                self.json_tech[attack_uid]['id'] = self.json_tech[attack_uid].pop('tid')
+
+                # We only want to list added attacks after startup because during startup may lead to logging a long list
+                if not is_startup:
+                    logging.info(f'Consider adding example uses for {attack_uid} to {self.attack_dict_loc}')
+            else:
+                # print('We have an existing attack: %s' % attack_uid)
+                updated = False
+                current_entry = self.json_tech.get(attack_uid)
+                if current_entry['id'] != attack_item['tid']:
+                    print('ID MISMATCH: This should not happen, skipping', attack_uid)
+
+                # Check description change
+                if current_entry['description'] != attack_item['description']:
+                    updated = True
+                    current_entry['description'] = attack_item['description']
+
+                # Check for new example uses
+                for example_use in attack_item['example_uses']:
+                    if example_use not in current_entry['example_uses']:
+                        updated = True
+                        current_entry['example_uses'].append(example_use)
+
+                # Check similar words
+                for similar_word in attack_item['similar_words']:
+                    if similar_word not in current_entry['similar_words']:
+                        updated = True
+                        current_entry['similar_words'].append(similar_word)
+
+                # Check for name change
+                if current_entry['name'] != attack_item['name']:
+                    updated = True
+                    for name in [current_entry['name'], attack_item['name']]:
+                        if name not in current_entry['similar_words']:
+                            current_entry['similar_words'].append(name)
+
+                    current_entry['name'] = attack_item['name']
+
+                if updated:
+                    updated_count += 1
+
+        logging.info(f'Added {added_count} new attacks and updated {updated_count} existing attacks to in memory attack dictionary')
+
+        self.set_internal_attack_data(load_attack_dict=False)
+
+        if self.update_attack_file:
+            logging.info(f'Writing updated attack dictionary to {self.attack_dict_loc}')
+            with open(self.attack_dict_loc, 'w', encoding='utf-8') as json_file_opened:
+                json.dump(self.json_tech, json_file_opened, ensure_ascii=False, indent=self.attack_file_indent)
 
     @staticmethod
     def get_status_enum():
