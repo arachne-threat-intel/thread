@@ -160,7 +160,7 @@ def main(directory_prefix='', route_prefix=None, app_setup_func=None, db_connect
 
     dir_prefix = directory_prefix
     logging.basicConfig(
-        format='%(asctime)s %(levelname)-8s %(message)s',
+        format='%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s',
         level=logging.INFO,
         datefmt='%Y-%m-%d %H:%M:%S')
     logging.info('Welcome to Thread')
