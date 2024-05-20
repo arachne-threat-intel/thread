@@ -94,14 +94,14 @@ class RestService:
 
         self.list_of_legacy, self.list_of_techs = self.data_svc.ml_reg_split(self.json_tech)
 
-    async def fetch_and_update_attack_data(self, is_startup=False):
+    async def fetch_and_update_attack_data(self):
         """Function to fetch and update the attack data."""
         # The output of the attack-data-updates from data_svc
         attack_data = self.data_svc.fetch_flattened_attack_data()
         await self.data_svc.update_db_with_flattened_attack_data(attack_data=attack_data)
-        self.update_json_tech_with_flattened_attack_data(attack_data=attack_data, is_startup=is_startup)
+        self.update_json_tech_with_flattened_attack_data(attack_data=attack_data)
 
-    def update_json_tech_with_flattened_attack_data(self, attack_data, is_startup):
+    def update_json_tech_with_flattened_attack_data(self, attack_data):
         """Function to update the attack dictionary file."""
         # Loop the attack data and check if any attacks have been added or renamed or changed in anyway
         added_count, updated_count = 0, 0
@@ -112,9 +112,7 @@ class RestService:
                 self.json_tech[attack_uid] = attack_item
                 self.json_tech[attack_uid]['id'] = self.json_tech[attack_uid].pop('tid')
 
-                # We only want to list added attacks after startup because during startup may lead to logging a long list
-                if not is_startup:
-                    logging.info(f'Consider adding example uses for {attack_uid} to {self.attack_dict_loc}')
+                logging.info(f'New attack found, consider adding example uses for {attack_uid} to {self.attack_dict_loc} and make sure you update the attack JSON file.')
             else:
                 # print('We have an existing attack: %s' % attack_uid)
                 updated = False
