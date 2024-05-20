@@ -224,7 +224,6 @@ class DataService:
         cur_attacks = await self.dao.get_dict_value_as_key('uid', table='attack_uids', columns=['name', 'inactive'])
         cur_uids = set(cur_attacks.keys())
         retrieved_uids = set(attack_data.keys())
-        added_attacks = retrieved_uids - cur_uids
         name_changes = []
         for attack_uid, attack_item in attack_data.items():
             # If this loop takes long, the below logging-statement will help track progress
@@ -273,8 +272,6 @@ class DataService:
         db_items = await self.dao.get('attack_uids')
         db_item_count = len(db_items)
         logging.info(f'[!] DB Item Count: {db_item_count}')
-
-        return added_attacks, inactive_attacks, name_changes
 
     async def add_related_attack_data(self, attack_uid, attack_item, related_data_type, db_column_name, db_table_name=None):
         """

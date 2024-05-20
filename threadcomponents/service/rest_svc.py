@@ -96,9 +96,6 @@ class RestService:
 
     async def fetch_and_update_attack_data(self, is_startup=False):
         """Function to fetch and update the attack data."""
-        # Did DB-updates occur? Or updates to our internal json-tech dictionary?
-        updated_json_tech = False
-
         # The output of the attack-data-updates from data_svc
         attack_data = self.data_svc.fetch_flattened_attack_data()
         await self.data_svc.update_db_with_flattened_attack_data(attack_data=attack_data)
