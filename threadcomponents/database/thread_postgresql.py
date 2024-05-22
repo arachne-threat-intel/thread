@@ -226,21 +226,21 @@ class ThreadPostgreSQL(ThreadDB):
         return results[0]["array"]  # Let a KeyError raise if 'array' doesn't work - this means the library changed
 
     async def run_sql_list(self, sql_list=None, return_success=True):
-        """Implements ThreadDB.run_sql_list()"""
+        # Don't do anything if we don't have a list
+        if not sql_list:
+            return
 
         def cursor_multiple_execute(cursor):
             # Execute each list item where the first part must be an SQL statement followed by optional parameters
             for item in sql_list:
                 if item is None:  # skip None-items
                     continue
-                elif len(item) == 1:
+
+                if len(item) == 1:
                     cursor.execute(item[0])
                 elif len(item) == 2:
                     # execute() takes parameters as a tuple, ensure that is the case
                     parameters = item[1] if type(item[1]) == tuple else tuple(item[1])
                     cursor.execute(item[0], parameters)
 
-        # Don't do anything if we don't have a list
-        if not sql_list:
-            return
         return self._connection_wrapper(cursor_multiple_execute, return_success=return_success)
