@@ -1,7 +1,7 @@
 import logging
 import os
 
-SCHEMA_FILE = os.path.join('threadcomponents', 'conf', 'schema.sql')
+SCHEMA_FILE = os.path.join("threadcomponents", "conf", "schema.sql")
 
 
 def delete_db_file(file_path):
@@ -9,5 +9,6 @@ def delete_db_file(file_path):
     if file_path and os.path.isfile(file_path):
         os.remove(file_path)
     else:
-        logging.warning('Test DB file %s could not be deleted; accumulated data in-between test runs expected.'
-                        % file_path)
+        logging.warning(
+            "Test DB file %s could not be deleted; accumulated data in-between test runs expected." % file_path
+        )

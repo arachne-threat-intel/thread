@@ -10,17 +10,17 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 def get_db_info():
     """Function to get database information from a user (launching Thread)."""
-    db_name = input('Enter name of DB:\n')
-    username = input('Enter DB-server username:\n')
-    password = getpass('Enter DB-server password:\n')
-    host = input('Enter DB-server host (leave blank/skip for localhost):\n') or '127.0.0.1'
-    port = input('Enter DB-server port (check with command `pg_lsclusters`):\n')
+    db_name = input("Enter name of DB:\n")
+    username = input("Enter DB-server username:\n")
+    password = getpass("Enter DB-server password:\n")
+    host = input("Enter DB-server host (leave blank/skip for localhost):\n") or "127.0.0.1"
+    port = input("Enter DB-server port (check with command `pg_lsclusters`):\n")
     return db_name, username, password, host, port
 
 
 def build_db(schema):
     """The function to set up the Thread database (DB)."""
-    schema = schema or os.path.join('threadcomponents', 'conf', 'schema.sql')
+    schema = schema or os.path.join("threadcomponents", "conf", "schema.sql")
     # Begin by obtaining the text from the schema file
     with open(schema) as schema_opened:
         schema_text = schema_opened.read()
@@ -34,7 +34,7 @@ def build_db(schema):
     # Proceed to build both schemas
     _create_tables(db_name, username, password, host, port, schema=schema_text)
     _create_tables(db_name, username, password, host, port, schema=copied_tables_schema, is_partial=True)
-    print('Build scripts completed; don\'t forget to GRANT permissions to less-privileged users where applicable.')
+    print("Build scripts completed; don't forget to GRANT permissions to less-privileged users where applicable.")
 
 
 def _create_db(db_name, username, password, host, port):
@@ -42,47 +42,47 @@ def _create_db(db_name, username, password, host, port):
     connection = None
     try:
         # Set up a connection using inputted credentials
-        connection = psycopg2.connect(database='postgres', user=username, password=password, host=host, port=port)
+        connection = psycopg2.connect(database="postgres", user=username, password=password, host=host, port=port)
         # First, check db is created - this cannot be done in a transaction so set autocommit isolation level
         connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         # Create the db on the server (ignoring if it's already created)
         with connection.cursor() as cursor:
             try:
-                cursor.execute('CREATE DATABASE ' + db_name)
-                print('Database %s created.' % db_name)
+                cursor.execute("CREATE DATABASE " + db_name)
+                print("Database %s created." % db_name)
             # noinspection PyUnresolvedReferences
             except psycopg2.errors.DuplicateDatabase:
-                print('Database %s already created.' % db_name)
+                print("Database %s already created." % db_name)
     # Ensure the connection closes if anything went wrong
     finally:
         if connection:
             connection.close()
 
 
-def _create_tables(db_name, username, password, host, port, schema='', is_partial=False):
+def _create_tables(db_name, username, password, host, port, schema="", is_partial=False):
     """The function to create the tables in the Thread DB on the server."""
     # Booleans are not integers in PostgreSQL; replace any default boolean integers with True/False
-    boolean_default = 'BOOLEAN DEFAULT'
-    schema = schema.replace('%s 1' % boolean_default, '%s TRUE' % boolean_default)
-    schema = schema.replace('%s 0' % boolean_default, '%s FALSE' % boolean_default)
+    boolean_default = "BOOLEAN DEFAULT"
+    schema = schema.replace("%s 1" % boolean_default, "%s TRUE" % boolean_default)
+    schema = schema.replace("%s 0" % boolean_default, "%s FALSE" % boolean_default)
     # Keyword arguments for when we want to log an error pending if we are building the full schema
     not_partial_log = dict(log_error=(not is_partial))
     partial_log = dict(log_error=is_partial)
-    start_date_field = 'start_date TIMESTAMP WITH TIME ZONE'
-    end_date_field = 'end_date TIMESTAMP WITH TIME ZONE'
+    start_date_field = "start_date TIMESTAMP WITH TIME ZONE"
+    end_date_field = "end_date TIMESTAMP WITH TIME ZONE"
     # (1) Table, (2) SQL statement for field, (3) whether we want to log errors, (4) whether we are ignoring ValueErrors
     schema_updates = [
         # (3) is not-partial because we only want to log an error if we are building the full schema
         # (4) is if partial because these tables are only in full schema (ignore ValueError if not full schema)
-        ('reports', 'expires_on TIMESTAMP WITH TIME ZONE', not_partial_log, is_partial),
-        ('reports', 'date_written TIMESTAMP WITH TIME ZONE', not_partial_log, is_partial),
-        ('reports', start_date_field, not_partial_log, is_partial),
-        ('reports', end_date_field, not_partial_log, is_partial),
-        ('report_sentence_hits', start_date_field, not_partial_log, is_partial),
-        ('report_sentence_hits', end_date_field, not_partial_log, is_partial),
+        ("reports", "expires_on TIMESTAMP WITH TIME ZONE", not_partial_log, is_partial),
+        ("reports", "date_written TIMESTAMP WITH TIME ZONE", not_partial_log, is_partial),
+        ("reports", start_date_field, not_partial_log, is_partial),
+        ("reports", end_date_field, not_partial_log, is_partial),
+        ("report_sentence_hits", start_date_field, not_partial_log, is_partial),
+        ("report_sentence_hits", end_date_field, not_partial_log, is_partial),
         # (3) and (4) are inverse above because report_sentence_hits_initial is from partial schema
-        ('report_sentence_hits_initial', start_date_field, partial_log, not is_partial),
-        ('report_sentence_hits_initial', end_date_field, partial_log, not is_partial)
+        ("report_sentence_hits_initial", start_date_field, partial_log, not is_partial),
+        ("report_sentence_hits_initial", end_date_field, partial_log, not is_partial),
     ]
     for table, sql_field, kwargs, ignore_value_error in schema_updates:
         try:
@@ -101,7 +101,7 @@ def _create_tables(db_name, username, password, host, port, schema='', is_partia
         with connection:  # use 'with' here to commit transaction at the end of this block
             with connection.cursor() as cursor:
                 cursor.execute(schema)  # run the parsed schema
-        print('Schema successfully run.')
+        print("Schema successfully run.")
     # Ensure the connection closes if anything went wrong
     finally:
         if connection:
@@ -115,9 +115,9 @@ class ThreadPostgreSQL(ThreadDB):
     def __init__(self, db_connection_func=None):
         # Define the PostgreSQL function to find a substring position in a string
         function_name_map = dict()
-        function_name_map[self.FUNC_STR_POS] = 'STRPOS'
-        function_name_map[self.FUNC_TIME_NOW] = 'NOW'
-        function_name_map[self.FUNC_DATE_TO_STR] = 'TO_CHAR'
+        function_name_map[self.FUNC_STR_POS] = "STRPOS"
+        function_name_map[self.FUNC_TIME_NOW] = "NOW"
+        function_name_map[self.FUNC_DATE_TO_STR] = "TO_CHAR"
         super().__init__(mapped_functions=function_name_map)
         db_connection_func = db_connection_func if callable(db_connection_func) else get_db_info
         self.db_name, self.username, self.password, self.host, self.port = db_connection_func()
@@ -126,23 +126,25 @@ class ThreadPostgreSQL(ThreadDB):
     def query_param(self):
         """Implements ThreadDB.query_param"""
         # '%s' is the query parameter: https://www.psycopg.org/docs/usage.html#passing-parameters-to-sql-queries
-        return '%s'
+        return "%s"
 
     # PostgreSQL doesn't use integers for booleans: override the defaults
     @property
     def val_as_true(self):
         """Overrides ThreadDB.val_as_true"""
-        return 'TRUE'
+        return "TRUE"
 
     @property
     def val_as_false(self):
         """Overrides ThreadDB.val_as_false"""
-        return 'FALSE'
+        return "FALSE"
 
     async def build(self, schema, is_partial=False):
         """Implements ThreadDB.build()"""
-        logging.warning('Re-building the database cannot be done when config \'db-engine\' is \'postgresql\'. '
-                        'Please run `main.py --build-db` separately instead.')
+        logging.warning(
+            "Re-building the database cannot be done when config 'db-engine' is 'postgresql'. "
+            "Please run `main.py --build-db` separately instead."
+        )
 
     def _connection_wrapper(self, method, cursor_factory=None, return_success=False):
         """A function to execute a method that requires a db connection cursor."""
@@ -150,14 +152,15 @@ class ThreadPostgreSQL(ThreadDB):
         connection, return_val, success = None, None, True
         try:
             # Set up the connection
-            connection = psycopg2.connect(database=self.db_name, user=self.username, password=self.password,
-                                          host=self.host, port=self.port)
+            connection = psycopg2.connect(
+                database=self.db_name, user=self.username, password=self.password, host=self.host, port=self.port
+            )
             with connection:
                 with connection.cursor(cursor_factory=cursor_factory) as cursor:
                     # Call the method with the cursor
                     return_val = method(cursor)
         except Exception as e:
-            logging.error('Encountered error: ' + str(e))
+            logging.error("Encountered error: " + str(e))
             success = False
         # Ensure the connection closes if anything went wrong
         finally:
@@ -168,15 +171,18 @@ class ThreadPostgreSQL(ThreadDB):
 
     async def _get_column_names(self, sql):
         """Implements ThreadDB._get_column_names()"""
+
         def cursor_select(cursor):
             # Execute the SQL query
             cursor.execute(sql)
             # Return the column names from the cursor description
             return [desc[0] for desc in cursor.description]
+
         return self._connection_wrapper(cursor_select, cursor_factory=psycopg2.extras.DictCursor)
 
     async def _execute_select(self, sql, parameters=None, single_col=False, on_fetch=None):
         """Implements ThreadDB._execute_select()"""
+
         def cursor_select(cursor):
             # Execute the SQL query with parameters or not
             if parameters is None:
@@ -190,32 +196,38 @@ class ThreadPostgreSQL(ThreadDB):
             else:
                 # psycopg2.extras.DictRow can be accessed with [int]; do so if not returning dictionary objects
                 return [ix[0] for ix in rows] if single_col else [dict(ix) for ix in rows]
+
         return self._connection_wrapper(cursor_select, cursor_factory=psycopg2.extras.DictCursor)
 
     async def _execute_insert(self, sql, data):
         """Implements ThreadDB._execute_insert()"""
+
         def cursor_insert(cursor):
             # Execute the SQL statement with the data to be inserted
             cursor.execute(sql, tuple(data))
             return cursor.lastrowid
+
         return self._connection_wrapper(cursor_insert)
 
     async def _execute_update(self, sql, data):
         """Implements ThreadDB._execute_update()"""
+
         # Nothing extra do to or return: just execute the SQL statement with the data to update
         def cursor_update(cursor):
             # Execute the SQL statement with the data to be inserted
             cursor.execute(sql, tuple(data))
+
         return self._connection_wrapper(cursor_update)
 
     async def get_column_as_list(self, table, column):
         """Overrides ThreadDB.get_column_as_list()"""
         # Use the array() function to return the column as an object {array: <column values>}
-        results = await self.raw_select('SELECT array(SELECT %s FROM %s)' % (column, table))
-        return results[0]['array']  # Let a KeyError raise if 'array' doesn't work - this means the library changed
+        results = await self.raw_select("SELECT array(SELECT %s FROM %s)" % (column, table))
+        return results[0]["array"]  # Let a KeyError raise if 'array' doesn't work - this means the library changed
 
     async def run_sql_list(self, sql_list=None, return_success=True):
         """Implements ThreadDB.run_sql_list()"""
+
         def cursor_multiple_execute(cursor):
             # Execute each list item where the first part must be an SQL statement followed by optional parameters
             for item in sql_list:
@@ -227,6 +239,7 @@ class ThreadPostgreSQL(ThreadDB):
                     # execute() takes parameters as a tuple, ensure that is the case
                     parameters = item[1] if type(item[1]) == tuple else tuple(item[1])
                     cursor.execute(item[0], parameters)
+
         # Don't do anything if we don't have a list
         if not sql_list:
             return
