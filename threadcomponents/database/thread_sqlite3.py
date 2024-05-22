@@ -7,7 +7,7 @@ import sqlite3
 
 from .thread_db import ThreadDB
 
-ENABLE_FOREIGN_KEYS = 'PRAGMA foreign_keys = ON;'
+ENABLE_FOREIGN_KEYS = "PRAGMA foreign_keys = ON;"
 
 
 class ThreadSQLite(ThreadDB):
@@ -15,7 +15,7 @@ class ThreadSQLite(ThreadDB):
 
     def __init__(self, database):
         function_name_map = dict()
-        function_name_map[self.FUNC_TIME_NOW] = 'DATETIME'
+        function_name_map[self.FUNC_TIME_NOW] = "DATETIME"
         super().__init__(mapped_functions=function_name_map)
         self.database = database
 
@@ -23,27 +23,27 @@ class ThreadSQLite(ThreadDB):
     def query_param(self):
         """Implements ThreadDB.query_param"""
         # '?' is the query parameter: https://docs.python.org/3/library/sqlite3.html#sqlite3-placeholders
-        return '?'
+        return "?"
 
     async def build(self, schema, is_partial=False):
         """Implements ThreadDB.build()"""
         # Ensure the foreign-keys line is prepended to the schema
-        schema = ENABLE_FOREIGN_KEYS + '\n' + schema
+        schema = ENABLE_FOREIGN_KEYS + "\n" + schema
         # Keyword arguments for when we want to log an error pending if we are building the full schema
         not_partial_log = dict(log_error=(not is_partial))
         partial_log = dict(log_error=is_partial)
         # sqlite3 does not support date fields (see 2.2. here: https://www.sqlite.org/datatype3.html)
-        start_date_field, end_date_field = 'start_date TEXT', 'end_date TEXT'
+        start_date_field, end_date_field = "start_date TEXT", "end_date TEXT"
         # Explanation of parameters can be found in comments in thread_postgresql._create_tables()
         schema_updates = [
-            ('reports', 'expires_on TEXT', not_partial_log, is_partial),
-            ('reports', 'date_written TEXT', not_partial_log, is_partial),
-            ('reports', start_date_field, not_partial_log, is_partial),
-            ('reports', end_date_field, not_partial_log, is_partial),
-            ('report_sentence_hits', start_date_field, not_partial_log, is_partial),
-            ('report_sentence_hits', end_date_field, not_partial_log, is_partial),
-            ('report_sentence_hits_initial', start_date_field, partial_log, not is_partial),
-            ('report_sentence_hits_initial', end_date_field, partial_log, not is_partial)
+            ("reports", "expires_on TEXT", not_partial_log, is_partial),
+            ("reports", "date_written TEXT", not_partial_log, is_partial),
+            ("reports", start_date_field, not_partial_log, is_partial),
+            ("reports", end_date_field, not_partial_log, is_partial),
+            ("report_sentence_hits", start_date_field, not_partial_log, is_partial),
+            ("report_sentence_hits", end_date_field, not_partial_log, is_partial),
+            ("report_sentence_hits_initial", start_date_field, partial_log, not is_partial),
+            ("report_sentence_hits_initial", end_date_field, partial_log, not is_partial),
         ]
         for table, sql_field, kwargs, ignore_value_error in schema_updates:
             try:
@@ -61,7 +61,7 @@ class ThreadSQLite(ThreadDB):
                 cursor.executescript(schema)
                 conn.commit()
         except Exception as exc:
-            logging.error('! error building db : {}'.format(exc))
+            logging.error("! error building db : {}".format(exc))
 
     async def _get_column_names(self, sql):
         """Implements ThreadDB._get_column_names()"""
@@ -75,7 +75,7 @@ class ThreadSQLite(ThreadDB):
     async def _execute_select(self, sql, parameters=None, single_col=False, on_fetch=None):
         """Implements ThreadDB._execute_select()"""
         if single_col and on_fetch:
-            raise ValueError('Cannot request single-column and on_fetch transformations to be used at the same time.')
+            raise ValueError("Cannot request single-column and on_fetch transformations to be used at the same time.")
         with sqlite3.connect(self.database) as conn:
             conn.execute(ENABLE_FOREIGN_KEYS)
             # If we are returning a single column, we just want to retrieve the first part of the row (row[0])
@@ -138,6 +138,6 @@ class ThreadSQLite(ThreadDB):
                 # Finish by committing the changes from the list
                 conn.commit()
         except sqlite3.Error as e:
-            logging.error('Encountered error: ' + str(e))
+            logging.error("Encountered error: " + str(e))
             return False
         return True

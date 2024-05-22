@@ -21,16 +21,17 @@ from nltk.stem import SnowballStemmer
 from urllib.parse import urlparse
 
 # Abbreviated words for sentence-splitting
-ABBREVIATIONS = {'dr', 'vs', 'mr', 'mrs', 'ms', 'prof', 'inc', 'fig', 'e.g', 'i.e', 'u.s'}
+ABBREVIATIONS = {"dr", "vs", "mr", "mrs", "ms", "prof", "inc", "fig", "e.g", "i.e", "u.s"}
 # Blocked image types
-BLOCKED_IMG_TYPES = {'gif', 'apng', 'webp', 'avif', 'mng', 'flif'}
+BLOCKED_IMG_TYPES = {"gif", "apng", "webp", "avif", "mng", "flif"}
 
 # Regular expressions of hashes for indicators of compromise
 MD5_REGEX = re.compile(r"(?:[^a-fA-F\d]|\b)([a-fA-F\d]{32})(?:[^a-fA-F\d]|\b)")
 SHA1_REGEX = re.compile(r"(?:[^a-fA-F\d]|\b)([a-fA-F\d]{40})(?:[^a-fA-F\d]|\b)")
 SHA256_REGEX = re.compile(r"(?:[^a-fA-F\d]|\b)([a-fA-F\d]{64})(?:[^a-fA-F\d]|\b)")
 SHA512_REGEX = re.compile(r"(?:[^a-fA-F\d]|\b)([a-fA-F\d]{128})(?:[^a-fA-F\d]|\b)")
-IPV4_REGEX = re.compile(r"""
+IPV4_REGEX = re.compile(
+    r"""
         (?:^|
             (?![^\d\.])
         )
@@ -42,23 +43,56 @@ IPV4_REGEX = re.compile(r"""
             (?:[1-9]?\d|1\d\d|2[0-4]\d|25[0-5])
         )
         (?:(?=[^\d\.])|$)
-    """, re.VERBOSE)
+    """,
+    re.VERBOSE,
+)
 IPV6_REGEX = re.compile(r"\b((?:[a-f0-9]{1,4}:|:){2,7}(?:[a-f0-9]{1,4}|:))\b", re.IGNORECASE | re.VERBOSE)
 
 
 class WebService:
     # Static class variables for the keys in app_routes
-    HOME_KEY, COOKIE_KEY, EDIT_KEY, ABOUT_KEY, REST_KEY = 'home', 'cookies', 'edit', 'about', 'rest'
-    EXPORT_PDF_KEY, EXPORT_NAV_KEY, STATIC_KEY = 'export_pdf', 'export_nav', 'static'
-    HOW_IT_WORKS_KEY, WHAT_TO_SUBMIT_KEY = 'how_it_works', 'what_to_submit'
-    REPORT_PARAM = 'file'
+    HOME_KEY, COOKIE_KEY, EDIT_KEY, ABOUT_KEY, REST_KEY = "home", "cookies", "edit", "about", "rest"
+    EXPORT_PDF_KEY, EXPORT_NAV_KEY, STATIC_KEY = "export_pdf", "export_nav", "static"
+    HOW_IT_WORKS_KEY, WHAT_TO_SUBMIT_KEY = "how_it_works", "what_to_submit"
+    REPORT_PARAM = "file"
     # Variations of punctuation we want to note
-    HYPHENS = ['-', u'\u058A', u'\u05BE', u'\u2010', u'\u2011', u'\u2012', u'\u2013', u'\u2014', u'\u2015', u'\u2E3A',
-               u'\u2E3B', u'\uFE5B', u'\uFE63', u'\uFF0D']
-    PERIODS = ['.', u'\uFE52', u'\uFF0E']
-    QUOTES = ['"', "''", u'\u02BA', u'\u02DD', u'\u02EE', u'\u02F6', u'\u05F2', u'\u05F4', u'\u201C', u'\u201D',
-              u'\u201F', u'\u2033', u'\u2036', u'\u3003', u'\uFF02', u'\u275D', u'\u275E']
-    BULLET_POINTS = [u'\u2022', u'\u2023', u'\u2043', u'\u2219', u'\u25CB', u'\u25CF', u'\u25E6', u'\u30fb']
+    HYPHENS = [
+        "-",
+        "\u058a",
+        "\u05be",
+        "\u2010",
+        "\u2011",
+        "\u2012",
+        "\u2013",
+        "\u2014",
+        "\u2015",
+        "\u2e3a",
+        "\u2e3b",
+        "\ufe5b",
+        "\ufe63",
+        "\uff0d",
+    ]
+    PERIODS = [".", "\ufe52", "\uff0e"]
+    QUOTES = [
+        '"',
+        "''",
+        "\u02ba",
+        "\u02dd",
+        "\u02ee",
+        "\u02f6",
+        "\u05f2",
+        "\u05f4",
+        "\u201c",
+        "\u201d",
+        "\u201f",
+        "\u2033",
+        "\u2036",
+        "\u3003",
+        "\uff02",
+        "\u275d",
+        "\u275e",
+    ]
+    BULLET_POINTS = ["\u2022", "\u2023", "\u2043", "\u2219", "\u25cb", "\u25cf", "\u25e6", "\u30fb"]
 
     def __init__(self, route_prefix=None, is_local=True):
         self.is_local = is_local
@@ -72,22 +106,24 @@ class WebService:
     def _initialise_route_values(self, route_prefix_param=None):
         """Function to initialise the web app's route values and return them as a dictionary."""
         # No route prefix by default, specify a home route here separately to prevent '/<route_prefix_param>/' suffix
-        route_prefix, home_route = '', '/'
+        route_prefix, home_route = "", "/"
         if route_prefix_param is not None:
             # If we have a route prefix, update the prefix and home_route variables
-            route_prefix = '/' + route_prefix_param
+            route_prefix = "/" + route_prefix_param
             home_route = route_prefix
         routes = {
-            self.HOME_KEY: home_route, self.COOKIE_KEY: route_prefix + '/cookies',
-            self.EDIT_KEY: route_prefix + '/edit/{%s}' % self.REPORT_PARAM,
-            self.ABOUT_KEY: route_prefix + '/using-thread', self.REST_KEY: route_prefix + '/rest',
-            self.EXPORT_PDF_KEY: route_prefix + '/export/pdf/{%s}' % self.REPORT_PARAM,
-            self.EXPORT_NAV_KEY: route_prefix + '/export/nav/{%s}' % self.REPORT_PARAM,
-            self.HOW_IT_WORKS_KEY: route_prefix + '/how-thread-works',
-            self.STATIC_KEY: route_prefix + '/theme/'
+            self.HOME_KEY: home_route,
+            self.COOKIE_KEY: route_prefix + "/cookies",
+            self.EDIT_KEY: route_prefix + "/edit/{%s}" % self.REPORT_PARAM,
+            self.ABOUT_KEY: route_prefix + "/using-thread",
+            self.REST_KEY: route_prefix + "/rest",
+            self.EXPORT_PDF_KEY: route_prefix + "/export/pdf/{%s}" % self.REPORT_PARAM,
+            self.EXPORT_NAV_KEY: route_prefix + "/export/nav/{%s}" % self.REPORT_PARAM,
+            self.HOW_IT_WORKS_KEY: route_prefix + "/how-thread-works",
+            self.STATIC_KEY: route_prefix + "/theme/",
         }
         if not self.is_local:
-            routes.update({self.WHAT_TO_SUBMIT_KEY: route_prefix + '/what-to-submit'})
+            routes.update({self.WHAT_TO_SUBMIT_KEY: route_prefix + "/what-to-submit"})
         return routes
 
     def get_route(self, route_key, param=None):
@@ -96,13 +132,13 @@ class WebService:
             route = self.__app_routes[route_key]
             if param is None:
                 return route
-            return route.replace('{%s}' % self.REPORT_PARAM, str(param))
+            return route.replace("{%s}" % self.REPORT_PARAM, str(param))
         # If the method doesn't receive a valid key, return None
         except KeyError:
             return None
 
     def initialise_tokenizer(self):
-        self.tokenizer_sen = nltk.data.load('tokenizers/punkt/english.pickle')
+        self.tokenizer_sen = nltk.data.load("tokenizers/punkt/english.pickle")
         try:
             self.tokenizer_sen._params.abbrev_types.update(ABBREVIATIONS)
         except AttributeError:
@@ -121,7 +157,7 @@ class WebService:
             # Attempt to use app's method to check permission; log if this couldn't be done
             return await request.app.permission_checker(request, action, context)
         except (TypeError, AttributeError) as e:
-            logging.error('Misconfigured app: permission_checker() error: ' + str(e))
+            logging.error("Misconfigured app: permission_checker() error: " + str(e))
             raise web.HTTPInternalServerError()
 
     async def url_allowed(self, request, url):
@@ -133,9 +169,9 @@ class WebService:
             # Attempt to use app's method to check URL; log if this couldn't be done
             return await request.app.url_checker(request, url)
         except (TypeError, AttributeError) as e:
-            logging.error('Misconfigured app: url_checker() error: ' + str(e))
+            logging.error("Misconfigured app: url_checker() error: " + str(e))
             # SystemError makes more sense but we are listening for ValueErrors
-            raise ValueError('Apologies, this URL could not be processed at this time, please contact us.')
+            raise ValueError("Apologies, this URL could not be processed at this time, please contact us.")
 
     async def on_report_complete(self, request, report_data):
         """Function to complete any post-complete actions for a report."""
@@ -146,7 +182,7 @@ class WebService:
             # Attempt to use app's on-complete method; log if this couldn't be done
             return await request.app.on_report_complete(request, report_data)
         except (TypeError, AttributeError) as e:
-            logging.error('Misconfigured app: on_report_complete() error: ' + str(e))
+            logging.error("Misconfigured app: on_report_complete() error: " + str(e))
 
     async def get_current_arachne_user(self, request):
         """Function to obtain the current Arachne username and token given a request."""
@@ -156,7 +192,7 @@ class WebService:
             # Attempt to use app's method to obtain the username & token; log if this couldn't be done
             return await request.app.get_current_arachne_user(request)
         except (TypeError, AttributeError) as e:
-            logging.error('Misconfigured app: get_current_arachne_user() error: ' + str(e))
+            logging.error("Misconfigured app: get_current_arachne_user() error: " + str(e))
             return None, None
 
     async def auto_gen_data_is_valid(self, request, request_data) -> bool:
@@ -166,7 +202,7 @@ class WebService:
         try:
             return await request.app.auto_gen_data_is_valid(request, request_data)
         except Exception as e:
-            logging.error('Misconfigured app: auto_gen_data_is_valid() error: ' + str(e))
+            logging.error("Misconfigured app: auto_gen_data_is_valid() error: " + str(e))
         return False
 
     async def map_all_html(self, url_input, sentence_limit=None):
@@ -191,13 +227,13 @@ class WebService:
             image_found = False
             # Loop through the html elements to process images and text (if we didn't find the plaintext)
             for forward_advancer in range(counter, len(html_elements)):
-                if 'src=' in html_elements[forward_advancer] and image_found is False:
+                if "src=" in html_elements[forward_advancer] and image_found is False:
                     # Found an image, put it in data but don't advance in case there's text.
-                    soup = BeautifulSoup(html_elements[forward_advancer], 'html.parser')
-                    current_images = soup.findAll('img')
+                    soup = BeautifulSoup(html_elements[forward_advancer], "html.parser")
+                    current_images = soup.findAll("img")
                     for cur_img in current_images:
                         try:
-                            source = cur_img['src']
+                            source = cur_img["src"]
                         # All img tags should have a src attribute. In case this one doesn't, there is no image to save
                         except KeyError:
                             continue
@@ -226,7 +262,7 @@ class WebService:
                     results = results[:-1]
                 else:
                     # Add this missing text with default <p> tag
-                    results.append(self._construct_text_dict(pt, 'p'))
+                    results.append(self._construct_text_dict(pt, "p"))
                     text_match_found = True
             if text_match_found:
                 text_count += 1
@@ -250,12 +286,12 @@ class WebService:
             # Loop through html-list from last-matching position
             for e_idx, element in enumerate(original_html[latest_html_idx:]):
                 # If there is an image, add it to temp-lists to potentially be added
-                if element['tag'] == 'img' and element['uid'] not in added_image_ids:
+                if element["tag"] == "img" and element["uid"] not in added_image_ids:
                     final_html_subset.append(self._build_final_image_dict(element))
-                    temp_added_image_ids.add(element['uid'])
+                    temp_added_image_ids.add(element["uid"])
                 # If we found the sentence, complete the temp-list with this sentence and break from this loop
-                elif sentence_data['html'] in element['text']:
-                    final_html_subset.append(self._build_final_html_text(sentence_data, element['tag']))
+                elif sentence_data["html"] in element["text"]:
+                    final_html_subset.append(self._build_final_html_text(sentence_data, element["tag"]))
                     latest_html_idx = latest_html_idx + e_idx
                     found_sentence = True
                     break
@@ -266,12 +302,12 @@ class WebService:
             # If the sentence was not found, add it as a <p> to final list to preserve order of the sentences
             # Disregard any images (in final_html_subset) as this may be out of order
             else:
-                final_html.append(self._build_final_html_text(sentence_data, 'p'))
+                final_html.append(self._build_final_html_text(sentence_data, "p"))
         # Just in case we missed any images, add them at the end
         for element in original_html:
-            if element['tag'] == 'img' and element['uid'] not in added_image_ids:
+            if element["tag"] == "img" and element["uid"] not in added_image_ids:
                 final_html.append(self._build_final_image_dict(element))
-                added_image_ids.add(element['uid'])
+                added_image_ids.add(element["uid"])
         return final_html
 
     def __rejoin_defanged(self, sentences):
@@ -287,16 +323,16 @@ class WebService:
             return sentences
 
         for idx, sentence in enumerate(sentences[1:]):
-            if previous_sentence.endswith('[.') and sentence.startswith(']'):
+            if previous_sentence.endswith("[.") and sentence.startswith("]"):
                 previous_sentence += sentence
                 if idx == len(sentences) - 2:
                     corrected_sentences.append(previous_sentence)
             else:
                 corrected_sentences.append(previous_sentence)
                 previous_sentence = sentence
-        
+
         return corrected_sentences
-    
+
     def __split_by_hash(self, sentences):
         """
         Split sentences containing a hash.
@@ -304,27 +340,27 @@ class WebService:
         splitted_by_md5 = []
         for sentence in sentences:
             splitted_by_md5 += MD5_REGEX.split(sentence)
-        
+
         splitted_by_sha1 = []
         for sentence in splitted_by_md5:
             splitted_by_sha1 += SHA1_REGEX.split(sentence)
-        
+
         splitted_by_sha256 = []
         for sentence in splitted_by_sha1:
             splitted_by_sha256 += SHA256_REGEX.split(sentence)
-        
+
         splitted_by_sha512 = []
         for sentence in splitted_by_sha256:
             splitted_by_sha512 += SHA512_REGEX.split(sentence)
-        
+
         return splitted_by_sha512
-    
+
     def __split_by_url(self, sentences):
         """
         Split sentences containing a URL.
         """
         return sentences
-    
+
     def __split_by_ip(self, sentences):
         """
         Split sentences containing an IP address.
@@ -332,13 +368,13 @@ class WebService:
         splitted_by_ipv4 = []
         for sentence in sentences:
             splitted_by_ipv4 += IPV4_REGEX.split(sentence)
-        
+
         splitted_by_ipv6 = []
         for sentence in splitted_by_ipv4:
             splitted_by_ipv6 += IPV6_REGEX.split(sentence)
 
         return splitted_by_ipv6
-    
+
     def __correct_sentences(self, sentences):
         """
         Correct sentence splitting.
@@ -349,7 +385,7 @@ class WebService:
         sentences_split_by_ip = self.__split_by_ip(sentences_split_by_url)
 
         return sentences_split_by_ip
-    
+
     def tokenize_sentence(self, data, sentence_limit=None):
         """
         :criteria: expects a dictionary of this structure:
@@ -362,28 +398,28 @@ class WebService:
             if sentence_limit and (len(sentences) >= sentence_limit):
                 break
             # Further split by break tags as this might misplace highlighting in the front end
-            no_breaks = [x for x in current.split('<br>') if x]
+            no_breaks = [x for x in current.split("<br>") if x]
             for fragment in no_breaks:
                 sentence_data = dict()
-                sentence_data['html'] = fragment
-                sentence_data['text'] = html2text(fragment)
-                sentence_data['ml_techniques_found'] = []
-                sentence_data['reg_techniques_found'] = []
+                sentence_data["html"] = fragment
+                sentence_data["text"] = html2text(fragment)
+                sentence_data["ml_techniques_found"] = []
+                sentence_data["reg_techniques_found"] = []
                 sentences.append(sentence_data)
         return sentences
 
     @staticmethod
     async def tokenize(s):
         """Function to remove stopwords from a sentence and return a list of words to match"""
-        word_list = re.findall(r'\w+', s.lower())
-        filtered_words = [word for word in word_list if word not in stopwords.words('english')]
+        word_list = re.findall(r"\w+", s.lower())
+        filtered_words = [word for word in word_list if word not in stopwords.words("english")]
         """Perform NLP Lemmatization and Stemming methods"""
         lemmed = []
-        stemmer = SnowballStemmer('english')
+        stemmer = SnowballStemmer("english")
         for i in filtered_words:
             await asyncio.sleep(0.001)
             lemmed.append(stemmer.stem(str(i)))
-        return ' '.join(lemmed)
+        return " ".join(lemmed)
 
     @staticmethod
     async def remove_html_markup_and_found(s):
@@ -391,25 +427,25 @@ class WebService:
         quote = False
         out = ""
         for c in s:
-            if c == '<' and not quote:
+            if c == "<" and not quote:
                 tag = True
-            elif c == '>' and not quote:
+            elif c == ">" and not quote:
                 tag = False
             elif (c == '"' or c == "'") and tag:
                 quote = not quote
             elif not tag:
                 out = out + c
-        sep = '!FOUND:'
+        sep = "!FOUND:"
         out = out.split(sep, 1)[0]
-        return out.strip().replace('\n', ' ')
+        return out.strip().replace("\n", " ")
 
     async def get_url(self, url, returned_format=None):
-        if returned_format == 'html':
-            logging.info('[!] HTML support is being refactored. Currently data is being returned plaintext')
+        if returned_format == "html":
+            logging.info("[!] HTML support is being refactored. Currently data is being returned plaintext")
         r = self.get_response_from_url(url)
         # Use the response text to get contents for this url
         b = newspaper.fulltext(r.text)
-        return str(b).replace('\n', '<br>') if b else None
+        return str(b).replace("\n", "<br>") if b else None
 
     def get_response_from_url(self, url, log_errors=True, allow_error=True):
         """Function to return a request Response object from a given URL."""
@@ -426,7 +462,7 @@ class WebService:
         except requests.exceptions.ConnectionError as conn_error:
             # Log error if requested
             if log_errors:
-                logging.error('URL connection failure: ' + str(conn_error))
+                logging.error("URL connection failure: " + str(conn_error))
             # Raise the error if requested
             if not allow_error:
                 raise conn_error
@@ -439,18 +475,18 @@ class WebService:
             # If the request response is not good, close the current connection and replace with a prepared request
             r.close()
             sess = requests.Session()
-            r = requests.Request('GET', url)
+            r = requests.Request("GET", url)
             prep = r.prepare()
             r = sess.send(prep)
         if not r.ok and log_errors:
-            logging.error('URL retrieval failed with code ' + str(r.status_code))
+            logging.error("URL retrieval failed with code " + str(r.status_code))
         if close_conn:
             r.close()
         # Cache the response object for this URL
         self.cached_responses[url] = r
         return r
 
-    def urls_match(self, testing_url='', matches_with=''):
+    def urls_match(self, testing_url="", matches_with=""):
         """Function to check if two URLs are the same."""
         # Quick initial check that both strings are identical
         if testing_url == matches_with:
@@ -459,16 +495,16 @@ class WebService:
         req1 = self.get_response_from_url(testing_url, log_errors=False)
         req2 = self.get_response_from_url(matches_with, log_errors=False)
         if not req1.url:
-            raise ValueError('A URL has not been specified')
+            raise ValueError("A URL has not been specified")
         if req1.url == req2.url:
             return True
         # There can be many further things to check here (e.g. https://stackoverflow.com/questions/5371992)
         # but leaving as this for now
         return False
 
-    async def verify_url(self, request, url=''):
+    async def verify_url(self, request, url=""):
         """Function to check a URL can be parsed. Returns None if successful."""
-        url_error = 'Unable to parse URL %s' % url
+        url_error = "Unable to parse URL %s" % url
         # Check the url can be parsed by the urllib module
         try:
             parsed_url = urlparse(url)
@@ -495,20 +531,20 @@ class WebService:
     @staticmethod
     def _build_final_image_dict(element):
         final_element = dict()
-        final_element['uid'] = element['uid']
-        final_element['text'] = element['text']
-        final_element['tag'] = element['tag']
-        final_element['found_status'] = element['found_status']
+        final_element["uid"] = element["uid"]
+        final_element["text"] = element["text"]
+        final_element["tag"] = element["tag"]
+        final_element["found_status"] = element["found_status"]
         return final_element
 
     @staticmethod
     def _build_final_html_text(sentence, tag):
         final_element = dict()
-        final_element['uid'] = sentence['uid']
-        final_element['text'] = sentence['text']
-        final_element['tag'] = tag
-        final_element['found_status'] = sentence['found_status']
-        final_element['is_ioc'] = sentence['is_ioc']
+        final_element["uid"] = sentence["uid"]
+        final_element["text"] = sentence["text"]
+        final_element["tag"] = tag
+        final_element["found_status"] = sentence["found_status"]
+        final_element["is_ioc"] = sentence["is_ioc"]
         return final_element
 
     @staticmethod
@@ -521,8 +557,8 @@ class WebService:
     @staticmethod
     async def _extract_text_as_list(plaintext_doc):
         plaintext = []
-        for pt_line in plaintext_doc.split('\n'):
-            if pt_line != '':
+        for pt_line in plaintext_doc.split("\n"):
+            if pt_line != "":
                 plaintext.append(pt_line)
         return plaintext
 
@@ -538,23 +574,23 @@ class WebService:
         # Get the html element object based on the provided string
         html_parsed = html.fromstring(html_doc)
         # Keep all elements that have child nodes, have text or are images
-        filtered = [element for element in html_parsed if element.text or len(element) or element.tag == 'img']
+        filtered = [element for element in html_parsed if element.text or len(element) or element.tag == "img"]
         # Set up the three lists for the elements, tags and text
         html_elements, html_tags_list, html_text_list = [], [], []
         # Iterate through each element and populate the three lists
         for element in filtered:
             # element as string including the tags
-            element_as_text = etree.tostring(element, method='html').decode()
+            element_as_text = etree.tostring(element, method="html").decode()
             html_elements.append(element_as_text)
             # element's text content (without tags)
             html_text_list.append(str(element.text_content()).strip())
             # Thread currently supports these types of tags, populate the tag list with one of these
-            if '<h' in element_as_text:
-                html_tags_list.append('header')
-            elif '<li' in element_as_text:
-                html_tags_list.append('li')
+            if "<h" in element_as_text:
+                html_tags_list.append("header")
+            elif "<li" in element_as_text:
+                html_tags_list.append("li")
             else:
-                html_tags_list.append('p')
+                html_tags_list.append("p")
         # Return the three lists
         return html_elements, html_tags_list, html_text_list
 
@@ -564,17 +600,17 @@ class WebService:
             if source in images[i]:
                 source = images[i]
         img_dict = dict()
-        img_dict['text'] = source
-        img_dict['tag'] = 'img'
-        img_dict['ml_techniques_found'] = []
-        img_dict['reg_techniques_found'] = []
+        img_dict["text"] = source
+        img_dict["tag"] = "img"
+        img_dict["ml_techniques_found"] = []
+        img_dict["reg_techniques_found"] = []
         return img_dict
 
     @staticmethod
     def _construct_text_dict(plaintext, tag):
         res_dict = dict()
-        res_dict['text'] = plaintext
-        res_dict['tag'] = tag
-        res_dict['ml_techniques_found'] = []
-        res_dict['reg_techniques_found'] = []
+        res_dict["text"] = plaintext
+        res_dict["tag"] = tag
+        res_dict["ml_techniques_found"] = []
+        res_dict["reg_techniques_found"] = []
         return res_dict

@@ -79,6 +79,12 @@ In the same directory, you may also run our lint tests. You need to install Ruff
 ruff check .
 ```
 
+We use `ruff` to format our code. You can do this by running the following command:
+
+```
+ruff format
+```
+
 ** For package maintenance, you may find the command below useful. Please be warned this has risks such as code-breakages from an upgraded package version where this command upgraded multiple packages at once causing debugging to be difficult.
 
 ```

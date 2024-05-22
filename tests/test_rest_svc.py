@@ -52,7 +52,7 @@ class TestRestService(ThreadAppTest):
         """
         # Arrange
         report_id = str(uuid4())
-        report = dict(automatically_generated=self.dao.db_true_val, url='oh.no/low-quality')
+        report = dict(automatically_generated=self.dao.db_true_val, url="oh.no/low-quality")
         self.data_svc.get_report_by_id_or_title = AsyncMock(return_value=[report])
         unique_techniques_count = REPORT_TECHNIQUES_MINIMUM - 1
         self.data_svc.get_report_unique_techniques_count = AsyncMock(return_value=unique_techniques_count)
@@ -69,7 +69,7 @@ class TestRestService(ThreadAppTest):
         self.assertEqual(len(captured.records), 1)
         self.assertIn(
             f"Deleted report with {unique_techniques_count} technique(s) found: {report['url']}",
-            captured.records[0].getMessage()
+            captured.records[0].getMessage(),
         )
 
     async def test_low_quality_check_should_not_remove_report_when_techniques_found_greater_than_minimum(self):
@@ -96,12 +96,11 @@ class TestRestService(ThreadAppTest):
         self.data_svc.remove_report_by_id.assert_not_called()
         self.assertEqual(len(captured.records), 1)
         self.assertIn(
-            f"{unique_techniques_count} technique(s) found for report {report_id}",
-            captured.records[0].getMessage()
+            f"{unique_techniques_count} technique(s) found for report {report_id}", captured.records[0].getMessage()
         )
 
     async def test_low_quality_check_should_not_remove_report_when_techniques_found_equals_minimum(self):
-        """"
+        """ "
         Function to check if `remove_report_if_low_quality` method does not remove the report
         when it has been automatically generated and
         has exactly the minimum amount required of techniques found.
@@ -124,6 +123,5 @@ class TestRestService(ThreadAppTest):
         self.data_svc.remove_report_by_id.assert_not_called()
         self.assertEqual(len(captured.records), 1)
         self.assertIn(
-            f"{unique_techniques_count} technique(s) found for report {report_id}",
-            captured.records[0].getMessage()
+            f"{unique_techniques_count} technique(s) found for report {report_id}", captured.records[0].getMessage()
         )
