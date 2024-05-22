@@ -228,6 +228,7 @@ class WebAPI:
             options = dict(
                 POST=dict(
                     add_attack=lambda d: self.rest_svc.add_attack(request=request, criteria=d),
+                    ignore_attack=lambda d: self.rest_svc.ignore_attack(request=request, criteria=d),
                     reject_attack=lambda d: self.rest_svc.reject_attack(request=request, criteria=d),
                     set_status=lambda d: self.rest_svc.set_status(request=request, criteria=d),
                     insert_report=lambda d: self.rest_svc.insert_report(request=request, criteria=d),
@@ -254,6 +255,7 @@ class WebAPI:
             method = options[request.method][index]
         except KeyError:
             return web.json_response(None, status=404)
+
         output = await method(data)
         status = 200
         if (output is not None) and (not isinstance(output, dict)):

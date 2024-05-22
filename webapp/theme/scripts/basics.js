@@ -169,19 +169,25 @@ function remove_sentence() {
 }
 
 function acceptAttack(id, attack_uid) {
-  acceptReject(id, attack_uid, accepting=true);
+  acceptReject(id, attack_uid, true, false, false);
+}
+
+function ignoreAttack(id, attack_uid) {
+  acceptReject(id, attack_uid, false, true, false);
 }
 
 function rejectAttack(id, attack_uid) {
-  acceptReject(id, attack_uid, accepting=false, rejecting=true);
+  acceptReject(id, attack_uid, false, false, true);
 }
 
-function acceptReject(sentence_id, attack_uid, accepting=false, rejecting=false) {
+function acceptReject(sentence_id, attack_uid, accepting=false, ignoring=false, rejecting=false) {
   // Either accepting or rejecting needs to be specified
-  if ((accepting && rejecting) || !(accepting || rejecting)) {
-    throw new Error("Sentence-attack: accepting or rejecting not specified.");
+  if ((accepting && rejecting) || !(accepting || rejecting || ignoring)) {
+    throw new Error("Sentence-attack: accepting or rejecting or ignoring not specified.");
   }
-  var action = accepting ? "add_attack" : "reject_attack";
+
+  const action = accepting ? "add_attack" : ignoring ? "ignore_attack" : "reject_attack";
+
   restRequest("POST", {"index": action, "sentence_id": sentence_id, "attack_uid": attack_uid}, function() {
     // Update the to-review list
     $(`a#outstanding-tech-${sentence_id}-${attack_uid}`).remove();
@@ -339,19 +345,20 @@ function updateSentenceContext(responseData) {
     $("#elmt" + sentence_id).addClass(clickedClass);
     $.each(data, function(index, op) {
       // Is this a technique or software URL?
-      var opAttack = op.attack_uid || "";
-      var opAttackURL = (opAttack.startsWith("malware") || opAttack.startsWith("tool")) ? "software" : "techniques";
+      const opAttack = op.attack_uid || "";
+      const opAttackURL = (opAttack.startsWith("malware") || opAttack.startsWith("tool")) ? "software" : "techniques";
       // Before the attack-name, flag if deprecated/revoked
-      td1 = "<td>" + (op.inactive ? "<b>!</b> " : "") + "<a href=https://attack.mitre.org/"
+      const attackCell = "<td>" + (op.inactive ? "<b>!</b> " : "") + "<a href=https://attack.mitre.org/"
             // For the href, replace any '.' in the TID with a '/' as that is the URL format for sub-techniques
             + opAttackURL + "/" + op.attack_tid.replace(".", "/") + " target=_blank>"
             // Prefix the name with the parent-technique (if it is a sub-technique), else just print the name
             + (op.attack_parent_name ? `${op.attack_parent_name}: ${op.attack_technique_name}` : op.attack_technique_name)
             + "</a></td>";
-      td2 = `<td><button class="btn btn-success" onclick="acceptAttack('${op.sentence_id}', '${op.attack_uid}')">Accept</button></td>`;
-      td3 = `<td><button class="btn btn-danger" onclick="rejectAttack('${op.sentence_id}', '${op.attack_uid}')">Reject</button></td>`;
-      tmp = `<tr id="sentence-tid${op.attack_uid.substr(op.attack_uid.length - 4)}">${td1}${td2}${td3}</tr>`;
-      $("#tableSentenceInfo").find("tbody").append(tmp);
+      const acceptCell = `<td><button class="btn btn-success" onclick="acceptAttack('${op.sentence_id}', '${op.attack_uid}')">Accept</button></td>`;
+      const ignoreCell = `<td><button class="btn btn-warning" onclick="ignoreAttack('${op.sentence_id}', '${op.attack_uid}')">Ignore</button></td>`;
+      const rejectCell = `<td><button class="btn btn-danger" onclick="rejectAttack('${op.sentence_id}', '${op.attack_uid}')">Reject</button></td>`;
+      const techniqueRow = `<tr id="sentence-tid${op.attack_uid.substr(op.attack_uid.length - 4)}">${attackCell}${acceptCell}${ignoreCell}${rejectCell}</tr>`;
+      $("#tableSentenceInfo").find("tbody").append(techniqueRow);
     });
   // Else this sentence doesn't have attack data
   } else {

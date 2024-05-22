@@ -1010,37 +1010,38 @@ class RestService:
         await self.data_svc.remove_report_by_id(report_id=report_id)
         logging.info("Deleted skipped report: " + report[URL])
 
-    async def add_attack(self, request, criteria=None):
+    async def add_attack(self, request, criteria):
         try:
             # The sentence and attack IDs
             sen_id, attack_id = criteria["sentence_id"], criteria["attack_uid"]
         except (KeyError, TypeError):
             return dict(error="Error adding attack.")
-        # Get the attack information for this attack id
+
+        logging.info(f"Accepting attack {attack_id} for sentence {sen_id}")
+
         attack_dict = await self.dao.get("attack_uids", dict(uid=attack_id))
-        # Get the report sentence information for the sentence id
         sentence_dict = await self.dao.get("report_sentences", dict(uid=sen_id))
+
         # Check the method can continue
-        checks, report = await self._pre_add_reject_attack_checks(
+        checks, report = await self._pre_add_ignore_reject_attack_checks(
             request, sen_id=sen_id, sentence_dict=sentence_dict, attack_id=attack_id, attack_dict=attack_dict
         )
         if checks is not None:
             return checks
+
         a_name, tid, inactive = attack_dict[0]["name"], attack_dict[0]["tid"], attack_dict[0]["inactive"]
         if inactive:
             return dict(
-                error="%s, '%s' is not in the current Att%%ck framework. " % (tid, a_name)
-                + "Please contact us if this is incorrect.",
+                error=f"{tid}, '{a_name}' is not in the current Att%ck framework. Please contact us if this is "
+                f"incorrect.",
                 alert_user=1,
             )
+
         # Get the sentence to insert by removing html markup
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]["text"])
         sentence_to_insert = self.dao.truncate_str(sentence_to_insert, 800)
         # Get the report-start-date to default this attack mapping's start date as
-        start_date = report["start_date_str"]
-        # A flag to determine if the model initially predicted this attack for this sentence
         model_initially_predicted = False
-        # The list of SQL commands to run in a single transaction
         sql_commands = []
         # Check this sentence + attack combination isn't already in report_sentence_hits
         historic_hits = await self.dao.get("report_sentence_hits", dict(sentence_id=sen_id, attack_uid=attack_id))
@@ -1054,10 +1055,11 @@ class RestService:
                 await self.dao.update(
                     "report_sentence_hits",
                     where=dict(sentence_id=sen_id, attack_uid=attack_id),
-                    return_sql=True,
                     data=dict(active_hit=self.dao.db_true_val, confirmed=self.dao.db_true_val),
+                    return_sql=True,
                 )
             )
+
             # Update model_initially_predicted flag using returned historic_hits
             model_initially_predicted = returned_hit["initial_model_match"]
         else:
@@ -1073,15 +1075,17 @@ class RestService:
                         attack_technique_name=a_name,
                         report_uid=sentence_dict[0]["report_uid"],
                         confirmed=self.dao.db_true_val,
-                        start_date=start_date,
+                        start_date=report["start_date_str"],
                     ),
                     return_sql=True,
                 )
             )
+
         # As this will now be either a true positive or false negative, ensure it is not a false positive too
         sql_commands.append(
             await self.dao.delete("false_positives", dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True)
         )
+
         # If the ML model correctly predicted this attack, then it is a true positive
         if model_initially_predicted:
             existing = len(await self.dao.get("true_positives", dict(sentence_id=sen_id, attack_uid=attack_id)))
@@ -1104,6 +1108,7 @@ class RestService:
                         return_sql=True,
                     )
                 )
+
         # If the found_status for the sentence id is set to false when adding a missing technique
         # then update the found_status value to true for the sentence id in the report_sentence table
         if not sentence_dict[0]["found_status"]:
@@ -1115,6 +1120,7 @@ class RestService:
                     return_sql=True,
                 )
             )
+
         # Run the updates, deletions and insertions for this method altogether
         await self.dao.run_sql_list(sql_list=sql_commands)
         # As a technique has been added, ensure the report's status reflects analysis has started
@@ -1122,22 +1128,89 @@ class RestService:
         # Return status message
         return REST_SUCCESS
 
-    async def reject_attack(self, request, criteria=None):
+    async def ignore_attack(self, request, criteria):
         try:
             # The sentence and attack IDs
             sen_id, attack_id = criteria["sentence_id"], criteria["attack_uid"]
         except (KeyError, TypeError):
+            logging.warning("`sentence_id` or `attack_uid` not found in request data")
             return dict(error="Error rejecting attack.")
+
+        logging.info(f"Ignoring attack {attack_id} for sentence {sen_id}")
+
         # Get the report sentence information for the sentence id
         sentence_dict = await self.dao.get("report_sentences", dict(uid=sen_id))
         # Get the attack information for this attack id
         attack_dict = await self.dao.get("attack_uids", dict(uid=attack_id))
         # Check the method can continue
-        checks, report = await self._pre_add_reject_attack_checks(
+        checks, report = await self._pre_add_ignore_reject_attack_checks(
             request, sen_id=sen_id, sentence_dict=sentence_dict, attack_id=attack_id, attack_dict=attack_dict
         )
         if checks is not None:
             return checks
+        # The list of SQL commands to run in a single transaction
+        sql_commands = [
+            # Delete any sentence-hits where the model didn't initially guess the attack
+            await self.dao.delete(
+                "report_sentence_hits",
+                dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=self.dao.db_false_val),
+                return_sql=True,
+            ),
+            # For sentence-hits where the model did guess the attack, flag as inactive and unconfirmed
+            await self.dao.update(
+                "report_sentence_hits",
+                where=dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=self.dao.db_true_val),
+                data=dict(active_hit=self.dao.db_false_val, confirmed=self.dao.db_false_val),
+                return_sql=True,
+            ),
+            # This sentence may have previously been added as a true/false positive/negative; delete these
+            await self.dao.delete("true_positives", dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True),
+            await self.dao.delete("true_negatives", dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True),
+            await self.dao.delete("false_positives", dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True),
+            await self.dao.delete("false_negatives", dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True),
+        ]
+        # Check if this sentence has other attacks mapped to it
+        number_of_techniques = await self.dao.get(
+            "report_sentence_hits",
+            equal=dict(sentence_id=sen_id, active_hit=self.dao.db_true_val),
+            not_equal=dict(attack_uid=attack_id),
+        )
+        # If it doesn't, update the sentence found-status to false
+        if len(number_of_techniques) == 0:
+            sql_commands.append(
+                await self.dao.update(
+                    "report_sentences",
+                    where=dict(uid=sen_id),
+                    data=dict(found_status=self.dao.db_false_val),
+                    return_sql=True,
+                )
+            )
+
+        # Run the updates, deletions and insertions for this method altogether
+        await self.dao.run_sql_list(sql_list=sql_commands)
+        # As a technique has been rejected, ensure the report's status reflects analysis has started
+        await self.check_report_status(report_id=sentence_dict[0]["report_uid"], update_if_false=True)
+        return REST_SUCCESS
+
+    async def reject_attack(self, request, criteria):
+        try:
+            # The sentence and attack IDs
+            sen_id, attack_id = criteria["sentence_id"], criteria["attack_uid"]
+        except (KeyError, TypeError):
+            return dict(error="Error rejecting attack.")
+
+        logging.info(f"Rejecting attack {attack_id} for sentence {sen_id}")
+
+        sentence_dict = await self.dao.get("report_sentences", dict(uid=sen_id))
+        attack_dict = await self.dao.get("attack_uids", dict(uid=attack_id))
+
+        # Check the method can continue
+        checks, report = await self._pre_add_ignore_reject_attack_checks(
+            request, sen_id=sen_id, sentence_dict=sentence_dict, attack_id=attack_id, attack_dict=attack_dict
+        )
+        if checks is not None:
+            return checks
+
         # Get the sentence to insert by removing html markup
         sentence_to_insert = await self.web_svc.remove_html_markup_and_found(sentence_dict[0]["text"])
         sentence_to_insert = self.dao.truncate_str(sentence_to_insert, 800)
@@ -1160,14 +1233,14 @@ class RestService:
             await self.dao.delete("true_positives", dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True),
             await self.dao.delete("false_negatives", dict(sentence_id=sen_id, attack_uid=attack_id), return_sql=True),
         ]
-        # Check if the ML model initially predicted this attack
+
+        # Check if the ML model initially predicted this attack, and if it did, then this is a false positive
         model_initially_predicted = len(
             await self.dao.get(
                 "report_sentence_hits",
                 dict(sentence_id=sen_id, attack_uid=attack_id, initial_model_match=self.dao.db_true_val),
             )
         )
-        # If it did, then this is a false positive
         if model_initially_predicted:
             existing = len(await self.dao.get("false_positives", dict(sentence_id=sen_id, attack_uid=attack_id)))
             if not existing:  # Only add to the false positives table if it's not already there
@@ -1178,6 +1251,7 @@ class RestService:
                         return_sql=True,
                     )
                 )
+
         # Check if this sentence has other attacks mapped to it
         number_of_techniques = await self.dao.get(
             "report_sentence_hits",
@@ -1194,6 +1268,7 @@ class RestService:
                     return_sql=True,
                 )
             )
+
         # Run the updates, deletions and insertions for this method altogether
         await self.dao.run_sql_list(sql_list=sql_commands)
         # As a technique has been rejected, ensure the report's status reflects analysis has started
@@ -1437,7 +1512,7 @@ class RestService:
             success.update(dict(info="The selected sentence has been flagged as an IoC.", alert_user=1))
         return success
 
-    async def _pre_add_reject_attack_checks(
+    async def _pre_add_ignore_reject_attack_checks(
         self, request, sen_id="", sentence_dict=None, attack_id="", attack_dict=None
     ):
         """Function to check for adding or rejecting attacks, enough sentence and attack data has been given."""
