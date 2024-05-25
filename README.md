@@ -186,7 +186,7 @@ To give you a primer in these concepts, or if videos are just more your thing, c
 We extend our sincere appreciation to the dedicated individuals whose contributions have made Thread a thriving open-source community and a valuable resource for the cybersecurity community!
 
 ## Notice
-Copyright 2023 Arachne Digital
+Copyright 2024 Arachne Digital
 
 Licensed under the Apache License, Version 2.0.
 
