@@ -709,7 +709,7 @@ class DataService:
                 report_uid=report_id,
                 active_hit=self.dao.db_true_val,
                 confirmed=self.dao.db_false_val,
-            )
+            ),
         )
         # Ignore entries in the database where the model was incorrect (i.e. is unconfirmed because it was rejected and
         # we are storing in report_sentence_hits that initial_model_match=1 so confirmed=0): these are false positives
