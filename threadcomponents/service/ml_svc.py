@@ -6,6 +6,8 @@ import asyncio
 import logging
 import nltk
 import os
+
+import numpy as np
 import pandas as pd
 import pickle
 import random
@@ -26,51 +28,49 @@ class MLService:
 
     async def build_models(self, tech_id, tech_name, techniques):
         """Function to build Logistic Regression Classification models based off of the examples provided."""
-        lst1, lst2, false_list, sampling = [], [], [], []
-        len_truelabels = 0
+        logging.info(f"Building Model | {tech_id=} {tech_name=}")
 
+        lst1, lst2, false_candidates, false_labels = [], [], [], []
         for k, v in techniques.items():
             if v["id"] == tech_id:
                 for i in v["example_uses"]:
                     lst1.append(await self.web_svc.tokenize(i))
                     lst2.append(True)
-                    len_truelabels += 1
                 # Collect the false_positive samples here too, which are the incorrectly labeled texts from
                 # reviewed reports, we will include these in the Negative Class.
                 if "false_positives" in v.keys():
                     for fp in v["false_positives"]:
-                        sampling.append(fp)
+                        false_labels.append(fp)
             else:
                 for i in v["example_uses"]:
-                    false_list.append(await self.web_svc.tokenize(i))
+                    false_candidates.append(i)
 
         # At least 90% of total labels for both classes
         # use this for determining how many labels to use for classifier's negative class
-        kval = int((len_truelabels * 10))
+        kval = len(lst1) * 10 - len(false_labels)
 
         # Add true/positive labels for OTHER techniques (false for given tech_id), use list obtained from above
         # Need if-checks because an empty list will cause an error with random.choices()
-        if false_list:
-            sampling.extend(random.choices(false_list, k=kval))
+        if false_candidates:
+            false_labels.extend(random.choices(false_candidates, k=min(kval, len(false_candidates))))
 
         # Finally, create the Negative Class for this technique's classification model
         # and include False as the labels for this training data
-        for false_label in sampling:
+        for false_label in false_labels:
             lst1.append(await self.web_svc.tokenize(false_label))
             lst2.append(False)
 
-        # Convert into a dataframe
-        df = pd.DataFrame({"text": lst1, "category": lst2})
-
         # Build model based on that technique
         cv = CountVectorizer(max_features=2000)
-        X = cv.fit_transform(df["text"]).toarray()
-        y = df["category"]
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-        logreg = LogisticRegression(max_iter=2500, solver="lbfgs")
-        logreg.fit(X_train, y_train)
+        x = cv.fit_transform(np.array(lst1)).toarray()
+        y = np.array(lst2)
 
-        logging.info("{}, {} - {}".format(tech_id, tech_name, logreg.score(X_test, y_test)))
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+        logreg = LogisticRegression(max_iter=2500, solver="lbfgs")
+        logreg.fit(x_train, y_train)
+
+        logging.info(f"\tScore: {logreg.score(x_test, y_test)}")
+
         return (cv, logreg)
 
     async def analyze_document(self, cv, logreg, sentences):

@@ -2,7 +2,6 @@
 # This file has been moved into a different directory
 # To see its full history, please use `git log --follow <filename>` to view previous commits and additional contributors
 
-import asyncio
 import logging
 import newspaper
 import nltk
@@ -417,7 +416,7 @@ class WebService:
         lemmed = []
         stemmer = SnowballStemmer("english")
         for i in filtered_words:
-            await asyncio.sleep(0.001)
+            # await asyncio.sleep(0.001)
             lemmed.append(stemmer.stem(str(i)))
         return " ".join(lemmed)
 
