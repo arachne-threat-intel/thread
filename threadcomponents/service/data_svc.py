@@ -703,14 +703,16 @@ class DataService:
     async def get_unconfirmed_undated_attack_count(self, report_id="", return_detail=False):
         """Function to retrieve the number of unconfirmed attacks without a start-date for a report."""
         # Retrieve all unconfirmed attacks
-        all_unconfirmed = await self.dao.get(
-            "report_sentence_hits",
-            dict(
-                report_uid=report_id,
-                active_hit=self.dao.db_true_val,
-                confirmed=self.dao.db_false_val,
-            ),
+        all_unconfirmed_query = (
+            "SELECT report_sentence_hits.* FROM (report_sentence_hits INNER JOIN report_sentences "
+            "ON report_sentence_hits.sentence_id = report_sentences.uid) "
+            "WHERE report_sentence_hits.report_uid = %s" % self.dao.db_qparam + " "
+            "AND report_sentence_hits.active_hit = %s" % self.dao.db_true_val + " "
+            "AND report_sentence_hits.confirmed = %s" % self.dao.db_false_val + " "
+            "ORDER BY report_sentences.sen_index"
         )
+        all_unconfirmed = await self.dao.raw_select(all_unconfirmed_query, parameters=tuple([report_id]))
+
         # Ignore entries in the database where the model was incorrect (i.e. is unconfirmed because it was rejected and
         # we are storing in report_sentence_hits that initial_model_match=1 so confirmed=0): these are false positives
         select_join_query = (
