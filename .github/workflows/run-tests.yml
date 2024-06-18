@@ -40,7 +40,7 @@ jobs:
         ruff check .
     - name: Format with Ruff
       run: |
-        ruff format --check
+        ruff format --diff
     - name: Run the tests
       run: |
         python -m unittest discover tests/
