@@ -45,7 +45,7 @@ class MLService:
                     false_candidates.append(i)
 
         await asyncio.sleep(0.001)  # Random sleep to avoid blocking the event loop
-           
+
         # At least 90% of total labels for both classes
         # use this for determining how many labels to use for classifier's negative class
         kval = len(lst1) * 10 - len(false_labels)
@@ -62,7 +62,7 @@ class MLService:
             lst2.append(False)
 
         await asyncio.sleep(0.001)  # Random sleep to avoid blocking the event loop
-        
+
         # Build model based on that technique
         cv = CountVectorizer(max_features=2000)
         x = cv.fit_transform(np.array(lst1)).toarray()
@@ -174,7 +174,7 @@ class MLService:
                 )
                 # Skip this technique and move onto the next one
                 continue
-                
+
             categories = await self.analyze_document(cv, logreg, list_of_sentences)
             count = 0
             for vals in categories:
