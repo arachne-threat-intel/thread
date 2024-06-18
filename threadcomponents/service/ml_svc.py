@@ -8,7 +8,6 @@ import nltk
 import os
 
 import numpy as np
-import pandas as pd
 import pickle
 import random
 
@@ -45,6 +44,8 @@ class MLService:
                 for i in v["example_uses"]:
                     false_candidates.append(i)
 
+        await asyncio.sleep(0.001)  # Random sleep to avoid blocking the event loop
+           
         # At least 90% of total labels for both classes
         # use this for determining how many labels to use for classifier's negative class
         kval = len(lst1) * 10 - len(false_labels)
@@ -60,6 +61,8 @@ class MLService:
             lst1.append(await self.web_svc.tokenize(false_label))
             lst2.append(False)
 
+        await asyncio.sleep(0.001)  # Random sleep to avoid blocking the event loop
+        
         # Build model based on that technique
         cv = CountVectorizer(max_features=2000)
         x = cv.fit_transform(np.array(lst1)).toarray()
@@ -71,17 +74,17 @@ class MLService:
 
         logging.info(f"\tScore: {logreg.score(x_test, y_test)}")
 
+        await asyncio.sleep(0.001)  # Random sleep to avoid blocking the event loop
+
         return (cv, logreg)
 
     async def analyze_document(self, cv, logreg, sentences):
         cleaned_sentences = [await self.web_svc.tokenize(i["text"]) for i in sentences]
 
-        df2 = pd.DataFrame({"text": cleaned_sentences})
-        Xnew = cv.transform(df2["text"]).toarray()
+        Xnew = cv.transform(np.array(cleaned_sentences)).toarray()
         await asyncio.sleep(0.01)
         y_pred = logreg.predict(Xnew)
-        df2["category"] = y_pred.tolist()
-        return df2
+        return np.array(y_pred.tolist())
 
     async def build_pickle_file(self, list_of_techs, techniques, force=False):
         """Returns the classification models for the data provided."""
@@ -171,9 +174,10 @@ class MLService:
                 )
                 # Skip this technique and move onto the next one
                 continue
-            final_df = await self.analyze_document(cv, logreg, list_of_sentences)
+                
+            categories = await self.analyze_document(cv, logreg, list_of_sentences)
             count = 0
-            for vals in final_df["category"]:
+            for vals in categories:
                 await asyncio.sleep(0.001)
                 if vals:
                     list_of_sentences[count]["ml_techniques_found"].append((tech_id, tech_name))

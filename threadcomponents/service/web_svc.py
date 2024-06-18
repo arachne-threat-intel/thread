@@ -416,7 +416,6 @@ class WebService:
         lemmed = []
         stemmer = SnowballStemmer("english")
         for i in filtered_words:
-            # await asyncio.sleep(0.001)
             lemmed.append(stemmer.stem(str(i)))
         return " ".join(lemmed)
 
