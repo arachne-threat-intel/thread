@@ -626,6 +626,9 @@ class DataService:
             self.SQL_WITH_PAR_ATTACK +
             # The relevant report-sentence fields we want
             "SELECT report_sentences.*, report_sentence_hits.attack_tid, report_sentence_hits.attack_technique_name, "
+            "EXISTS(SELECT 1 FROM true_positives WHERE sentence_id = report_sentences.uid) as true_positive, "
+            "EXISTS(SELECT 1 FROM false_positives WHERE sentence_id = report_sentences.uid) as false_positive, "
+            "EXISTS(SELECT 1 FROM false_negatives WHERE sentence_id = report_sentences.uid) as false_negative, "
             # We want to add any sub-technique's parent-technique name
             "report_sentence_hits.active_hit, " + FULL_ATTACK_INFO + ".parent_name AS attack_parent_name, "
             # LEFT (not INNER) JOINS with FULL_ATTACK_INFO may have 'inactive' data; return 'inactive' from attack_uids
