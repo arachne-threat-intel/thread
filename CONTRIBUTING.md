@@ -1,8 +1,8 @@
 <!-- NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital -->
 
-# Contribute to Thread
+# Contribute to Arache Digital Projects
 
-Thank you for wanting to contribute to Thread! 
+Thank you for wanting to contribute to one (or more!) of the Arachne Digital projects! 
 
 * [Project Mission and Summary](#project-mission-and-summary)
 * [Code of Conduct](#code-of-conduct)
@@ -21,15 +21,19 @@ Thank you for wanting to contribute to Thread!
 
 ## Project Mission and Summary
 
-Thread is an open-source initiative dedicated to enhancing cyber threat intelligence (CTI) mapping by automating the process of linking cybersecurity reports and articles to MITRE ATT&CK®. Our mission is to empower security professionals, organisations, and analysts by providing efficient, empowering, and community driven CTI capabilities.
+Arachne Digital is committed to revolutionizing the world of cybersecurity through our innovative open-source projects. Our mission is to empower cybersecurity professionals, organisations, and analysts globally by providing them with tools that streamline threat intelligence processes, lead to enhanced threat detection, and fortify security postures. We believe in the power of collaboration, community-driven development, and giving back to the open-source community.
 
 ## Code of Conduct
 
-The Thread community has adopted the Contributor Covenant. Before contributing, please read the [CODE OF CONDUCT](CODE_OF_CONDUCT.md). By contributing to the Thread community, you agree to the code of conduct.
+The Arachne Digital community has adopted the Contributor Covenant. Before contributing, please read the [CODE OF CONDUCT](CODE_OF_CONDUCT.md). By contributing to the Arachne Digital community, you agree to the code of conduct.
 
 ## Resources
 
-Please see the [README](README.md) for high level information about Thread, and the [ROADMAP](ROADMAP.md) to get an understanding of where the project is going.
+Please see the READMEs for high level information about the various Arachne Digital projects, and the [ROADMAP](ROADMAP.md) to get an understanding of where the project is going.
+
+[Thread README](https://github.com/arachne-threat-intel/thread/blob/main/README.md)
+[Tracery README](https://github.com/arachne-threat-intel/tracery/blob/main/README.rst)
+[Spindle README](https://github.com/arachne-threat-intel/spindle)
 
 ## Communication Channels
 
@@ -37,32 +41,32 @@ Arachne Digital uses Slack to discuss everything to do with our open source proj
 
 ## Types of Contributions
 
-Thread welcomes contributions from individuals with diverse skills and backgrounds. You can contribute to Thread in various ways, depending on your interests. Below is a non-exhaustive list of some of the different types of contributions you can make:
+Arachne Digital welcomes contributions from individuals with diverse skills and backgrounds. You can contribute to Arachne Digital projects in various ways, depending on your interests. Below is a non-exhaustive list of some of the different types of contributions you can make:
 
 **Technical Contributions**
 
-* Code Contributions: If you want to code, you can contribute to the development of Thread by submitting pull requests to add new features, fix bugs, or enhance existing functionalities.
+* Code Contributions: If you want to code, you can contribute to the development of Arachne Digital by submitting pull requests to software to add new features, fix bugs, or enhance existing functionalities.
 * Documentation: Help improve our documentation by fixing typos, clarifying instructions, or adding new content to make it more accessible and informative.
-* Testing: Assist in testing Thread by running test cases, identifying issues, and providing feedback to ensure the software's reliability.
-* UI/UX Design: If you are a UI/UX designer, you can contribute by enhancing the user interface and user experience of Thread.
+* Testing: Assist in testing our software by running test cases, identifying issues, and providing feedback to ensure the software's reliability.
+* UI/UX Design: If you are a UI/UX designer, you can contribute by enhancing the user interface and user experience of our software.
 * Review: Review code changes submitted by other contributors, provide constructive feedback, and help maintain code quality.
-* Config Changes: Propose and implement changes to configuration settings that can enhance Thread's performance and usability.
+* Config Changes: Propose and implement changes to configuration settings that can enhance our software's performance and usability.
 * Dependencies: Contribute by updating and managing the project's dependencies to keep it up-to-date and secure.
 
 **Community Contributions**
 
-* Community Building: Engage with our community on platforms like Slack, participate in discussions, and help newcomers navigate Thread.
-* Event Organisation: Organise or participate in events related to Thread, such as webinars, workshops, or meetups, to foster collaboration and knowledge sharing.
+* Community Building: Engage with our community on platforms like Slack, participate in discussions, and help newcomers navigate our projects.
+* Event Organisation: Organise or participate in events related to Arachne Digital, such as webinars, workshops, or meetups, to foster collaboration and knowledge sharing.
 * Content Creation: Contribute to our blog, write articles, or create tutorials that can benefit the community.
-* Bug Reporting: If you encounter issues while using Thread, report them on our GitHub repository with detailed information to help us improve.
-* Feature Requests: Share your ideas for new features or enhancements on our GitHub repository by opening feature request issues.
+* Bug Reporting: If you encounter issues while using our software, report them on our GitHub repository with detailed information to help us improve.
+* Feature Requests: Share your ideas for new features or enhancements on the GitHub repository for the specific software by opening feature request issues.
 * Community Support: Provide support to fellow community members by answering questions, offering guidance, and sharing your expertise.
 
-Remember that every contribution, regardless of its size or nature, is valuable to us and helps strengthen the Thread community. We appreciate your willingness to contribute in any way you would like!
+Remember that every contribution, regardless of its size or nature, is valuable to us and helps strengthen the Arachne Digital community. We appreciate your willingness to contribute in any way you would like!
 
 ## Coding Standards
 
-- Please fork Thread to create Pull Requests (PRs) to contribute to our codebase. See [Code Contribution Workflow](#code-contribution-workflow) for more details.
+- Please fork to create Pull Requests (PRs) to contribute to the codebase of our various projects. See [Code Contribution Workflow](#code-contribution-workflow) for more details.
 - For Python code, we aim to follow recommended guides (https://peps.python.org/pep-0008/). Your IDE may already enforce these for you.
 - If complex code is required, please comment.
 - When making a commit, please begin your commit message with - if applicable - the tagged Issue number of what you are working on, `#<Issue number>: Added a unicorn to the homepage`.
@@ -71,11 +75,11 @@ Remember that every contribution, regardless of its size or nature, is valuable 
       - If I spot a PR where the file or lines-changed includes the small typo, I will consider flagging this in the PR so the PR-owner can do the typo-fix themselves (reducing potential merge conflicts).
    - whilst working on branch y, I spotted numerous typos in an unrelated file > I'll leave branch y as is and consider raising an Issue for this typo or - if I am ok with branch maintenance - create a new branch to fix this.
 - If you are introducing a new concept - e.g. a new field on a report - please consider updating tests and/or adding a new test case.
-   - Our test-suite currently only covers the back-end of Thread's functionality.
+   - Our test-suite currently only covers the back-end of our software's functionality.
 
 ## Issue Tracking
 
-We use GitHub issue tags to categorise our issues and pull requests. Please use these tags when creating or working on issues to help streamline the work that goes into building Thread and the community.
+We use GitHub issue tags to categorise our issues and pull requests. Please use these tags when creating or working on issues to help streamline the work that goes into building our software and the community.
 
 Below are the tags we use:
 
@@ -104,7 +108,7 @@ Bugs are inevitable in any software project, and we appreciate your help in iden
 
 ### 1. Check for Existing Issues
 
-Before reporting a new bug, please search our issue tracker on GitHub to see if someone has already reported the same issue. If you find a similar issue, you can add a comment with additional information if necessary.
+Before reporting a new bug, please search the issue tracker for the particular software on GitHub to see if someone has already reported the same issue. If you find a similar issue, you can add a comment with additional information if necessary.
 
 ### 2. Create a New Issue
 
@@ -121,7 +125,7 @@ When creating a bug report, please provide as much detail as possible:
 * Title: A concise, descriptive title.
 * Description: A detailed description of the bug, including what you expected to happen and what actually happened.
 * Reproduction Steps: Clear steps to reproduce the bug. This helps us isolate the issue.
-* Environment Information: Include details about your environment, such as Thread-config settings, Thread version, operating system, browser version, or versions of related-software (e.g. Python packages).
+* Environment Information: Include details about your environment, such as software-config settings, software version, operating system, browser version, or versions of related-software (e.g. Python packages).
 * Screenshots or Error Logs: If applicable, include screenshots or error logs to illustrate the problem.
 
 ### 4. Label the Issue
@@ -144,11 +148,11 @@ Once the fix is confirmed and tested, the issue will be marked as "closed." You 
 
 As a token of our appreciation, contributors who actively help identify and resolve bugs may be recognised and credited in our project.
 
-Thank you for helping us improve our software. Your diligence in reporting and verifying bugs contributes to the stability and reliability of our project.
+Thank you for helping us improve our software. Your diligence in reporting and verifying bugs contributes to the stability and reliability of our projects.
 
 ## Feature Request Process
 
-Feature requests are a valuable way to improve Thread's functionality and meet the needs of our users. We follow a similar structured process for features:
+Feature requests are a valuable way to improve our software's functionality and meet the needs of our users. We follow a similar structured process for features:
 
 ### 1. Check for Existing Requests
 
@@ -197,11 +201,11 @@ You will be notified about the progress of your feature request, including when 
 
 We value your contributions, including feature requests. Contributors who actively participate in discussions and provide valuable input may be recognised and credited in our project.
 
-Thank you for helping us enhance our project. Your feature requests play a vital role in shaping the future of Thread.
+Thank you for helping us enhance our project. Your feature requests play a vital role in shaping the future of the Arachne Digital community.
 
 ## Code Contribution Workflow
 
-Thread follows a structured workflow to ensure that code contributions are thoroughly reviewed, tested, and integrated effectively. This process is designed to maintain code quality, reliability, and alignment with the project's goals. Here are the key steps in the contribution workflow:
+Arachne Digital follows a structured workflow to ensure that code contributions are thoroughly reviewed, tested, and integrated effectively. This process is designed to maintain code quality, reliability, and alignment with the project's goals. Here are the key steps in the contribution workflow:
 
 ### 1. Submission
 
@@ -229,11 +233,11 @@ Once you have submitted your PR, our CI system will automatically run tests to e
 
 ### 7. Approval
 
-After your PR aligns with the project's criteria and requirements, it will undergo review and receive approvals from project maintainers or designated reviewers. This step signifies that your contribution has been accepted and is on track for inclusion in Thread.
+After your PR aligns with the project's criteria and requirements, it will undergo review and receive approvals from project maintainers or designated reviewers. This step signifies that your contribution has been accepted and is on track for inclusion in our software.
 
 ### 8. Merge
 
-Once the PR is approved, a project maintainer will merge your changes into the main Thread repository, incorporating your contribution into Thread.
+Once the PR is approved, a project maintainer will merge your changes into the main repository, incorporating your contribution into the software.
 
 ### 9. Closure
 
@@ -243,15 +247,19 @@ Upon merging your Pull Request (PR), any related issues that were addressed by y
 
 Contributors who actively participate and make significant contributions may be recognised and credited in our project.
 
-By following this structured workflow, you can contribute effectively to Thread, collaborate with the community, and ensure that your contributions align with our quality and coding standards. Thank you for your contributions to Thread!
+By following this structured workflow, you can contribute effectively to our projects, collaborate with the community, and ensure that your contributions align with our quality and coding standards. Thank you for your contributions to our projects!
 
 ## Licence 
 
-Thread is offered under the original TRAM licence, the [Apache License 2.0](LICENSE.txt). Please note that all contributions to Thread fall under the Apache License 2.0.
+Please refer to the project repositiory for the license the project is issued under. Please note that all contributions fall under the respective licence.
+
+[Thread licence](https://github.com/arachne-threat-intel/thread/blob/main/LICENSE.txt)
+[Tracery licence](https://github.com/arachne-threat-intel/tracery/blob/main/LICENSE)
+[Spindle licence](https://github.com/arachne-threat-intel/spindle/blob/main/LICENSE.md)
 
 ## Recognition and Attribution
 
-At Arachne Digital, we greatly value the contributions of our community members. Your dedication and hard work drive the success of Thread. To show our appreciation, we have established several ways to recognise and attribute your contributions.
+At Arachne Digital, we greatly value the contributions of our community members. Your dedication and hard work drive the success of our projects. To show our appreciation, we have established several ways to recognise and attribute your contributions.
 
 * Contributor Hall of Fame: Our Contributor Hall of Fame is a dedicated page on our website where we highlight the exceptional contributions made by community members. This is where your name and profile can shine, alongside a description of your significant contributions.
 * Commit Messages and Changelogs: Our detailed changelog includes the names of contributors next to the changes or features they have introduced. This makes it easy for users and fellow contributors to see who contributed what in each release.
@@ -259,13 +267,13 @@ At Arachne Digital, we greatly value the contributions of our community members.
 * Social Media Shoutouts: We use our project's social media channels to publicly acknowledge and thank contributors. We share their profiles, contributions, and achievements with our followers.
 * Personal Thank-You Notes: As a token of our appreciation, we may send personalised thank-you notes or emails to contributors. These messages will express our gratitude for your efforts and acknowledge your unique contributions.
 
-By contributing to Thread, you are not only helping us advance the project but also becoming an integral part of our open-source community. Your contributions are essential, and we want to ensure that you receive the recognition and attribution you deserve.
+By contributing to Arachne Digital projects, you are not only helping us advance that specific project but also becoming an integral part of our open-source community. Your contributions are essential, and we want to ensure that you receive the recognition and attribution you deserve.
 
-Thank you for being a valued member of the Thread community!
+Thank you for being a valued member of the Arachne Digital community!
 
 ## Contact Information
 
-If you have questions or need clarifications about contributing to Thread, we encourage you to reach out and ask. Our community is here to support you on your journey to become a contributor. Here is how you can get help:
+If you have questions or need clarifications about contributing to Arachne Digital, we encourage you to reach out and ask. Our community is here to support you on your journey to become a contributor. Here is how you can get help:
 
 * Slack Community: Join our Slack community and visit the #questions-about-contributing channel. This channel is dedicated to answering your questions and providing guidance on the contribution process. To get access, please email contact[at]arachne[dot]digital with a bit about who you are and how you would like to contribute.
 * GitHub Issues: If you have a specific question related to an ongoing issue or pull request on GitHub, feel free to comment directly on the relevant thread. Our maintainers and contributors will do their best to assist you.
@@ -273,13 +281,13 @@ If you have questions or need clarifications about contributing to Thread, we en
 * Contributor Guidelines: Review these Contributor Guidelines for detailed information on the contribution process, coding standards, and more.
 * Contact Us: If you have a question that is not covered by the above options, you can contact us directly via contact[at]arachne[dot]digital. We are here to assist you in any way we can.
 
-Remember, there are no silly questions, and we value your curiosity and engagement. Do not hesitate to ask if you are unsure about anything. We appreciate your interest in contributing to Thread!
+Remember, there are no silly questions, and we value your curiosity and engagement. Do not hesitate to ask if you are unsure about anything. We appreciate your interest in contributing to our projects!
 
 ## Developer's Certificate of Origin v1.1
 
 If you contribute any source code, we need you to agree to the following Developer's Certificate of Origin (DCO) below.
 
-The DCO was originally adopted from the TRAM project. It is a standard declaration ensuring that contributors have the right to submit their work, protecting both the project and our contributors. When making contributions to Thread, please keep in mind that agreeing to the DCO is part of the submission process.
+The DCO was originally adopted from the TRAM project. It is a standard declaration ensuring that contributors have the right to submit their work, protecting both the project and our contributors. When making contributions to any Arachne Digital project, please keep in mind that agreeing to the DCO is part of the submission process.
 
 ```
 By making a contribution to this project, I certify that:
