@@ -31,9 +31,9 @@ The Arachne Digital community has adopted the Contributor Covenant. Before contr
 
 Please see the READMEs for high level information about the various Arachne Digital projects, and the [ROADMAP](ROADMAP.md) to get an understanding of where the project is going.
 
-[Thread README](https://github.com/arachne-threat-intel/thread/blob/main/README.md)
-[Tracery README](https://github.com/arachne-threat-intel/tracery/blob/main/README.rst)
-[Spindle README](https://github.com/arachne-threat-intel/spindle)
+* [Thread README](https://github.com/arachne-threat-intel/thread/blob/main/README.md)
+* [Tracery README](https://github.com/arachne-threat-intel/tracery/blob/main/README.rst)
+* [Spindle README](https://github.com/arachne-threat-intel/spindle/blob/main/README.md)
 
 ## Communication Channels
 
@@ -253,9 +253,9 @@ By following this structured workflow, you can contribute effectively to our pro
 
 Please refer to the project repositiory for the license the project is issued under. Please note that all contributions fall under the respective licence.
 
-[Thread licence](https://github.com/arachne-threat-intel/thread/blob/main/LICENSE.txt)
-[Tracery licence](https://github.com/arachne-threat-intel/tracery/blob/main/LICENSE)
-[Spindle licence](https://github.com/arachne-threat-intel/spindle/blob/main/LICENSE.md)
+* [Thread licence](https://github.com/arachne-threat-intel/thread/blob/main/LICENSE.txt)
+* [Tracery licence](https://github.com/arachne-threat-intel/tracery/blob/main/LICENSE)
+* [Spindle licence](https://github.com/arachne-threat-intel/spindle/blob/main/LICENSE.md)
 
 ## Recognition and Attribution
 
