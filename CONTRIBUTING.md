@@ -1,6 +1,6 @@
 <!-- NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital -->
 
-# Contribute to Arache Digital Projects
+# Contribute to Arachne Digital Projects
 
 Thank you for wanting to contribute to one (or more!) of the Arachne Digital projects! 
 
@@ -21,7 +21,7 @@ Thank you for wanting to contribute to one (or more!) of the Arachne Digital pro
 
 ## Project Mission and Summary
 
-Arachne Digital is committed to revolutionizing the world of cybersecurity through our innovative open-source projects. Our mission is to empower cybersecurity professionals, organisations, and analysts globally by providing them with tools that streamline threat intelligence processes, lead to enhanced threat detection, and fortify security postures. We believe in the power of collaboration, community-driven development, and giving back to the open-source community.
+Arachne Digital is committed to revolutionising the world of cybersecurity through our innovative open-source projects. Our mission is to empower cybersecurity professionals, organisations, and analysts globally by providing them with tools that streamline threat intelligence processes, lead to enhanced threat detection, and fortify security postures. We believe in the power of collaboration, community-driven development, and giving back to the open-source community.
 
 ## Code of Conduct
 
@@ -75,7 +75,7 @@ Remember that every contribution, regardless of its size or nature, is valuable 
       - If I spot a PR where the file or lines-changed includes the small typo, I will consider flagging this in the PR so the PR-owner can do the typo-fix themselves (reducing potential merge conflicts).
    - whilst working on branch y, I spotted numerous typos in an unrelated file > I'll leave branch y as is and consider raising an Issue for this typo or - if I am ok with branch maintenance - create a new branch to fix this.
 - If you are introducing a new concept - e.g. a new field on a report - please consider updating tests and/or adding a new test case.
-   - Our test-suite currently only covers the back-end of our software's functionality.
+   - Regarding Thread, our test-suite currently only covers back-end functionality.
 
 ## Issue Tracking
 
