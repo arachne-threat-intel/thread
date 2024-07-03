@@ -841,7 +841,7 @@ class RestService:
             new_df[col] = new_df[col].map(lambda x: x.strip() if isinstance(x, str) else x)
             values = pd.Series(new_df[col].to_list())
             # If any value in this column is an empty string or not a string (missing values become NaNs), raise error
-            if (values.map(type) != str).any() or (values.map(len) == 0).any():
+            if values.map(lambda x: not isinstance(x, str)).any() or values.map(lambda x: len(x) == 0).any():
                 raise ValueError("Column `%s` in CSV is missing text in at least one row" % col)
         # All previous checks passed: return the new df
         return new_df
