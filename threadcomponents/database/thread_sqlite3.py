@@ -133,7 +133,7 @@ class ThreadSQLite(ThreadDB):
                         cursor.execute(item[0])
                     elif len(item) == 2:
                         # execute() takes parameters as a tuple, ensure that is the case
-                        parameters = item[1] if type(item[1]) == tuple else tuple(item[1])
+                        parameters = item[1] if isinstance(item[1], tuple) else tuple(item[1])
                         cursor.execute(item[0], parameters)
                 # Finish by committing the changes from the list
                 conn.commit()
