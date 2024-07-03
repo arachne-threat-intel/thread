@@ -15,11 +15,14 @@ from threadcomponents.database.dao import Dao
 from threadcomponents.database.thread_sqlite3 import ThreadSQLite
 from threadcomponents.handlers.web_api import WebAPI
 from threadcomponents.reports.report_exporter import ReportExporter
-from threadcomponents.service import data_svc
+from threadcomponents.repositories.report_repo import ReportRepository
+from threadcomponents.service import attack_data_svc
+from threadcomponents.service.attack_data_svc import AttackDataService
 from threadcomponents.service.data_svc import DataService, NO_DESC
 from threadcomponents.service.ml_svc import MLService
 from threadcomponents.service.reg_svc import RegService
 from threadcomponents.service.rest_svc import ReportStatus, RestService, UID as UID_KEY
+from threadcomponents.service.token_svc import TokenService
 from threadcomponents.service.web_svc import WebService
 from unittest.mock import MagicMock, patch
 
@@ -52,26 +55,47 @@ class ThreadAppTest(AioHTTPTestCase):
             cls.schema = schema_opened.read()
         cls.backup_schema = cls.db.generate_copied_tables(cls.schema)
         cls.dao = Dao(engine=cls.db)
+        cls.report_repo = ReportRepository(dao=cls.dao)
         cls.web_svc = WebService()
-        cls.reg_svc = RegService(dao=cls.dao)
+        cls.reg_svc = RegService()
         cls.data_svc = DataService(dao=cls.dao, web_svc=cls.web_svc)
-        cls.ml_svc = MLService(web_svc=cls.web_svc, dao=cls.dao)
+        cls.token_svc = TokenService()
+        cls.ml_svc = MLService(token_svc=cls.token_svc)
+        cls.attack_data_svc = AttackDataService(attack_file_settings=dict(update=False))
         cls.rest_svc = RestService(
-            cls.web_svc, cls.reg_svc, cls.data_svc, cls.ml_svc, cls.dao, attack_file_settings=dict(update=False)
+            web_svc=cls.web_svc,
+            reg_svc=cls.reg_svc,
+            data_svc=cls.data_svc,
+            token_svc=cls.token_svc,
+            ml_svc=cls.ml_svc,
+            report_repo=cls.report_repo,
+            dao=cls.dao,
+            attack_data_svc=cls.attack_data_svc,
         )
         services = dict(
             dao=cls.dao,
+            report_repo=cls.report_repo,
             data_svc=cls.data_svc,
+            token_svc=cls.token_svc,
             ml_svc=cls.ml_svc,
             reg_svc=cls.reg_svc,
             web_svc=cls.web_svc,
             rest_svc=cls.rest_svc,
+            attack_data_svc=cls.attack_data_svc,
         )
         report_exporter = ReportExporter(services=services)
         cls.web_api = WebAPI(services=services, report_exporter=report_exporter)
         # Duplicate resources so we can test the queue limit without causing limit-exceeding test failures elsewhere
         cls.rest_svc_with_limit = RestService(
-            cls.web_svc, cls.reg_svc, cls.data_svc, cls.ml_svc, cls.dao, queue_limit=random.randint(1, 20)
+            web_svc=cls.web_svc,
+            reg_svc=cls.reg_svc,
+            data_svc=cls.data_svc,
+            ml_svc=cls.ml_svc,
+            report_repo=cls.report_repo,
+            dao=cls.dao,
+            token_svc=cls.token_svc,
+            queue_limit=random.randint(1, 20),
+            attack_data_svc=cls.attack_data_svc,
         )
         services_with_limit = dict(services)
         services_with_limit.update(rest_svc=cls.rest_svc_with_limit)
@@ -206,8 +230,10 @@ class ThreadAppTest(AioHTTPTestCase):
             map_result = html, mocked_article
         # Patches for when RestService.start_analysis() is called
         self.create_patch(target=WebService, attribute="map_all_html", return_value=map_result)
-        self.create_patch(target=WebService, attribute="tokenize_sentence", return_value=html)
-        self.create_patch(target=DataService, attribute="ml_reg_split", return_value=([], list(self.attacks.items())))
+        self.create_patch(target=TokenService, attribute="tokenize_sentence", return_value=html)
+        self.create_patch(
+            target=AttackDataService, attribute="ml_and_reg_split", return_value=([], list(self.attacks.items()))
+        )
         self.create_patch(target=MLService, attribute="build_pickle_file", return_value=(False, dict()))
         self.create_patch(target=MLService, attribute="analyze_html", return_value=html)
 
@@ -261,7 +287,7 @@ class ThreadAppTest(AioHTTPTestCase):
             )
         # Mock the fetch-data method to return our mocked list
         self.create_patch(
-            target=data_svc, attribute="fetch_attack_stix_data_json", return_value=dict(objects=new_attack_list)
+            target=attack_data_svc, attribute="fetch_attack_stix_data_json", return_value=dict(objects=new_attack_list)
         )
         # Prevent the Stix library flagging incorrect data
         self.create_patch(target=_STIXBase, attribute="_check_property", return_value=False)

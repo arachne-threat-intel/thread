@@ -4,54 +4,18 @@
 
 import os
 import re
-import requests
 import json
 import logging
 
 from contextlib import suppress
 from copy import deepcopy
 from datetime import datetime
-from stix2 import Filter, MemoryStore
 from urllib.parse import quote
 
 # Text to set on attack descriptions where this originally was not set
 NO_DESC = "No description provided"
 # A name for a temporary table representing the output of SQL_PAR_ATTACK
 FULL_ATTACK_INFO = "full_attack_info"
-
-
-def fetch_attack_stix_data_json():
-    """Function to fetch the latest Att%ck data."""
-    url = (
-        "https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/"
-        "enterprise-attack.json"
-    )
-    return requests.get(url).json()
-
-
-def attack_data_reject(attack_data):
-    """Function to check given a single attack data, whether it should be skipped."""
-    return attack_data.get("x_mitre_deprecated") or attack_data.get("revoked")
-
-
-def attack_data_get_tid(attack_data):
-    """Function that, given a single attack data, retrieves its TID."""
-    # Obtain the ID of the attack in case we need to use this instead of a TID
-    data_id = attack_data["id"]
-    # We cannot find the TID if there are no external references
-    external_refs = attack_data.get("external_references")
-    if not external_refs:
-        return data_id
-    # For each external reference, check the URL is the Mitre Att&ck page; if it is, retrieve the TID
-    # (Can't check by source_name as this can be 'mitre-attack', 'mitre-mobile-attack', or possibly other variations)
-    tid = None
-    for ref in external_refs:
-        source = ref.get("url", "")
-        if not (source.startswith("https://attack.mitre.org/") or source.startswith("http://attack.mitre.org/")):
-            continue
-        tid = ref.get("external_id")
-        break
-    return tid or data_id
 
 
 def defang_text(text):
@@ -126,115 +90,6 @@ class DataService:
         # Proceed to build both schemas
         await self.dao.build(schema)
         await self.dao.build(copied_tables_schema, is_partial=True)
-
-    def fetch_attack_stix_data(self):
-        """
-        Function to retrieve ATT&CK data and load it into a Stix memory store
-        """
-        logging.info("Downloading ATT&CK data from GitHub repo `mitre-attack/attack-stix-data`")
-        stix_json = fetch_attack_stix_data_json()
-        return MemoryStore(stix_data=stix_json["objects"])
-
-    def flatten_attack_stix_data(self, stix_memory_store):
-        """
-        Function that takes a Stix Memory store and flattens the data into something that we work with
-        """
-        logging.info("Flattening stix data into attack data")
-        attack_data = {}
-
-        # Techniques / attack-patterns #
-        # add all the patterns and dictionary keys/values for each technique and software
-        techniques = stix_memory_store.query(Filter("type", "=", "attack-pattern"))
-        for technique in techniques:
-            if attack_data_reject(technique):
-                continue
-
-            attack_data[technique["id"]] = {
-                "name": technique["name"],
-                "tid": attack_data_get_tid(technique),
-                "example_uses": [],
-                "description": technique.get("description", NO_DESC)
-                .replace("<code>", "")
-                .replace("</code>", "")
-                .replace("\n", "")
-                .encode("ascii", "ignore")
-                .decode("ascii"),
-                "similar_words": [technique["name"]],
-            }
-
-        # Relationships #
-        relationships = stix_memory_store.query(Filter("type", "=", "relationship"))
-        # regex to get rid of att&ck reference (name)[link to site] (done once outside loop as compile can be expensive)
-        link_pattern = re.compile(r"\[.*?\]\(.*?\)")
-        citation_pattern = re.compile(r"\(Citation: .*?\)")
-        for relationship in relationships:
-            if attack_data_reject(relationship):
-                continue
-
-            if relationship["relationship_type"] != "uses":
-                continue
-
-            # Continue if it isn't a attack-pattern relationship OR the target ref isn't in our attack_data
-            target_ref = relationship["target_ref"]
-            if ("attack-pattern" not in target_ref) or (target_ref not in attack_data):
-                continue
-
-            # remove unnecessary strings, fix unicode errors
-            example_use = (
-                relationship.get("description", NO_DESC)
-                .replace("<code>", "")
-                .replace("</code>", "")
-                .replace('"', "")
-                .replace(",", "")
-                .replace("\t", "")
-                .replace("  ", " ")
-                .replace("\n", "")
-                .encode("ascii", "ignore")
-                .decode("ascii")
-            )
-            example_use = link_pattern.sub("", example_use)  # replace all instances of links with nothing
-            example_use = citation_pattern.sub("", example_use)  # replace all instances of links with nothing
-            if example_use[0:2] == "'s":  # remove any leading 's
-                example_use = example_use[3:]
-
-            example_use = example_use.strip()  # strip any leading/trailing whitespace
-
-            if len(example_use) > 0:  # if the example_use is not empty, add it to the attack_data
-                attack_data[target_ref]["example_uses"].append(example_use)
-
-        # Malware #
-        all_malware = stix_memory_store.query(Filter("type", "=", "malware"))
-        for malware in all_malware:
-            # TODO check if we should be skipping those without a description?
-            # some software do not have description, example: darkmoon https://attack.mitre.org/software/S0209
-            if ("description" not in malware) or attack_data_reject(malware):
-                continue
-
-            attack_data[malware["id"]] = {
-                "tid": attack_data_get_tid(malware),
-                "name": malware["name"],
-                "description": malware.get("description", NO_DESC),
-                "examples": [],
-                "example_uses": [],
-                "similar_words": [malware["name"]],
-            }
-
-        # Tools #
-        tools = stix_memory_store.query(Filter("type", "=", "tool"))
-        for tool in tools:
-            if attack_data_reject(tool):
-                continue
-
-            attack_data[tool["id"]] = {
-                "tid": attack_data_get_tid(tool),
-                "name": tool["name"],
-                "description": tool.get("description", NO_DESC),
-                "examples": [],
-                "example_uses": [],
-                "similar_words": [tool["name"]],
-            }
-
-        return attack_data
 
     async def update_db_with_flattened_attack_data(self, attack_data):
         """
@@ -315,14 +170,6 @@ class DataService:
         for x in attack_item[related_data_type]:
             data = {"attack_uid": attack_uid, db_column_name: defang_text(x)}
             await self.dao.insert_generate_uid(db_table_name, data)
-
-    def fetch_flattened_attack_data(self):
-        """
-        Function to retrieve ATT&CK data and insert it into the DB.
-        Further reading on approach: https://github.com/arachne-threat-intel/thread/pull/27#issuecomment-1047456689
-        """
-        stix_memory_store = self.fetch_attack_stix_data()
-        return self.flatten_attack_stix_data(stix_memory_store)
 
     async def insert_attack_json_data(self, buildfile):
         """
@@ -977,16 +824,3 @@ class DataService:
         # Else no reports currently have this title so the title can be used as is
         else:
             return title
-
-    def ml_reg_split(self, techniques):
-        list_of_legacy, list_of_techs = [], []
-        for k, v in techniques.items():
-            try:
-                if len(v["example_uses"]) > 8:
-                    list_of_techs.append((v["id"], v["name"]))
-                else:
-                    list_of_legacy.append(v["id"])
-            except Exception as ex:
-                print(f"Exception {ex=} | {type(ex)=} | {v=}")
-
-        return list_of_legacy, list_of_techs

@@ -23,9 +23,11 @@ class WebAPI:
         self.dao = services["dao"]
         self.data_svc = services["data_svc"]
         self.web_svc = services["web_svc"]
+        self.token_svc = services["token_svc"]
         self.ml_svc = services["ml_svc"]
         self.reg_svc = services["reg_svc"]
         self.rest_svc = services["rest_svc"]
+        self.attack_data_svc = services["attack_data_svc"]
         self.report_statuses = self.rest_svc.get_status_enum()
         self.is_local = self.web_svc.is_local
         self.report_exporter = report_exporter
@@ -61,7 +63,7 @@ class WebAPI:
     async def pre_launch_init(self):
         """Function to call any required methods before the app is initialised and launched."""
         # We want nltk packs downloaded before startup; not run concurrently with startup
-        await self.ml_svc.check_nltk_packs()
+        await self.token_svc.init()
         # Before the app starts up, prepare the queue of reports
         await self.rest_svc.prepare_queue()
         # We want the list of attacks, categories and keywords ready before the app starts
@@ -423,7 +425,7 @@ class WebAPI:
                     "false_positives": fp,
                 }
 
-        list_of_legacy, list_of_techs = self.data_svc.ml_reg_split(techniques)
+        list_of_legacy, list_of_techs = self.attack_data_svc.ml_and_reg_split(techniques)
         self.ml_svc.build_pickle_file(list_of_techs, techniques, force=True)
 
         return {"text": "ML Rebuilt!"}
