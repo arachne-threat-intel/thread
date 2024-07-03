@@ -4,7 +4,6 @@
 
 import asyncio
 import logging
-import nltk
 import os
 
 import numpy as np
@@ -18,31 +17,44 @@ from sklearn.model_selection import train_test_split
 
 class MLService:
     # Service to perform the machine learning against the pickle file
-    def __init__(self, web_svc, dao, dir_prefix=""):
-        self.web_svc = web_svc
-        self.dao = dao
+    def __init__(self, token_svc, dir_prefix=""):
+        self.token_svc = token_svc
         self.dir_prefix = dir_prefix
         # Specify the location of the models file
         self.dict_loc = os.path.join(self.dir_prefix, "threadcomponents", "models", "model_dict.p")
 
-    async def build_models(self, tech_id, tech_name, techniques):
+    async def build_models(self, tech_id, techniques):
         """Function to build Logistic Regression Classification models based off of the examples provided."""
-        logging.info(f"Building Model | {tech_id=} {tech_name=}")
 
+        tech_name = None
         lst1, lst2, false_candidates, false_labels = [], [], [], []
         for k, v in techniques.items():
             if v["id"] == tech_id:
+                tech_name = v["name"]
+                # Collect the example uses for positive training data
                 for i in v["example_uses"]:
-                    lst1.append(await self.web_svc.tokenize(i))
+                    lst1.append(await self.token_svc.tokenize(i))
                     lst2.append(True)
-                # Collect the false_positive samples here too, which are the incorrectly labeled texts from
-                # reviewed reports, we will include these in the Negative Class.
+
+                # Collect the true_positive and false_negative samples from reviewed reports for positive training data
+                if "true_positives" in v.keys():
+                    for tp in v["true_positives"]:
+                        lst1.append(await self.token_svc.tokenize(tp))
+                        lst2.append(True)
+                if "false_negatives" in v.keys():
+                    for fn in v["false_negatives"]:
+                        lst1.append(await self.token_svc.tokenize(fn))
+                        lst2.append(True)
+
+                # Collect the false_positive samples from reviewed reports for negative training data
                 if "false_positives" in v.keys():
                     for fp in v["false_positives"]:
                         false_labels.append(fp)
             else:
                 for i in v["example_uses"]:
                     false_candidates.append(i)
+
+        logging.info(f"Building Model | {tech_id=} {tech_name=}")
 
         await asyncio.sleep(0.001)  # Random sleep to avoid blocking the event loop
 
@@ -58,7 +70,7 @@ class MLService:
         # Finally, create the Negative Class for this technique's classification model
         # and include False as the labels for this training data
         for false_label in false_labels:
-            lst1.append(await self.web_svc.tokenize(false_label))
+            lst1.append(await self.token_svc.tokenize(false_label))
             lst2.append(False)
 
         await asyncio.sleep(0.001)  # Random sleep to avoid blocking the event loop
@@ -79,7 +91,7 @@ class MLService:
         return (cv, logreg)
 
     async def analyze_document(self, cv, logreg, sentences):
-        cleaned_sentences = [await self.web_svc.tokenize(i["text"]) for i in sentences]
+        cleaned_sentences = [await self.token_svc.tokenize(i["text"]) for i in sentences]
 
         Xnew = cv.transform(np.array(cleaned_sentences)).toarray()
         await asyncio.sleep(0.01)
@@ -96,6 +108,7 @@ class MLService:
             # If the models were obtained successfully, return them
             if model_dict:
                 return rebuilt, model_dict
+
         # Else proceed with building the models
         model_dict = {}
         total = len(list_of_techs)
@@ -104,28 +117,36 @@ class MLService:
             "Building Classification Models.. This could take anywhere from ~30-60+ minutes. "
             "Please do not close terminal."
         )
-        for tech_id, tech_name in list_of_techs:
+        for tech_id, _ in list_of_techs:
             logging.info("[#] Building.... {}/{}".format(count, total))
             count += 1
-            model_dict[tech_id] = await self.build_models(tech_id, tech_name, techniques)
+            model_dict[tech_id] = await self.build_models(tech_id, techniques)
+
         rebuilt = True
         logging.info("[#] Saving models to pickled file: " + os.path.basename(self.dict_loc))
         # Save the newly-built models
         with open(self.dict_loc, "wb") as saved_dict:
             pickle.dump(model_dict, saved_dict)
+
         logging.info("[#] Finished saving models.")
         return rebuilt, model_dict
 
-    async def update_pickle_file(self, new_techs, list_of_techs, techniques):
-        """Updates the current classification models with the new attacks."""
-        # We are adding attacks and names are only used for logging: here, we don't have the names so use a desc string
-        attack_name = "New attack added"
-        rebuilt, current_dict = await self.build_pickle_file(list_of_techs, techniques)
+    async def update_pickle_file(self, techs_to_rebuild, list_of_techs, techniques):
+        """
+        Updates the current classification models with the new attacks.
+
+        :param techs_to_rebuild: List of new techniques to add to the models
+        :param list_of_techs: List of ALL techniques including the new ones
+        :param techniques: Dictionary of all techniques including the new ones
+        """
+        rebuilt, current_dict = await self.build_pickle_file(list_of_techs, techniques, force=False)
         if rebuilt:
             return  # models and pickle file include new attacks
-        # If we retrieved the current models and they were not rebuilt, add the new attack-models to the pickle file
-        for tech in new_techs:
-            current_dict[tech] = await self.build_models(tech, attack_name, techniques)
+
+        # If we retrieved the current models and they were not rebuilt, add/update the techs in the pickle file
+        for tech in techs_to_rebuild:
+            current_dict[tech] = await self.build_models(tech, techniques)
+
         with open(self.dict_loc, "wb") as saved_dict:
             pickle.dump(current_dict, saved_dict)
 
@@ -182,83 +203,5 @@ class MLService:
                 if vals:
                     list_of_sentences[count]["ml_techniques_found"].append((tech_id, tech_name))
                 count += 1
+
         return list_of_sentences
-
-    async def ml_techniques_found(self, report_id, sentence, sentence_index, tech_start_date=None):
-        sentence_id = await self.dao.insert_with_backup(
-            "report_sentences",
-            dict(
-                report_uid=report_id,
-                text=sentence["text"],
-                html=sentence["html"],
-                sen_index=sentence_index,
-                found_status=self.dao.db_true_val,
-            ),
-        )
-        for technique_tid, technique_name in sentence["ml_techniques_found"]:
-            attack_uid = await self.dao.get("attack_uids", dict(tid=technique_tid))
-            # If the attack cannot be found via the 'tid' column, try the 'name' column
-            if not attack_uid:
-                attack_uid = await self.dao.get("attack_uids", dict(name=technique_name))
-            # If the attack has still not been retrieved, try searching the similar_words table
-            if not attack_uid:
-                similar_word = await self.dao.get("similar_words", dict(similar_word=technique_name))
-                # If a similar word was found, use its attack_uid to lookup the attack_uids table
-                if similar_word and similar_word[0] and similar_word[0]["attack_uid"]:
-                    attack_uid = await self.dao.get("attack_uids", dict(uid=similar_word[0]["attack_uid"]))
-            # If the attack has still not been retrieved, report to user that this cannot be saved against the sentence
-            if not attack_uid:
-                logging.warning(
-                    " ".join(
-                        (
-                            "Sentence ID:",
-                            str(sentence_id),
-                            "ML Technique:",
-                            technique_tid,
-                            technique_name,
-                            "- Technique could not be retrieved from the database; "
-                            + "cannot save this technique's association with the sentence.",
-                        )
-                    )
-                )
-                # Skip this technique and continue with the next one
-                continue
-            attack_technique = attack_uid[0]["uid"]
-            attack_tech_name = attack_uid[0]["name"]
-            attack_tid = attack_uid[0]["tid"]
-            # Allow 'inactive' attacks to be recorded: they will be filtered out when viewing/exporting a report
-            data = dict(
-                sentence_id=sentence_id,
-                attack_uid=attack_technique,
-                attack_technique_name=attack_tech_name,
-                report_uid=report_id,
-                attack_tid=attack_tid,
-                initial_model_match=self.dao.db_true_val,
-            )
-            if tech_start_date:
-                data.update(dict(start_date=tech_start_date))
-            await self.dao.insert_with_backup("report_sentence_hits", data)
-
-    async def combine_ml_reg(self, ml_analyzed_html, reg_analyzed_html):
-        analyzed_html = []
-        index = 0
-        for sentence in ml_analyzed_html:
-            sentence["reg_techniques_found"] = reg_analyzed_html[index]["reg_techniques_found"]
-            analyzed_html.append(sentence)
-            index += 1
-        return analyzed_html
-
-    async def check_nltk_packs(self):
-        try:
-            nltk.data.find("tokenizers/punkt")
-            logging.info("[*] Found punkt")
-        except LookupError:
-            logging.warning("Could not find the punkt pack, downloading now")
-            nltk.download("punkt")
-        try:
-            nltk.data.find("corpora/stopwords")
-            logging.info("[*] Found stopwords")
-        except LookupError:
-            logging.warning("Could not find the stopwords pack, downloading now")
-            nltk.download("stopwords")
-        self.web_svc.initialise_tokenizer()

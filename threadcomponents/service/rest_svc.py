@@ -3,9 +3,7 @@
 # To see its full history, please use `git log --follow <filename>` to view previous commits and additional contributors
 
 import asyncio
-import json
 import logging
-import os
 import pandas as pd
 import re
 
@@ -60,20 +58,24 @@ class RestService:
         web_svc,
         reg_svc,
         data_svc,
+        token_svc,
         ml_svc,
+        attack_data_svc,
+        report_repo,
         dao,
-        dir_prefix="",
         queue_limit=None,
         max_tasks=1,
         sentence_limit=None,
-        attack_file_settings=None,
     ):
         self.MAX_TASKS = max_tasks
         self.QUEUE_LIMIT = queue_limit
         self.SENTENCE_LIMIT = sentence_limit
+        self.report_repo = report_repo
         self.dao = dao
         self.data_svc = data_svc
         self.web_svc = web_svc
+        self.token_svc = token_svc
+        self.attack_data_svc = attack_data_svc
         self.ml_svc = ml_svc
         self.reg_svc = reg_svc
         self.is_local = self.web_svc.is_local
@@ -88,90 +90,13 @@ class RestService:
         self.current_tasks = []  # tasks that are currently being executed
         # A dictionary to keep track of report statuses we have seen
         self.seen_report_status = dict()
-        # The offline attack dictionary
-        attack_file_settings = attack_file_settings or dict()
-        default_attack_filepath = os.path.join(dir_prefix, "threadcomponents", "models", "attack_dict.json")
-        self.attack_dict_loc = attack_file_settings.get("filepath", default_attack_filepath)
-        self.json_tech, self.list_of_legacy, self.list_of_techs = {}, [], []
-        self.update_attack_file = attack_file_settings.get("update", False)  # Are we updating this file periodically?
-        self.attack_file_indent = attack_file_settings.get("indent", 2)
-        self.set_internal_attack_data()
-
-    def set_internal_attack_data(self, load_attack_dict=True):
-        """Function to set the class variables holding attack data."""
-        if load_attack_dict:
-            with open(self.attack_dict_loc, "r", encoding="utf_8") as attack_dict_f:
-                self.json_tech = json.load(attack_dict_f)
-
-        self.list_of_legacy, self.list_of_techs = self.data_svc.ml_reg_split(self.json_tech)
 
     async def fetch_and_update_attack_data(self):
         """Function to fetch and update the attack data."""
         # The output of the attack-data-updates from data_svc
-        attack_data = self.data_svc.fetch_flattened_attack_data()
+        attack_data = self.attack_data_svc.fetch_flattened_attack_data()
         await self.data_svc.update_db_with_flattened_attack_data(attack_data=attack_data)
-        self.update_json_tech_with_flattened_attack_data(attack_data=attack_data)
-
-    def update_json_tech_with_flattened_attack_data(self, attack_data):
-        """Function to update the attack dictionary file."""
-        # Loop the attack data and check if any attacks have been added or renamed or changed in anyway
-        added_count, updated_count = 0, 0
-        for attack_uid, attack_item in attack_data.items():
-            # If the attack is not in the json-tech dictionary, add it
-            if attack_uid not in self.json_tech:
-                added_count += 1
-                self.json_tech[attack_uid] = attack_item
-                self.json_tech[attack_uid]["id"] = self.json_tech[attack_uid].pop("tid")
-
-                logging.info(
-                    f"New attack found, consider adding example uses for {attack_uid} to {self.attack_dict_loc} and make sure you update the attack JSON file."
-                )
-            else:
-                # print('We have an existing attack: %s' % attack_uid)
-                updated = False
-                current_entry = self.json_tech.get(attack_uid)
-                if current_entry["id"] != attack_item["tid"]:
-                    print("ID MISMATCH: This should not happen, skipping", attack_uid)
-
-                # Check description change
-                if current_entry["description"] != attack_item["description"]:
-                    updated = True
-                    current_entry["description"] = attack_item["description"]
-
-                # Check for new example uses
-                for example_use in attack_item["example_uses"]:
-                    if example_use not in current_entry["example_uses"]:
-                        updated = True
-                        current_entry["example_uses"].append(example_use)
-
-                # Check similar words
-                for similar_word in attack_item["similar_words"]:
-                    if similar_word not in current_entry["similar_words"]:
-                        updated = True
-                        current_entry["similar_words"].append(similar_word)
-
-                # Check for name change
-                if current_entry["name"] != attack_item["name"]:
-                    updated = True
-                    for name in [current_entry["name"], attack_item["name"]]:
-                        if name not in current_entry["similar_words"]:
-                            current_entry["similar_words"].append(name)
-
-                    current_entry["name"] = attack_item["name"]
-
-                if updated:
-                    updated_count += 1
-
-        logging.info(
-            f"Added {added_count} new attacks and updated {updated_count} existing attacks to in memory attack dictionary"
-        )
-
-        self.set_internal_attack_data(load_attack_dict=False)
-
-        if self.update_attack_file:
-            logging.info(f"Writing updated attack dictionary to {self.attack_dict_loc}")
-            with open(self.attack_dict_loc, "w", encoding="utf-8") as json_file_opened:
-                json.dump(self.json_tech, json_file_opened, ensure_ascii=False, indent=self.attack_file_indent)
+        self.attack_data_svc.update_json_tech_with_flattened_attack_data(attack_data=attack_data)
 
     @staticmethod
     def get_status_enum():
@@ -913,7 +838,7 @@ class RestService:
             self.check_input_date(article_date)
 
         # Here we build the sentence dictionary
-        html_sentences = self.web_svc.tokenize_sentence(article["html_text"], sentence_limit=self.SENTENCE_LIMIT)
+        html_sentences = self.token_svc.tokenize_sentence(article["html_text"], sentence_limit=self.SENTENCE_LIMIT)
         if not html_sentences:
             logging.error("Skipping report; could not retrieve sentences from url " + criteria[URL])
             await self.error_report(criteria)
@@ -924,22 +849,26 @@ class RestService:
             "report_sentence_queue_progress", dict(report_uid=report_id, sentence_count=len(html_sentences))
         )
 
-        rebuilt, model_dict = await self.ml_svc.build_pickle_file(self.list_of_techs, self.json_tech)
+        rebuilt, model_dict = await self.ml_svc.build_pickle_file(
+            self.attack_data_svc.list_of_techs, self.attack_data_svc.json_tech
+        )
 
-        ml_analyzed_html = await self.ml_svc.analyze_html(self.list_of_techs, model_dict, html_sentences)
+        ml_analyzed_html = await self.ml_svc.analyze_html(
+            self.attack_data_svc.list_of_techs, model_dict, html_sentences
+        )
         regex_patterns = await self.dao.get("regex_patterns")
         reg_analyzed_html = self.reg_svc.analyze_html(regex_patterns, html_sentences)
 
         # Merge ML and Reg hits
-        analyzed_html = await self.ml_svc.combine_ml_reg(ml_analyzed_html, reg_analyzed_html)
+        analyzed_html = self.combine_ml_and_reg(ml_analyzed_html, reg_analyzed_html)
 
         for s_idx, sentence in enumerate(analyzed_html):
             sentence["text"] = self.dao.truncate_str(sentence["text"], 800)
             sentence["html"] = self.dao.truncate_str(sentence["html"], 900)
             if sentence["ml_techniques_found"]:
-                await self.ml_svc.ml_techniques_found(report_id, sentence, s_idx, tech_start_date=article_date)
+                await self.report_repo.save_ml_techniques(report_id, sentence, s_idx, tech_start_date=article_date)
             elif sentence["reg_techniques_found"]:
-                await self.reg_svc.reg_techniques_found(report_id, sentence, s_idx, tech_start_date=article_date)
+                await self.report_repo.save_reg_techniques(report_id, sentence, s_idx, tech_start_date=article_date)
             else:
                 data = dict(
                     report_uid=report_id,
@@ -976,6 +905,16 @@ class RestService:
         # DB tidy-up including removing report if low quality
         await self.dao.delete("report_sentence_queue_progress", dict(report_uid=report_id))
         await self.remove_report_if_low_quality(report_id)
+
+    @staticmethod
+    def combine_ml_and_reg(ml_analyzed_html, reg_analyzed_html):
+        analyzed_html = []
+        index = 0
+        for sentence in ml_analyzed_html:
+            sentence["reg_techniques_found"] = reg_analyzed_html[index]["reg_techniques_found"]
+            analyzed_html.append(sentence)
+            index += 1
+        return analyzed_html
 
     async def remove_report_if_low_quality(self, report_id):
         """Function that removes report if its quality is low."""

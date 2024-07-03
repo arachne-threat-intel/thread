@@ -16,10 +16,13 @@ from datetime import datetime
 from threadcomponents.database.dao import Dao, DB_POSTGRESQL, DB_SQLITE
 from threadcomponents.handlers.web_api import WebAPI
 from threadcomponents.reports.report_exporter import ReportExporter
+from threadcomponents.service.attack_data_svc import AttackDataService
 from threadcomponents.service.data_svc import DataService
 from threadcomponents.service.ml_svc import MLService
 from threadcomponents.service.reg_svc import RegService
+from threadcomponents.repositories.report_repo import ReportRepository
 from threadcomponents.service.rest_svc import RestService
+from threadcomponents.service.token_svc import TokenService
 from threadcomponents.service.web_svc import WebService
 
 # If calling Thread from outside the project directory, then we need to specify
@@ -184,10 +187,12 @@ def main(directory_prefix="", route_prefix=None, app_setup_func=None, db_connect
         json_file_indent = config.get("json_file_indent", 2)
         json_file_path = os.path.join(dir_prefix, "threadcomponents", "models", json_file) if json_file else None
         attack_dict = None
+
     # Set the attack dictionary filepath if applicable
     if conf_build and taxii_local == OFFLINE_BUILD_SOURCE and json_file_path and os.path.isfile(json_file_path):
         logging.info("Will build model from static file")
         attack_dict = os.path.abspath(json_file_path)
+
     # Check int parameters are ints
     int_error = "%s config set incorrectly: expected a number"
     try:
@@ -212,6 +217,7 @@ def main(directory_prefix="", route_prefix=None, app_setup_func=None, db_connect
         int(json_file_indent)
     except ValueError:
         raise ValueError(int_error % "json_file_indent")
+
     # Determine DB engine to use
     db_obj = None
     if db_conf == DB_SQLITE:
@@ -226,24 +232,37 @@ def main(directory_prefix="", route_prefix=None, app_setup_func=None, db_connect
 
     # Initialise DAO, start services and initiate main function
     dao = Dao(engine=db_obj)
+    report_repo = ReportRepository(dao=dao)
     web_svc = WebService(route_prefix=route_prefix, is_local=is_local)
-    reg_svc = RegService(dao=dao)
+    reg_svc = RegService()
     data_svc = DataService(dao=dao, web_svc=web_svc, dir_prefix=dir_prefix)
-    ml_svc = MLService(web_svc=web_svc, dao=dao, dir_prefix=dir_prefix)
+    token_svc = TokenService()
+    ml_svc = MLService(token_svc=token_svc, dir_prefix=dir_prefix)
     attack_file_settings = dict(filepath=json_file_path, update=update_json_file, indent=json_file_indent)
+    attack_data_svc = AttackDataService(dir_prefix=dir_prefix, attack_file_settings=attack_file_settings)
     rest_svc = RestService(
-        web_svc,
-        reg_svc,
-        data_svc,
-        ml_svc,
-        dao,
-        dir_prefix=dir_prefix,
+        web_svc=web_svc,
+        reg_svc=reg_svc,
+        data_svc=data_svc,
+        token_svc=token_svc,
+        ml_svc=ml_svc,
+        report_repo=report_repo,
+        dao=dao,
         queue_limit=queue_limit,
         sentence_limit=sentence_limit,
         max_tasks=max_tasks,
-        attack_file_settings=attack_file_settings,
+        attack_data_svc=attack_data_svc,
     )
-    services = dict(dao=dao, data_svc=data_svc, ml_svc=ml_svc, reg_svc=reg_svc, web_svc=web_svc, rest_svc=rest_svc)
+    services = dict(
+        dao=dao,
+        data_svc=data_svc,
+        ml_svc=ml_svc,
+        reg_svc=reg_svc,
+        web_svc=web_svc,
+        rest_svc=rest_svc,
+        token_svc=token_svc,
+        attack_data_svc=attack_data_svc,
+    )
     report_exporter = ReportExporter(services=services)
     website_handler = WebAPI(services=services, report_exporter=report_exporter, js_src=js_src)
     start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict, app_setup_func=app_setup_func)

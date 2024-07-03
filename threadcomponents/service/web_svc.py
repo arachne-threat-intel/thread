@@ -4,48 +4,18 @@
 
 import logging
 import newspaper
-import nltk
-import re
 import requests
 
 from aiohttp import web
 from bs4 import BeautifulSoup
 from contextlib import suppress
-from html2text import html2text
 from ipaddress import ip_address
 from lxml import etree, html
 from newspaper.article import ArticleDownloadState
-from nltk.corpus import stopwords
-from nltk.stem import SnowballStemmer
 from urllib.parse import urlparse
 
-# Abbreviated words for sentence-splitting
-ABBREVIATIONS = {"dr", "vs", "mr", "mrs", "ms", "prof", "inc", "fig", "e.g", "i.e", "u.s"}
 # Blocked image types
 BLOCKED_IMG_TYPES = {"gif", "apng", "webp", "avif", "mng", "flif"}
-
-# Regular expressions of hashes for indicators of compromise
-MD5_REGEX = re.compile(r"(?:[^a-fA-F\d]|\b)([a-fA-F\d]{32})(?:[^a-fA-F\d]|\b)")
-SHA1_REGEX = re.compile(r"(?:[^a-fA-F\d]|\b)([a-fA-F\d]{40})(?:[^a-fA-F\d]|\b)")
-SHA256_REGEX = re.compile(r"(?:[^a-fA-F\d]|\b)([a-fA-F\d]{64})(?:[^a-fA-F\d]|\b)")
-SHA512_REGEX = re.compile(r"(?:[^a-fA-F\d]|\b)([a-fA-F\d]{128})(?:[^a-fA-F\d]|\b)")
-IPV4_REGEX = re.compile(
-    r"""
-        (?:^|
-            (?![^\d\.])
-        )
-        (
-            (?:
-                (?:[1-9]?\d|1\d\d|2[0-4]\d|25[0-5])
-                [\[\(\\]*?\.[\]\)]*?
-            ){3}
-            (?:[1-9]?\d|1\d\d|2[0-4]\d|25[0-5])
-        )
-        (?:(?=[^\d\.])|$)
-    """,
-    re.VERBOSE,
-)
-IPV6_REGEX = re.compile(r"\b((?:[a-f0-9]{1,4}:|:){2,7}(?:[a-f0-9]{1,4}|:))\b", re.IGNORECASE | re.VERBOSE)
 
 
 class WebService:
@@ -95,7 +65,6 @@ class WebService:
 
     def __init__(self, route_prefix=None, is_local=True):
         self.is_local = is_local
-        self.tokenizer_sen = None
         self.cached_responses = dict()
         # A dictionary keeping track of the possible report categories
         self.categories_dict = dict()
@@ -135,13 +104,6 @@ class WebService:
         # If the method doesn't receive a valid key, return None
         except KeyError:
             return None
-
-    def initialise_tokenizer(self):
-        self.tokenizer_sen = nltk.data.load("tokenizers/punkt/english.pickle")
-        try:
-            self.tokenizer_sen._params.abbrev_types.update(ABBREVIATIONS)
-        except AttributeError:
-            pass
 
     def clear_cached_responses(self):  # TODO consider how often to call this
         self.cached_responses = dict()
@@ -308,116 +270,6 @@ class WebService:
                 final_html.append(self._build_final_image_dict(element))
                 added_image_ids.add(element["uid"])
         return final_html
-
-    def __rejoin_defanged(self, sentences):
-        """
-        There are times when the [dot] mistakenly splits a defanged IP/domain.
-        If this is the case, rejoin them in one sentence.
-        """
-        corrected_sentences = []
-        previous_sentence = sentences[0]
-
-        # Don't continue if there aren't later sentences to compare to
-        if not sentences[1:]:
-            return sentences
-
-        for idx, sentence in enumerate(sentences[1:]):
-            if previous_sentence.endswith("[.") and sentence.startswith("]"):
-                previous_sentence += sentence
-                if idx == len(sentences) - 2:
-                    corrected_sentences.append(previous_sentence)
-            else:
-                corrected_sentences.append(previous_sentence)
-                previous_sentence = sentence
-
-        return corrected_sentences
-
-    def __split_by_hash(self, sentences):
-        """
-        Split sentences containing a hash.
-        """
-        splitted_by_md5 = []
-        for sentence in sentences:
-            splitted_by_md5 += MD5_REGEX.split(sentence)
-
-        splitted_by_sha1 = []
-        for sentence in splitted_by_md5:
-            splitted_by_sha1 += SHA1_REGEX.split(sentence)
-
-        splitted_by_sha256 = []
-        for sentence in splitted_by_sha1:
-            splitted_by_sha256 += SHA256_REGEX.split(sentence)
-
-        splitted_by_sha512 = []
-        for sentence in splitted_by_sha256:
-            splitted_by_sha512 += SHA512_REGEX.split(sentence)
-
-        return splitted_by_sha512
-
-    def __split_by_url(self, sentences):
-        """
-        Split sentences containing a URL.
-        """
-        return sentences
-
-    def __split_by_ip(self, sentences):
-        """
-        Split sentences containing an IP address.
-        """
-        splitted_by_ipv4 = []
-        for sentence in sentences:
-            splitted_by_ipv4 += IPV4_REGEX.split(sentence)
-
-        splitted_by_ipv6 = []
-        for sentence in splitted_by_ipv4:
-            splitted_by_ipv6 += IPV6_REGEX.split(sentence)
-
-        return splitted_by_ipv6
-
-    def __correct_sentences(self, sentences):
-        """
-        Correct sentence splitting.
-        """
-        rejoined_sentences = self.__rejoin_defanged(sentences)
-        sentences_split_by_hash = self.__split_by_hash(rejoined_sentences)
-        sentences_split_by_url = self.__split_by_url(sentences_split_by_hash)
-        sentences_split_by_ip = self.__split_by_ip(sentences_split_by_url)
-
-        return sentences_split_by_ip
-
-    def tokenize_sentence(self, data, sentence_limit=None):
-        """
-        :criteria: expects a dictionary of this structure:
-        """
-        html_sentences = self.tokenizer_sen.tokenize(data)
-        corrected_html_sentences = self.__correct_sentences(html_sentences)
-
-        sentences = []
-        for current in corrected_html_sentences:
-            if sentence_limit and (len(sentences) >= sentence_limit):
-                break
-            # Further split by break tags as this might misplace highlighting in the front end
-            no_breaks = [x for x in current.split("<br>") if x]
-            for fragment in no_breaks:
-                sentence_data = dict()
-                sentence_data["html"] = fragment
-                sentence_data["text"] = html2text(fragment)
-                sentence_data["ml_techniques_found"] = []
-                sentence_data["reg_techniques_found"] = []
-                sentences.append(sentence_data)
-        return sentences
-
-    @staticmethod
-    async def tokenize(s):
-        """Function to remove stopwords from a sentence and return a list of words to match"""
-        word_list = re.findall(r"\w+", s.lower())
-        filtered_words = [word for word in word_list if word not in stopwords.words("english")]
-        """Perform NLP Lemmatization and Stemming methods"""
-        lemmed = []
-        stemmer = SnowballStemmer("english")
-        for i in filtered_words:
-            lemmed.append(stemmer.stem(str(i)))
-        return " ".join(lemmed)
 
     @staticmethod
     async def remove_html_markup_and_found(s):
