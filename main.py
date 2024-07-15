@@ -160,6 +160,31 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
         pass
 
 
+def retrain_deps(directory_prefix=""):
+    # Read from config
+    with open(os.path.join(directory_prefix, "threadcomponents", "conf", "config.yml")) as c:
+        config = yaml.safe_load(c)
+        json_file = config.get("json_file", None)
+        update_json_file = config.get("update_json_file", False)
+        json_file_indent = config.get("json_file_indent", 2)
+        json_file_path = os.path.join(directory_prefix, "threadcomponents", "models", json_file) if json_file else None
+
+    # Check int parameters are ints
+    int_error = "%s config set incorrectly: expected a number"
+    try:
+        int(json_file_indent)
+    except ValueError:
+        raise ValueError(int_error % "json_file_indent")
+
+    # Initialise DAO, start services and initiate main function
+    token_svc = TokenService()
+    ml_svc = MLService(token_svc=token_svc, dir_prefix=directory_prefix)
+    attack_file_settings = dict(filepath=json_file_path, update=update_json_file, indent=json_file_indent)
+    attack_data_svc = AttackDataService(dir_prefix=directory_prefix, attack_file_settings=attack_file_settings)
+
+    return ml_svc, attack_data_svc
+
+
 def main(directory_prefix="", route_prefix=None, app_setup_func=None, db_connection_func=None):
     global data_svc, dir_prefix, ml_svc, rest_svc, web_svc, website_handler
 
