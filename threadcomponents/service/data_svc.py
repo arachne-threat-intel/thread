@@ -549,7 +549,8 @@ class DataService:
             + ".uid = report_sentence_hits.attack_uid) "
             # Finish with the WHERE clause stating which sentence we are searching for and that the attack is confirmed
             "WHERE report_sentence_hits.sentence_id = %s" % self.dao.db_qparam + " "
-            "AND report_sentence_hits.confirmed = %s" % self.dao.db_true_val
+            "AND report_sentence_hits.confirmed = %s" % self.dao.db_true_val + " "
+            "ORDER BY report_sentence_hits.attack_tid"
         )
         # Run the above query and return its results
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
@@ -640,9 +641,12 @@ class DataService:
             self.SQL_WITH_PAR_ATTACK_INC_INACTIVE +
             # The relevant fields we want from report_sentence_hits
             "SELECT report_sentence_hits.sentence_id, report_sentence_hits.attack_uid, "
-            "report_sentence_hits.attack_tid, report_sentence_hits.attack_technique_name, "
+            "report_sentence_hits.attack_tid, report_sentence_hits.attack_technique_name, " +
             # We want to add any sub-technique's parent-technique name
-             + FULL_ATTACK_INFO + ".parent_name AS attack_parent_name, " + FULL_ATTACK_INFO + ".inactive "
+            FULL_ATTACK_INFO
+            + ".parent_name AS attack_parent_name, "
+            + FULL_ATTACK_INFO
+            + ".inactive "
             # As we are querying two tables, state the FROM clause is an INNER JOIN on the two
             "FROM ("
             + FULL_ATTACK_INFO
@@ -651,7 +655,8 @@ class DataService:
             + ".uid = report_sentence_hits.attack_uid) "
             # Finish with the WHERE clause stating which sentence we are searching for and that the hit is active
             "WHERE report_sentence_hits.sentence_id = %s" % self.dao.db_qparam + " "
-            "AND report_sentence_hits.active_hit = %s" % self.dao.db_true_val
+            "AND report_sentence_hits.active_hit = %s" % self.dao.db_true_val + " "
+            "ORDER BY report_sentence_hits.attack_tid"
         )
         # Run the above query and return its results
         return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
