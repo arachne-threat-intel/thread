@@ -8,4 +8,4 @@ The [CONTRIBUTING](https://github.com/arachne-threat-intel/community/blob/main/C
 
 The [Arachne Digital Website](https://arachne.digital/thread) has further information about the usage of Thread.
 
-After reviewing these resources, are you still looking for support? Please email contact[at]arachne[dot]digital to get added to the Arachne Digital Slack, where you can communicate directly with the Thread community.
+After reviewing these resources, are you still looking for support? Please email contact[at]arachne[dot]digital to get added to the Arachne Digital Slack, where you can communicate directly with the Arachne Digital community.
