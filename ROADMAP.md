@@ -1,69 +1,36 @@
 # Thread Roadmap
 
-## Project Mission & Summary:
-Thread is an open-source initiative dedicated to enhancing cyber threat intelligence (CTI) mapping by automating the process of linking cybersecurity reports and articles to MITRE ATT&CK®. Our mission is to empower security professionals, organisations, and analysts by providing efficient, empowering, and community driven CTI capabilities.
+## Project Mission and Summary
+Thread is an open-source, community-driven tool that automates the mapping of cybersecurity reports to the MITRE ATT&CK® framework and other threat analysis frameworks. Developed by Arachne Digital, Thread empowers security professionals and organisations to quickly and accurately map TTPs from free text, enhancing threat detection and analysis. With continuous updates and a focus on efficiency and accuracy, Thread aims to become the leading platform for CTI mapping, contributing to a safer digital world.
 
-## Milestones:
+## Milestones
 
-### Milestone 1: Enhanced Indicators of Compromise (IoCs) capture 
-1. Conduct customer feedback analysis to identify IoC capture improvement areas.
+### Milestone 1: Enhancing Core Capabilities
+Performance Optimisation: Focus on improving the efficiency of TTP processing by implementing hierarchical search based on the ATT&CK structure and a prescan sampling method. These optimisations will enhance the speed and accuracy of mapping processes.
+Machine Learning Model Improvements: Update the machine learning models with Arachne Digital’s flagged data and evaluate their performance using different negative handling methods. Implement feedback loops to enhance model accuracy based on user interactions from Arachne Digital’s hosted Thread instances.
+Advanced TTP Breakdown: Implement the capability to break down TTPs in reports by operating systems (Windows, MAC, Linux), providing more granular insights for analysts.
+Scalability Improvements: Optimise Thread’s infrastructure to handle increased traffic and usage, particularly as community engagement and the number of processed reports grow.
+Community Engagement: Launch initiatives to attract new contributors and maintain community engagement, including webinars, tutorials, and community challenges focused on specific development tasks.
 
-   - Objective: To align our IoC capture capabilities with the specific needs of our user community.
-   - Notes: As part of the feedback we received, there were IoCs being captured that needed further parsing, and there was also private, multicast and link-local addresses being captured as they are included in the reports Thread is consuming. This highlights the need for transparency in CTI, but also means that Thread needs to improve capabilities to improve the quality of IoCs.
+### Milestone 2: User Experience and Documentation
+Automation of Maintenance Tasks: Develop and deploy automated systems for monthly updates of MITRE ATT&CK data, ensuring that Thread remains current without manual intervention.
+User Experience Enhancements: Streamline the setup and development environment for new contributors, making it easier to get started with Thread development. Improve the user interface to simplify the report analysis and export process.
+Review and Assess Existing Documentation: Ensure that Thread users have access to accurate and up-to-date resources. Conduct a thorough review of the current documentation to identify gaps, outdated information, and areas that require clarification or expansion.
+Revise and Expand Documentation: Provide comprehensive guidance on Thread's enhanced capabilities. Update existing documentation to reflect recent functionality changes, ensuring all new features are well-documented and easy to understand for users.
+Create New Tutorials and Guides: Empower users to leverage Thread effectively for their threat intelligence needs. Based on the documentation review, develop new tutorials and guides, if necessary, to help users maximise the potential of Thread and navigate its features with ease.
 
-2. Develop and implement IoC capture improvements based on feedback.
+### Milestone 3: Additional Frameworks 
+Integration with New Frameworks: Begin implementing support for additional frameworks past MITRE ATT&CK Enterprise, including MITRE ATT&CK ICS, MITRE ATT&CK Mobile, MITRE ATLAS, and DISARM Red Framework. The order listed here is the planned order of implementation. This will expand Thread’s utility and make it more versatile for various cybersecurity and disinformation analysis use cases.
 
-   - Objective: Enhance Thread's ability to capture and catalogue IoCs from analysed reports.
-   - Notes: This is currently being worked on.
-  
-3. Run a comprehensive testing and validation phase for the IoC capture enhancements.
+### Milestone 4: Integrations and Stakeholders
+Support for MISP and Sigma Rules: Add support for exporting mapped TTPs to MISP and Sigma rules, enhancing Thread’s utility in threat intelligence sharing and SIEM rule creation.
+Stakeholder Collaboration: Engage with DISARM Foundation and initiate collaboration with MITRE to align Thread’s development with broader industry standards and needs. Gather input from these stakeholders to prioritise upcoming features.
 
-   - Objective: Ensure the reliability and accuracy of the IoC capture feature.
-   - Notes: We have performed user acceptance testing of some functionality changes and will continue to do so as the IoC work is refined.
+### Milestone 5: UX Design Optimisation
+Conduct a UX Audit: Identify pain points and areas for improvement in the current Thread user experience. Review user feedback, analyse usage data, and assess the interface's overall flow to pinpoint areas that may hinder user efficiency or satisfaction.
+Collaborate with UI/UX Designers: Revamp the Thread interface for enhanced usability. Work closely with UI/UX designers to redesign the interface, focusing on simplifying navigation, improving accessibility, and optimising user interactions.
+Implement User Testing: Validate the effectiveness of the UX improvements through user feedback. Conduct user testing sessions with a diverse group of Thread users to gather insights on the redesigned interface, ensuring that changes align with user expectations and needs.
 
-### Milestone 2: UX design optimisation
-1. Conduct a thorough UX audit of the current Thread interface.
-
-   - Objective: Identify pain points and areas of improvement in the user experience.
-
-2. Collaborate with UI/UX designers to revamp the Thread interface for improved usability.
-
-   - Objective: Streamline the user interface to simplify navigation and user interactions.
-
-3. Implement user testing to gather feedback on the redesigned UX.
-
-   - Objective: Validate the effectiveness of the UX improvements based on user feedback.
-
-4. Continuously iterate on the design based on user input and further testing.
-
-   - Objective: Ensure that the Thread interface aligns with user preferences and needs.
-
-### Milestone 3: Documentation update 
-1. Review and assess existing documentation to identify gaps and outdated information.
-
-   - Objective: Ensure that Thread users have access to accurate and up-to-date resources.
-
-2. Revise and expand documentation to encompass recent functionality changes.
-
-   - Objective: Provide comprehensive guidance on Thread's enhanced capabilities.
-
-3. Create new tutorials and guides to assist users in maximising Thread's potential.
-
-   - Objective: Empower users to leverage Thread effectively for their threat intelligence needs.
-   - Notes: This might be covered in the second task. Once the documentation review is completed it can be determined if further guides and tutorials are needed.
-
-### Milestone 4: Performance optimisation
-1. Investigate and diagnose performance bottlenecks causing Thread to hang during concurrent operations.
-
-   - Objective: Enhance Thread's overall stability and responsiveness.
-
-2. Implement optimisations to address identified performance issues.
-
-   - Objective: Ensure that Thread operates smoothly, even when handling multiple tasks concurrently.
-
-3. Continuous monitoring and fine-tuning to maintain optimal performance.
-
-   - Objective: Sustain Thread's responsiveness and reliability as usage scales.
-
-### Get Involved
-Anyone is welcome to join the Thread project. If you're passionate about improving CTI mapping, enhancing user experience, or strengthening cybersecurity defences, please refer to our [Contributor Guidelines](CONTRIBUTING.md) to get started.
+### Milestone 6: Global Impact and Continuous Innovation
+Global Outreach: Expand Thread’s reach by promoting its capabilities at cybersecurity conferences, publishing case studies, and engaging with global CTI communities. Work towards making Thread the standard tool for CTI mapping worldwide.
+Establishing Industry Leadership: Position Thread as the leading tool for mapping free text to various security and disinformation frameworks. Continue to build partnerships with key industry players and integrate Thread into broader CTI workflows.
