@@ -3,54 +3,88 @@
 ## Project Mission and Summary
 Thread is an open-source, community-driven tool that automates the mapping of cybersecurity reports to the MITRE ATT&CK® framework and other threat analysis frameworks. Developed by Arachne Digital, Thread empowers security professionals and organisations to quickly and accurately map TTPs from free text, enhancing threat detection and analysis. With continuous updates and a focus on efficiency and accuracy, Thread aims to become the leading platform for CTI mapping, contributing to a safer digital world.
 
-## Milestones
+## Milestones and Rationale
 
-### Milestone 1: Enhancing Core Capabilities
-* Performance Optimisation: Focus on improving the efficiency of TTP processing by implementing hierarchical search based on the ATT&CK structure and a prescan sampling method. These optimisations will enhance the speed and accuracy of mapping processes.
-* Machine Learning Model Improvements: Update the machine learning models with Arachne Digital’s flagged data and evaluate their performance using different negative handling methods. Implement feedback loops to enhance model accuracy based on user interactions from Arachne Digital’s hosted Thread instances.
-* Advanced TTP Breakdown: Implement the capability to break down TTPs in reports by operating systems (Windows, MAC, Linux), providing more granular insights for analysts.
-Scalability Improvements: Optimise Thread’s infrastructure to handle increased traffic and usage, particularly as community engagement and the number of processed reports grow.
-* Community Engagement: Launch initiatives to attract new contributors and maintain community engagement, including webinars, tutorials, and community challenges focused on specific development tasks.
+### Milestone 1: Enhanced Indicators of Compromise (IoCs) Capture
+- **Tasks**:
+  - Conduct customer feedback analysis to identify areas for IoC capture improvement. DONE
+  - Develop and implement IoC capture enhancements based on user feedback. DONE
+  - Run comprehensive testing and validation of IoC capture improvements. DONE
+  - Add IoCs to Thread generated reports.
 
-### Milestone 2: Security Testing and Remediation
-* Conduct Penetration Testing: Identify security vulnerabilities in the application through comprehensive penetration testing. Collaborate with the assigned penetration tester to perform a detailed security assessment, covering all aspects of the application infrastructure, codebase, and integrations.
-* Review and Prioritise Findings: Understand and categorize the security risks identified during the penetration testing. Analyse the findings provided by the penetration tester, categorise them based on severity, and prioritise them for remediation based on potential impact and ease of exploitation.
-* Implement Remediation Measures: Address all identified security vulnerabilities to ensure the safety and integrity of the application. Develop and deploy fixes for the identified vulnerabilities, ensuring that each issue is resolved in line with best security practices. 
-* Update Security Documentation: Maintain accurate records of the security posture and mitigation steps taken for Thread. Document all findings, remediation steps, and testing results, and update the security policy and procedures to reflect any new security practices or lessons learned from the testing process.
+- **Rationale**: Enhancing IoC capture aligns Thread's capabilities with user needs, improving the quality and accuracy of IoCs. This milestone ensures that the platform remains responsive to user feedback and sets the stage for more advanced functionalities.
 
-### Milestone 3: Transition to Memory Safe Programming
-* Comprehensive Codebase Audit: Identify and document all instances of memory-unsafe code. Conduct a thorough audit of the codebase, cataloguing memory-unsafe code and third-party dependencies, particularly those written in languages like C and C++.
-* Software Architecture Analysis and Component Prioritisation: Map the architecture of Thread and Tracery to identify and prioritise critical components for migration to memory safe languages. Understand the overall architecture, focusing on security-critical and performance-critical areas, and prioritise components that handle sensitive data or are frequently targeted by attacks.
-* Review and Enhance Current Mitigation Strategies: Assess and improve current security practices related to memory safety. Evaluate existing SAST/DAST tools, code reviews, and secure coding guidelines, with a focus on identifying and enhancing measures specifically targeting memory safety.
-Development Workflow and Tool Assessment: Ensure that memory safe practices are effectively integrated into the development workflow. Analyse the current CI/CD processes, testing frameworks, and deployment practices to ensure compatibility with memory safe languages and identify necessary adjustments.
-* Team Training and Skill Development: Equip the development team with the necessary skills in memory safe programming languages. Assess current team expertise and develop targeted training programs to upskill developers in languages like Rust, Go, and Swift.
-* Align with Long-term Business Goals: Ensure the memory safe roadmap aligns with Arachne Digital’s long-term objectives and resource constraints. Integrate the roadmap with business objectives, taking into account budget, time, and personnel constraints, to create a realistic and achievable plan.
-* Implementation and Monitoring: Execute the transition to memory safe programming and monitor progress. Begin migrating prioritised components to memory safe languages, continuously monitor progress, and adjust the plan as necessary to ensure successful implementation.
+### Milestone 2: Enhancing Core Capabilities
+- **Tasks**:
+  - Optimise performance by implementing hierarchical search and prescan sampling methods.
+  - Improve machine learning models using flagged data and feedback loops.
+  - Implement TTP breakdown by operating systems for more granular insights.
+  - Optimise infrastructure to handle increased traffic and usage.
+  - Launch community engagement initiatives to attract new contributors.
 
-### Milestone 4: User Experience and Documentation
-* Automation of Maintenance Tasks: Develop and deploy automated systems for monthly updates of MITRE ATT&CK data, ensuring that Thread remains current without manual intervention.
-* User Experience Enhancements: Streamline the setup and development environment for new contributors, making it easier to get started with Thread development. Improve the user interface to simplify the report analysis and export process.
-* Review and Assess Existing Documentation: Ensure that Thread users have access to accurate and up-to-date resources. Conduct a thorough review of the current documentation to identify gaps, outdated information, and areas that require clarification or expansion.
-* Revise and Expand Documentation: Provide comprehensive guidance on Thread's enhanced capabilities. Update existing documentation to reflect recent functionality changes, ensuring all new features are well-documented and easy to understand for users.
-* Create New Tutorials and Guides: Empower users to leverage Thread effectively for their threat intelligence needs. Based on the documentation review, develop new tutorials and guides, if necessary, to help users maximise the potential of Thread and navigate its features with ease.
+- **Rationale**: Enhancing core capabilities strengthens Thread’s foundational features, improving both performance and accuracy. This milestone builds on the improved IoC capture from Milestone 1 and prepares the platform for increased user engagement and data processing.
 
-### Milestone 5: Additional Frameworks 
-* Integration with New Frameworks: Begin implementing support for additional frameworks past MITRE ATT&CK Enterprise, including MITRE ATT&CK ICS, MITRE ATT&CK Mobile, MITRE ATLAS, and DISARM Red Framework. The order listed here is the planned order of implementation. This will expand Thread’s utility and make it more versatile for various cybersecurity and disinformation analysis use cases.
+### Milestone 3: Security Testing and Remediation
+- **Tasks**:
+  - Conduct penetration testing to identify security vulnerabilities.
+  - Review and prioritise findings for remediation based on severity and impact.
+  - Implement remediation measures and update security documentation.
 
-### Milestone 6: Integrations and Stakeholders
-* Support for MISP and Sigma Rules: Add support for exporting mapped TTPs to MISP and Sigma rules, enhancing Thread’s utility in threat intelligence sharing and SIEM rule creation.
-* Stakeholder Collaboration: Engage with DISARM Foundation and initiate collaboration with MITRE to align Thread’s development with broader industry standards and needs. Gather input from these stakeholders to prioritise upcoming features.
+- **Rationale**: Security is paramount to maintaining trust and protecting user data. This milestone ensures that Thread’s infrastructure is secure, addressing any vulnerabilities before they can be exploited. Note that security testing will become an annual event as Arachne Digital grows.
 
-### Milestone 7: UX Design Optimisation
-* Conduct a UX Audit: Identify pain points and areas for improvement in the current Thread user experience. Review user feedback, analyse usage data, and assess the interface's overall flow to pinpoint areas that may hinder user efficiency or satisfaction.
-* Collaborate with UI/UX Designers: Revamp the Thread interface for enhanced usability. Work closely with UI/UX designers to redesign the interface, focusing on simplifying navigation, improving accessibility, and optimising user interactions.
-* Implement User Testing: Validate the effectiveness of the UX improvements through user feedback. Conduct user testing sessions with a diverse group of Thread users to gather insights on the redesigned interface, ensuring that changes align with user expectations and needs.
+### Milestone 4: Transition to Memory Safe Programming
+- **Tasks**:
+  - Audit the codebase for memory-unsafe code.
+  - Prioritise critical components for migration to memory-safe languages.
+  - Enhance current security practices and integrate memory-safe development into the workflow.
+  - Train the development team in memory-safe programming languages.
+  - Align the transition with Arachne Digital’s long-term business goals.
+  - Implement and monitor the migration process.
 
-### Milestone 8: Scaling and Sustainability
-* Scaling Infrastructure: Optimise the infrastructure to handle increased traffic and usage, ensuring that the public instance of Thread remains performant and reliable as its user base grows.
-* Long-term Sustainability Planning: Develop a sustainability plan for Thread, including potential funding sources, partnerships, and governance structures to ensure its continued development and maintenance.
-* Global Outreach and Localisation: Begin efforts to localise Thread, translating the interface and documentation into multiple languages to support a global user base. Engage with international privacy and open-source communities to broaden Thread’s reach.
+- **Rationale**: Transitioning to memory-safe programming reduces vulnerabilities related to unsafe memory management, ensuring long-term resilience. This milestone builds on the security improvements from Milestone 3, providing a more robust and secure platform.
 
-### Milestone 9: Global Impact and Continuous Innovation
-* Global Outreach: Expand Thread’s reach by promoting its capabilities at cybersecurity conferences, publishing case studies, and engaging with global CTI communities. Work towards making Thread the standard tool for CTI mapping worldwide.
-* Establishing Industry Leadership: Position Thread as the leading tool for mapping free text to various security and disinformation frameworks. Continue to build partnerships with key industry players and integrate Thread into broader CTI workflows.
+### Milestone 5: User Experience and Documentation
+- **Tasks**:
+  - Automate maintenance tasks, such as updating MITRE ATT&CK data.
+  - Enhance the user experience by streamlining setup and improving the interface.
+  - Review and update documentation to reflect new features and capabilities.
+  - Create new tutorials and guides to help users maximise Thread’s potential.
+
+- **Rationale**: Improving user experience and documentation makes Thread more accessible and user-friendly. This milestone ensures that the platform’s advanced capabilities are supported by clear, comprehensive resources, building on the technical enhancements from earlier milestones.
+
+### Milestone 6: Additional Frameworks
+- **Tasks**:
+  - Implement support for additional frameworks beyond MITRE ATT&CK Enterprise, including MITRE ATT&CK ICS, MITRE ATT&CK Mobile, MITRE ATLAS, and DISARM Red Framework.
+
+- **Rationale**: Expanding Thread’s framework support increases its versatility, making it applicable to a wider range of cybersecurity and disinformation analysis use cases. This milestone builds on Thread’s core functionality, extending its reach and utility.
+
+### Milestone 7: Integrations and Stakeholders
+- **Tasks**:
+  - Add support for exporting mapped TTPs to MISP and Sigma rules.
+  - Engage with DISARM Foundation and MITRE to align development with industry standards and needs.
+
+- **Rationale**: Integrating with key industry tools and engaging with stakeholders enhances Thread’s relevance and utility in the broader CTI landscape. This milestone builds on the expanded framework support from Milestone 6, further integrating Thread into existing workflows.
+
+### Milestone 8: UX Design Optimisation
+- **Tasks**:
+  - Conduct a UX audit to identify areas for improvement.
+  - Collaborate with UI/UX designers to revamp the Thread interface.
+  - Implement user testing to validate the effectiveness of UX improvements.
+
+- **Rationale**: Optimising the UX design ensures that Thread is not only powerful but also intuitive and user-friendly. This milestone builds on the enhancements in earlier milestones, refining the user experience to meet the needs of a diverse user base.
+
+### Milestone 9: Scaling and Sustainability
+- **Tasks**:
+  - Optimise infrastructure to handle increased traffic and usage.
+  - Develop a sustainability plan including funding sources and partnerships.
+  - Begin localisation efforts to translate Thread into multiple languages.
+
+- **Rationale**: Scaling infrastructure and planning for sustainability are crucial as Thread grows. This milestone ensures that the platform can support a larger user base and maintain long-term relevance and reliability.
+
+### Milestone 10: Global Impact and Continuous Innovation
+- **Tasks**:
+  - Expand global outreach by promoting Thread at cybersecurity conferences and publishing case studies.
+  - Position Thread as the leading tool for mapping free text to various security and disinformation frameworks.
+  - Continue building partnerships and integrating Thread into broader CTI workflows.
+
+- **Rationale**: Achieving global impact is the culmination of Thread’s development. This milestone ensures that Thread’s contributions to cybersecurity are widely recognised and utilised, establishing it as a standard tool in the CTI community.
