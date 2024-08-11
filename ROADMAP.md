@@ -26,11 +26,11 @@ Thread is an open-source, community-driven tool that automates the mapping of cy
 
 ### Milestone 3: Security Testing and Remediation
 - **Tasks**:
-  - Conduct penetration testing to identify security vulnerabilities.
+  - Conduct penetration testing to identify security issues.
   - Review and prioritise findings for remediation based on severity and impact.
   - Implement remediation measures and update security documentation.
 
-- **Rationale**: Security is paramount to maintaining trust and protecting user data. This milestone ensures that Thread’s infrastructure is secure, addressing any vulnerabilities before they can be exploited. Note that security testing will become an annual event as Arachne Digital grows.
+- **Rationale**: Security is paramount to maintaining trust and protecting user data. This milestone ensures that Thread’s infrastructure is secure, addressing any security issues early. Note that security testing will become an annual event as Arachne Digital grows.
 
 ### Milestone 4: Transition to Memory Safe Programming
 - **Tasks**:
