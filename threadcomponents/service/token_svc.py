@@ -5,6 +5,7 @@ import re
 from html2text import html2text
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
+from nltk.tokenize import PunktTokenizer
 
 # Abbreviated words for sentence-splitting
 ABBREVIATIONS = {"dr", "vs", "mr", "mrs", "ms", "prof", "inc", "fig", "e.g", "i.e", "u.s"}
@@ -154,7 +155,7 @@ class TokenService:
     async def init(self):
         await self.check_packs()
 
-        self.tokenizer_sen = nltk.data.load("tokenizers/punkt/english.pickle")
+        self.tokenizer_sen = PunktTokenizer()
         try:
             self.tokenizer_sen._params.abbrev_types.update(ABBREVIATIONS)
         except AttributeError:
@@ -162,11 +163,12 @@ class TokenService:
 
     async def check_packs(self):
         try:
-            nltk.data.find("tokenizers/punkt")
-            logging.info("[*] Found punkt")
+            nltk.data.find("tokenizers/punkt_tab/english/")
+            logging.info("[*] Found punkt_tab")
         except LookupError:
-            logging.warning("Could not find the punkt pack, downloading now")
-            nltk.download("punkt")
+            logging.warning("Could not find the punkt_tab pack, downloading now")
+            nltk.download("punkt_tab")
+
         try:
             nltk.data.find("corpora/stopwords")
             logging.info("[*] Found stopwords")
