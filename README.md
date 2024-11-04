@@ -43,7 +43,7 @@ Empowerment in Your Hands: Thread is all about putting the power of threat intel
 Community Collaboration: Thread is being built into an open-source community committed to advancing the field of CTI. By choosing Thread, you become part of a network of cybersecurity experts who share your passion for creating a safer digital world. Together, we forge a path towards a future where CTI is agile, collaborative, and precise.
 
 ## Website
-If you want to use Thread right now, feel free to use the web version at https://arachne.digital/thread.
+If you want to use Thread right now, feel free to use the web version at https://app.arachne.digital/thread.
 
 ## Requirements
 - [Python 3](https://www.python.org/) (3.8+)
@@ -104,7 +104,7 @@ When the URL has been processed and its report is ready, a new card will appear 
 You will also have the option to delete reports that 1. are not in the queue or 2. those in the queue that have an error.
 
 ## Shared vs. local
-You can use Thread via https://arachne.digital/thread.
+You can use Thread via https://app.arachne.digital/thread.
 
 If you use Thread via our Arachne website, your reports will be visible to others and accessible by the Arachne team. To reduce its visibility, you can flag reports as private on report-submission (please note, these reports will still be accessible by the Arachne team); you will need to sign up for an account on the Arachne website and remain logged-in during report-submission.
 
