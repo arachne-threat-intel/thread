@@ -50,24 +50,45 @@ If you want to use Thread right now, feel free to use the web version at https:/
   - In line with Python 3.8 EOL being scheduled in October 2024, we will remove support for Python 3.8 soon.
 
 ## Installation
-Please note: if your environment has multiple Python interpreters (e.g. `python` is for Python 2.x and `python3` is for Python 3.x, please adjust some of the commands below accordingly. For example, `pip` may be `python3 -m pip install ...` and `python main.py` may be `python3 main.py`).
+We recommend using a virtual environment for installing Python package dependencies.
 
-Start by cloning this repository.
+Please note: if your environment has multiple Python interpreters (e.g. `python` is for Python 2.x/3.x and `python3` is for Python 3.y, please adjust some of the commands below accordingly. For example, `pip` may be `python3 -m pip install ...` and `python main.py` may be `python3 main.py`).
+
+- Start by cloning this repository.
 ```
 git clone https://github.com/arachne-threat-intel/thread.git
 ```
-From the root of this project, install the PIP requirements.**
+
+-  Install our submodule dependencies. Steps are listed [here](documentation/submodules.md).
+
+
+- Before installing the required Python packages, consider which database you would like to use.
+  - For a simpler setup, you can skip this step for now.
+  - To read about our database options, see our documentation [here](documentation/database.md).
+
+
+- From the root of this project, install the Python package requirements.**
+
 ```
 pip install -r requirements.txt
 ```
-Then start the server.
+
+- Revisit the database docs (stated earlier) to set up the database before running Thread for the first time.
+
+
+- Then start the application.
+  - When you launch this for the first time, this will take some time to sync with MITRE ATT&CK data.
+
 ```
 python main.py
 ```
+
 Once the server has started, point your browser to localhost:9999, and you can then enter a URL on the home page.
 It currently takes several minutes to analyse a report, so please do not leave the page while it processes.
 
-Configuration defaults can be changed [here](https://github.com/arachne-threat-intel/thread/wiki/Thread-Configuration)
+Configuration defaults can be changed [here](threadcomponents/conf/config.yml).
+
+---
 
 You are also welcome to check our test-suite via:
 ```
