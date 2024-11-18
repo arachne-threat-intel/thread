@@ -144,7 +144,8 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
     :param app_setup_func: Optional, a function that applies extra config to the app
     :return: nil
     """
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     loop.create_task(background_tasks(taxii_local=taxii_local, build=build, json_file=json_file))
     loop.run_until_complete(init(host, port, app_setup_func=app_setup_func))
     if taxii_local == ONLINE_BUILD_SOURCE:
@@ -158,6 +159,8 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
         loop.run_forever()
     except KeyboardInterrupt:
         pass
+    finally:
+        loop.close()
 
 
 def retrain_deps(directory_prefix=""):
