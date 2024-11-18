@@ -63,7 +63,7 @@ git clone https://github.com/arachne-threat-intel/thread.git
 
 
 - Before installing the required Python packages, consider which database you would like to use.
-  - For a simpler setup, you can skip this step for now.
+  - For a simpler setup, you can skip this step.
   - To read about our database options, see our documentation [here](documentation/database.md).
 
 
@@ -73,7 +73,7 @@ git clone https://github.com/arachne-threat-intel/thread.git
 pip install -r requirements.txt
 ```
 
-- Revisit the database docs (stated earlier) to set up the database before running Thread for the first time.
+- If not using SQLite (default database options): Revisit the database docs (stated earlier) to set up the database before running Thread for the first time.
 
 
 - Then start the application.
