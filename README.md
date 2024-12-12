@@ -46,8 +46,9 @@ Community Collaboration: Thread is being built into an open-source community com
 If you want to use Thread right now, feel free to use the web version at https://app.arachne.digital/thread.
 
 ## Requirements
-- [Python 3](https://www.python.org/) (3.8+)
+- [Python 3](https://www.python.org/) (3.9+)
   - In line with Python 3.8 EOL being scheduled in October 2024, we will remove support for Python 3.8 soon.
+    - Effective December 2024.
 
 ## Installation
 We recommend using a virtual environment for installing Python package dependencies.
