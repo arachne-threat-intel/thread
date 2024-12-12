@@ -105,8 +105,9 @@ class WebService:
         except KeyError:
             return None
 
-    def clear_cached_responses(self):  # TODO consider how often to call this
-        self.cached_responses = dict()
+    def check_and_clear_cached_responses(self):
+        if len(self.cached_responses) > 100:
+            self.cached_responses = dict()
 
     async def action_allowed(self, request, action, context=None):
         """Function to check an action is permitted given a request."""
@@ -300,41 +301,28 @@ class WebService:
     def get_response_from_url(self, url, log_errors=True, allow_error=True):
         """Function to return a request Response object from a given URL."""
         # Retrieve a cached response for this URL
+        self.check_and_clear_cached_responses()
         cached = self.cached_responses.get(url)
         if cached is not None:
             return cached
-        # Specify if we retry retrieving a response on failure
-        retry_on_fail = True
-        # Flag if we can close the connection once we are finished
-        close_conn = True
+
         try:
-            r = requests.get(url)
-        except requests.exceptions.ConnectionError as conn_error:
-            # Log error if requested
+            with requests.get(url) as response:
+                response_clone = requests.Response()
+                response_clone.status_code = response.status_code
+                response_clone.headers = response.headers
+                response_clone._content = response.content
+                response_clone.encoding = response.encoding
+                response_clone.url = response.url
+
+                self.cached_responses[url] = response_clone
+                return response_clone
+        except requests.exceptions.ConnectionError as e:
             if log_errors:
-                logging.error("URL connection failure: " + str(conn_error))
-            # Raise the error if requested
+                logging.error(f"URL retrieval failure: {e}")
+
             if not allow_error:
-                raise conn_error
-            # If the URL could not be retrieved due to a raised Error, build a new Response object and skip retrying
-            r = requests.models.Response()
-            r.status_code = 418
-            retry_on_fail = False
-            close_conn = False
-        if retry_on_fail and not r.ok:
-            # If the request response is not good, close the current connection and replace with a prepared request
-            r.close()
-            sess = requests.Session()
-            r = requests.Request("GET", url)
-            prep = r.prepare()
-            r = sess.send(prep)
-        if not r.ok and log_errors:
-            logging.error("URL retrieval failed with code " + str(r.status_code))
-        if close_conn:
-            r.close()
-        # Cache the response object for this URL
-        self.cached_responses[url] = r
-        return r
+                raise e
 
     def urls_match(self, testing_url="", matches_with=""):
         """Function to check if two URLs are the same."""
