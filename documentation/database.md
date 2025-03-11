@@ -20,7 +20,7 @@ This is the default database engine which Thread uses.
 
 PostgreSQL is available in all Ubuntu versions by default. For other environments, you may refer to the [PostgreSQL website](https://www.postgresql.org/download/) to download it.
 
-A required Python package is `psycopg2`. [Pre-requisites](https://www.psycopg.org/docs/install.html#prerequisites) must be fulfilled. (This package is currently commented-out of the [requirements file](../requirements.txt), you may uncomment it to be included in your requirements-installation step.)
+A required Python package is `psycopg`. Please refer to [this link](https://www.psycopg.org/psycopg3/docs/basic/install.html#pure-python-installation) for installation guidance. (This package is currently commented-out of the [requirements file](../requirements.txt), you may uncomment it to be included in your requirements-installation step.)
 
 ### 2. Create User
 

@@ -38,39 +38,45 @@ class DataService:
         self.country_dict = {}
         self.country_region_dict = {}
         self.region_countries_dict = {}
+
         # SQL queries below use a string-pos function which differs across DB engines; obtain the correct one
         str_pos = self.dao.db_func(self.dao.db.FUNC_STR_POS)
+
         # SQL query to obtain attack records where sub-techniques are returned with their parent-technique info
         sql_par_attack_base = (
             # Use a temporary table 'parent_tids' to return attacks which are sub-techniques (i.e. tid is Txxx.xx)
             # Use the substring method to save in the parent_tid column as the Txxx part of the tid (without the .xx)
             "WITH parent_tids(uid, name, tid, inactive, parent_tid) AS "
-            "(SELECT uid, name, tid, inactive, SUBSTR(tid, 0, %s(tid, '.'))" % str_pos + " "
+            f"(SELECT uid, name, tid, inactive, SUBSTR(tid, 0, {str_pos}(tid, '.')) "
+
             # %% in LIKE because % messes up parameters in psycopg (https://github.com/psycopg/psycopg2/issues/827)
             # LIKE '%.%' = '%%.%%' so this does not affect other DB engines
             "FROM attack_uids WHERE tid LIKE '%%.%%'{inactive_AND}) "
+
             # With parent_tids, select all fields from it and the name of the parent_tid from the attack_uids table
             # Need to use `AS parent_name` to not confuse it with parent_tids.name
             # Using an INNER JOIN because we only care about returning sub-techniques here
             "SELECT parent_tids.*, attack_uids.name AS parent_name FROM "
             "(attack_uids INNER JOIN parent_tids ON attack_uids.tid = parent_tids.parent_tid){inactive_WHERE} "
+
             # Union the sub-tech query with one for all other techniques (where the tid does not contain a '.')
             # Need to pass in two NULLs so the number of columns for the UNION is the same
             # (and parent_name & parent_tid doesn't exist for these techniques which are not sub-techniques)
             "UNION SELECT uid, name, tid, inactive, NULL, NULL FROM attack_uids "
             "WHERE tid NOT LIKE '%%.%%'{inactive_AND}"
         )
+
         # Use this query to omit any 'inactive' attacks
-        exc_inactive = "inactive = %s" % self.dao.db_false_val
-        with_par_attack = "WITH %s(uid, name, tid, inactive, parent_tid, parent_name) AS (%s) " % (
-            FULL_ATTACK_INFO,
-            "%s",
-        )
+        exc_inactive = f"inactive = {self.dao.db_false_val}"
+        with_par_attack = f"WITH {FULL_ATTACK_INFO}(uid, name, tid, inactive, parent_tid, parent_name) AS (%s) "
+
         self.SQL_PAR_ATTACK = sql_par_attack_base.format(
             inactive_AND=" AND " + exc_inactive, inactive_WHERE=" WHERE attack_uids." + exc_inactive
         )
+
         # A prefix SQL statement to use with queries that want the full attack info
         self.SQL_WITH_PAR_ATTACK = with_par_attack % self.SQL_PAR_ATTACK
+
         # A version of the above queries that includes inactive attacks
         self.SQL_PAR_ATTACK_INC_INACTIVE = sql_par_attack_base.format(inactive_AND="", inactive_WHERE="")
         self.SQL_WITH_PAR_ATTACK_INC_INACTIVE = with_par_attack % self.SQL_PAR_ATTACK_INC_INACTIVE
@@ -101,9 +107,10 @@ class DataService:
         cur_uids = set(cur_attacks.keys())
         retrieved_uids = set(attack_data.keys())
         name_changes = []
+
         for attack_uid, attack_item in attack_data.items():
             # If this loop takes long, the below logging-statement will help track progress
-            # logging.info('Processing attack %s of %s.' % (list(attack_data.keys()).index(k) + 1, len(attack_data)))
+            # logging.info(f'Processing attack {list(attack_data.keys()).index(k) + 1} of {len(attack_data)}.')
             if attack_uid not in cur_uids:
                 await self.dao.insert(
                     "attack_uids", dict(uid=attack_uid, tid=attack_item["tid"], name=attack_item["name"])
@@ -121,6 +128,7 @@ class DataService:
                 retrieved_name = (attack_data.get(attack_uid, dict())).get("name")
                 current_attack_data = cur_attacks.get(attack_uid, dict())
                 current_name = current_attack_data.get("name")
+
                 if retrieved_name and (retrieved_name != current_name):
                     await self.dao.update("attack_uids", where=dict(uid=attack_uid), data=dict(name=retrieved_name))
                     name_changes.append((attack_uid, retrieved_name, current_name))
@@ -133,6 +141,7 @@ class DataService:
                             # If not, update the attack's similar-words to include this name
                             if not stored:
                                 await self.dao.insert_generate_uid("similar_words", db_criteria)
+
                 # Confirm this attack is considered active
                 if current_attack_data.get("inactive"):
                     await self.dao.update(
@@ -142,7 +151,7 @@ class DataService:
         # Inactive attack IDs have been calculated by using what is in the database currently
         # Update the database entries to be inactive if not already flagged as such
         already_inactive = await self.dao.raw_select(
-            ("SELECT uid FROM attack_uids WHERE inactive = %s" % self.dao.db_true_val), single_col=True
+            f"SELECT uid FROM attack_uids WHERE inactive = {self.dao.db_true_val}", single_col=True
         )
 
         inactive_attacks = (cur_uids - retrieved_uids) - set(already_inactive)
@@ -365,23 +374,27 @@ class DataService:
 
     async def get_report_category_keynames(self, report_id):
         """Function to retrieve the category keynames for a report given a report ID."""
-        query = "SELECT category_keyname FROM report_categories WHERE report_uid = %s" % self.dao.db_qparam
+        query = f"SELECT category_keyname FROM report_categories WHERE report_uid = {self.dao.db_qparam}"
         return await self.dao.raw_select(query, parameters=tuple([report_id]), single_col=True)
 
     async def get_report_categories_for_display(self, report_id, include_keynames=False):
         """Function to retrieve the categories for a report given a report ID."""
         # We are definitely returning the display name; include the keyname if applicable
         columns = ["display_name"]
+
         if include_keynames:
             columns.append("keyname")
+
         query = (
             "SELECT " + (", ".join(columns)) + " FROM (categories INNER JOIN report_categories ON "
             "categories.keyname = report_categories.category_keyname)"
         )
-        query += " WHERE report_uid = %s" % self.dao.db_qparam
+        query += f" WHERE report_uid = {self.dao.db_qparam}"
+
         # If we are including keynames, return a dictionary where each entry is searchable by the keyname
         if include_keynames:
             return await self.dao.get_dict_value_as_key("keyname", sql=query, sql_params=tuple([report_id]))
+
         # Else return the list of display names for this report
         return await self.dao.raw_select(query, parameters=tuple([report_id]), single_col=len(columns) == 1)
 
@@ -401,56 +414,74 @@ class DataService:
             "FROM report_countries "
             "WHERE report_uid = {sel}".format(sel=self.dao.db_qparam)
         )
+
         db_results = await self.dao.raw_select(query, parameters=tuple([report_id, report_id, report_id]))
+
         # Check if this report is flagged at having all victims
         query = (
-            "SELECT association_type, association_with FROM report_all_assoc WHERE report_uid = %s" % self.dao.db_qparam
+            f"SELECT association_type, association_with FROM report_all_assoc WHERE report_uid = {self.dao.db_qparam}"
         )
+
         all_assoc = await self.dao.raw_select(query, parameters=tuple([report_id]))
+
         # Set up the dictionary to return the results split by aggressor and victim
         r_template = dict(
             groups=[], categories_all=False, region_ids=[], regions_all=False, country_codes=[], countries_all=False
         )
+
         if include_display:
             r_template.update(dict(countries=[], regions=[]))
+
         results = dict(aggressors=deepcopy(r_template), victims=deepcopy(r_template))
+
         # Flag select-all in results: only doing this for victims
         for results_key, db_assoc_type in [("victims", "victim")]:
             results[results_key]["categories_all"] = any(
                 (r.get("association_with") == "category") and (r.get("association_type") == db_assoc_type)
                 for r in all_assoc
             )
+
             results[results_key]["countries_all"] = any(
                 (r.get("association_with") == "country") and (r.get("association_type") == db_assoc_type)
                 for r in all_assoc
             )
+
         # Go through the retrieved database results and place result in appropriate dictionary/list
         for entry in db_results:
             # First determine if this result is for an aggressor or victim
             assoc_type = entry.get("association_type")
             if assoc_type == "aggressor":
                 updating = results["aggressors"]
+
             elif assoc_type == "victim":
                 updating = results["victims"]
+
             else:
-                logging.error("INVALID report association `%s` saved in db, uid `%s`" % (assoc_type, entry.get("uid")))
+                logging.error(f"INVALID report association `{assoc_type}` saved in db, uid `{entry.get('uid')}`")
                 continue
+
             # Then determine if this result is for a group, region or country: append value if not flagged as select-all
             assoc_value_g, assoc_value_r = entry.get("keyword"), entry.get("region")
             assoc_value_c = entry.get("country")
             if not (assoc_value_g or assoc_value_r or assoc_value_c):
-                logging.error("GROUP, REGION or COUNTRY missing in db entry uid `%s`" % entry.get("uid"))
+                logging.error(f"GROUP, REGION or COUNTRY missing in db entry uid `{entry.get('uid')}`")
                 continue
+
             if assoc_value_g:
                 updating["groups"].append(assoc_value_g)
+
             elif assoc_value_r and not updating["regions_all"]:
                 updating["region_ids"].append(str(assoc_value_r))
+
                 if include_display:
                     updating["regions"].append(self.region_dict.get(str(assoc_value_r)))
+
             elif assoc_value_c and not updating["countries_all"]:
                 updating["country_codes"].append(assoc_value_c)
+
                 if include_display:
                     updating["countries"].append(self.country_dict.get(assoc_value_c))
+
         return results
 
     async def get_report_sentences(self, report_id):
@@ -468,6 +499,7 @@ class DataService:
             "report_sentence_hits.start_date", field_name_as="tech_start_date"
         )
         end_date = self.dao.db.sql_date_field_to_str("report_sentence_hits.end_date", field_name_as="tech_end_date")
+
         query = (
             # Using the temporary table with parent-technique info
             self.SQL_WITH_PAR_ATTACK +
@@ -480,19 +512,26 @@ class DataService:
             "EXISTS(SELECT 1 FROM false_negatives fn WHERE fn.sentence_id = report_sentences.uid "
             "    AND fn.attack_uid = report_sentence_hits.attack_uid) as false_negative, "
             "report_sentence_hits.initial_model_match, "
+
             # We want to add any sub-technique's parent-technique name
             "report_sentence_hits.active_hit, " + FULL_ATTACK_INFO + ".parent_name AS attack_parent_name, "
+
             # LEFT (not INNER) JOINS with FULL_ATTACK_INFO may have 'inactive' data; return 'inactive' from attack_uids
             "attack_uids.inactive AS inactive_attack, " + start_date + ", " + end_date + " "
+
             # The first join for the report data; LEFT OUTER JOIN because we want all report sentences
             "FROM (((report_sentences LEFT OUTER JOIN report_sentence_hits "
             "ON report_sentences.uid = report_sentence_hits.sentence_id) "
+
             # A second join for the full attack table; still using a LEFT JOIN
             "LEFT JOIN " + FULL_ATTACK_INFO + " ON " + FULL_ATTACK_INFO + ".uid = report_sentence_hits.attack_uid) "
+
             # FULL_ATTACK_INFO omits 'inactive' flag; join so we have this info
             "LEFT JOIN attack_uids ON report_sentence_hits.attack_uid = attack_uids.uid) "
+
             # Finish with the WHERE clause stating which report this is for
-            "WHERE report_sentences.report_uid = %s" % self.dao.db_qparam + " "
+            f"WHERE report_sentences.report_uid = {self.dao.db_qparam} "
+
             # Need to order by for JOIN query (otherwise sentences can be out of order if attacks are updated)
             "ORDER BY report_sentences.sen_index"
         )
@@ -536,20 +575,21 @@ class DataService:
         # Ensure any date fields are converted into strings
         start_date = self.dao.db.sql_date_field_to_str("report_sentence_hits.start_date")
         end_date = self.dao.db.sql_date_field_to_str("report_sentence_hits.end_date")
+
         select_join_query = (
             # Select all columns from the full attack info table
-            self.SQL_WITH_PAR_ATTACK_INC_INACTIVE + "SELECT " + FULL_ATTACK_INFO + ".*, "
+            f"{self.SQL_WITH_PAR_ATTACK_INC_INACTIVE} SELECT {FULL_ATTACK_INFO}.*, "
+
             # Include row ID for use when updating dates of attack
-            "report_sentence_hits.uid AS mapping_id, " + start_date + ", " + end_date + " "
+            f"report_sentence_hits.uid AS mapping_id, {start_date}, {end_date} "
+
             # Use an INNER JOIN on full_attack_info and report_sentence_hits (to get the intersection of attacks)
-            "FROM ("
-            + FULL_ATTACK_INFO
-            + " INNER JOIN report_sentence_hits ON "
-            + FULL_ATTACK_INFO
-            + ".uid = report_sentence_hits.attack_uid) "
+            f"FROM ({FULL_ATTACK_INFO} INNER JOIN report_sentence_hits ON "
+            f"{FULL_ATTACK_INFO}.uid = report_sentence_hits.attack_uid) "
+
             # Finish with the WHERE clause stating which sentence we are searching for and that the attack is confirmed
-            "WHERE report_sentence_hits.sentence_id = %s" % self.dao.db_qparam + " "
-            "AND report_sentence_hits.confirmed = %s" % self.dao.db_true_val + " "
+            f"WHERE report_sentence_hits.sentence_id = {self.dao.db_qparam} "
+            f"AND report_sentence_hits.confirmed = {self.dao.db_true_val} "
             "ORDER BY report_sentence_hits.attack_tid"
         )
         # Run the above query and return its results
@@ -561,9 +601,9 @@ class DataService:
         all_unconfirmed_query = (
             "SELECT report_sentence_hits.* FROM (report_sentence_hits INNER JOIN report_sentences "
             "ON report_sentence_hits.sentence_id = report_sentences.uid) "
-            "WHERE report_sentence_hits.report_uid = %s" % self.dao.db_qparam + " "
-            "AND report_sentence_hits.active_hit = %s" % self.dao.db_true_val + " "
-            "AND report_sentence_hits.confirmed = %s" % self.dao.db_false_val + " "
+            f"WHERE report_sentence_hits.report_uid = {self.dao.db_qparam} "
+            f"AND report_sentence_hits.active_hit = {self.dao.db_true_val} "
+            f"AND report_sentence_hits.confirmed = {self.dao.db_false_val} "
             "ORDER BY report_sentences.sen_index"
         )
         all_unconfirmed = await self.dao.raw_select(all_unconfirmed_query, parameters=tuple([report_id]))
@@ -574,8 +614,8 @@ class DataService:
             "SELECT * FROM (report_sentence_hits INNER JOIN false_positives "
             "ON report_sentence_hits.attack_uid = false_positives.attack_uid "
             "AND report_sentence_hits.sentence_id = false_positives.sentence_id) "
-            "WHERE report_sentence_hits.report_uid = %s" % self.dao.db_qparam + " "
-            "AND (report_sentence_hits.confirmed = %s" % self.dao.db_false_val + " "
+            f"WHERE report_sentence_hits.report_uid = {self.dao.db_qparam} "
+            f"AND (report_sentence_hits.confirmed = {self.dao.db_false_val} "
             "OR report_sentence_hits.start_date IS NULL)"
         )
         ignore = await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
@@ -593,12 +633,14 @@ class DataService:
             a_id, a_tid = u.get("attack_uid", "error"), u.get("attack_tid", "error")
             if (a_id, sen_id, a_tid) in tuple_ig:
                 continue
+
             current_list = unconfirmed_by_sentence.get(sen_id, [])
             attack_info = dict(attack_uid=a_id, attack_tid=a_tid)
             if attack_info not in current_list:
                 current_list.append(attack_info)
                 unconfirmed_by_sentence[sen_id] = current_list
                 count += 1
+
         return unconfirmed_by_sentence if return_detail else count
 
     async def get_confirmed_techniques_for_nav_export(self, report_id):
@@ -607,16 +649,18 @@ class DataService:
             "report_sentence_hits.start_date", field_name_as="tech_start_date"
         )
         end_date = self.dao.db.sql_date_field_to_str("report_sentence_hits.end_date", field_name_as="tech_end_date")
+
         # The SQL select join query to retrieve the confirmed techniques for the nav export
         select_join_query = (
             "SELECT report_sentences.uid, report_sentence_hits.attack_uid, report_sentence_hits.report_uid, "
             "report_sentence_hits.attack_tid, report_sentences.text, report_sentence_hits.initial_model_match,"
-            " " + start_date + ", " + end_date + " "
+            f" {start_date}, {end_date} "
             "FROM (report_sentences INNER JOIN report_sentence_hits "
             "ON report_sentences.uid = report_sentence_hits.sentence_id) "
-            "WHERE report_sentence_hits.report_uid = %s" % self.dao.db_qparam + " "
-            "AND report_sentence_hits.confirmed = %s" % self.dao.db_true_val
+            f"WHERE report_sentence_hits.report_uid = {self.dao.db_qparam} "
+            f"AND report_sentence_hits.confirmed = {self.dao.db_true_val}"
         )
+
         # Get the confirmed hits as the above SQL query
         hits = await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
         techniques = []
@@ -631,6 +675,7 @@ class DataService:
                 "tech_end_date": hit.get("tech_end_date"),
             }
             techniques.append(technique)
+
         # Return the list of confirmed techniques
         return techniques
 
@@ -654,8 +699,8 @@ class DataService:
             + FULL_ATTACK_INFO
             + ".uid = report_sentence_hits.attack_uid) "
             # Finish with the WHERE clause stating which sentence we are searching for and that the hit is active
-            "WHERE report_sentence_hits.sentence_id = %s" % self.dao.db_qparam + " "
-            "AND report_sentence_hits.active_hit = %s" % self.dao.db_true_val + " "
+            f"WHERE report_sentence_hits.sentence_id = {self.dao.db_qparam} "
+            f"AND report_sentence_hits.active_hit = {self.dao.db_true_val} "
             "ORDER BY report_sentence_hits.attack_tid"
         )
         # Run the above query and return its results
@@ -665,8 +710,8 @@ class DataService:
         """Function to return the amount of unique techniques found in a report."""
         count_query = (
             "SELECT COUNT(DISTINCT(attack_uid)) AS count "
-            + "FROM report_sentence_hits "
-            + "WHERE report_uid = %s" % self.dao.db_qparam
+            "FROM report_sentence_hits "
+            f"WHERE report_uid = {self.dao.db_qparam}"
         )
         count_query_result = await self.dao.raw_select(count_query, parameters=tuple([report_id]))
         return count_query_result[0]["count"]
@@ -676,13 +721,16 @@ class DataService:
         # The query below uses a timestamp function which differs across DB engines; obtain the correct one
         logging.info("DELETE EXPIRED REPORTS: START")
         time_now = self.dao.db_func(self.dao.db.FUNC_TIME_NOW) + "()"
+
         # Expired reports are where its timestamp is behind the current time (hence less-than)
-        query = " FROM reports WHERE expires_on < %s" % time_now
+        query = f" FROM reports WHERE expires_on < {time_now}"
         select_query = "SELECT url" + query
         expired_urls = await self.dao.raw_select(select_query, single_col=True)
+
         if expired_urls:
             for url in expired_urls:
-                logging.info("Expired URL will be deleted: `%s`" % url)
+                logging.info(f"Expired URL will be deleted: `{url}`")
+
         delete_query = "DELETE" + query
         await self.dao.run_sql_list(sql_list=[(delete_query,)])
         logging.info("DELETE EXPIRED REPORTS: END")
@@ -696,18 +744,21 @@ class DataService:
         # Retrieval by ID or title must be specified, not both nor neither
         if (by_id and by_title) or (not by_id and not by_title):
             raise ValueError("Incorrect parameters: unsure if retrieval is by report ID or title.")
+
         # Proceed to set up the query: ensure date fields are converted into strings
         date_written = self.dao.db.sql_date_field_to_str("date_written", str_suffix=True)
         start_date = self.dao.db.sql_date_field_to_str("start_date", str_suffix=True)
         end_date = self.dao.db.sql_date_field_to_str("end_date", str_suffix=True)
+
         # Set up the sql statements to select the fields
         fields = [date_written, start_date, end_date]
         if add_expiry_bool:
             # Similar to remove_expired_reports() above, get the appropriate time-function and execute a query
             time_now = self.dao.db_func(self.dao.db.FUNC_TIME_NOW) + "()"
-            fields.append("expires_on < %s AS is_expired" % time_now)
+            fields.append(f"expires_on < {time_now} AS is_expired")
+
         column = "title" if by_title else "uid"
-        query = "SELECT *, %s FROM reports WHERE %s = %s" % (", ".join(fields), column, self.dao.db_qparam)
+        query = f"SELECT *, {', '.join(fields)} FROM reports WHERE {column} = {self.dao.db_qparam}"
         return await self.dao.raw_select(query, parameters=tuple([report]))
 
     async def get_report_by_title(self, report_title="", add_expiry_bool=True):
@@ -727,22 +778,23 @@ class DataService:
             # Delete related images for this report
             await self.dao.delete("original_html", dict(report_uid=report_id), return_sql=True),
         ]
+
         # For each table that contains the initial report data
         for table in self.dao.db.backup_table_list:
             columns = ", ".join(self.dao.db.get_column_names_from_table(table))
             # Construct the INSERT INTO SELECT statement: select all columns from the initial data and insert into table
-            sql = "INSERT INTO %s (%s) SELECT %s FROM %s%s WHERE report_uid = %s;" % (
-                table,
-                columns,
-                columns,
-                table,
-                self.dao.db.backup_table_suffix,
-                self.dao.db_qparam,
+            sql = (
+                f"INSERT INTO {table} ({columns}) "
+                f"SELECT {columns} FROM {table}{self.dao.db.backup_table_suffix} "
+                f"WHERE report_uid = {self.dao.db_qparam};"
             )
+
             # Table names can't be parameters so state the report ID as a parameter for the above statement
             parameters = tuple([report_id])
+
             # Append to the SQL list the statement itself and the parameters to use
             sql_list.append(tuple([sql, parameters]))
+
         # Run the deletions and insertions for this method altogether; return if it was successful
         return await self.dao.run_sql_list(sql_list=sql_list)
 
@@ -783,49 +835,61 @@ class DataService:
         """
         # Check for any duplicates of the given title
         existing = await self.dao.get("reports", dict(title=title))
+
         # If there is already a report with this title...
         if existing:
             # Search for duplicates in the reports table like title_1, title_2, etc
             # Using 'like' operator means any literal %s and _s need to be escaped
             title_escaped = title.replace("%", "\\%").replace("_", "\\_")
+
             # The query with a qmark placeholder for the title and stating an escape character is used
-            query = "SELECT * FROM reports WHERE title LIKE %s ESCAPE '\\';" % self.dao.db_qparam
+            query = f"SELECT * FROM reports WHERE title LIKE {self.dao.db_qparam} ESCAPE '\\';"
+
             # Run the query with the escaped-title as a parameter plus a _X suffix
             underscore_hits = await self.dao.raw_select(query, parameters=(f"{title_escaped}\\_%",))
+
             # If we have matches...
             if underscore_hits:
-                # Collect all the numerical suffixes
+                # Collect all the numerical suffixes by iterating through each matched report
                 suffixes = set()
-                # Collect them by iterating through each matched report...
                 for match in underscore_hits:
                     match_title = match.get("title")
+
                     if match_title:
                         # and obtaining substring in title after last occurrence of _
                         suffix = match_title.rpartition("_")[-1]
+
                         # Add this to the suffixes list if it's a number else skip to next match
                         try:
                             suffixes.add(int(suffix))
                         except ValueError:
                             pass
+
                 # If we have numerical suffixes...
                 if suffixes:
                     # Get the range from 1 to the max suffix number collected (+1 as range() doesn't include this)
                     true_range = set(range(1, max(suffixes) + 1))
+
                     # See what numbers are missing from the collected suffixes by doing a difference with the sets
                     suffix_diff = true_range - suffixes
+
                     # If there is a difference, the next number will be the minimum in this set
                     if suffix_diff:
                         return title + "_" + str(min(suffix_diff))
+
                     # If there is no difference, all numbers in the range are found as suffixes with title
                     # so return the next number along from suffixes
                     else:
                         return title + "_" + str(max(suffixes) + 1)
+
                 # Else there were no numerical suffixes so can return title_1
                 else:
                     return title + "_1"
+
             # Else no matches on suffix (title_X) so can return title_1
             else:
                 return title + "_1"
+
         # Else no reports currently have this title so the title can be used as is
         else:
             return title
