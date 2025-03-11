@@ -48,10 +48,9 @@ def build_db(schema):
 def _create_db(db_name, username, password, host, port):
     """The function to create the Thread DB on the server."""
     # Set up and use a connection-string using inputted credentials
-    conn_info = get_connection_string(host=host, port=port, database='postgres', user=username, password=password)
+    conn_info = get_connection_string(host=host, port=port, database="postgres", user=username, password=password)
     try:
         with psycopg.connect(conninfo=conn_info, autocommit=True) as connection:
-
             with connection.cursor() as cursor:
                 try:
                     cursor.execute(f"CREATE DATABASE {db_name}")
@@ -106,7 +105,6 @@ def _create_tables(db_name, username, password, host, port, schema="", is_partia
     conn_info = get_connection_string(host=host, port=port, database=db_name, user=username, password=password)
     try:
         with psycopg.connect(conninfo=conn_info) as connection:
-
             with connection.cursor() as cursor:
                 cursor.execute(schema)
 
@@ -169,7 +167,6 @@ class ThreadPostgreSQL(ThreadDB):
 
         try:
             with psycopg.connect(conninfo=conn_info) as connection:
-
                 with connection.cursor(row_factory=row_factory) as cursor:
                     return_val = method(cursor)
 

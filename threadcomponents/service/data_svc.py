@@ -48,17 +48,14 @@ class DataService:
             # Use the substring method to save in the parent_tid column as the Txxx part of the tid (without the .xx)
             "WITH parent_tids(uid, name, tid, inactive, parent_tid) AS "
             f"(SELECT uid, name, tid, inactive, SUBSTR(tid, 0, {str_pos}(tid, '.')) "
-
             # %% in LIKE because % messes up parameters in psycopg (https://github.com/psycopg/psycopg2/issues/827)
             # LIKE '%.%' = '%%.%%' so this does not affect other DB engines
             "FROM attack_uids WHERE tid LIKE '%%.%%'{inactive_AND}) "
-
             # With parent_tids, select all fields from it and the name of the parent_tid from the attack_uids table
             # Need to use `AS parent_name` to not confuse it with parent_tids.name
             # Using an INNER JOIN because we only care about returning sub-techniques here
             "SELECT parent_tids.*, attack_uids.name AS parent_name FROM "
             "(attack_uids INNER JOIN parent_tids ON attack_uids.tid = parent_tids.parent_tid){inactive_WHERE} "
-
             # Union the sub-tech query with one for all other techniques (where the tid does not contain a '.')
             # Need to pass in two NULLs so the number of columns for the UNION is the same
             # (and parent_name & parent_tid doesn't exist for these techniques which are not sub-techniques)
@@ -512,26 +509,19 @@ class DataService:
             "EXISTS(SELECT 1 FROM false_negatives fn WHERE fn.sentence_id = report_sentences.uid "
             "    AND fn.attack_uid = report_sentence_hits.attack_uid) as false_negative, "
             "report_sentence_hits.initial_model_match, "
-
             # We want to add any sub-technique's parent-technique name
             "report_sentence_hits.active_hit, " + FULL_ATTACK_INFO + ".parent_name AS attack_parent_name, "
-
             # LEFT (not INNER) JOINS with FULL_ATTACK_INFO may have 'inactive' data; return 'inactive' from attack_uids
             "attack_uids.inactive AS inactive_attack, " + start_date + ", " + end_date + " "
-
             # The first join for the report data; LEFT OUTER JOIN because we want all report sentences
             "FROM (((report_sentences LEFT OUTER JOIN report_sentence_hits "
             "ON report_sentences.uid = report_sentence_hits.sentence_id) "
-
             # A second join for the full attack table; still using a LEFT JOIN
             "LEFT JOIN " + FULL_ATTACK_INFO + " ON " + FULL_ATTACK_INFO + ".uid = report_sentence_hits.attack_uid) "
-
             # FULL_ATTACK_INFO omits 'inactive' flag; join so we have this info
             "LEFT JOIN attack_uids ON report_sentence_hits.attack_uid = attack_uids.uid) "
-
             # Finish with the WHERE clause stating which report this is for
             f"WHERE report_sentences.report_uid = {self.dao.db_qparam} "
-
             # Need to order by for JOIN query (otherwise sentences can be out of order if attacks are updated)
             "ORDER BY report_sentences.sen_index"
         )
@@ -579,14 +569,11 @@ class DataService:
         select_join_query = (
             # Select all columns from the full attack info table
             f"{self.SQL_WITH_PAR_ATTACK_INC_INACTIVE} SELECT {FULL_ATTACK_INFO}.*, "
-
             # Include row ID for use when updating dates of attack
             f"report_sentence_hits.uid AS mapping_id, {start_date}, {end_date} "
-
             # Use an INNER JOIN on full_attack_info and report_sentence_hits (to get the intersection of attacks)
             f"FROM ({FULL_ATTACK_INFO} INNER JOIN report_sentence_hits ON "
             f"{FULL_ATTACK_INFO}.uid = report_sentence_hits.attack_uid) "
-
             # Finish with the WHERE clause stating which sentence we are searching for and that the attack is confirmed
             f"WHERE report_sentence_hits.sentence_id = {self.dao.db_qparam} "
             f"AND report_sentence_hits.confirmed = {self.dao.db_true_val} "
