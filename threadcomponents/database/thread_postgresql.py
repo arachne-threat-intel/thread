@@ -9,7 +9,7 @@ from psycopg.rows import dict_row, tuple_row
 
 def get_connection_string(host, port, database, user, password):
     """Function to get the connection-string for the database."""
-    return f"hostaddr='{host or ''}' port='{port or ''}' dbname='{database}' user='{user}' password='{password}'"
+    return f"host='{host or ''}' port='{port or ''}' dbname='{database}' user='{user}' password='{password}'"
 
 
 def get_db_info():
