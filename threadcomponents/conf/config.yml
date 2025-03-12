@@ -16,8 +16,8 @@ taxii-local: taxii-server
 # Either 'js-online-src' for fetching JS libraries online or 'js-local-src' to use locally saved JS libraries
 js-libraries: js-online-src
 # The database backend to use: currently either 'sqlite3' or 'postgresql' (sqlite3 recommended for local-use)
-# If using postgresql, requires package psycopg2 (see pre-reqs: https://www.psycopg.org/docs/install.html#prerequisites)
-# If not using postgresql, you can (re)move the file database/thread_postgresql.py to avoid installing psycopg2
+# If using postgresql, requires package psycopg (see pre-reqs: https://www.psycopg.org/psycopg3/docs/basic/install.html)
+# If not using postgresql, you can (re)move the file database/thread_postgresql.py to avoid installing psycopg
 db-engine: sqlite3
 # If you would like the database to be re-built on launch of Thread
 # Ineffective when db-engine = 'postgresql'; if wanted, call `main.py --build-db` separately (before launching Thread)

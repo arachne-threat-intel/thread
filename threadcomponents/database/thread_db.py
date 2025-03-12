@@ -13,7 +13,7 @@ CREATE_BEGIN, CREATE_END = "CREATE TABLE IF NOT EXISTS", ");"
 def find_create_statement_in_schema(schema, table, log_error=True, find_closing_bracket=False):
     """Helper-method to return the start and end positions of an SQL create statement in a given schema."""
     # The possible matches when finding the CREATE statement (with a space and opening bracket or just the bracket)
-    start_statements = ["%s %s (" % (CREATE_BEGIN, table), "%s %s(" % (CREATE_BEGIN, table)]
+    start_statements = [f"{CREATE_BEGIN} {table} (", f"{CREATE_BEGIN} {table}("]
     start_pos, error = None, ValueError()
     for start_statement in start_statements:
         try:
@@ -26,7 +26,7 @@ def find_create_statement_in_schema(schema, table, log_error=True, find_closing_
     # Start-position not found
     if not start_pos:
         if log_error:
-            logging.error("Table `%s` missing: given schema has different or missing CREATE statement." % table)
+            logging.error(f"Table `{table}` missing: given schema has different or missing CREATE statement.")
         raise error
     # Given a starting position, find where the table's create statement finishes
     try:
@@ -34,7 +34,7 @@ def find_create_statement_in_schema(schema, table, log_error=True, find_closing_
     # End-position not found
     except ValueError as e:
         if log_error:
-            logging.error("SQL error: could not find closing `%s` for table `%s` in schema." % (CREATE_END, table))
+            logging.error(f"SQL error: could not find closing `{CREATE_END}` for table `{table}` in schema.")
         raise e
     # Consider the end position to be before any foreign key statements; they might not be present so ignore ValueErrors
     if not find_closing_bracket:
@@ -98,18 +98,20 @@ class ThreadDB(ABC):
         unquote = unquote or []
         # Get the function name according to the mapped_functions dictionary
         func_name = self._mapped_functions.get(func_key)
+
         # If there is nothing to retrieve, return None
         if func_name is None:
             return None
+
         # If we have args, construct the string f(a, b, ...) (where str args except fields and query params are quoted)
         if args:
-            return "%s(%s)" % (
-                func_name,
+            return f"{func_name}(%s)" % (
                 ", ".join(
                     ("'%s'" % x if (isinstance(x, str) and (x != self.query_param) and (x not in unquote)) else str(x))
                     for x in args
                 ),
             )
+
         # Else if no args are supplied, just return the function name
         else:
             return func_name
@@ -131,6 +133,7 @@ class ThreadDB(ABC):
         """Function to return a new schema that has copied structures of report-sentence tables from a given schema."""
         # The new schema to build on and return
         new_schema = ""
+
         # For each table that we are copying the structure of...
         for table in TABLES_WITH_BACKUPS:
             # Obtain the start and end positions of the SQL create statement for this table
@@ -140,10 +143,12 @@ class ThreadDB(ABC):
             create_statement = schema[start_pos : (end_pos + len(CREATE_END))]
             # Add the create statement for this table to the new schema
             new_schema += "\n\n" + create_statement
+
         # Now that the new schema has the tables we want copied, replace mention of the table name with '<name>_initial'
         # We want all occurrences replaced because of foreign key constraints
         for table in TABLES_WITH_BACKUPS:
-            new_schema = new_schema.replace(table, "%s%s" % (table, BACKUP_TABLE_SUFFIX))
+            new_schema = new_schema.replace(table, f"{table}{BACKUP_TABLE_SUFFIX}")
+
         # Return the new schema
         return new_schema.strip()
 
@@ -189,30 +194,36 @@ class ThreadDB(ABC):
             field_name_pos = sql.rfind(".")
             if field_name_pos > -1:
                 field_name_as = sql[field_name_pos + 1 :]
+
         # New field name is what has been provided, calculated or the original sql given
         field_name_as = field_name_as or sql
         # If we are adding str at the end, do this (useful when SELECT *, to_char(... to prevent duplicate column names)
+
         if str_suffix:
             field_name_as += "_str"
+
         # Construct and return sql statement
         converter = self.get_function_name(self.FUNC_DATE_TO_STR, sql, "YYYY-MM-DD", unquote=[sql])
-        return "%s AS %s" % (converter or sql, field_name_as)
+        return f"{converter or sql} AS {field_name_as}"
 
     @staticmethod
     def _check_method_parameters(table, data, data_allowed_as_none=False, method_name="unspecified"):
         """Function to check parameters passed to CRUD methods."""
         # Check the table is a string
         if not isinstance(table, str):
-            raise TypeError("Non-string arg passed for table in ThreadDB.%s(): %s" % (method_name, str(table)))
+            raise TypeError(f"Non-string arg passed for table in ThreadDB.{method_name}(): {table}")
+
         # Proceed with checks if data is non-None but allowed to be so
         if data_allowed_as_none and data is None:
             return
+
         # Check values passed to this method are dictionaries (column=value key-val pairs)
         if not isinstance(data, dict):
-            raise TypeError("Non-dictionary arg passed in ThreadDB.%s(table=%s): %s" % (method_name, table, str(data)))
+            raise TypeError(f"Non-dictionary arg passed in ThreadDB.{method_name}(table={table}): {data}")
+
         # If the data is not allowed to be None (or empty), check data has been provided
         if (not data_allowed_as_none) and (not len(data)):
-            raise ValueError("Non-empty-dictionary must be passed in ThreadDB.%s(table=%s)" % (method_name, table))
+            raise ValueError(f"Non-empty-dictionary must be passed in ThreadDB.{method_name}(table={table})")
 
     async def get(self, table, equal=None, not_equal=None, order_by_asc=None, order_by_desc=None):
         """Method to return values from a db table optionally based on equals or not-equals criteria."""
@@ -220,17 +231,22 @@ class ThreadDB(ABC):
         for param in [equal, not_equal, order_by_asc, order_by_desc]:
             # Allow None values as we do checks for this but non-None values should be dictionaries
             self._check_method_parameters(table, param, data_allowed_as_none=True, method_name="get")
+
         # Proceed with method
-        sql = "SELECT * FROM %s" % table
+        sql = f"SELECT * FROM {table}"
+
         # Define all_params dictionary (for equal and not_equal to be None-checked and combined)
         # all_ordering dictionary (for ASC and DESC ordering combined) and qparams list
         all_params, all_ordering, qparams = dict(), dict(), []
+
         # Append to all_params equal and not_equal if not None
         all_params.update(dict(equal=equal) if equal else {})
         all_params.update(dict(not_equal=not_equal) if not_equal else {})
+
         # Do the same for the ordering dictionaries
         all_ordering.update(dict(asc=order_by_asc) if order_by_asc else {})
         all_ordering.update(dict(desc=order_by_desc) if order_by_desc else {})
+
         # For each of the equal and not_equal parameters, build SQL query
         count = 0
         for eq, criteria in all_params.items():
@@ -241,12 +257,13 @@ class ThreadDB(ABC):
                     sql += " AND" if count > 0 else " WHERE"
                     if value is None:
                         # Do a NULL check for the column
-                        sql += " %s IS%s NULL" % (where, " NOT" if eq == "not_equal" else "")
+                        sql += f" {where} IS{' NOT' if eq == 'not_equal' else ''} NULL"
                     else:
                         # Add the ! for != if this is a not-equals check
-                        sql += " %s %s= %s" % (where, "!" if eq == "not_equal" else "", self.query_param)
+                        sql += f" {where} {'!' if eq == 'not_equal' else ''}= {self.query_param}"
                         qparams.append(value)
                     count += 1
+
         # For each of the ordering parameters, build the ORDER BY clause of the SQL query
         count = 0
         for order_by, criteria in all_ordering.items():
@@ -258,14 +275,15 @@ class ThreadDB(ABC):
                     # If the boolean value for this column to be ordered is True...
                     if value:
                         # Add column name and ASC/DESC criteria
-                        sql += " %s %s" % (where, order_by.upper())
+                        sql += f" {where} {order_by.upper()}"
                     count += 1
+
         # After the SQL query has been formed, execute it
         return await self._execute_select(sql, parameters=qparams)
 
     async def get_column_as_list(self, table, column):
         """Method to return a column from a db table as a list."""
-        return await self.raw_select("SELECT %s FROM %s" % (column, table), single_col=True)
+        return await self.raw_select(f"SELECT {column} FROM {table}", single_col=True)
 
     async def get_dict_value_as_key(self, column_key, table=None, columns=None, sql=None, sql_params=None):
         """Method to return a dictionary of results where the key is a column's value.
@@ -285,7 +303,7 @@ class ThreadDB(ABC):
             # Insert the columns in the SQL statement depending on its type
             # Need to add the column-key to the query, so we get the values for that column
             if isinstance(columns, str):
-                sql = sql % (columns + ", " + column_key)
+                sql = sql % f"{columns}, {column_key}"
             elif isinstance(columns, list):
                 columns.append(column_key)
                 sql = sql % ", ".join(columns)
@@ -298,7 +316,7 @@ class ThreadDB(ABC):
         # We currently only care about storing initial data table columns for INSERT INTO SELECT statements
         for table in TABLES_WITH_BACKUPS:
             # Access no data but select all columns for the given table
-            sql = "SELECT * FROM %s LIMIT 0" % table
+            sql = f"SELECT * FROM {table} LIMIT 0"
             # Update map with the list of columns obtained from this SQL statement
             self._table_columns[table] = await self._get_column_names(sql)
 
@@ -345,7 +363,7 @@ class ThreadDB(ABC):
         copied_data = dict(data)
         copied_data[id_field] = record_id
         # Insert the copied data into the backup table
-        await self.insert("%s%s" % (table, BACKUP_TABLE_SUFFIX), copied_data)
+        await self.insert(f"{table}{BACKUP_TABLE_SUFFIX}", copied_data)
         # Return the ID for the two records
         return record_id
 
@@ -354,10 +372,13 @@ class ThreadDB(ABC):
         # Check values passed to this method are valid
         self._check_method_parameters(table, data, method_name="update")
         self._check_method_parameters(table, where, method_name="update")
+
         # The list of query parameters
         qparams = []
+
         # Our SQL statement and optional WHERE clause
         sql, where_suffix = "UPDATE {} SET".format(table), ""
+
         # Appending the SET terms; keep a count
         count = 0
         for k, v in data.items():
@@ -372,6 +393,7 @@ class ThreadDB(ABC):
                 # Update qparams for this value to be substituted
                 qparams.append(v)
             count += 1
+
         # Appending the WHERE terms; keep a count
         count = 0
         for wk, wv in where.items():
@@ -386,12 +408,15 @@ class ThreadDB(ABC):
                 # Update qparams for this value to be substituted
                 qparams.append(wv)
             count += 1
+
         # Finalise WHERE clause if we had items added to it
         where_suffix = "" if where_suffix == "" else " WHERE" + where_suffix
+
         # Add the WHERE clause to the SQL statement
         sql += where_suffix
         if return_sql:
             return tuple([sql, tuple(qparams)])
+
         # Run the statement by passing qparams as parameters
         return await self._execute_update(sql, qparams)
 
@@ -399,8 +424,9 @@ class ThreadDB(ABC):
         """Method to delete rows from a table of the db."""
         # Check values passed to this method are valid
         self._check_method_parameters(table, data, method_name="delete")
-        sql = "DELETE FROM %s" % table
+        sql = f"DELETE FROM {table}"
         qparams = []
+
         # Construct the WHERE clause using the data
         count = 0
         for k, v in data.items():
@@ -408,12 +434,13 @@ class ThreadDB(ABC):
             sql += " AND" if count > 0 else " WHERE"
             if v is None:
                 # Do a NULL check for the column
-                sql += " %s IS NULL" % k
+                sql += f" {k} IS NULL"
             else:
                 # Add the ! for != if this is a not-equals check
-                sql += " %s = %s" % (k, self.query_param)
+                sql += f" {k} = {self.query_param}"
                 qparams.append(v)
             count += 1
+
         if return_sql:
             return tuple([sql, tuple(qparams)])
         # Run the statement by passing qparams as parameters
