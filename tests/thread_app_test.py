@@ -11,19 +11,25 @@ from aiohttp.test_utils import AioHTTPTestCase
 from contextlib import suppress
 from stix2.base import _STIXBase
 from tests.misc import delete_db_file, SCHEMA_FILE
+
+from threadcomponents.constants import UID as UID_KEY
+from threadcomponents.enums import ReportStatus
+
 from threadcomponents.database.dao import Dao
 from threadcomponents.database.thread_sqlite3 import ThreadSQLite
+
 from threadcomponents.handlers.web_api import WebAPI
 from threadcomponents.reports.report_exporter import ReportExporter
-from threadcomponents.repositories.report_repo import ReportRepository
+
 from threadcomponents.service import attack_data_svc
 from threadcomponents.service.attack_data_svc import AttackDataService
 from threadcomponents.service.data_svc import DataService, NO_DESC
 from threadcomponents.service.ml_svc import MLService
 from threadcomponents.service.reg_svc import RegService
-from threadcomponents.service.rest_svc import ReportStatus, RestService, UID as UID_KEY
+from threadcomponents.service.rest_svc import RestService
 from threadcomponents.service.token_svc import TokenService
 from threadcomponents.service.web_svc import WebService
+
 from unittest.mock import MagicMock, patch
 
 
@@ -55,7 +61,6 @@ class ThreadAppTest(AioHTTPTestCase):
             cls.schema = schema_opened.read()
         cls.backup_schema = cls.db.generate_copied_tables(cls.schema)
         cls.dao = Dao(engine=cls.db)
-        cls.report_repo = ReportRepository(dao=cls.dao)
         cls.web_svc = WebService()
         cls.reg_svc = RegService()
         cls.data_svc = DataService(dao=cls.dao, web_svc=cls.web_svc)
@@ -68,13 +73,11 @@ class ThreadAppTest(AioHTTPTestCase):
             data_svc=cls.data_svc,
             token_svc=cls.token_svc,
             ml_svc=cls.ml_svc,
-            report_repo=cls.report_repo,
             dao=cls.dao,
             attack_data_svc=cls.attack_data_svc,
         )
         services = dict(
             dao=cls.dao,
-            report_repo=cls.report_repo,
             data_svc=cls.data_svc,
             token_svc=cls.token_svc,
             ml_svc=cls.ml_svc,
@@ -91,7 +94,6 @@ class ThreadAppTest(AioHTTPTestCase):
             reg_svc=cls.reg_svc,
             data_svc=cls.data_svc,
             ml_svc=cls.ml_svc,
-            report_repo=cls.report_repo,
             dao=cls.dao,
             token_svc=cls.token_svc,
             queue_limit=random.randint(1, 20),

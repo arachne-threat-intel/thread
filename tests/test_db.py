@@ -2,8 +2,9 @@ import os
 import sqlite3
 
 from tests.misc import delete_db_file, SCHEMA_FILE
+from threadcomponents.constants import UID as UID_KEY
+from threadcomponents.enums import ReportStatus
 from threadcomponents.database.thread_sqlite3 import ThreadSQLite
-from threadcomponents.service.rest_svc import ReportStatus, UID as UID_KEY
 from unittest import IsolatedAsyncioTestCase
 from uuid import UUID
 

@@ -1,7 +1,7 @@
 import os
 
 from tests.thread_app_test import ThreadAppTest
-from threadcomponents.service.rest_svc import UID as UID_KEY
+from threadcomponents.constants import UID as UID_KEY
 from uuid import uuid4
 
 

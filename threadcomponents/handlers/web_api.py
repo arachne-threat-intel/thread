@@ -11,6 +11,8 @@ from aiohttp_session import get_session
 from datetime import datetime
 from urllib.parse import quote
 
+from threadcomponents.enums import ReportStatus
+
 # The config options to load JS dependencies
 ONLINE_JS_SRC = "js-online-src"
 OFFLINE_JS_SRC = "js-local-src"
@@ -28,7 +30,6 @@ class WebAPI:
         self.reg_svc = services["reg_svc"]
         self.rest_svc = services["rest_svc"]
         self.attack_data_svc = services["attack_data_svc"]
-        self.report_statuses = self.rest_svc.get_status_enum()
         self.is_local = self.web_svc.is_local
         self.report_exporter = report_exporter
         js_src_config = js_src if js_src in [ONLINE_JS_SRC, OFFLINE_JS_SRC] else ONLINE_JS_SRC
@@ -168,15 +169,17 @@ class WebAPI:
         await self.add_base_page_data(request, data=template_data)
         # The token used for this session
         token, verified_token = None, None
+
         # Adding user details if this is not a local session
         if not self.is_local:
             token = await authorized_userid(request)
             if token:
                 username, verified_token = await self.web_svc.get_current_arachne_user(request)
                 template_data.update(username=username)
+
         # For each report status, get the reports for the index page
-        for status in self.report_statuses:
-            is_complete_status = status.value == self.report_statuses.COMPLETED.value
+        for status in ReportStatus:
+            is_complete_status = status.value == ReportStatus.COMPLETED.value
             # Properties for all statuses when displayed on the index page
             page_data[status.value] = dict(
                 display_name=status.display_name,
@@ -184,8 +187,9 @@ class WebAPI:
                 error_msg="Sorry, an error occurred with this report and may appear different than intended.",
                 analysis_button="View Analysis" if is_complete_status else "Analyse",
             )
+
             # If the status is 'queue', obtain errored reports separately so we can provide info without these
-            if status.value == self.report_statuses.QUEUE.value:
+            if status.value == ReportStatus.QUEUE.value:
                 pending = await self.data_svc.status_grouper(
                     status.value, criteria=dict(error=self.dao.db_false_val, token=verified_token)
                 )
@@ -193,6 +197,7 @@ class WebAPI:
                     status.value, criteria=dict(error=self.dao.db_true_val, token=verified_token)
                 )
                 page_data[status.value]["reports"] = pending + errored
+
                 if self.rest_svc.QUEUE_LIMIT:
                     template_data["queue_set"] = 1
                     # Extra info for queued reports if a queue limit was set
@@ -201,19 +206,22 @@ class WebAPI:
                     page_data[status.value]["display_name"] += " (%s/%s)" % queue_ratio
                     # Also add a fuller sentence describing the fraction
                     page_data[status.value]["column_info"] = "%s report(s) pending in Queue out of MAX %s" % queue_ratio
+
                 # Queued reports can't be deleted (unless errored)
                 page_data[status.value]["allow_delete"] = False
                 # There is no analysis button for queued reports
                 del page_data[status.value]["analysis_button"]
                 # Queued reports with errors have an error because the contents can't be viewed: update error message
                 page_data[status.value]["error_msg"] = "Sorry, the contents of this report could not be retrieved."
+
             # Else proceed to obtain the reports for this status as normal
             else:
                 page_data[status.value]["reports"] = await self.data_svc.status_grouper(
                     status.value, criteria=dict(token=verified_token)
                 )
             # Allow only mid-review reports to be rollbacked
-            page_data[status.value]["allow_rollback"] = status.value == self.report_statuses.IN_REVIEW.value
+            page_data[status.value]["allow_rollback"] = status.value == ReportStatus.IN_REVIEW.value
+
         # Update overall template data and return
         template_data.update(reports_by_status=page_data)
         return template_data
@@ -284,36 +292,42 @@ class WebAPI:
         report_title = request.match_info.get(self.web_svc.REPORT_PARAM)
         title_quoted = quote(report_title, safe="")
         report = await self.data_svc.get_report_by_title(report_title=report_title, add_expiry_bool=(not self.is_local))
+
         try:
             # Ensure a valid report title has been passed in the request
             report_id, report_status = report[0]["uid"], report[0]["current_status"]
         except (KeyError, IndexError):
             raise web.HTTPNotFound()
+
         # Found a valid report, check if protected by token
         await self.web_svc.action_allowed(request, "view", context=dict(report=report[0]))
         # A queued report would pass the above check but be blank; raise an error instead
         if report_status not in [
-            self.report_statuses.NEEDS_REVIEW.value,
-            self.report_statuses.IN_REVIEW.value,
-            self.report_statuses.COMPLETED.value,
+            ReportStatus.NEEDS_REVIEW.value,
+            ReportStatus.IN_REVIEW.value,
+            ReportStatus.COMPLETED.value,
         ]:
             raise web.HTTPNotFound()
+
         # Proceed to gather the data for the template
         sentences = await self.data_svc.get_report_sentences(report_id)
         categories = await self.data_svc.get_report_categories_for_display(report_id, include_keynames=True)
         keywords = await self.data_svc.get_report_aggressors_victims(report_id)
         indicators_of_compromise = await self.data_svc.get_report_sentence_indicators_of_compromise(report_id)
+
         for sentence in sentences:
             sentence["is_ioc"] = any(ioc["sentence_id"] == sentence["uid"] for ioc in indicators_of_compromise)
         original_html = await self.dao.get(
             "original_html", equal=dict(report_uid=report_id), order_by_asc=dict(elem_index=1)
         )
+
         final_html = await self.web_svc.build_final_html(original_html, sentences)
         pdf_link = self.web_svc.get_route(self.web_svc.EXPORT_PDF_KEY, param=title_quoted)
         nav_link = self.web_svc.get_route(self.web_svc.EXPORT_NAV_KEY, param=title_quoted)
         # Add some help-text
         completed_info, private_info, sen_limit_help = None, None, None
-        is_completed = int(report_status == self.report_statuses.COMPLETED.value)
+        is_completed = int(report_status == ReportStatus.COMPLETED.value)
+
         if report[0]["token"]:
             private_info = (
                 "This is a private report. If this page becomes unresponsive, please refresh or "
@@ -326,8 +340,10 @@ class WebAPI:
             )
             if not self.is_local:
                 completed_info += "<br><br><b>Completed reports will expire 24 hours after completion.</b>"
+
         if self.rest_svc.SENTENCE_LIMIT:
             sen_limit_help = "Reports are currently capped to the first %s sentences." % self.rest_svc.SENTENCE_LIMIT
+
         # Get the list of sentences with techniques that need to be confirmed
         unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id, return_detail=True)
         # Update overall template data and return
@@ -361,10 +377,12 @@ class WebAPI:
             vic_countries_all=keywords["victims"]["countries_all"],
         )
         # Prepare the date fields to be interpreted by the front-end
+
         for report_date in ["date_written", "start_date", "end_date"]:
             saved_date = report[0].get(report_date + "_str")  # field is returned under field_str
             if saved_date:
                 template_data[report_date] = saved_date
+
         start_date, end_date = template_data.get("start_date"), template_data.get("end_date")
         if start_date and end_date and (start_date == end_date):
             template_data.update(same_dates=True)
