@@ -1,10 +1,9 @@
 import json
 
 from aiohttp_jinja2 import web
+from threadcomponents.enums import ReportStatus
+from threadcomponents.constants import UID, URL, TITLE
 
-UID = "uid"
-URL = "url"
-TITLE = "title"
 STATUS = "current_status"
 DATE_WRITTEN = "date_written_str"
 START_DATE = "start_date_str"
@@ -27,8 +26,6 @@ class ReportExporter:
         self.dao = services["dao"]
         self.data_svc = services["data_svc"]
         self.web_svc = services["web_svc"]
-        self.rest_svc = services["rest_svc"]
-        self.report_statuses = self.rest_svc.get_status_enum()
         self.is_local = self.web_svc.is_local
 
     async def check_request_for_export(self, request, action):
@@ -52,9 +49,9 @@ class ReportExporter:
         await self.web_svc.action_allowed(request, action, context=dict(report=report))
         # A queued report would pass the above checks but be blank; raise an error instead
         if report_status not in [
-            self.report_statuses.NEEDS_REVIEW.value,
-            self.report_statuses.IN_REVIEW.value,
-            self.report_statuses.COMPLETED.value,
+            ReportStatus.NEEDS_REVIEW.value,
+            ReportStatus.IN_REVIEW.value,
+            ReportStatus.COMPLETED.value,
         ]:
             raise web.HTTPNotFound()
         return report
@@ -151,7 +148,8 @@ class ReportExporter:
         )
         return dd
 
-    def pdfmake_add_base_report_data(self, dd, title, status, url, date_of, start_date, end_date):
+    @staticmethod
+    def pdfmake_add_base_report_data(dd, title, status, url, date_of, start_date, end_date):
         """Adds report data to existing pdfmake-dictionary-data, dd."""
         # Document MetaData Info
         # See https://pdfmake.github.io/docs/document-definition-object/document-medatadata/
@@ -163,7 +161,7 @@ class ReportExporter:
         dd["content"].append(dict(text=title, style="header"))  # begin with title of document
         dd["content"].append(dict(text="\n"))  # Blank line after title
         # Extra content if this report hasn't been completed: highlight it's a draft
-        if status != self.report_statuses.COMPLETED.value:
+        if status != ReportStatus.COMPLETED.value:
             dd["content"].append(
                 dict(
                     text="DRAFT: Please note this report is still being analysed. "
@@ -185,7 +183,8 @@ class ReportExporter:
         dd["content"].append(dict(text="Techniques End Date: %s" % end_date, style="bold"))
         dd["content"].append(dict(text="\n"))  # Blank line after technique dates
 
-    def pdfmake_add_keywords_table(self, dd, keywords, all_regions):
+    @staticmethod
+    def pdfmake_add_keywords_table(dd, keywords, all_regions):
         """Adds report-keywords to existing pdfmake-dictionary-data, dd."""
         # Table for keywords
         k_table = dict(headerRows=1, widths=["28%", "36%", "36%"], body=[])

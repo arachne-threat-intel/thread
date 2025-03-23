@@ -1,7 +1,8 @@
 import os
 
 from tests.thread_app_test import ThreadAppTest
-from threadcomponents.service.rest_svc import ReportStatus, UID as UID_KEY
+from threadcomponents.constants import UID as UID_KEY
+from threadcomponents.enums import ReportStatus
 from uuid import uuid4
 from urllib.parse import quote
 

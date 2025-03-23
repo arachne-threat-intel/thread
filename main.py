@@ -20,7 +20,6 @@ from threadcomponents.service.attack_data_svc import AttackDataService
 from threadcomponents.service.data_svc import DataService
 from threadcomponents.service.ml_svc import MLService
 from threadcomponents.service.reg_svc import RegService
-from threadcomponents.repositories.report_repo import ReportRepository
 from threadcomponents.service.rest_svc import RestService
 from threadcomponents.service.token_svc import TokenService
 from threadcomponents.service.web_svc import WebService
@@ -260,7 +259,6 @@ def main(directory_prefix="", route_prefix=None, app_setup_func=None, db_connect
 
     # Initialise DAO, start services and initiate main function
     dao = Dao(engine=db_obj)
-    report_repo = ReportRepository(dao=dao)
     web_svc = WebService(route_prefix=route_prefix, is_local=is_local)
     reg_svc = RegService()
     data_svc = DataService(dao=dao, web_svc=web_svc, dir_prefix=dir_prefix)
@@ -274,7 +272,6 @@ def main(directory_prefix="", route_prefix=None, app_setup_func=None, db_connect
         data_svc=data_svc,
         token_svc=token_svc,
         ml_svc=ml_svc,
-        report_repo=report_repo,
         dao=dao,
         queue_limit=queue_limit,
         sentence_limit=sentence_limit,
