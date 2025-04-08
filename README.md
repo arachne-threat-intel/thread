@@ -23,6 +23,7 @@ Thread is an open-source initiative dedicated to enhancing cyber threat intellig
 * [Required Resources](#required-resources)
 * [Code of Conduct](#code-of-conduct)
 * [How Do I Contribute?](#how-do-i-contribute)
+* [Where should I start with the codebase?](#where-should-i-start-with-the-codebase)
 * [Contact Us](#contact-us)
 * [Understanding MITRE ATT&CK, TTPs and How to Leverage Them](#understanding-mitre-attck-ttps-and-how-to-leverage-them)
 * [Acknowledgements](#acknowledgements)
@@ -172,6 +173,13 @@ We welcome your help as part of the Thread community!
 Read our [contribution guidelines](CONTRIBUTING.md) for further information. 
 
 To get access to our Arachne Digital Slack channel, email contact[at]arachne[dot]digital with a bit about who you are and how you want to get involved.
+
+## Where should I start with the codebase?
+Getting familiar with a new codebase can feel daunting. We recommend setting up Thread locally and analysing reports to get familiar with the functionality.
+
+Then, whilst submitting more reports in your local Thread instance, open your web-browser's [Developer Tools](https://developer.mozilla.org/en-US/docs/Learn_web_development/Howto/Tools_and_setup/What_are_browser_developer_tools). Look for a 'Debugger' or 'Sources' tab (depending on which browser you are using) to find something like `thread/theme/scripts/` with our [basics.js](webapp/theme/scripts/basics.js) file. Viewing this file there, means you can [add breakpoints](https://firefox-source-docs.mozilla.org/devtools-user/debugger/index.html) and learn what is happening as you are using Thread.
+
+If you are running Thread via an [IDE](https://developer.mozilla.org/en-US/docs/Glossary/IDE), this usually will include a debugger. There, you can then add further breakpoints in Thread's Python files to learn what is happening on the server-side — [PyCharm documentation on breakpoints](https://www.jetbrains.com/help/pycharm/using-breakpoints.html).
 
 ## Contact us
 You can contact us by emailing us at contact[at]arachne[dot]digital.
