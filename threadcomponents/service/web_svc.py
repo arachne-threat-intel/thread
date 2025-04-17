@@ -70,6 +70,7 @@ class WebService:
         self.categories_dict = dict()
         # Initialise app route info
         self.__app_routes = self._initialise_route_values(route_prefix_param=route_prefix)
+        self.app = None
 
     def _initialise_route_values(self, route_prefix_param=None):
         """Function to initialise the web app's route values and return them as a dictionary."""
@@ -93,6 +94,9 @@ class WebService:
         if not self.is_local:
             routes.update({self.WHAT_TO_SUBMIT_KEY: route_prefix + "/what-to-submit"})
         return routes
+
+    def set_internal_app(self, app):
+        self.app = app
 
     def get_route(self, route_key, param=None):
         """Function to get one of the web app's routes with the option of a parameter to be placed in the link."""

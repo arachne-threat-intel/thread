@@ -125,6 +125,7 @@ async def init(host, port, app_setup_func=None):
         app_setup_func(app)
 
     aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(os.path.join(webapp_dir, "html")))
+    web_svc.set_internal_app(app)
     runner = web.AppRunner(app)
     await runner.setup()
     await web.TCPSite(runner, host, port).start()
