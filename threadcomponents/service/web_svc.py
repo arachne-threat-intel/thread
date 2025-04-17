@@ -113,17 +113,42 @@ class WebService:
         if len(self.cached_responses) > 100:
             self.cached_responses = dict()
 
+    async def _call_app_method(
+        self,
+        request,
+        *args,
+        method_name=None,
+        return_val_when_local=None,
+        return_val_on_error=None,
+        **kwargs,
+    ):
+        """Function to call an app-method given its name."""
+        if self.is_local:
+            # Not applicable to local setups
+            return return_val_when_local
+
+        try:
+            # Attempt to use app's method; log if this couldn't be done
+            app_method = getattr(request.app if request else self.app, method_name)
+            return await app_method(*args, **kwargs)
+
+        except Exception as e:
+            logging.error(f"Misconfigured app: {method_name}() error: {e}")
+            return return_val_on_error
+
     async def action_allowed(self, request, action, context=None):
         """Function to check an action is permitted given a request."""
         if self.is_local:
             # A permission-checker is not implemented for local-use
             # and the user is in control of all their data, so allow the action
             return True
+
         try:
             # Attempt to use app's method to check permission; log if this couldn't be done
             return await request.app.permission_checker(request, action, context)
+
         except (TypeError, AttributeError) as e:
-            logging.error("Misconfigured app: permission_checker() error: " + str(e))
+            logging.error(f"Misconfigured app: permission_checker() error: {e}")
             raise web.HTTPInternalServerError()
 
     async def url_allowed(self, request, url):
@@ -131,45 +156,51 @@ class WebService:
         if self.is_local:
             # A URL-checker is not implemented for local-use so allow the action
             return True
+
         try:
             # Attempt to use app's method to check URL; log if this couldn't be done
             return await request.app.url_checker(request, url)
+
         except (TypeError, AttributeError) as e:
-            logging.error("Misconfigured app: url_checker() error: " + str(e))
-            # SystemError makes more sense but we are listening for ValueErrors
-            raise ValueError("Apologies, this URL could not be processed at this time, please contact us.")
+            logging.error(f"Misconfigured app: url_checker() error: {e}")
+            raise SystemError("Apologies, this URL could not be processed at this time, please contact us.")
 
     async def on_report_complete(self, request, report_data):
         """Function to complete any post-complete actions for a report."""
-        if self.is_local:
-            # No post-complete actions needed for local-use
-            return
-        try:
-            # Attempt to use app's on-complete method; log if this couldn't be done
-            return await request.app.on_report_complete(request, report_data)
-        except (TypeError, AttributeError) as e:
-            logging.error("Misconfigured app: on_report_complete() error: " + str(e))
+        return await self._call_app_method(
+            request,
+            request,
+            report_data,
+            method_name="on_report_complete",
+        )
+
+    async def on_report_error(self, request):
+        """Function to complete any submission-error actions for a report."""
+        return await self._call_app_method(
+            request,
+            method_name="on_report_submission_error",
+        )
 
     async def get_current_arachne_user(self, request):
         """Function to obtain the current Arachne username and token given a request."""
-        if self.is_local:
-            return None, None
-        try:
-            # Attempt to use app's method to obtain the username & token; log if this couldn't be done
-            return await request.app.get_current_arachne_user(request)
-        except (TypeError, AttributeError) as e:
-            logging.error("Misconfigured app: get_current_arachne_user() error: " + str(e))
-            return None, None
+        return await self._call_app_method(
+            request,
+            request,
+            method_name="get_current_arachne_user",
+            return_val_when_local=(None, None),
+            return_val_on_error=(None, None),
+        )
 
     async def auto_gen_data_is_valid(self, request, request_data) -> bool:
         """Function to confirm data for an automatically-generated report is valid."""
-        if self.is_local:
-            return True
-        try:
-            return await request.app.auto_gen_data_is_valid(request, request_data)
-        except Exception as e:
-            logging.error("Misconfigured app: auto_gen_data_is_valid() error: " + str(e))
-        return False
+        return await self._call_app_method(
+            request,
+            request,
+            request_data,
+            method_name="auto_gen_data_is_valid",
+            return_val_when_local=True,
+            return_val_on_error=False,
+        )
 
     async def map_all_html(self, url_input, sentence_limit=None):
         a = newspaper.Article(url_input, keep_article_html=True)

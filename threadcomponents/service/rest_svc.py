@@ -254,9 +254,11 @@ class RestService:
                 if "#" in url:
                     url = url[: url.index("#")]
                 await self.web_svc.verify_url(request, url=url)
+
             # Raised if verify_url() fails
-            except ValueError as ve:
-                return dict(error=str(ve), alert_user=1)
+            except (SystemError, ValueError) as ve:
+                error_prefix = "URL checks failed:" if isinstance(ve, ValueError) else "System-error:"
+                return dict(error=f"{error_prefix} {ve}", alert_user=1)
 
             # Ensure the report has a unique title
             title = await self.data_svc.get_unique_title(title)
@@ -372,22 +374,27 @@ class RestService:
         """
         logging.info("CHECKING QUEUE")
         self.clean_current_tasks()
+
         while self.queue.qsize() > 0:  # while there are still tasks to do...
             logging.info("QUEUE SIZE: " + str(self.queue.qsize()))
             await asyncio.sleep(1)  # allow other tasks to run while waiting
+
             while len(self.current_tasks) >= self.MAX_TASKS:  # check resource pool until a task is finished
                 self.clean_current_tasks()
                 await asyncio.sleep(1)  # allow other tasks to run while waiting
+
             criteria = await self.queue.get()  # get next task off queue and run it
             # Use run_in_executor (due to event loop potentially blocked otherwise) to start analysis
             loop = asyncio.get_running_loop()
+
             try:
                 task = loop.run_in_executor(None, partial(self.run_start_analysis, criteria=criteria))
                 self.current_tasks.append(task)
                 await task
+
             except Exception as e:
                 logging.error("Report analysis failed: " + str(e))
-                await self.error_report(criteria)
+                await self.error_report(criteria, high_severity=True)
                 continue
 
     def run_start_analysis(self, criteria=None):
@@ -401,12 +408,15 @@ class RestService:
         finally:
             loop.close()
 
-    async def error_report(self, report):
+    async def error_report(self, report, high_severity=False):
         """Function to error a given report."""
         report_id = report[UID]
         await self.dao.update("reports", where=dict(uid=report_id), data=dict(error=self.dao.db_true_val))
         self.remove_report_from_queue_map(report)
         await self.remove_report_if_automatically_generated(report_id)
+
+        if high_severity:
+            await self.web_svc.on_report_error(None)
 
     async def start_analysis(self, criteria=None):
         report_id = criteria[UID]
