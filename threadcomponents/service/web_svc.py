@@ -181,6 +181,15 @@ class WebService:
             method_name="on_report_submission_error",
         )
 
+    async def on_attack_name_change(self, attack_id, attack_name):
+        """Function to complete any post-update actions for an attack."""
+        return await self._call_app_method(
+            None,
+            attack_id,
+            attack_name,
+            method_name="on_attack_name_change",
+        )
+
     async def get_current_arachne_user(self, request):
         """Function to obtain the current Arachne username and token given a request."""
         return await self._call_app_method(
