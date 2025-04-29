@@ -146,15 +146,18 @@ def start(host, port, taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=No
     """
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.create_task(background_tasks(taxii_local=taxii_local, build=build, json_file=json_file))
     loop.run_until_complete(init(host, port, app_setup_func=app_setup_func))
+    loop.create_task(background_tasks(taxii_local=taxii_local, build=build, json_file=json_file))
+
     if taxii_local == ONLINE_BUILD_SOURCE:
         # Schedule the function to update the attack-data (check daily if it is time to do so)
         asyncio.ensure_future(repeat(86400, update_attack_data_scheduler))
+
     if not web_svc.is_local:
         # Schedule the function to tidy up reports and fetch updated keywords
         asyncio.ensure_future(repeat(86400, data_svc.remove_expired_reports))
         asyncio.ensure_future(repeat(86400, website_handler.fetch_and_update_keywords))
+
     try:
         loop.run_forever()
     except KeyboardInterrupt:

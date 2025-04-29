@@ -128,7 +128,14 @@ class DataService:
 
                 if retrieved_name and (retrieved_name != current_name):
                     await self.dao.update("attack_uids", where=dict(uid=attack_uid), data=dict(name=retrieved_name))
+                    await self.dao.update(
+                        "report_sentence_hits",
+                        where=dict(attack_uid=attack_uid),
+                        data=dict(attack_technique_name=retrieved_name),
+                    )
+                    await self.web_svc.on_attack_name_change(attack_uid, retrieved_name)
                     name_changes.append((attack_uid, retrieved_name, current_name))
+
                     # Update the similar-words table if we're updating the attack-entry
                     for name in [retrieved_name, current_name]:
                         if name:  # proceed if there is a value
