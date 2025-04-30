@@ -174,10 +174,11 @@ class WebService:
             method_name="on_report_complete",
         )
 
-    async def on_report_error(self, request):
+    async def on_report_error(self, request, log_error):
         """Function to complete any submission-error actions for a report."""
         return await self._call_app_method(
             request,
+            log_error,
             method_name="on_report_submission_error",
         )
 

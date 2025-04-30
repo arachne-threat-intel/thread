@@ -393,8 +393,8 @@ class RestService:
                 await task
 
             except Exception as e:
-                logging.error("Report analysis failed: " + str(e))
-                await self.error_report(criteria, high_severity=True)
+                logging.error(f"Report analysis failed: {e}")
+                await self.error_report(criteria, log_error=e)
                 continue
 
     def run_start_analysis(self, criteria=None):
@@ -408,15 +408,15 @@ class RestService:
         finally:
             loop.close()
 
-    async def error_report(self, report, high_severity=False):
+    async def error_report(self, report, log_error=None):
         """Function to error a given report."""
         report_id = report[UID]
         await self.dao.update("reports", where=dict(uid=report_id), data=dict(error=self.dao.db_true_val))
         self.remove_report_from_queue_map(report)
         await self.remove_report_if_automatically_generated(report_id)
 
-        if high_severity:
-            await self.web_svc.on_report_error(None)
+        if log_error:
+            await self.web_svc.on_report_error(None, log_error)
 
     async def start_analysis(self, criteria=None):
         report_id = criteria[UID]
