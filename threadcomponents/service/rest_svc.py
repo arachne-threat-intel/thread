@@ -11,6 +11,7 @@ from contextlib import suppress
 from functools import partial
 from htmldate import find_date
 from io import StringIO
+from requests.exceptions import RequestException
 
 from threadcomponents.constants import REST_SUCCESS, UID, URL, TITLE
 from threadcomponents.enums import ReportStatus
@@ -256,8 +257,14 @@ class RestService:
                 await self.web_svc.verify_url(request, url=url)
 
             # Raised if verify_url() fails
-            except (SystemError, ValueError) as ve:
-                error_prefix = "URL checks failed:" if isinstance(ve, ValueError) else "System-error:"
+            except (RequestException, SystemError, ValueError) as ve:
+                if isinstance(ve, ValueError):
+                    error_prefix = "URL checks failed:"
+                elif isinstance(ve, SystemError):
+                    error_prefix = "System-error:"
+                else:
+                    error_prefix = "Request-error:"
+
                 return dict(error=f"{error_prefix} {ve}", alert_user=1)
 
             # Ensure the report has a unique title
@@ -290,10 +297,14 @@ class RestService:
                             skip_report = True
                             duplicate_urls += 1
                             break
+
                     except ValueError:
                         skip_report = True
                         malformed_urls += 1
                         break
+
+                    except RequestException:
+                        pass
 
             # Proceed to add to queue if report is not being skipped
             if not skip_report:
