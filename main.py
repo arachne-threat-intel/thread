@@ -115,6 +115,7 @@ async def init(host, port, app_setup_func=None):
     app.router.add_route("*", web_svc.get_route(WebService.REST_KEY), website_handler.rest_api)
     app.router.add_route("GET", web_svc.get_route(WebService.EXPORT_PDF_KEY), website_handler.pdf_export)
     app.router.add_route("GET", web_svc.get_route(WebService.EXPORT_NAV_KEY), website_handler.nav_export)
+    app.router.add_route("GET", web_svc.get_route(WebService.EXPORT_AFB_KEY), website_handler.afb_export)
     app.router.add_route("GET", web_svc.get_route(WebService.COOKIE_KEY), website_handler.accept_cookies)
     if not web_svc.is_local:
         app.router.add_route("GET", web_svc.get_route(WebService.WHAT_TO_SUBMIT_KEY), website_handler.what_to_submit)

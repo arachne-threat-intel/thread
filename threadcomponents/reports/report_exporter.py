@@ -3,6 +3,7 @@ import json
 from aiohttp_jinja2 import web
 from threadcomponents.enums import ReportStatus
 from threadcomponents.constants import UID, URL, TITLE
+from threadcomponents.reports.afb_exporter import AFBExporter
 
 STATUS = "current_status"
 DATE_WRITTEN = "date_written_str"
@@ -56,6 +57,11 @@ class ReportExporter:
             raise web.HTTPNotFound()
         return report
 
+    async def afb_export(self, request):
+        """Exports a report in an AFB format."""
+        data = await AFBExporter().export()
+        return json.dumps(data, indent=4)
+
     async def nav_export(self, request):
         """Exports a report in a navigator-friendly format."""
         report = await self.check_request_for_export(request, "nav-export")
@@ -76,7 +82,6 @@ class ReportExporter:
 
         # Enterprise navigator layer
         enterprise_layer = {
-            "filename": sanitise_filename(report_title),
             "name": report_title,
             "domain": "mitre-enterprise",
             "description": enterprise_layer_description,
@@ -100,8 +105,9 @@ class ReportExporter:
         for technique in techniques:
             enterprise_layer["techniques"].append(technique)
 
-        # Return as a JSON string
-        return json.dumps(enterprise_layer)
+        # Return as a filename, JSON string tuple
+        filename = f"{sanitise_filename(report_title)}.json"
+        return filename, json.dumps(enterprise_layer, indent=4)
 
     async def pdf_export(self, request):
         report = await self.check_request_for_export(request, "pdf-export")
