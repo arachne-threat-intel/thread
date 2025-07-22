@@ -4,6 +4,7 @@
 
 import logging
 
+from aiohttp import web as aiohttp_web
 from aiohttp.web_exceptions import HTTPException
 from aiohttp_jinja2 import template, web
 from aiohttp_security import authorized_userid
@@ -324,6 +325,7 @@ class WebAPI:
         final_html = await self.web_svc.build_final_html(original_html, sentences)
         pdf_link = self.web_svc.get_route(self.web_svc.EXPORT_PDF_KEY, param=title_quoted)
         nav_link = self.web_svc.get_route(self.web_svc.EXPORT_NAV_KEY, param=title_quoted)
+        afb_link = self.web_svc.get_route(self.web_svc.EXPORT_AFB_KEY, param=title_quoted)
         # Add some help-text
         completed_info, private_info, sen_limit_help = None, None, None
         is_completed = int(report_status == ReportStatus.COMPLETED.value)
@@ -358,6 +360,7 @@ class WebAPI:
             original_html=original_html,
             pdf_link=pdf_link,
             nav_link=nav_link,
+            afb_link=afb_link,
             unchecked=unchecked,
             completed_help_text=completed_info,
             private_help_text=private_info,
@@ -388,14 +391,30 @@ class WebAPI:
             template_data.update(same_dates=True)
         return template_data
 
+    @staticmethod
+    def get_downloadable_export_response(file_data, media_type, filename):
+        """Returns a response with a downloadable file."""
+        return aiohttp_web.Response(
+            body=file_data,
+            headers={
+                "Content-Type": f"application/{media_type}",
+                "Content-Disposition": f"attachment; filename={filename}",
+            },
+        )
+
+    async def afb_export(self, request):
+        """Function to export report in AFB format."""
+        json_str = await self.report_exporter.afb_export(request)
+        return self.get_downloadable_export_response(json_str, "octet-stream", "data.afb")
+
     async def nav_export(self, request):
         """
         Function to export confirmed sentences in layer json format
         :param request: The title of the report information
         :return: the layer json
         """
-        json_str = await self.report_exporter.nav_export(request)
-        return web.json_response(json_str)
+        filename, json_str = await self.report_exporter.nav_export(request)
+        return self.get_downloadable_export_response(json_str, "json", filename)
 
     async def pdf_export(self, request):
         """

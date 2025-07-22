@@ -21,7 +21,7 @@ BLOCKED_IMG_TYPES = {"gif", "apng", "webp", "avif", "mng", "flif"}
 class WebService:
     # Static class variables for the keys in app_routes
     HOME_KEY, COOKIE_KEY, EDIT_KEY, ABOUT_KEY, REST_KEY = "home", "cookies", "edit", "about", "rest"
-    EXPORT_PDF_KEY, EXPORT_NAV_KEY, STATIC_KEY = "export_pdf", "export_nav", "static"
+    EXPORT_PDF_KEY, EXPORT_NAV_KEY, EXPORT_AFB_KEY, STATIC_KEY = "export_pdf", "export_nav", "export_afb", "static"
     HOW_IT_WORKS_KEY, WHAT_TO_SUBMIT_KEY = "how_it_works", "what_to_submit"
     REPORT_PARAM = "file"
     # Variations of punctuation we want to note
@@ -88,6 +88,7 @@ class WebService:
             self.REST_KEY: route_prefix + "/rest",
             self.EXPORT_PDF_KEY: route_prefix + "/export/pdf/{%s}" % self.REPORT_PARAM,
             self.EXPORT_NAV_KEY: route_prefix + "/export/nav/{%s}" % self.REPORT_PARAM,
+            self.EXPORT_AFB_KEY: route_prefix + "/export/afb/{%s}" % self.REPORT_PARAM,
             self.HOW_IT_WORKS_KEY: route_prefix + "/how-thread-works",
             self.STATIC_KEY: route_prefix + "/theme/",
         }

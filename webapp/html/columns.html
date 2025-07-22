@@ -48,12 +48,13 @@
   <div class="col-md-auto">
     <button onclick="$.getJSON('{{pdf_link}}', (x) => {downloadPDF(x);})" class="btn btn-primary">Export PDF</button>
   </div>
+
   <div class="col-md-auto">
-    <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Export Navigator JSON</button>
-    <div class="dropdown-menu bg-dark" id="dropdownMenu" aria-labelledby="dropdownMenuButton">
-      <h6 class="dropdown-header">Enterprise Layer</h6>
-      <a class="dropdown-item text-white" onclick="$.getJSON('{{nav_link}}', (x) => {downloadLayer(x);})">download</a>
-    </div>
+    <a href="{{nav_link}}" class="btn btn-primary" download>Export Navigator JSON</a>
+  </div>
+
+  <div class="col-md-auto">
+    <a href="{{afb_link}}" class="btn btn-primary" download>Export AFB</a>
   </div>
 </div>
 
