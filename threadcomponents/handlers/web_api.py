@@ -404,8 +404,8 @@ class WebAPI:
 
     async def afb_export(self, request):
         """Function to export report in AFB format."""
-        json_str = await self.report_exporter.afb_export(request)
-        return self.get_downloadable_export_response(json_str, "octet-stream", "data.afb")
+        filename, json_str = await self.report_exporter.afb_export(request)
+        return self.get_downloadable_export_response(json_str, "json", filename)
 
     async def nav_export(self, request):
         """

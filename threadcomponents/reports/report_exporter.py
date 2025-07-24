@@ -59,8 +59,14 @@ class ReportExporter:
 
     async def afb_export(self, request):
         """Exports a report in an AFB format."""
-        data = await AFBExporter().export()
-        return json.dumps(data, indent=4)
+        report = await self.check_request_for_export(request, "afb-export")
+        report_id = report[UID]
+        report_title = report[TITLE]
+        techniques = await self.data_svc.get_confirmed_techniques_for_afb_export(report_id)
+
+        data = AFBExporter(report_title, techniques).export()
+        filename = f"{sanitise_filename(report_title)}.afb"
+        return filename, json.dumps(data, indent=4)
 
     async def nav_export(self, request):
         """Exports a report in a navigator-friendly format."""
