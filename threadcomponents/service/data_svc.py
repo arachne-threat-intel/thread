@@ -10,6 +10,7 @@ import logging
 from contextlib import suppress
 from copy import deepcopy
 from datetime import datetime
+from threadcomponents.constants import TTP, IOC
 from urllib.parse import quote
 
 # Text to set on attack descriptions where this originally was not set
@@ -636,6 +637,25 @@ class DataService:
                 count += 1
 
         return unconfirmed_by_sentence if return_detail else count
+
+    async def get_confirmed_techniques_for_afb_export(self, report_id):
+        # The SQL select union query to retrieve the confirmed techniques and IoCs for the afb export
+        distinct_clause = "DISTINCT ON (tid) " if self.dao.db.IS_POSTGRESQL else ""
+        select_query = (
+            f"SELECT {distinct_clause}"
+            f"{self.dao.db_qparam} AS type, attack_uid, tid, name, text, NULL AS refanged_text "
+            "FROM ((report_sentences INNER JOIN report_sentence_hits "
+            "ON report_sentences.uid = report_sentence_hits.sentence_id) "
+            "LEFT JOIN attack_uids ON attack_uid = attack_uids.uid) "
+            f"WHERE report_sentence_hits.report_uid = {self.dao.db_qparam} "
+            f"AND report_sentence_hits.confirmed = {self.dao.db_true_val} "
+            f"UNION SELECT {self.dao.db_qparam} AS type, NULL, NULL, NULL, text, refanged_sentence_text "
+            "FROM (report_sentences INNER JOIN report_sentence_indicators_of_compromise "
+            "ON report_sentences.uid = report_sentence_indicators_of_compromise.sentence_id) "
+            f"WHERE report_sentence_indicators_of_compromise.report_id = {self.dao.db_qparam}"
+        )
+
+        return await self.dao.raw_select(select_query, parameters=tuple([TTP, report_id, IOC, report_id]))
 
     async def get_confirmed_techniques_for_nav_export(self, report_id):
         # Ensure date fields are converted into strings

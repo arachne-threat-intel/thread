@@ -5,3 +5,6 @@ DATETIME_OBJ = "datetime_obj"
 UID = "uid"
 URL = "url"
 TITLE = "title"
+
+TTP = "ttp"
+IOC = "ioc"
