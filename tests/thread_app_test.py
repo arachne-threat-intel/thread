@@ -104,7 +104,7 @@ class ThreadAppTest(AioHTTPTestCase):
         report_exporter = ReportExporter(services=services_with_limit)
         cls.web_api_with_limit = WebAPI(services=services_with_limit, report_exporter=report_exporter)
         # Some test-attack data
-        cls.attacks = dict(d99999="Drain", f12345="Fire", f32451="Firaga", s00001="requiem")
+        cls.attacks = dict(d99999="Drain", f12345="Fire", f32451="Firaga", s00001="requiem", s12345="Yevon")
 
     @classmethod
     def tearDownClass(cls):
@@ -122,10 +122,13 @@ class ThreadAppTest(AioHTTPTestCase):
         attack_2 = dict(uid="f32451", tid="T1562.004", name=self.attacks.get("f32451"))
         attack_3 = dict(uid="d99999", tid="T1029", name=self.attacks.get("d99999"))
         attack_4 = dict(uid="s00001", tid="T1485", name=self.attacks.get("s00001"), inactive=1)
-        for attack in [attack_1, attack_2, attack_3, attack_4]:
+        attack_5 = dict(uid="s12345", tid="S1030", name=self.attacks.get("s12345"))
+
+        for attack in [attack_1, attack_2, attack_3, attack_4, attack_5]:
             # Ignoring Integrity Error in case other test case already has inserted this data (causing duplicate UIDs)
             with suppress(sqlite3.IntegrityError):
                 await self.db.insert("attack_uids", attack)
+
         # Insert some category, keyword & country data
         cat_1 = dict(uid="c010101", keyname="aerospace", name="Aerospace")
         cat_2 = dict(uid="c123456", keyname="music", name="Music")
@@ -134,11 +137,13 @@ class ThreadAppTest(AioHTTPTestCase):
         group_2 = dict(uid="apt2", name="APT2")
         group_3 = dict(uid="apt3", name="APT3")
         self.data_svc.country_dict = dict(HB="Hobbiton", TA="Tatooine", WA="Wakanda")
+
         for cat, group in [(cat_1, group_1), (cat_2, group_2), (cat_3, group_3)]:
             with suppress(sqlite3.IntegrityError):
                 await self.db.insert("categories", cat)
                 await self.db.insert("keywords", group)
             self.web_svc.categories_dict[cat["keyname"]] = dict(name=cat["name"], sub_categories=[])
+
         # Carry out pre-launch tasks except for prepare_queue(): replace the call of this to return (and do) nothing
         # We don't want multiple prepare_queue() calls so the queue does not accumulate between tests
         with patch.object(RestService, "prepare_queue", return_value=None):
@@ -161,6 +166,7 @@ class ThreadAppTest(AioHTTPTestCase):
         app.router.add_route("GET", self.web_svc.get_route(WebService.EDIT_KEY), self.web_api.edit)
         app.router.add_route("GET", self.web_svc.get_route(WebService.ABOUT_KEY), self.web_api.about)
         app.router.add_route("GET", self.web_svc.get_route(WebService.HOW_IT_WORKS_KEY), self.web_api.how_it_works)
+        app.router.add_route("GET", self.web_svc.get_route(WebService.EXPORT_AFB_KEY), self.web_api.afb_export)
         app.router.add_route("*", self.web_svc.get_route(WebService.REST_KEY), self.web_api.rest_api)
         # A different route for limit-testing
         app.router.add_route(
@@ -245,6 +251,7 @@ class ThreadAppTest(AioHTTPTestCase):
         await self.db.insert("reports", report)
         # Mock the analysis of the report
         await self.rest_svc.start_analysis(criteria=report)
+
         if post_confirm_attack:
             # Get the report sentences for this report
             db_sentences = await self.db.get("report_sentences", equal=dict(report_uid=report[UID_KEY]))
@@ -257,6 +264,20 @@ class ThreadAppTest(AioHTTPTestCase):
                 return
             await self.client.post(
                 "/rest", json=dict(index="add_attack", sentence_id=sen_id, attack_uid=confirm_attack)
+            )
+
+    async def confirm_report_sentence_attacks(self, report_id, sentence_index, attack_list):
+        """Accepts a list of attacks for a given test-sentence index."""
+        sentence = await self.db.get("report_sentences", equal=dict(report_uid=report_id, sen_index=sentence_index))
+
+        for accept in attack_list:
+            await self.client.post(
+                "/rest",
+                json=dict(
+                    index="add_attack",
+                    sentence_id=sentence[0][UID_KEY],
+                    attack_uid=accept,
+                ),
             )
 
     def mock_current_attack_data(self, attack_list=None):
