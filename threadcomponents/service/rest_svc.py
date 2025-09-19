@@ -310,6 +310,7 @@ class RestService:
             if not skip_report:
                 # Insert report into db and update temp_dict with inserted ID from db
                 temp_dict[UID] = await self.dao.insert_generate_uid("reports", temp_dict)
+                temp_dict["techniques_threshold"] = batch.get("techniques_threshold")
                 # Finally, update queue and check queue when batch is finished
                 await self.queue.put(temp_dict)
                 queue.append(url)
@@ -521,7 +522,9 @@ class RestService:
 
         # DB tidy-up including removing report if low quality
         await self.dao.delete("report_sentence_queue_progress", dict(report_uid=report_id))
-        await self.remove_report_if_low_quality(report_id)
+
+        min_report_techniques = criteria.get("techniques_threshold")
+        await self.remove_report_if_low_quality(report_id, min_report_techniques=min_report_techniques)
 
     @staticmethod
     def combine_ml_and_reg(ml_analyzed_html, reg_analyzed_html):
@@ -533,7 +536,7 @@ class RestService:
             index += 1
         return analyzed_html
 
-    async def remove_report_if_low_quality(self, report_id):
+    async def remove_report_if_low_quality(self, report_id, min_report_techniques=None):
         """Function that removes report if its quality is low."""
         reports_found = await self.data_svc.get_report_by_id_or_title(by_id=True, report=report_id)
         if len(reports_found) != 1:
@@ -546,12 +549,14 @@ class RestService:
         unique_techniques_count = await self.data_svc.get_report_unique_techniques_count(report_id=report_id)
 
         # Remove report if amount of unique techniques found doesn't reach the minimum
-        if unique_techniques_count < REPORT_TECHNIQUES_MINIMUM:
+        report_techs_threshold = max(min_report_techniques or 0, REPORT_TECHNIQUES_MINIMUM)
+
+        if unique_techniques_count < report_techs_threshold:
             await self.data_svc.remove_report_by_id(report_id=report_id)
-            logging.info("Deleted report with " + str(unique_techniques_count) + " technique(s) found: " + report[URL])
+            logging.info(f"Deleted report with {str(unique_techniques_count)} technique(s) found: {report[URL]}")
             return
 
-        logging.info(str(unique_techniques_count) + " technique(s) found for report " + report_id)
+        logging.info(f"{str(unique_techniques_count)} technique(s) found for report {report_id}")
 
     async def remove_report_if_automatically_generated(self, report_id):
         """Function that removes a report if it has been automatically generated."""
@@ -564,7 +569,7 @@ class RestService:
             return
 
         await self.data_svc.remove_report_by_id(report_id=report_id)
-        logging.info("Deleted skipped report: " + report[URL])
+        logging.info(f"Deleted skipped report: {report[URL]}")
 
     async def add_attack(self, *args, **kwargs):
         """Function to add a mapping on a sentence."""
