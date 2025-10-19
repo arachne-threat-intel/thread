@@ -511,8 +511,8 @@ class RestService:
         if article_date:
             update_data.update(dict(date_written=article_date))
 
-        # Add expiry date (now + 1 week)
-        self.report_manager.add_report_expiry(data=update_data, weeks=1)
+        # Add expiry date (now + 1 month)
+        self.report_manager.add_report_expiry(data=update_data, months=1)
 
         # Update card to reflect the end of queue
         await self.dao.update("reports", where=dict(uid=report_id), data=update_data)

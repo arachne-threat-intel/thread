@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 from threadcomponents.constants import DATETIME_OBJ
 
@@ -86,7 +87,7 @@ def pre_save_date_checks(date_dict_list, mandatory_field_list, success_response)
 def generate_report_expiry(data=None, **date_kwargs):
     """Function to generate an expiry date from today and add it to a data-dictionary, if provided."""
     # Prepare expiry date as str
-    expiry_date = datetime.now() + timedelta(**date_kwargs)
+    expiry_date = datetime.now() + relativedelta(**date_kwargs)
     expiry_date_str = expiry_date.strftime("%Y-%m-%d %H:%M:%S")
 
     if data:
