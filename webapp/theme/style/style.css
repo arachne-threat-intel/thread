@@ -177,17 +177,22 @@ a {
 .btn-default {
   border-color: gray;
 }
+
 .btn-navy {
   color: #fff;
   background-color: #062f4f;
   border-color: 1px solid #062f4f;
 }
+
 .btn-navy:hover {
   color: #fff;
   background-color: #1C415F;
   background-image: none;
   border-color: 1px solid #062f4f;
+}
 
+.btn.fas {
+  width: auto;
 }
 
 /*tables*/
