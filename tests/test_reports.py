@@ -502,9 +502,7 @@ class TestReports(ThreadAppTest):
         report_id, report_title = str(uuid4()), "Auto-Add Categories to Me!"
         await self.submit_test_report(dict(uid=report_id, title=report_title, url="auto.add.categories"))
 
-        data = dict(
-            index="set_report_keywords", report_title=report_title, victims=dict(category=["rockets"])
-        )
+        data = dict(index="set_report_keywords", report_title=report_title, victims=dict(category=["rockets"]))
         resp = await self.client.post("/rest", json=data)
         self.assertTrue(resp.status < 300, msg="Adding categories resulted in a non-200 response.")
 

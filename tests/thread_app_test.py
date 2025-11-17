@@ -154,7 +154,7 @@ class ThreadAppTest(AioHTTPTestCase):
                     uid="aa000001",
                     selected="rockets",
                     auto_add="aerospace",
-                )
+                ),
             )
 
         # Carry out pre-launch tasks except for prepare_queue(): replace the call of this to return (and do) nothing

@@ -354,9 +354,7 @@ class DataService:
             )
 
         for rm_auto_selected_category in to_delete:
-            await self.dao.delete(
-                "categories_auto_add", dict(selected=keyname, auto_add=rm_auto_selected_category)
-            )
+            await self.dao.delete("categories_auto_add", dict(selected=keyname, auto_add=rm_auto_selected_category))
 
     async def insert_keyword_json_data(self, buildfile=os.path.join("spindle", "cta_names_mappings.json")):
         """Function to read in the keywords json file and insert data into the database."""
