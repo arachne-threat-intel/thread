@@ -97,6 +97,7 @@ class TestDBSQL(IsolatedAsyncioTestCase):
             "report_sentence_hits_initial",
             "original_html_initial",
             "categories",
+            "categories_auto_add",
             "report_categories",
             "keywords",
             "report_keywords",

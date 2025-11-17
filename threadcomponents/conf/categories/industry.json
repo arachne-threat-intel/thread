@@ -409,13 +409,51 @@
     "name": "Federal Government",
     "sub_categories": []
   },
+  "diplomatic_services": {
+    "name": "Diplomatic Services",
+    "sub_categories": []
+  },
   "government": {
     "name": "Government",
     "sub_categories": ["defence", "law_enforcement", "emergency_services", "courts", "local_gov", "state_gov",
-      "federal_gov"]
+      "federal_gov", "diplomatic_services"]
   },
   "general_public": {
     "name": "General Public",
+    "sub_categories": []
+  },
+  "critical_infrastructure": {
+    "name": "Critical Infrastructure",
+    "sub_categories": [],
+    "auto_select": ["government", "financial", "agriculture", "food", "energy", "info_tech", "aerospace", "education",
+      "transport", "telecom", "water", "health"]
+  },
+  "political_orgs": {
+    "name": "Political Organisations",
+    "sub_categories": []
+  },
+  "retail": {
+    "name": "General Retail",
+    "sub_categories": []
+  },
+  "travel": {
+    "name": "International and Domestic Travel",
+    "sub_categories": []
+  },
+  "maritime_freight": {
+    "name": "Maritime Freight",
+    "sub_categories": []
+  },
+  "dissidents": {
+    "name": "Dissidents",
+    "sub_categories": []
+  },
+  "terrorist_groups": {
+    "name": "Terrorist Groups",
+    "sub_categories": []
+  },
+  "ngo": {
+    "name": "Non-Governmental Organisations",
     "sub_categories": []
   }
 }

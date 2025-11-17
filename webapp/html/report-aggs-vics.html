@@ -23,7 +23,7 @@
     <div class="col-sm-3">
       {% if assoc_type == "aggressor" %}
         <select id="{{assoc_type}}GroupSelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
-                title="Select groups" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
+                title="Select groups" multiple data-actions-box="true" data-selected-text-format="count" required {% if completed %}disabled{% endif %}
                 onchange="{{onchangeGroup}}(this)">
           {% for group_name in group_list %}
             <option class="{{assoc_type}}GroupOpt" value="{{group_name}}" {% if group_name in db_group_list %}selected{% endif %}>{{group_name}}</option>
@@ -31,7 +31,7 @@
         </select>
       {% else %}
         <select id="{{assoc_type}}CategorySelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
-                title="Select categories" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
+                title="Select categories" multiple data-actions-box="true" data-selected-text-format="count" required {% if completed %}disabled{% endif %}
                 onchange="onchangeReportCategories(this)">
           {% for category_entry in category_list %}
             <option class="categoryOpt" value="{{category_entry.keyname}}" {% if category_entry.keyname in categories %}selected{% endif %}>{{category_entry.display_name}}</option>
@@ -41,7 +41,7 @@
     </div>
     <div class="col-sm-3">
       <select id="{{assoc_type}}RegionSelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
-              title="Select regions/political blocs" multiple data-selected-text-format="count" {% if completed %}disabled{% endif %}
+              title="Select regions/political blocs" multiple data-actions-box="true" data-selected-text-format="count" {% if completed %}disabled{% endif %}
               onchange="{{onchangeRegion}}(this)">
           {% for region_key in region_list %}
             <option class="{{assoc_type}}RegionOpt" value="{{region_key}}" {% if region_key in db_region_list %}selected{% endif %}>
@@ -52,7 +52,7 @@
     </div>
     <div class="col-sm-3">
       <select id="{{assoc_type}}CountrySelect" class="selectpicker" data-size="5" data-live-search="true" data-width="100%"
-              title="Select countries" multiple data-selected-text-format="count" required {% if completed %}disabled{% endif %}
+              title="Select countries" multiple data-actions-box="true" data-selected-text-format="count" required {% if completed %}disabled{% endif %}
               onchange="{{onchangeCountry}}(this)">
         {% for country_key in country_list %}
           <option class="{{assoc_type}}CountryOpt" value="{{country_key}}" {% if country_key in db_country_list %}selected{% endif %}>

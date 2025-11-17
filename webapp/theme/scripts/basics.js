@@ -485,7 +485,16 @@ function setReportKeywords(reportTitle) {
   requestData.victims.countries_all = $("input#victimCountrySelAll").prop("checked");
   requestData.victims.categories_all = $("input#victimCategorySelAll").prop("checked");
   restRequest("POST", {"index":"set_report_keywords", "report_title": reportTitle, "victims": requestData.victims,
-                       "aggressors": requestData.aggressors}, setAggressorsVictimsLists);
+                       "aggressors": requestData.aggressors},
+    // Either refresh the whole page or just the keywords section
+    function success(resp) {
+      if (resp.refresh_page) {
+        page_refresh();
+        return;
+      }
+      setAggressorsVictimsLists();
+    }
+  );
 }
 
 function setAggressorsVictimsLists() {

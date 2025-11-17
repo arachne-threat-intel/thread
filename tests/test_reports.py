@@ -497,6 +497,20 @@ class TestReports(ThreadAppTest):
         current = await self.data_svc.get_report_category_keynames(report_id)
         self.assertEqual(set(current), {"aerospace", "music"}, msg="Categories were not added.")
 
+    async def test_adding_report_categories_auto_add(self):
+        """Function to test successfully adding categories to a report which auto-adds another category."""
+        report_id, report_title = str(uuid4()), "Auto-Add Categories to Me!"
+        await self.submit_test_report(dict(uid=report_id, title=report_title, url="auto.add.categories"))
+
+        data = dict(
+            index="set_report_keywords", report_title=report_title, victims=dict(category=["rockets"])
+        )
+        resp = await self.client.post("/rest", json=data)
+        self.assertTrue(resp.status < 300, msg="Adding categories resulted in a non-200 response.")
+
+        current = await self.data_svc.get_report_category_keynames(report_id)
+        self.assertEqual({"rockets", "aerospace"}, set(current), msg="Categories were not auto-added.")
+
     async def test_removing_report_categories(self):
         """Function to test successfully removing categories from a report."""
         report_id, report_title = str(uuid4()), "Remove Categories From Me!"

@@ -432,3 +432,7 @@ table#confirmedSentenceInfo td {
   margin: 1rem;
   margin-left: unset;
 }
+
+.bs-actionsbox .bs-select-all {
+  display: none !important;
+}

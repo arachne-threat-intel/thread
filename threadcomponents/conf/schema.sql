@@ -61,6 +61,18 @@ CREATE TABLE IF NOT EXISTS categories (
     display_name VARCHAR(200)
 );
 
+CREATE TABLE IF NOT EXISTS categories_auto_add (
+    -- For categories, the category to automatically add when adding a given category
+    uid VARCHAR(60) PRIMARY KEY,
+    -- The keyname of the category being selected
+    selected VARCHAR(40),
+    -- The keyname of the category to auto-add
+    auto_add VARCHAR(40),
+    UNIQUE (selected, auto_add),
+    FOREIGN KEY(selected) REFERENCES categories(keyname) ON DELETE CASCADE,
+    FOREIGN KEY(auto_add) REFERENCES categories(keyname) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS report_categories (
     uid VARCHAR(60) PRIMARY KEY,
     -- The UID of the report

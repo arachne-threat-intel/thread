@@ -158,6 +158,10 @@ class ReportManager(ReportEntityManager):
         # Retrieve current report categories
         current = await self.data_svc.get_report_category_keynames(report_id)
         valid_categories = set(self.web_svc.categories_dict.keys()).intersection(categories)
+
+        auto_add = await self.data_svc.get_auto_selected_for_category(valid_categories)
+        valid_categories.update(auto_add)
+
         to_add = valid_categories - set(current)
         to_delete = set(current) - valid_categories
 
@@ -209,6 +213,12 @@ class ReportManager(ReportEntityManager):
         current = await self.data_svc.get_report_aggressors_victims(report_id)
         categories = await self.data_svc.get_report_category_keynames(report_id)
         current["victims"]["categories"] = categories or []
+
+        requested_categories = victims.get("category", [])
+        auto_add = await self.data_svc.get_auto_selected_for_category(requested_categories)
+        if auto_add:
+            success.update(refresh_page=True)
+            requested_categories += auto_add
 
         # For each aggressor and victim, have the current-data and request-data ready to compare
         aggressor_assoc = [AssociationWith.CN.value, AssociationWith.RG.value, AssociationWith.GR.value]

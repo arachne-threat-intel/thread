@@ -133,6 +133,7 @@ class ThreadAppTest(AioHTTPTestCase):
         cat_1 = dict(uid="c010101", keyname="aerospace", name="Aerospace")
         cat_2 = dict(uid="c123456", keyname="music", name="Music")
         cat_3 = dict(uid="c898989", keyname="film", name="Film")
+        cat_4 = dict(uid="c000001", keyname="rockets", name="Rockets")
         group_1 = dict(uid="apt1", name="APT1")
         group_2 = dict(uid="apt2", name="APT2")
         group_3 = dict(uid="apt3", name="APT3")
@@ -143,6 +144,18 @@ class ThreadAppTest(AioHTTPTestCase):
                 await self.db.insert("categories", cat)
                 await self.db.insert("keywords", group)
             self.web_svc.categories_dict[cat["keyname"]] = dict(name=cat["name"], sub_categories=[])
+
+        self.web_svc.categories_dict["rockets"] = dict(name="Rockets", sub_categories=[], auto_select=["aerospace"])
+        with suppress(sqlite3.IntegrityError):
+            await self.db.insert("categories", cat_4)
+            await self.db.insert(
+                "categories_auto_add",
+                dict(
+                    uid="aa000001",
+                    selected="rockets",
+                    auto_add="aerospace",
+                )
+            )
 
         # Carry out pre-launch tasks except for prepare_queue(): replace the call of this to return (and do) nothing
         # We don't want multiple prepare_queue() calls so the queue does not accumulate between tests
