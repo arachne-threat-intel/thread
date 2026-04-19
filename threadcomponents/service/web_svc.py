@@ -353,7 +353,7 @@ class WebService:
             return cached
 
         try:
-            with requests.get(url) as response:
+            with requests.get(url, timeout=(5, 15)) as response:
                 response_clone = requests.Response()
                 response_clone.status_code = response.status_code
                 response_clone.headers = response.headers
@@ -363,7 +363,7 @@ class WebService:
 
                 self.cached_responses[url] = response_clone
                 return response_clone
-        except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.RequestException as e:
             if log_errors:
                 logging.error(f"URL retrieval failure: {e}")
 
