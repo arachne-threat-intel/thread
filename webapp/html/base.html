@@ -56,7 +56,7 @@
             {% if not is_local %}
               <li class="nav-item"><a href="{{what_to_submit_url}}" class="nav-link"><b>What Can I Submit?</b></a></li>
             {% endif %}
-            <li class="nav-item"><a href="https://arachne.digital" target="_blank" class="nav-link"><b>Arachne</b></a></li>
+            <li class="nav-item"><a href="https://vrax.io" target="_blank" class="nav-link"><b>Vrax</b></a></li>
           </ul>
         </div>
       </nav>
@@ -65,12 +65,12 @@
     <div id="content">{% block content %} {% endblock %}</div>
     <footer class="footer p-3 thread-navbar">
       <div class="text-center text-white-50">
-        <p>© {{ current_year|default("2023") }} Arachne Digital</p>
+        <p>© {{ current_year|default("2023") }} Vrax</p>
         {% if not is_local and not hide_cookie_notice %}
           <div class="alert alert-info alert-dismissible fade show cookie-alert" role="alert">
             We use strictly necessary cookies whilst you are here. These are to enable the website to work and cannot be
             disabled.<br>To read more about what this means, please see
-            <a href="https://arachne.digital/privacy-policy" target="_blank"><b>Arachne's Privacy Policy</b></a>.
+            <a href="https://vrax.io/privacy-policy" target="_blank"><b>Vrax's Privacy Policy</b></a>.
             <form action="{{cookie_url}}" method="GET">{# Empty form so the button fires a REST request #}
               <button type="submit" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </form>
