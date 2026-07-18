@@ -23,7 +23,7 @@ class MLService:
         # Specify the location of the models file
         self.dict_loc = os.path.join(self.dir_prefix, "threadcomponents", "models", "model_dict.p")
 
-    async def build_models(self, tech_id, techniques):
+    async def build_models(self, tech_id, techniques, model_score_threshold=None):
         """Function to build Logistic Regression Classification models based off of the examples provided."""
 
         tech_name = None
@@ -84,9 +84,13 @@ class MLService:
         logreg = LogisticRegression(max_iter=2500, solver="lbfgs")
         logreg.fit(x_train, y_train)
 
-        logging.info(f"\tScore: {logreg.score(x_test, y_test)}")
+        model_score = logreg.score(x_test, y_test)
+        logging.info(f"\tScore: {model_score}")
 
         await asyncio.sleep(0.001)  # Random sleep to avoid blocking the event loop
+
+        if isinstance(model_score_threshold, (int, float)) and (model_score < model_score_threshold):
+            return None
 
         return (cv, logreg)
 
@@ -120,35 +124,52 @@ class MLService:
         for tech_id, _ in list_of_techs:
             logging.info("[#] Building.... {}/{}".format(count, total))
             count += 1
-            model_dict[tech_id] = await self.build_models(tech_id, techniques)
+            built_model = await self.build_models(tech_id, techniques)
+            if built_model:
+                model_dict[tech_id] = built_model
+                rebuilt = True
 
-        rebuilt = True
-        logging.info("[#] Saving models to pickled file: " + os.path.basename(self.dict_loc))
-        # Save the newly-built models
-        with open(self.dict_loc, "wb") as saved_dict:
-            pickle.dump(model_dict, saved_dict)
+        if rebuilt:
+            logging.info("[#] Saving models to pickled file: " + os.path.basename(self.dict_loc))
+            # Save the newly-built models
+            with open(self.dict_loc, "wb") as saved_dict:
+                pickle.dump(model_dict, saved_dict)
 
-        logging.info("[#] Finished saving models.")
+            logging.info("[#] Finished saving models.")
+
         return rebuilt, model_dict
 
-    async def update_pickle_file(self, techs_to_rebuild, list_of_techs, techniques):
+    async def update_pickle_file(self, techs_to_rebuild, list_of_techs, techniques, model_score_threshold=None):
         """
         Updates the current classification models with the new attacks.
 
         :param techs_to_rebuild: List of new techniques to add to the models
         :param list_of_techs: List of ALL techniques including the new ones
         :param techniques: Dictionary of all techniques including the new ones
+        :param model_score_threshold: The threshold score of accepting an update to the models
+        :returns a list of the models which failed to update against the model_score_threshold
         """
         rebuilt, current_dict = await self.build_pickle_file(list_of_techs, techniques, force=False)
         if rebuilt:
             return  # models and pickle file include new attacks
 
         # If we retrieved the current models and they were not rebuilt, add/update the techs in the pickle file
+        failed_to_update = []
         for tech in techs_to_rebuild:
-            current_dict[tech] = await self.build_models(tech, techniques)
+            built_model = await self.build_models(tech, techniques, model_score_threshold=model_score_threshold)
 
-        with open(self.dict_loc, "wb") as saved_dict:
-            pickle.dump(current_dict, saved_dict)
+            if built_model:
+                current_dict[tech] = built_model
+            else:
+                failed_to_update.append(tech)
+
+        if len(techs_to_rebuild) > len(failed_to_update):
+            with open(self.dict_loc, "wb") as saved_dict:
+                pickle.dump(current_dict, saved_dict)
+
+            logging.info("Finished updating models.")
+
+        return failed_to_update
 
     def get_pre_saved_models(self, dictionary_location=None):
         """Function to retrieve previously-saved models via pickle."""
