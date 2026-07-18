@@ -149,7 +149,7 @@ class ReportExporter:
         """Initialises and returns a dictionary to use with pdfmake."""
         dd = dict()
         # Default background which will be replaced by logo via client-side
-        dd["background"] = "Report by Arachne Digital"
+        dd["background"] = "Report by Vrax"
         dd["content"] = []
         # The styles for this pdf - hyperlink styling needed to be added manually
         dd["styles"] = dict(
@@ -340,7 +340,7 @@ class ReportExporter:
     def pdfmake_add_supporting_country_info(self, dd, all_regions):
         """Adds regions/countries info to existing pdfmake-dictionary-data, dd."""
         note = (
-            "Any countries listed in this report - from predefined lists by Arachne Digital; excluding those "
+            "Any countries listed in this report - from predefined lists by Vrax; excluding those "
             "quoted from the article text - have been taken from open-source lists."
         )
         dd["content"].append(dict(text="\n" + note))
@@ -348,7 +348,7 @@ class ReportExporter:
         # Expansion on regions if applicable
         if all_regions:
             dd["content"].append(
-                dict(text="\n*Arachne Digital defines these regions as follows:\n\n", pageBreak="before")
+                dict(text="\n*Vrax defines these regions as follows:\n\n", pageBreak="before")
             )
             regions_table = dict(widths=["35%", "65%"], body=[])
 
