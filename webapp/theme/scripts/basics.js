@@ -670,7 +670,7 @@ function downloadPDF(data) {
     importFont();
   }
   // Check if we have a logo; if so, add the logo to the PDF
-  var imageFilename = "Arachne-Logo.png";
+  var imageFilename = "Vrax-Logo.png";
   var imageEncoded = pdfMake.vfs[imageFilename];
   if (imageEncoded) {
     data["background"] = function(currentPage, pageSize) {
