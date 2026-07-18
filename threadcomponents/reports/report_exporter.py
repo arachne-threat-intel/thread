@@ -347,9 +347,7 @@ class ReportExporter:
 
         # Expansion on regions if applicable
         if all_regions:
-            dd["content"].append(
-                dict(text="\n*Vrax defines these regions as follows:\n\n", pageBreak="before")
-            )
+            dd["content"].append(dict(text="\n*Vrax defines these regions as follows:\n\n", pageBreak="before"))
             regions_table = dict(widths=["35%", "65%"], body=[])
 
             for region_id in all_regions:
