@@ -38,6 +38,19 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
 }
 
+/* Both lockups need a definite height, not max-height: the Vrax SVGs carry only a
+   viewBox with no intrinsic width/height, so inside a flex row a max-height image
+   collapses to zero width and disappears while still occupying the DOM. */
+#vraxLogo {
+  height: 56px;
+  width: auto;
+}
+
+.footer-logo {
+  height: 34px;
+  width: auto;
+}
+
 .thread-header {
   margin-left: 2rem;
   margin-top: .5rem;
