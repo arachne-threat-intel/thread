@@ -23,9 +23,19 @@ html {
 
 body {
   min-height: 100%;
-  font-family: 'Exo', sans-serif;
+  font-family: 'Roboto', sans-serif;
   background-color: var(--vrax-white);
   color: var(--vrax-charcoal);
+}
+
+/* Montserrat carries titles, headings and interface labels */
+h1, h2, h3, h4, h5, h6,
+.nav-link, label, .btn {
+  font-family: 'Montserrat', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
 }
 
 .thread-header {
