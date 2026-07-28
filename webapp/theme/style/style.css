@@ -142,12 +142,6 @@ footer .twitter-btn { float: right; }
   color: var(--vrax-charcoal);
 }
 
-.expand-all {
-  background-image: url('../images/search.png');
-  height: 30px;
-  width: 30px;
-  background-size: contain;
-}
 a {
   color: var(--vrax-charcoal);
 }
