@@ -1,5 +1,5 @@
-REST_IGNORED = dict(ignored=1)
-REST_SUCCESS = dict(success=1)
+REST_IGNORED = {"ignored": 1}
+REST_SUCCESS = {"success": 1}
 
 DATETIME_OBJ = "datetime_obj"
 UID = "uid"

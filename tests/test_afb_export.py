@@ -1,9 +1,9 @@
 import os
-
 from datetime import datetime
+from uuid import uuid4
+
 from tests.thread_app_test import ThreadAppTest
 from threadcomponents.constants import UID as UID_KEY
-from uuid import uuid4
 
 
 class TestAFBExport(ThreadAppTest):
@@ -16,12 +16,12 @@ class TestAFBExport(ThreadAppTest):
 
         self.report_id, self.report_title = str(uuid4()), "Blitzball: A Guide"
         await self.submit_test_report(
-            dict(
-                uid=self.report_id,
-                title=self.report_title,
-                url="lets.blitz",
-                date_written="2025-07-25",
-            ),
+            {
+                "uid": self.report_id,
+                "title": self.report_title,
+                "url": "lets.blitz",
+                "date_written": "2025-07-25",
+            },
             sentences=[
                 ":~$ echo $JECHT_SHOT",
                 "For more test data, I need to say some random IP addresses.",
@@ -38,12 +38,12 @@ class TestAFBExport(ThreadAppTest):
 
         self.report_id2, self.report_title2 = str(uuid4()), "Chocobo Racing: A Guide"
         await self.submit_test_report(
-            dict(
-                uid=self.report_id2,
-                title=self.report_title2,
-                url="kw.eh",
-                date_written="2025-07-25",
-            ),
+            {
+                "uid": self.report_id2,
+                "title": self.report_title2,
+                "url": "kw.eh",
+                "date_written": "2025-07-25",
+            },
             sentences=[
                 "Kweh.",
                 "Kweh!?",
@@ -66,27 +66,36 @@ class TestAFBExport(ThreadAppTest):
 
     async def save_report_iocs(self):
         """Saves the IoCs in the test-report."""
-        sentence = await self.db.get("report_sentences", equal=dict(report_uid=self.report_id, sen_index=0))
+        sentence = await self.db.get(
+            "report_sentences",
+            equal={
+                "report_uid": self.report_id,
+                "sen_index": 0,
+            },
+        )
         await self.client.post(
             "/rest",
-            json=dict(
-                index="add_indicator_of_compromise",
-                sentence_id=sentence[0][UID_KEY],
-                ioc_text="echo $JECHT_SHOT",
-            ),
+            json={
+                "index": "add_indicator_of_compromise",
+                "sentence_id": sentence[0][UID_KEY],
+                "ioc_text": "echo $JECHT_SHOT",
+            },
         )
 
         for sentence_index in range(2, 4):
             sentence = await self.db.get(
                 "report_sentences",
-                equal=dict(report_uid=self.report_id, sen_index=sentence_index),
+                equal={
+                    "report_uid": self.report_id,
+                    "sen_index": sentence_index,
+                },
             )
             await self.client.post(
                 "/rest",
-                json=dict(
-                    index="suggest_and_save_ioc",
-                    sentence_id=sentence[0][UID_KEY],
-                ),
+                json={
+                    "index": "suggest_and_save_ioc",
+                    "sentence_id": sentence[0][UID_KEY],
+                },
             )
 
     async def get_export_afb_response(self):
@@ -151,7 +160,7 @@ class TestAFBExport(ThreadAppTest):
         camera_fields = sorted(camera.keys())
         self.assertEqual(camera_fields, ["k", "x", "y"], "Camera-object not correctly set.")
 
-        numbers_provided = all([isinstance(_, int) or isinstance(_, float) for _ in camera.values()])
+        numbers_provided = all(isinstance(_, (int, float)) for _ in camera.values())
         self.assertTrue(numbers_provided, "Camera-values are not numbers.")
 
     async def test_flow_object(self):
@@ -164,8 +173,11 @@ class TestAFBExport(ThreadAppTest):
         properties = dict(flow_objects[0]["properties"])
         self.assertEqual(properties["name"], self.report_title, "Report title not set in export.")
 
-        today = datetime.now()
-        exported_date = datetime.strptime(properties["created"], "%Y-%m-%dT%H:%M:%S.%fZ")
+        today = datetime.now().astimezone()
+        exported_date = datetime.strptime(
+            properties["created"],
+            "%Y-%m-%dT%H:%M:%S.%fZ",
+        ).replace(tzinfo=today.tzinfo)
         self.assertEqual(today.date(), exported_date.date(), "Created timestamp is not of today.")
 
         object_list = sorted(flow_objects[0]["objects"])
@@ -197,41 +209,41 @@ class TestAFBExport(ThreadAppTest):
         self.assertEqual(layout_keys, object_list, "Layout-object not correctly set.")
 
         layout_values = [ln for l_coords in layout.values() for ln in l_coords]
-        numbers_provided = all([isinstance(_, int) or isinstance(_, float) for _ in layout_values])
+        numbers_provided = all(isinstance(_, (int, float)) for _ in layout_values)
         self.assertTrue(numbers_provided, "Layout-values are not numbers.")
 
     async def test_ipv6_object_declared(self):
         """Tests an IPv6 entry is correctly included in the export."""
-        expected = dict(value="2607[:]f8b0[:]400e[:]c01[::]8a")
+        expected = {"value": "2607[:]f8b0[:]400e[:]c01[::]8a"}
         await self.trigger_object_by_id_value_test("ipv6_addr", [expected])
 
     async def test_ipv4_object_declared(self):
         """Tests an IPv4 entry is correctly included in the export."""
-        expected = dict(value="74[.]125[.]199[.]138")
+        expected = {"value": "74[.]125[.]199[.]138"}
         await self.trigger_object_by_id_value_test("ipv4_addr", [expected])
 
     async def test_process_object_declared(self):
         """Tests a process-entry is correctly included in the export."""
-        expected = dict(command_line=":~$ echo $JECHT_SHOT")
+        expected = {"command_line": ":~$ echo $JECHT_SHOT"}
         await self.trigger_object_by_id_value_test("process", [expected])
 
     async def test_malware_object_declared(self):
         """Tests a malware-entry is correctly included in the export."""
-        expected = dict(name="Yevon")
+        expected = {"name": "Yevon"}
         await self.trigger_object_by_id_value_test("malware", [expected])
 
     async def test_action_objects_declared(self):
         """Tests action-entries are correctly included in the export."""
-        expected_1 = dict(
-            name="Drain",
-            technique_id="T1029",
-            technique_ref="d99999",
-            ttp=dict(technique="T1029"),
-        )
-        expected_2 = dict(
-            name="Fire",
-            technique_id="T1562",
-            technique_ref="f12345",
-            ttp=dict(technique="T1562"),
-        )
+        expected_1 = {
+            "name": "Drain",
+            "technique_id": "T1029",
+            "technique_ref": "d99999",
+            "ttp": {"technique": "T1029"},
+        }
+        expected_2 = {
+            "name": "Fire",
+            "technique_id": "T1562",
+            "technique_ref": "f12345",
+            "ttp": {"technique": "T1562"},
+        }
         await self.trigger_object_by_id_value_test("action", [expected_1, expected_2])

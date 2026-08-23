@@ -1,9 +1,9 @@
 import os
 import random
+from uuid import uuid4
 
 from tests.thread_app_test import ThreadAppTest
 from threadcomponents.constants import UID as UID_KEY
-from uuid import uuid4
 
 
 class TestIoCs(ThreadAppTest):
@@ -23,32 +23,22 @@ class TestIoCs(ThreadAppTest):
 
     def dirty_ioc_text(self, ioc_text):
         """Adds characters to an IoC string which we hope will be removed."""
-        leading_char_1 = random.choice(["*"] + self.bullet_points + self.hyphens)
-        leading_char_2 = random.choice(["*"] + self.bullet_points + self.hyphens)
-        leading_char_3 = random.choice(["*"] + self.bullet_points + self.hyphens)
+        leading_char_1 = random.choice(("*",) + self.bullet_points + self.hyphens)
+        leading_char_2 = random.choice(("*",) + self.bullet_points + self.hyphens)
+        leading_char_3 = random.choice(("*",) + self.bullet_points + self.hyphens)
         trailing_char_1 = random.choice(self.periods + self.hyphens)
         trailing_char_2 = random.choice(self.periods + self.hyphens)
         trailing_char_3 = random.choice(self.periods + self.hyphens)
-        return "%s%s%s%s%s%s%s%s%s" % (
-            leading_char_1,
-            leading_char_2,
-            leading_char_2,
-            leading_char_3,
-            ioc_text,
-            trailing_char_1,
-            trailing_char_2,
-            trailing_char_3,
-            trailing_char_2,
-        )
+        return f"{leading_char_1}{leading_char_2}{leading_char_2}{leading_char_3}{ioc_text}{trailing_char_1}{trailing_char_2}{trailing_char_3}{trailing_char_2}"
 
     async def create_report_with_sentence(self, text):
         """Function to create a test report with a test sentence and return the IDs of both."""
         report_id, report_title = str(uuid4()), "Are You Not Entertain- Compromised?"
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url="thumbs.down"), sentences=[text])
+        await self.submit_test_report({"uid": report_id, "title": report_title, "url": "thumbs.down"}, sentences=[text])
 
         # Get the sentence-ID to use in the endpoint
-        sentences = await self.db.get("report_sentences", equal=dict(report_uid=report_id))
+        sentences = await self.db.get("report_sentences", equal={"report_uid": report_id})
         sen_id = sentences[0][UID_KEY]
         return report_id, sen_id
 
@@ -62,9 +52,9 @@ class TestIoCs(ThreadAppTest):
 
         # Attempt to flag this sentence as an IoC
         if suggest_and_save:
-            data = dict(index="suggest_and_save_ioc", sentence_id=sen_id)
+            data = {"index": "suggest_and_save_ioc", "sentence_id": sen_id}
         else:
-            data = dict(index="add_indicator_of_compromise", sentence_id=sen_id, ioc_text=text)
+            data = {"index": "add_indicator_of_compromise", "sentence_id": sen_id, "ioc_text": text}
         resp = await self.client.post("/rest", json=data)
         resp_json = await resp.json()
         # Check an unsuccessful response was sent
@@ -72,7 +62,7 @@ class TestIoCs(ThreadAppTest):
         try:
             error_msg, alert_user = resp_json.get("error"), resp_json.get("alert_user")
         except AttributeError:
-            self.fail("Text `%s` was able to be flagged as IoC." % text)
+            self.fail(f"Text `{text}` was able to be flagged as IoC.")
         self.assertTrue(resp.status == 500, msg="Flagging unsuccessful IoC resulted in a non-500 response.")
         self.assertTrue(
             "This cannot be flagged as an IoC" in error_msg,
@@ -93,13 +83,13 @@ class TestIoCs(ThreadAppTest):
 
         # Attempt to flag this sentence as an IoC
         if suggest_and_save:
-            data = dict(index="suggest_and_save_ioc", sentence_id=sen_id)
+            data = {"index": "suggest_and_save_ioc", "sentence_id": sen_id}
         else:
-            data = dict(index="add_indicator_of_compromise", sentence_id=sen_id, ioc_text=text)
+            data = {"index": "add_indicator_of_compromise", "sentence_id": sen_id, "ioc_text": text}
         resp = await self.client.post("/rest", json=data)
         resp_json = await resp.json()
         success_msg, alert_user = resp_json.get("info"), resp_json.get("alert_user")
-        self.assertTrue(resp.status < 300, msg="Flagging `%s` as an IoC resulted in a non-200 response." % text)
+        self.assertTrue(resp.status < 300, msg=f"Flagging `{text}` as an IoC resulted in a non-200 response.")
         self.assertTrue(
             "The selected sentence has been flagged as an IoC" in success_msg,
             msg="Message for successful IoC is different than expected.",
@@ -111,23 +101,23 @@ class TestIoCs(ThreadAppTest):
             self.assertEqual(ioc_text_resp, expected_ioc, msg="User is not given correct suggested-saved IoC.")
 
         # Check IoC text is saved as expected in the db
-        existing = await self.dao.get(self.TABLE, dict(report_id=report_id, sentence_id=sen_id))
-        self.assertEqual(expected_ioc, existing[0][self.FIELD], "`%s` was not saved as an IoC." % expected_ioc)
+        existing = await self.dao.get(self.TABLE, {"report_id": report_id, "sentence_id": sen_id})
+        self.assertEqual(expected_ioc, existing[0][self.FIELD], f"`{expected_ioc}` was not saved as an IoC.")
         return report_id, sen_id
 
     async def check_suggested_ioc(self, ioc_text, dirty_text=None, cleaned=None):
         """Function to test responses when an IoC string is suggested."""
         # Use dirty_text parameter when debugging previously-failed randomised strings
         text = dirty_text or self.dirty_ioc_text(ioc_text)
-        report_id, sen_id = await self.create_report_with_sentence(text)
+        _report_id, sen_id = await self.create_report_with_sentence(text)
 
         cleaned = cleaned or ioc_text
         # Request the suggested IoC-text for this sentence
-        data = dict(index="suggest_indicator_of_compromise", sentence_id=sen_id)
+        data = {"index": "suggest_indicator_of_compromise", "sentence_id": sen_id}
         resp = await self.client.post("/rest", json=data)
         suggested_ioc = await resp.json()
-        self.assertTrue(resp.status < 300, msg="Suggesting IoC from `%s` resulted in a non-200 response." % text)
-        self.assertEqual(cleaned, suggested_ioc, "`%s` was not cleaned as expected." % text)
+        self.assertTrue(resp.status < 300, msg=f"Suggesting IoC from `{text}` resulted in a non-200 response.")
+        self.assertEqual(cleaned, suggested_ioc, f"`{text}` was not cleaned as expected.")
 
     async def test_deny_link_local_ipv4(self):
         """Function to test a link-local IPv4 address cannot be flagged as an IoC."""
@@ -180,7 +170,7 @@ class TestIoCs(ThreadAppTest):
     async def test_clean_url_with_hxxp(self):
         """Function to test a URL with 'hxxp' is cleaned when suggested IoC text is requested."""
         testing = "https://en.wikipedia.org/wiki/Horse"
-        await self.check_suggested_ioc(" %s " % testing.replace("http", "hxxp"), cleaned=testing)
+        await self.check_suggested_ioc(" {} ".format(testing.replace("http", "hxxp")), cleaned=testing)
 
     async def test_clean_url_with_quotes(self):
         """Function to test a URL with quotes is cleaned when suggested IoC text is requested."""
@@ -214,10 +204,10 @@ class TestIoCs(ThreadAppTest):
         testing = "I-want-to-be-your-canary"
         replacement = "I-want-this-to-be-my-IoC"
         report_id, sen_id = await self.check_allowed_ioc(testing)
-        data = dict(index="add_indicator_of_compromise", sentence_id=sen_id, ioc_text=replacement)
+        data = {"index": "add_indicator_of_compromise", "sentence_id": sen_id, "ioc_text": replacement}
         await self.client.post("/rest", json=data)
 
-        existing = await self.dao.get(self.TABLE, dict(report_id=report_id, sentence_id=sen_id))
+        existing = await self.dao.get(self.TABLE, {"report_id": report_id, "sentence_id": sen_id})
         saved_ioc = existing[0][self.FIELD]
         self.assertTrue(len(existing) == 1, msg="There are duplicate or missing IoC entries.")
         self.assertNotEqual(saved_ioc, replacement, msg="The IoC was unexpectedly updated.")
@@ -228,11 +218,11 @@ class TestIoCs(ThreadAppTest):
         testing = "pink!"
         replacement = "red!"
         report_id, sen_id = await self.check_allowed_ioc(testing)
-        data = dict(index="update_indicator_of_compromise", sentence_id=sen_id, ioc_text=replacement)
+        data = {"index": "update_indicator_of_compromise", "sentence_id": sen_id, "ioc_text": replacement}
         resp = await self.client.post("/rest", json=data)
         resp_json = await resp.json()
 
-        existing = await self.dao.get(self.TABLE, dict(report_id=report_id, sentence_id=sen_id))
+        existing = await self.dao.get(self.TABLE, {"report_id": report_id, "sentence_id": sen_id})
         saved_ioc = existing[0][self.FIELD]
         self.assertTrue(len(existing) == 1, msg="There are duplicate or missing IoC entries.")
         self.assertNotEqual(saved_ioc, testing, msg="The IoC was not updated.")
@@ -250,9 +240,9 @@ class TestIoCs(ThreadAppTest):
         """Function to test when a user updates IoC text with an empty string."""
 
         async def check_not_updated(replacement):
-            data = dict(index="update_indicator_of_compromise", sentence_id=sen_id, ioc_text=replacement)
+            data = {"index": "update_indicator_of_compromise", "sentence_id": sen_id, "ioc_text": replacement}
             await self.client.post("/rest", json=data)
-            existing = await self.dao.get(self.TABLE, dict(report_id=report_id, sentence_id=sen_id))
+            existing = await self.dao.get(self.TABLE, {"report_id": report_id, "sentence_id": sen_id})
             saved_ioc = existing[0][self.FIELD]
             self.assertTrue(len(existing) == 1, msg="There are duplicate or missing IoC entries.")
             self.assertNotEqual(saved_ioc, replacement, msg="The IoC was unexpectedly updated.")
@@ -266,11 +256,11 @@ class TestIoCs(ThreadAppTest):
     async def test_remove_ioc(self):
         """Function to test when a user removes IoC flag."""
         report_id, sen_id = await self.check_allowed_ioc("beach~~~")
-        data = dict(index="remove_indicator_of_compromise", sentence_id=sen_id)
+        data = {"index": "remove_indicator_of_compromise", "sentence_id": sen_id}
         resp = await self.client.post("/rest", json=data)
         resp_json = await resp.json()
 
-        existing = await self.dao.get(self.TABLE, dict(report_id=report_id, sentence_id=sen_id))
+        existing = await self.dao.get(self.TABLE, {"report_id": report_id, "sentence_id": sen_id})
         self.assertTrue(len(existing) == 0, msg="IoC-flag on sentence was not removed.")
 
         success_msg, alert_user = resp_json.get("info"), resp_json.get("alert_user")
@@ -284,17 +274,17 @@ class TestIoCs(ThreadAppTest):
     async def test_sentence_context_returns_ioc(self):
         """Function to test sentence-data includes IoC text."""
         testing = "*I-am-Kenough*"
-        report_id, sen_id = await self.check_allowed_ioc(testing)
+        _report_id, sen_id = await self.check_allowed_ioc(testing)
 
-        data = dict(index="sentence_context", sentence_id=sen_id)
+        data = {"index": "sentence_context", "sentence_id": sen_id}
         resp = await self.client.post("/rest", json=data)
         sen_data = await resp.json()
         self.assertEqual(sen_data["ioc"], testing, msg="IoC-text is not returned with sentence-context.")
 
-        data = dict(index="remove_indicator_of_compromise", sentence_id=sen_id)
+        data = {"index": "remove_indicator_of_compromise", "sentence_id": sen_id}
         await self.client.post("/rest", json=data)
 
-        data = dict(index="sentence_context", sentence_id=sen_id)
+        data = {"index": "sentence_context", "sentence_id": sen_id}
         resp = await self.client.post("/rest", json=data)
         sen_data = await resp.json()
         self.assertFalse(sen_data["ioc"], msg="IoC-text from sentence-context is not empty after removal.")
@@ -318,5 +308,5 @@ class TestIoCs(ThreadAppTest):
         )
 
         # Check initially-saved valid IoC has not been changed in the db
-        existing = await self.dao.get(self.TABLE, dict(report_id=report_id, sentence_id=sen_id))
+        existing = await self.dao.get(self.TABLE, {"report_id": report_id, "sentence_id": sen_id})
         self.assertEqual(valid_ioc, existing[0][self.FIELD], "IoC value changed after suggest-&-save.")
