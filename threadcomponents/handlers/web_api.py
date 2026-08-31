@@ -3,15 +3,16 @@
 # To see its full history, please use `git log --follow <filename>` to view previous commits and additional contributors
 
 import logging
+from datetime import datetime
+from urllib.parse import quote
 
 from aiohttp import web as aiohttp_web
 from aiohttp.web_exceptions import HTTPException
 from aiohttp_jinja2 import template, web
 from aiohttp_security import authorized_userid
 from aiohttp_session import get_session
-from datetime import datetime
-from urllib.parse import quote
 
+from threadcomponents.constants import APP_TZ
 from threadcomponents.enums import ReportStatus
 
 # The config options to load JS dependencies
@@ -19,6 +20,7 @@ ONLINE_JS_SRC = "js-online-src"
 OFFLINE_JS_SRC = "js-local-src"
 # Key for a flag checking when a user has accepted the cookie notice
 ACCEPT_COOKIE = "accept_cookie_notice"
+logger = logging.getLogger(__name__)
 
 
 class WebAPI:
@@ -34,16 +36,16 @@ class WebAPI:
         self.is_local = self.web_svc.is_local
         self.report_exporter = report_exporter
         js_src_config = js_src if js_src in [ONLINE_JS_SRC, OFFLINE_JS_SRC] else ONLINE_JS_SRC
-        self.BASE_PAGE_DATA = dict(
-            about_url=self.web_svc.get_route(self.web_svc.ABOUT_KEY),
-            home_url=self.web_svc.get_route(self.web_svc.HOME_KEY),
-            how_it_works_url=self.web_svc.get_route(self.web_svc.HOW_IT_WORKS_KEY),
-            what_to_submit_url=self.web_svc.get_route(self.web_svc.WHAT_TO_SUBMIT_KEY),
-            rest_url=self.web_svc.get_route(self.web_svc.REST_KEY),
-            static_url=self.web_svc.get_route(self.web_svc.STATIC_KEY),
-            js_src_online=js_src_config == ONLINE_JS_SRC,
-            is_local=self.is_local,
-        )
+        self.BASE_PAGE_DATA = {
+            "about_url": self.web_svc.get_route(self.web_svc.ABOUT_KEY),
+            "home_url": self.web_svc.get_route(self.web_svc.HOME_KEY),
+            "how_it_works_url": self.web_svc.get_route(self.web_svc.HOW_IT_WORKS_KEY),
+            "what_to_submit_url": self.web_svc.get_route(self.web_svc.WHAT_TO_SUBMIT_KEY),
+            "rest_url": self.web_svc.get_route(self.web_svc.REST_KEY),
+            "static_url": self.web_svc.get_route(self.web_svc.STATIC_KEY),
+            "js_src_online": js_src_config == ONLINE_JS_SRC,
+            "is_local": self.is_local,
+        }
         self.attack_dropdown_list = []
         self.cat_dropdown_list = []
         self.web_svc.keyword_dropdown_list = []
@@ -83,12 +85,12 @@ class WebAPI:
 
     async def fetch_and_update_keywords(self):
         """Function to fetch and update the list of keywords."""
-        logging.info("UPDATE FROM R-STONE: START")
+        logger.info("UPDATE FROM R-STONE: START")
         # If updates occurred when fetching the keywords, we need to update the dropdown list
         updates = await self.data_svc.insert_keyword_json_data()
         if updates:
             await self.set_keyword_dropdown_list()
-        logging.info("UPDATE FROM R-STONE: END")
+        logger.info("UPDATE FROM R-STONE: END")
 
     async def add_base_page_data(self, request, data=None):
         """Function to add the base page data to context data given a request."""
@@ -97,7 +99,7 @@ class WebAPI:
             return
         # Update data with the base page data
         data.update(self.BASE_PAGE_DATA)
-        data.update(current_year=datetime.now().strftime("%Y"))
+        data.update(current_year=datetime.now(APP_TZ).strftime("%Y"))
         # Non-local sessions include cookies, update context data for this
         if not self.is_local:
             # Check request if the cookie banner has been dismissed
@@ -122,7 +124,7 @@ class WebAPI:
                 error_resp.headers[server] = server_msg
             # If this couldn't be done, log it so it can be re-tested to see how the header can be overridden
             except (AttributeError, KeyError):
-                logging.warning("SERVER RESP HEADER exposed; %s | %s" % (str(request), str(error_resp)))
+                logger.warning(f"SERVER RESP HEADER exposed; {request} | {error_resp}")
             # Despite the exception, we want the error raised so the app can receive it
             finally:
                 raise error_resp
@@ -146,26 +148,26 @@ class WebAPI:
 
     @template("about.html")
     async def about(self, request):
-        page_data = dict(title="Using Thread")
+        page_data = {"title": "Using Thread"}
         await self.add_base_page_data(request, data=page_data)
         return page_data
 
     @template("what-to-submit.html")
     async def what_to_submit(self, request):
-        page_data = dict(title="What Can I Submit?")
+        page_data = {"title": "What Can I Submit?"}
         await self.add_base_page_data(request, data=page_data)
         return page_data
 
     @template("how-it-works.html")
     async def how_it_works(self, request):
-        page_data = dict(title="How Thread Works")
+        page_data = {"title": "How Thread Works"}
         await self.add_base_page_data(request, data=page_data)
         return page_data
 
     @template("index.html")
     async def index(self, request):
         # Dictionaries for the template data
-        page_data, template_data = dict(), dict()
+        page_data, template_data = {}, {}
         # Add base page data to overall template data
         await self.add_base_page_data(request, data=template_data)
         # The token used for this session
@@ -182,20 +184,20 @@ class WebAPI:
         for status in ReportStatus:
             is_complete_status = status.value == ReportStatus.COMPLETED.value
             # Properties for all statuses when displayed on the index page
-            page_data[status.value] = dict(
-                display_name=status.display_name,
-                allow_delete=True,
-                error_msg="Sorry, an error occurred with this report and may appear different than intended.",
-                analysis_button="View Analysis" if is_complete_status else "Analyse",
-            )
+            page_data[status.value] = {
+                "display_name": status.display_name,
+                "allow_delete": True,
+                "error_msg": "Sorry, an error occurred with this report and may appear different than intended.",
+                "analysis_button": "View Analysis" if is_complete_status else "Analyse",
+            }
 
             # If the status is 'queue', obtain errored reports separately so we can provide info without these
             if status.value == ReportStatus.QUEUE.value:
                 pending = await self.data_svc.status_grouper(
-                    status.value, criteria=dict(error=self.dao.db_false_val, token=verified_token)
+                    status.value, criteria={"error": self.dao.db_false_val, "token": verified_token}
                 )
                 errored = await self.data_svc.status_grouper(
-                    status.value, criteria=dict(error=self.dao.db_true_val, token=verified_token)
+                    status.value, criteria={"error": self.dao.db_true_val, "token": verified_token}
                 )
                 page_data[status.value]["reports"] = pending + errored
 
@@ -204,9 +206,9 @@ class WebAPI:
                     # Extra info for queued reports if a queue limit was set
                     queue_ratio = (len(pending), self.rest_svc.QUEUE_LIMIT)
                     # Add to the display name the fraction of the queue limit used
-                    page_data[status.value]["display_name"] += " (%s/%s)" % queue_ratio
+                    page_data[status.value]["display_name"] += " ({}/{})".format(*queue_ratio)
                     # Also add a fuller sentence describing the fraction
-                    page_data[status.value]["column_info"] = "%s report(s) pending in Queue out of MAX %s" % queue_ratio
+                    page_data[status.value]["column_info"] = "{} report(s) pending in Queue out of MAX {}".format(*queue_ratio)
 
                 # Queued reports can't be deleted (unless errored)
                 page_data[status.value]["allow_delete"] = False
@@ -218,7 +220,7 @@ class WebAPI:
             # Else proceed to obtain the reports for this status as normal
             else:
                 page_data[status.value]["reports"] = await self.data_svc.status_grouper(
-                    status.value, criteria=dict(token=verified_token)
+                    status.value, criteria={"token": verified_token}
                 )
             # Allow only mid-review reports to be rollbacked
             page_data[status.value]["allow_rollback"] = status.value == ReportStatus.IN_REVIEW.value
@@ -236,33 +238,33 @@ class WebAPI:
         data = dict(await request.json())
         try:
             index = data.pop("index")
-            options = dict(
-                POST=dict(
-                    add_attack=lambda d: self.rest_svc.add_attack(request=request, criteria=d),
-                    ignore_attack=lambda d: self.rest_svc.ignore_attack(request=request, criteria=d),
-                    reject_attack=lambda d: self.rest_svc.reject_attack(request=request, criteria=d),
-                    set_status=lambda d: self.rest_svc.set_status(request=request, criteria=d),
-                    insert_report=lambda d: self.rest_svc.insert_report(request=request, criteria=d),
-                    insert_csv=lambda d: self.rest_svc.insert_csv(request=request, criteria=d),
-                    remove_sentence=lambda d: self.rest_svc.remove_sentence(request=request, criteria=d),
-                    delete_report=lambda d: self.rest_svc.delete_report(request=request, criteria=d),
-                    rollback_report=lambda d: self.rest_svc.rollback_report(request=request, criteria=d),
-                    sentence_context=lambda d: self.rest_svc.sentence_context(request=request, criteria=d),
-                    confirmed_attacks=lambda d: self.rest_svc.confirmed_attacks(request=request, criteria=d),
-                    update_report_dates=lambda d: self.rest_svc.update_report_dates(request=request, criteria=d),
-                    update_attack_time=lambda d: self.rest_svc.update_attack_time(request=request, criteria=d),
-                    set_report_keywords=lambda d: self.rest_svc.set_report_keywords(request=request, criteria=d),
-                    suggest_indicator_of_compromise=lambda d: self.rest_svc.suggest_ioc(request=request, criteria=d),
-                    suggest_and_save_ioc=lambda d: self.rest_svc.suggest_and_save_ioc(request=request, criteria=d),
-                    add_indicator_of_compromise=lambda d: self.rest_svc.update_ioc(
+            options = {
+                "POST": {
+                    "add_attack": lambda d: self.rest_svc.add_attack(request=request, criteria=d),
+                    "ignore_attack": lambda d: self.rest_svc.ignore_attack(request=request, criteria=d),
+                    "reject_attack": lambda d: self.rest_svc.reject_attack(request=request, criteria=d),
+                    "set_status": lambda d: self.rest_svc.set_status(request=request, criteria=d),
+                    "insert_report": lambda d: self.rest_svc.insert_report(request=request, criteria=d),
+                    "insert_csv": lambda d: self.rest_svc.insert_csv(request=request, criteria=d),
+                    "remove_sentence": lambda d: self.rest_svc.remove_sentence(request=request, criteria=d),
+                    "delete_report": lambda d: self.rest_svc.delete_report(request=request, criteria=d),
+                    "rollback_report": lambda d: self.rest_svc.rollback_report(request=request, criteria=d),
+                    "sentence_context": lambda d: self.rest_svc.sentence_context(request=request, criteria=d),
+                    "confirmed_attacks": lambda d: self.rest_svc.confirmed_attacks(request=request, criteria=d),
+                    "update_report_dates": lambda d: self.rest_svc.update_report_dates(request=request, criteria=d),
+                    "update_attack_time": lambda d: self.rest_svc.update_attack_time(request=request, criteria=d),
+                    "set_report_keywords": lambda d: self.rest_svc.set_report_keywords(request=request, criteria=d),
+                    "suggest_indicator_of_compromise": lambda d: self.rest_svc.suggest_ioc(request=request, criteria=d),
+                    "suggest_and_save_ioc": lambda d: self.rest_svc.suggest_and_save_ioc(request=request, criteria=d),
+                    "add_indicator_of_compromise": lambda d: self.rest_svc.update_ioc(
                         request=request, criteria=d, adding=True
                     ),
-                    update_indicator_of_compromise=lambda d: self.rest_svc.update_ioc(request=request, criteria=d),
-                    remove_indicator_of_compromise=lambda d: self.rest_svc.update_ioc(
+                    "update_indicator_of_compromise": lambda d: self.rest_svc.update_ioc(request=request, criteria=d),
+                    "remove_indicator_of_compromise": lambda d: self.rest_svc.update_ioc(
                         request=request, criteria=d, deleting=True
                     ),
-                )
-            )
+                }
+            }
             method = options[request.method][index]
         except KeyError:
             return web.json_response(None, status=404)
@@ -287,7 +289,7 @@ class WebAPI:
         :return: dictionary of report data
         """
         # Dictionary for the template data with the base page data included
-        template_data = dict()
+        template_data = {}
         await self.add_base_page_data(request, data=template_data)
         # The 'file' property is already unquoted despite a quoted string used in the URL
         report_title = request.match_info.get(self.web_svc.REPORT_PARAM)
@@ -301,7 +303,7 @@ class WebAPI:
             raise web.HTTPNotFound()
 
         # Found a valid report, check if protected by token
-        await self.web_svc.action_allowed(request, "view", context=dict(report=report[0]))
+        await self.web_svc.action_allowed(request, "view", context={"report": report[0]})
         # A queued report would pass the above check but be blank; raise an error instead
         if report_status not in [
             ReportStatus.NEEDS_REVIEW.value,
@@ -319,7 +321,7 @@ class WebAPI:
         for sentence in sentences:
             sentence["is_ioc"] = any(ioc["sentence_id"] == sentence["uid"] for ioc in indicators_of_compromise)
         original_html = await self.dao.get(
-            "original_html", equal=dict(report_uid=report_id), order_by_asc=dict(elem_index=1)
+            "original_html", equal={"report_uid": report_id}, order_by_asc={"elem_index": 1}
         )
 
         final_html = await self.web_svc.build_final_html(original_html, sentences)
@@ -344,7 +346,7 @@ class WebAPI:
                 completed_info += "<br><br><b>Completed reports will expire 24 hours after completion.</b>"
 
         if self.rest_svc.SENTENCE_LIMIT:
-            sen_limit_help = "Reports are currently capped to the first %s sentences." % self.rest_svc.SENTENCE_LIMIT
+            sen_limit_help = f"Reports are currently capped to the first {self.rest_svc.SENTENCE_LIMIT} sentences."
 
         # Get the list of sentences with techniques that need to be confirmed
         unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id, return_detail=True)
@@ -441,13 +443,13 @@ class WebAPI:
                 continue
             else:
                 # query for true positives
-                true_pos = await self.dao.get("true_positives", dict(attack_uid=row["uid"]))
+                true_pos = await self.dao.get("true_positives", {"attack_uid": row["uid"]})
                 tp = []
                 for t in true_pos:
                     tp.append(t["true_positive"])
                 # query for false negatives and false positives
-                false_neg = await self.dao.get("false_negatives", dict(attack_uid=row["uid"]))
-                false_positives = await self.dao.get("false_positives", dict(attack_uid=row["uid"]))
+                false_neg = await self.dao.get("false_negatives", {"attack_uid": row["uid"]})
+                false_positives = await self.dao.get("false_positives", {"attack_uid": row["uid"]})
                 for f in false_neg:
                     tp.append(f["false_negative"])
                 fp = []
@@ -462,7 +464,7 @@ class WebAPI:
                     "false_positives": fp,
                 }
 
-        list_of_legacy, list_of_techs = self.attack_data_svc.ml_and_reg_split(techniques)
+        _list_of_legacy, list_of_techs = self.attack_data_svc.ml_and_reg_split(techniques)
         self.ml_svc.build_pickle_file(list_of_techs, techniques, force=True)
 
         return {"text": "ML Rebuilt!"}

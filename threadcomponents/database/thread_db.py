@@ -1,6 +1,5 @@
 import logging
 import uuid
-
 from abc import ABC, abstractmethod
 from contextlib import suppress
 
@@ -8,6 +7,7 @@ BACKUP_TABLE_SUFFIX = "_initial"
 TABLES_WITH_BACKUPS = ["report_sentences", "report_sentence_hits", "original_html"]
 # The beginning and end strings of an SQL create statement
 CREATE_BEGIN, CREATE_END = "CREATE TABLE IF NOT EXISTS", ");"
+logger = logging.getLogger(__name__)
 
 
 def find_create_statement_in_schema(schema, table, log_error=True, find_closing_bracket=False):
@@ -26,16 +26,16 @@ def find_create_statement_in_schema(schema, table, log_error=True, find_closing_
     # Start-position not found
     if not start_pos:
         if log_error:
-            logging.error(f"Table `{table}` missing: given schema has different or missing CREATE statement.")
+            logger.error(f"Table `{table}` missing: given schema has different or missing CREATE statement.")
         raise error
     # Given a starting position, find where the table's create statement finishes
     try:
         end_pos = schema[start_pos:].index(CREATE_END)
     # End-position not found
-    except ValueError as e:
+    except ValueError:
         if log_error:
-            logging.error(f"SQL error: could not find closing `{CREATE_END}` for table `{table}` in schema.")
-        raise e
+            logger.error(f"SQL error: could not find closing `{CREATE_END}` for table `{table}` in schema.")
+        raise
     # Consider the end position to be before any foreign key statements; they might not be present so ignore ValueErrors
     if not find_closing_bracket:
         table_statement = schema[start_pos : start_pos + end_pos]
@@ -57,20 +57,19 @@ class ThreadDB(ABC):
 
     def __init__(self, mapped_functions=None):
         # The map to keep track of SQL functions
-        self._mapped_functions = dict()
+        self._mapped_functions = {}
         # The function to find a substring position in a string
         self._mapped_functions[self.FUNC_STR_POS] = "INSTR"
         # Update mapped_functions if provided
         if mapped_functions is not None:
             self._mapped_functions.update(mapped_functions)
         # A map tp store the column names of the initial-data tables
-        self._table_columns = dict()
+        self._table_columns = {}
 
     @property
     @abstractmethod
     def query_param(self):
         """The string representing a query parameter."""
-        pass
 
     @property
     def backup_table_suffix(self):
@@ -107,7 +106,7 @@ class ThreadDB(ABC):
         if args:
             return f"{func_name}(%s)" % (
                 ", ".join(
-                    ("'%s'" % x if (isinstance(x, str) and (x != self.query_param) and (x not in unquote)) else str(x))
+                    (f"'{x}'" if (isinstance(x, str) and (x != self.query_param) and (x not in unquote)) else str(x))
                     for x in args
                 ),
             )
@@ -120,7 +119,7 @@ class ThreadDB(ABC):
     def add_column_to_schema(schema, table, column, log_error=True):
         """Function to add a column to a table in a schema and return the new schema."""
         # First, find the create-table SQL statements
-        start_pos, end_pos = find_create_statement_in_schema(schema, table, log_error=log_error)
+        _start_pos, end_pos = find_create_statement_in_schema(schema, table, log_error=log_error)
         # If the end-position is the end of the create statement, add a comma to separate from the line before
         if schema[end_pos] == ")":
             return schema[:end_pos] + ", " + column + schema[end_pos:]
@@ -155,32 +154,26 @@ class ThreadDB(ABC):
     @abstractmethod
     async def build(self, schema, is_partial=False):
         """Method to build the db given a schema."""
-        pass
 
     @abstractmethod
     async def _get_column_names(self, sql):
         """Method to get column names for data retrieved by a given SQL statement."""
-        pass
 
     @abstractmethod
     async def _execute_select(self, sql, parameters=None, single_col=False, on_fetch=None):
         """Method to connect to the db and execute an SQL SELECT query."""
-        pass
 
     @abstractmethod
     async def _execute_insert(self, sql, data):
         """Method to connect to the db and execute an SQL INSERT statement."""
-        pass
 
     @abstractmethod
     async def _execute_update(self, sql, data):
         """Method to connect to the db and execute an SQL UPDATE statement."""
-        pass
 
     @abstractmethod
     async def run_sql_list(self, sql_list=None, return_success=True):
         """Method to connect to the db and execute a list of SQL statements in a single transaction."""
-        pass
 
     async def raw_select(self, sql, parameters=None, single_col=False):
         """Method to run a constructed SQL SELECT query."""
@@ -237,15 +230,15 @@ class ThreadDB(ABC):
 
         # Define all_params dictionary (for equal and not_equal to be None-checked and combined)
         # all_ordering dictionary (for ASC and DESC ordering combined) and qparams list
-        all_params, all_ordering, qparams = dict(), dict(), []
+        all_params, all_ordering, qparams = {}, {}, []
 
         # Append to all_params equal and not_equal if not None
-        all_params.update(dict(equal=equal) if equal else {})
-        all_params.update(dict(not_equal=not_equal) if not_equal else {})
+        all_params.update({"equal": equal} if equal else {})
+        all_params.update({"not_equal": not_equal} if not_equal else {})
 
         # Do the same for the ordering dictionaries
-        all_ordering.update(dict(asc=order_by_asc) if order_by_asc else {})
-        all_ordering.update(dict(desc=order_by_desc) if order_by_desc else {})
+        all_ordering.update({"asc": order_by_asc} if order_by_asc else {})
+        all_ordering.update({"desc": order_by_desc} if order_by_desc else {})
 
         # For each of the equal and not_equal parameters, build SQL query
         count = 0
@@ -291,7 +284,7 @@ class ThreadDB(ABC):
 
         def on_fetch(results):
             # Use the column-value as the key rather than the column-name
-            converted = dict()
+            converted = {}
             for ix in results:
                 temp_dict = dict(ix)
                 temp_key = temp_dict.pop(column_key)
@@ -333,12 +326,12 @@ class ThreadDB(ABC):
         temp = ["NULL" if v is None else self.query_param for v in data.values()]
         placeholders = ", ".join(temp)
         # Construct the SQL statement using the comma-separated strings created above
-        sql = "INSERT INTO {} ({}) VALUES ({})".format(table, columns, placeholders)
+        sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
         # Filter out null values to match number of query parameters
         non_null = [v for v in data.values() if v is not None]
         # Return the SQL statement as-is if requested
         if return_sql:
-            return tuple([sql, tuple(non_null)])
+            return (sql, tuple(non_null))
         # Else execute the SQL INSERT statement
         return await self._execute_insert(sql, non_null)
 
@@ -377,37 +370,33 @@ class ThreadDB(ABC):
         qparams = []
 
         # Our SQL statement and optional WHERE clause
-        sql, where_suffix = "UPDATE {} SET".format(table), ""
+        sql, where_suffix = f"UPDATE {table} SET", ""
 
         # Appending the SET terms; keep a count
-        count = 0
-        for k, v in data.items():
+        for count, (k, v) in enumerate(data.items()):
             # If this is our 2nd (or greater) SET term, separate with a comma
             sql += "," if count > 0 else ""
             if v is None:
                 # Add setting as NULL for this column
-                sql += " {} = NULL".format(k)
+                sql += f" {k} = NULL"
             else:
                 # Add this current term to the SQL statement substituting the values with query parameters
-                sql += " {} = {}".format(k, self.query_param)
+                sql += f" {k} = {self.query_param}"
                 # Update qparams for this value to be substituted
                 qparams.append(v)
-            count += 1
 
         # Appending the WHERE terms; keep a count
-        count = 0
-        for wk, wv in where.items():
+        for count, (wk, wv) in enumerate(where.items()):
             # If this is our 2nd (or greater) WHERE term, separate with an AND
             where_suffix += " AND" if count > 0 else ""
             if wv is None:
                 # Add NULL-check for this column
-                where_suffix += " {} IS NULL".format(wk)
+                where_suffix += f" {wk} IS NULL"
             else:
                 # Add this current term like before
-                where_suffix += " {} = {}".format(wk, self.query_param)
+                where_suffix += f" {wk} = {self.query_param}"
                 # Update qparams for this value to be substituted
                 qparams.append(wv)
-            count += 1
 
         # Finalise WHERE clause if we had items added to it
         where_suffix = "" if where_suffix == "" else " WHERE" + where_suffix
@@ -415,7 +404,7 @@ class ThreadDB(ABC):
         # Add the WHERE clause to the SQL statement
         sql += where_suffix
         if return_sql:
-            return tuple([sql, tuple(qparams)])
+            return (sql, tuple(qparams))
 
         # Run the statement by passing qparams as parameters
         return await self._execute_update(sql, qparams)
@@ -428,8 +417,7 @@ class ThreadDB(ABC):
         qparams = []
 
         # Construct the WHERE clause using the data
-        count = 0
-        for k, v in data.items():
+        for count, (k, v) in enumerate(data.items()):
             # If this is our first criteria we are adding, we need the WHERE keyword, else adding AND
             sql += " AND" if count > 0 else " WHERE"
             if v is None:
@@ -439,9 +427,8 @@ class ThreadDB(ABC):
                 # Add the ! for != if this is a not-equals check
                 sql += f" {k} = {self.query_param}"
                 qparams.append(v)
-            count += 1
 
         if return_sql:
-            return tuple([sql, tuple(qparams)])
+            return (sql, tuple(qparams))
         # Run the statement by passing qparams as parameters
         return await self._execute_update(sql, qparams)

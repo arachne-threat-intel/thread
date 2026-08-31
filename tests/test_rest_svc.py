@@ -1,7 +1,8 @@
-from tests.thread_app_test import ThreadAppTest
-from threadcomponents.service.rest_svc import REPORT_TECHNIQUES_MINIMUM
 from unittest.mock import AsyncMock
 from uuid import uuid4
+
+from tests.thread_app_test import ThreadAppTest
+from threadcomponents.service.rest_svc import REPORT_TECHNIQUES_MINIMUM
 
 
 class TestRestService(ThreadAppTest):
@@ -31,7 +32,7 @@ class TestRestService(ThreadAppTest):
         """
         # Arrange
         report_id = str(uuid4())
-        report = dict(automatically_generated=self.dao.db_false_val)
+        report = {"automatically_generated": self.dao.db_false_val}
         self.data_svc.get_report_by_id_or_title = AsyncMock(return_value=[report])
         self.data_svc.get_report_unique_techniques_count = AsyncMock()
         self.data_svc.remove_report_by_id = AsyncMock()
@@ -52,7 +53,7 @@ class TestRestService(ThreadAppTest):
         """
         # Arrange
         report_id = str(uuid4())
-        report = dict(automatically_generated=self.dao.db_true_val, url="oh.no/low-quality")
+        report = {"automatically_generated": self.dao.db_true_val, "url": "oh.no/low-quality"}
         self.data_svc.get_report_by_id_or_title = AsyncMock(return_value=[report])
         unique_techniques_count = REPORT_TECHNIQUES_MINIMUM - 1
         self.data_svc.get_report_unique_techniques_count = AsyncMock(return_value=unique_techniques_count)
@@ -80,7 +81,7 @@ class TestRestService(ThreadAppTest):
         """
         # Arrange
         report_id = str(uuid4())
-        report = dict(automatically_generated=self.dao.db_true_val)
+        report = {"automatically_generated": self.dao.db_true_val}
         self.data_svc.get_report_by_id_or_title = AsyncMock(return_value=[report])
         unique_techniques_count = REPORT_TECHNIQUES_MINIMUM + 1
         self.data_svc.get_report_unique_techniques_count = AsyncMock(return_value=unique_techniques_count)
@@ -107,7 +108,7 @@ class TestRestService(ThreadAppTest):
         """
         # Arrange
         report_id = str(uuid4())
-        report = dict(automatically_generated=self.dao.db_true_val)
+        report = {"automatically_generated": self.dao.db_true_val}
         self.data_svc.get_report_by_id_or_title = AsyncMock(return_value=[report])
         unique_techniques_count = REPORT_TECHNIQUES_MINIMUM
         self.data_svc.get_report_unique_techniques_count = AsyncMock(return_value=unique_techniques_count)

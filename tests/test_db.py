@@ -1,12 +1,12 @@
 import os
 import sqlite3
-
-from tests.misc import delete_db_file, SCHEMA_FILE
-from threadcomponents.constants import UID as UID_KEY
-from threadcomponents.enums import ReportStatus
-from threadcomponents.database.thread_sqlite3 import ThreadSQLite
 from unittest import IsolatedAsyncioTestCase
 from uuid import UUID
+
+from tests.misc import SCHEMA_FILE, delete_db_file
+from threadcomponents.constants import UID as UID_KEY
+from threadcomponents.database.thread_sqlite3 import ThreadSQLite
+from threadcomponents.enums import ReportStatus
 
 
 class TestDBSQL(IsolatedAsyncioTestCase):
@@ -49,13 +49,12 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         """
         # If we don't have a way to do the check, fail this test
         if not callable(found_check):
-            message = "%s: Not provided with method to check data is%s in table." % (
-                method_name,
-                "" if expect_found else " not",
-            )
+            message = (f"{method_name}: Not provided with method to "
+                       f"check data is{'' if expect_found else ' not'} in table.")
             self.fail(message)
         # Prefix failure message with test-method calling this method
-        fail_msg = "%s: %s" % (method_name, fail_msg if fail_msg else "expected " + str(expect_found))
+        fail_msg_suffix = fail_msg if fail_msg else f"expected {expect_found}"
+        fail_msg = f"{method_name}: {fail_msg_suffix}"
         # Obtain the sentences for the report and initialise a 'found' flag
         results = await self.db.get(table, **kwargs)
         found = False
@@ -109,14 +108,19 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         ]
         # Check the expectations against the results
         for table in results:
-            self.assertTrue(table in expected, msg="Table %s was created but not expected." % table)
+            self.assertTrue(table in expected, msg=f"Table {table} was created but not expected.")
         for table in expected:
-            self.assertTrue(table in results, msg="Table %s was expected but not created." % table)
+            self.assertTrue(table in results, msg=f"Table {table} was expected but not created.")
 
     async def test_insert(self):
         """Function to test INSERT statements are generated correctly."""
         # Test data to insert
-        data = dict(title="my_report", url="report.url", current_status=ReportStatus.QUEUE.value, token=None)
+        data = {
+            "title": "my_report",
+            "url": "report.url",
+            "current_status": ReportStatus.QUEUE.value,
+            "token": None,
+        }
         # Obtain the generated SQL
         generated = await self.db.insert("reports", data, return_sql=True)
         # The SQL we are expecting and the number of parameters we are expecting to be returned separately to the SQL
@@ -129,7 +133,12 @@ class TestDBSQL(IsolatedAsyncioTestCase):
     async def test_insert_with_uid(self):
         """Function to test INSERT statements with generated UIDs are generated correctly."""
         # Test data to insert
-        data = dict(title="my_report2", url="report2.url", current_status=ReportStatus.QUEUE.value, token=None)
+        data = {
+            "title": "my_report2",
+            "url": "report2.url",
+            "current_status": ReportStatus.QUEUE.value,
+            "token": None,
+        }
         # Obtain the generated SQL
         generated = await self.db.insert_generate_uid("reports", data, return_sql=True)
         # We are now expecting 4 parameters to be returned (as the UID has been generated)
@@ -155,10 +164,17 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         initial_title = "There and Back Again"
         new_title = "A Developer's Tale"
         # Insert the report data
-        report = dict(title=initial_title, url="localhost.or.shire", current_status=ReportStatus.QUEUE.value)
+        report = {
+            "title": initial_title,
+            "url": "localhost.or.shire",
+            "current_status": ReportStatus.QUEUE.value,
+        }
         report_id = await self.db.insert_generate_uid("reports", report)
         # The kwargs for check_data_appeared_in_table() which are the same for all checks
-        checking_args = dict(method_name="test_insert_then_update", equal=dict(uid=report_id))
+        checking_args = {
+            "method_name": "test_insert_then_update",
+            "equal": {"uid": report_id},
+        }
         # Confirm the report got inserted
         await self.check_data_appeared_in_table(
             "reports",
@@ -168,11 +184,11 @@ class TestDBSQL(IsolatedAsyncioTestCase):
             **checking_args,
         )
         # Confirm the new_title does not appear as a report title yet
-        rep_results = await self.db.get("reports", equal=dict(title=new_title))
+        rep_results = await self.db.get("reports", equal={"title": new_title})
         if rep_results:
             self.skipTest("Could not test updating table as tested updates already exist pre-update.")
         # Update the report with the new title
-        await self.db.update("reports", where=dict(uid=report_id), data=dict(title=new_title))
+        await self.db.update("reports", where={"uid": report_id}, data={"title": new_title})
         # Confirm old report title is not found but new report title is found
         await self.check_data_appeared_in_table(
             "reports",
@@ -197,16 +213,23 @@ class TestDBSQL(IsolatedAsyncioTestCase):
             return r.get(UID_KEY) == report_id
 
         # Insert the report data
-        report = dict(title="Don't Stop Moving", url="funky.funky.beat", current_status=ReportStatus.QUEUE.value)
+        report = {
+            "title": "Don't Stop Moving",
+            "url": "funky.funky.beat",
+            "current_status": ReportStatus.QUEUE.value,
+        }
         report_id = await self.db.insert_generate_uid("reports", report)
         # The kwargs for check_data_appeared_in_table() which are the same for all checks
-        checking_args = dict(method_name="test_insert_then_delete", equal=dict(uid=report_id))
+        checking_args = {
+            "method_name": "test_insert_then_delete",
+            "equal": {"uid": report_id},
+        }
         # Confirm the report got inserted
         await self.check_data_appeared_in_table(
             "reports", expect_found=True, found_check=report_found, fail_msg="inserted data not found", **checking_args
         )
         # Carry out the delete
-        await self.db.delete("reports", dict(uid=report_id))
+        await self.db.delete("reports", {"uid": report_id})
         # Confirm the report got deleted
         await self.check_data_appeared_in_table(
             "reports", expect_found=False, found_check=report_found, fail_msg="deleted data was found", **checking_args
@@ -226,36 +249,40 @@ class TestDBSQL(IsolatedAsyncioTestCase):
             return s.get("text") == sentence and s.get(UID_KEY) == sen_id
 
         # Insert a report
-        report = dict(
-            title="Return of the Phyrexian Obliterator", url="trampled.oops", current_status=ReportStatus.QUEUE.value
-        )
+        report = {
+            "title": "Return of the Phyrexian Obliterator",
+            "url": "trampled.oops",
+            "current_status": ReportStatus.QUEUE.value,
+        }
         report_id = await self.db.insert_generate_uid("reports", report)
         # Confirm we have no sentences for this report yet
-        sen_results = await self.db.get("report_sentences", equal=dict(report_uid=report_id))
-        sen_results_backup = await self.db.get("report_sentences_initial", equal=dict(report_uid=report_id))
+        sen_results = await self.db.get("report_sentences", equal={"report_uid": report_id})
+        sen_results_backup = await self.db.get("report_sentences_initial", equal={"report_uid": report_id})
         if sen_results or sen_results_backup:
             self.skipTest("Could not test storing new data in backup tables as new data already exists.")
 
         # Reports are not backed-up, so let's test a report-sentence which is backed up
         sentence = "Behold blessed perfection."
-        data = dict(
-            report_uid=report_id,
-            text=sentence,
-            html="<p>%s</p>" % sentence,
-            sen_index=0,
-            found_status=self.db.val_as_false,
-        )
+        data = {
+            "report_uid": report_id,
+            "text": sentence,
+            "html": f"<p>{sentence}</p>",
+            "sen_index": 0,
+            "found_status": self.db.val_as_false,
+        }
         sen_id = await self.db.insert_with_backup("report_sentences", data)
         # The kwargs for check_data_appeared_in_table() which are the same for all checks
-        checking_args = dict(
-            method_name="test_insert_with_backup", found_check=sentence_found, equal=dict(report_uid=report_id)
-        )
+        checking_args = {
+            "method_name": "test_insert_with_backup",
+            "found_check": sentence_found,
+            "equal": {"report_uid": report_id},
+        }
         # After method is called, let's test both the report_sentences table and its back-up table have this sentence
         for table in ["report_sentences", "report_sentences_initial"]:
-            error_msg = "data missing in table %s after being inserted" % table
+            error_msg = f"data missing in table {table} after being inserted"
             await self.check_data_appeared_in_table(table, expect_found=True, fail_msg=error_msg, **checking_args)
         # Confirm deleting sentence in report_sentences does not delete the backup
-        await self.db.delete("report_sentences", dict(text=sentence))
+        await self.db.delete("report_sentences", {"text": sentence})
         await self.check_data_appeared_in_table(
             "report_sentences",
             expect_found=False,
@@ -276,25 +303,25 @@ class TestDBSQL(IsolatedAsyncioTestCase):
             await self.db.insert("reports", None)
         # ValueError where data to be inserted is (a dictionary but) empty
         with self.assertRaises(ValueError, msg="Expected ValueError over empty value for report."):
-            await self.db.insert("reports", dict())
+            await self.db.insert("reports", {})
 
     async def test_update_with_no_data(self):
         """Function to test behaviour of UPDATE statements with no SET clause specified."""
         # TypeError where data to be set is None (not a dictionary)
         with self.assertRaises(TypeError, msg="Expected TypeError over `None` value for `data` parameter."):
-            await self.db.update("reports", where=dict(title="Nothing is True"), data=None)
+            await self.db.update("reports", where={"title": "Nothing is True"}, data=None)
         # ValueError where data to be set is (a dictionary but) empty
         with self.assertRaises(ValueError, msg="Expected ValueError over empty value for `data` parameter."):
-            await self.db.update("reports", where=dict(title="Everything is Permitted; Except This"), data=dict())
+            await self.db.update("reports", where={"title": "Everything is Permitted; Except This"}, data={})
 
     async def test_update_with_no_where(self):
         """Function to test behaviour of UPDATE statements with no WHERE clause specified."""
         # TypeError where WHERE-clause data is None (not a dictionary)
         with self.assertRaises(TypeError, msg="Expected TypeError over `None` value for `where` parameter."):
-            await self.db.update("reports", where=None, data=dict(title="One title"))
+            await self.db.update("reports", where=None, data={"title": "One title"})
         # ValueError where WHERE-clause data is (a dictionary but) empty
         with self.assertRaises(ValueError, msg="Expected ValueError over empty value for `where` parameter."):
-            await self.db.update("reports", where=dict(), data=dict(title="To Rule Them All"))
+            await self.db.update("reports", where={}, data={"title": "To Rule Them All"})
 
     async def test_delete_with_no_where(self):
         """Function to test behaviour of DELETE statements with no WHERE clause specified."""
@@ -303,4 +330,4 @@ class TestDBSQL(IsolatedAsyncioTestCase):
             await self.db.delete("reports", None)
         # ValueError where WHERE-clause data is (a dictionary but) empty
         with self.assertRaises(ValueError, msg="Expected ValueError over empty value for report."):
-            await self.db.delete("reports", dict())
+            await self.db.delete("reports", {})

@@ -30,7 +30,9 @@ body {
 
 /* Montserrat carries titles, headings and interface labels */
 h1, h2, h3, h4, h5, h6,
-.nav-link, label, .btn {
+.nav-link, label,
+.btn:not([class*='fa-']),
+.btn :not([class*='fa-']) {
   font-family: 'Montserrat', sans-serif;
 }
 

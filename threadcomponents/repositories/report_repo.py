@@ -1,5 +1,7 @@
 import logging
 
+logger = logging.getLogger(__name__)
+
 
 class ReportRepository:
     """Repository to save / retrieve various report data to / from the database."""
@@ -10,65 +12,65 @@ class ReportRepository:
     async def save_reg_techniques(self, report_id, sentence, sentence_index, tech_start_date=None):
         sentence_id = await self.dao.insert_with_backup(
             "report_sentences",
-            dict(
-                report_uid=report_id,
-                text=sentence["text"],
-                html=sentence["html"],
-                sen_index=sentence_index,
-                found_status=self.dao.db_true_val,
-            ),
+            {
+                "report_uid": report_id,
+                "text": sentence["text"],
+                "html": sentence["html"],
+                "sen_index": sentence_index,
+                "found_status": self.dao.db_true_val,
+            },
         )
         for technique in sentence["reg_techniques_found"]:
-            attack_uid = await self.dao.get("attack_uids", dict(name=technique))
+            attack_uid = await self.dao.get("attack_uids", {"name": technique})
             if not attack_uid:
-                attack_uid = await self.dao.get("attack_uids", dict(tid=technique))
+                attack_uid = await self.dao.get("attack_uids", {"tid": technique})
                 if not attack_uid:
-                    attack_uid = await self.dao.get("attack_uids", dict(uid=technique))
+                    attack_uid = await self.dao.get("attack_uids", {"uid": technique})
             attack_technique = attack_uid[0]["uid"]
             attack_technique_name = "{} (r)".format(attack_uid[0]["name"])
             attack_tid = attack_uid[0]["tid"]
-            data = dict(
-                sentence_id=sentence_id,
-                attack_uid=attack_technique,
-                initial_model_match=self.dao.db_true_val,
-                attack_technique_name=attack_technique_name,
-                report_uid=report_id,
-                attack_tid=attack_tid,
-            )
+            data = {
+                "sentence_id": sentence_id,
+                "attack_uid": attack_technique,
+                "initial_model_match": self.dao.db_true_val,
+                "attack_technique_name": attack_technique_name,
+                "report_uid": report_id,
+                "attack_tid": attack_tid,
+            }
             if tech_start_date:
-                data.update(dict(start_date=tech_start_date))
+                data.update({"start_date": tech_start_date})
             await self.dao.insert_with_backup("report_sentence_hits", data)
 
     async def save_ml_techniques(self, report_id, sentence, sentence_index, tech_start_date=None):
         sentence_id = await self.dao.insert_with_backup(
             "report_sentences",
-            dict(
-                report_uid=report_id,
-                text=sentence["text"],
-                html=sentence["html"],
-                sen_index=sentence_index,
-                found_status=self.dao.db_true_val,
-            ),
+            {
+                "report_uid": report_id,
+                "text": sentence["text"],
+                "html": sentence["html"],
+                "sen_index": sentence_index,
+                "found_status": self.dao.db_true_val,
+            },
         )
 
         saved_tids = set()
         for technique_tid, technique_name in sentence["ml_techniques_found"]:
-            attack_uid = await self.dao.get("attack_uids", dict(tid=technique_tid))
+            attack_uid = await self.dao.get("attack_uids", {"tid": technique_tid})
 
             # If the attack cannot be found via the 'tid' column, try the 'name' column
             if not attack_uid:
-                attack_uid = await self.dao.get("attack_uids", dict(name=technique_name))
+                attack_uid = await self.dao.get("attack_uids", {"name": technique_name})
 
             # If the attack has still not been retrieved, try searching the similar_words table
             if not attack_uid:
-                similar_word = await self.dao.get("similar_words", dict(similar_word=technique_name))
+                similar_word = await self.dao.get("similar_words", {"similar_word": technique_name})
                 # If a similar word was found, use its attack_uid to lookup the attack_uids table
                 if similar_word and similar_word[0] and similar_word[0]["attack_uid"]:
-                    attack_uid = await self.dao.get("attack_uids", dict(uid=similar_word[0]["attack_uid"]))
+                    attack_uid = await self.dao.get("attack_uids", {"uid": similar_word[0]["attack_uid"]})
 
             # If the attack has still not been retrieved, report to user that this cannot be saved against the sentence
             if not attack_uid:
-                logging.warning(
+                logger.warning(
                     " ".join(
                         (
                             "Sentence ID:",
@@ -92,17 +94,17 @@ class ReportRepository:
                 continue
 
             # Allow 'inactive' attacks to be recorded: they will be filtered out when viewing/exporting a report
-            data = dict(
-                sentence_id=sentence_id,
-                attack_uid=attack_technique,
-                attack_technique_name=attack_tech_name,
-                report_uid=report_id,
-                attack_tid=attack_tid,
-                initial_model_match=self.dao.db_true_val,
-            )
+            data = {
+                "sentence_id": sentence_id,
+                "attack_uid": attack_technique,
+                "attack_technique_name": attack_tech_name,
+                "report_uid": report_id,
+                "attack_tid": attack_tid,
+                "initial_model_match": self.dao.db_true_val,
+            }
 
             if tech_start_date:
-                data.update(dict(start_date=tech_start_date))
+                data.update({"start_date": tech_start_date})
 
             await self.dao.insert_with_backup("report_sentence_hits", data)
             saved_tids.add(attack_tid)
@@ -114,14 +116,14 @@ class ReportRepository:
         for category in to_add:
             sql_list.append(
                 await self.dao.insert_generate_uid(
-                    "report_categories", dict(report_uid=report_id, category_keyname=category), return_sql=True
+                    "report_categories", {"report_uid": report_id, "category_keyname": category}, return_sql=True
                 )
             )
 
         for category in to_delete:
             sql_list.append(
                 await self.dao.delete(
-                    "report_categories", dict(report_uid=report_id, category_keyname=category), return_sql=True
+                    "report_categories", {"report_uid": report_id, "category_keyname": category}, return_sql=True
                 )
             )
 
@@ -151,17 +153,16 @@ class ReportRepository:
 
                     if not currently_is_all:
                         # Requesting all when not currently-all: add an entry in the select-all table for this report
-                        db_entry = dict(report_uid=report_id, association_type=assoc_type, association_with=request_k)
+                        db_entry = {"report_uid": report_id, "association_type": assoc_type, "association_with": request_k}
                         sql_list.append(
                             await self.dao.insert_generate_uid("report_all_assoc", db_entry, return_sql=True)
                         )
 
-                if currently_is_all:
-                    # Currently all when not requesting all and values specified...
-                    if (not requesting_is_all) and request_assoc_dict.get(request_k):
-                        # ...delete entry in the select-all table for this report
-                        db_entry = dict(report_uid=report_id, association_type=assoc_type, association_with=request_k)
-                        sql_list.append(await self.dao.delete("report_all_assoc", db_entry, return_sql=True))
+                # Currently all when not requesting all and values specified...
+                if currently_is_all and (not requesting_is_all) and request_assoc_dict.get(request_k):
+                    # ...delete entry in the select-all table for this report
+                    db_entry = {"report_uid": report_id, "association_type": assoc_type, "association_with": request_k}
+                    sql_list.append(await self.dao.delete("report_all_assoc", db_entry, return_sql=True))
 
         # Loop twice to determine which association db entries need to be updated
         for assoc_type, current_assoc_dict, request_assoc_dict, allow_select_all, allowed_assoc_types in to_compare:
@@ -181,7 +182,7 @@ class ReportRepository:
                 to_delete = set(current_set) - valid_request_values
 
                 # Build the SQL query for this aggressor/victim country/group
-                db_entry = dict(report_uid=report_id, association_type=assoc_type)
+                db_entry = {"report_uid": report_id, "association_type": assoc_type}
                 for assoc_val in to_add:
                     temp = db_entry.copy()
                     temp[table_col] = assoc_val
@@ -232,17 +233,17 @@ class ReportRepository:
     async def set_report_dates(self, report_id, update_data, apply_to_mappings):
         """Executes the database operations to set the dates of a report."""
         sql_list = [
-            await self.dao.update("reports", where=dict(uid=report_id), data=update_data, return_sql=True),
+            await self.dao.update("reports", where={"uid": report_id}, data=update_data, return_sql=True),
         ]
 
         if apply_to_mappings:  # if we're applying the report date range to all techniques...
-            techs_update_data = dict()
+            techs_update_data = {}
 
             if "start_date" in update_data:
-                techs_update_data.update(dict(start_date=update_data.get("start_date")))
+                techs_update_data.update({"start_date": update_data.get("start_date")})
 
             if "end_date" in update_data:
-                techs_update_data.update(dict(end_date=update_data.get("end_date")))
+                techs_update_data.update({"end_date": update_data.get("end_date")})
 
             if techs_update_data:
                 # WHERE clause can be just matching this report ID; narrowing this to unconfirmed techs might cause
@@ -250,7 +251,7 @@ class ReportRepository:
                 sql_list.append(
                     await self.dao.update(
                         "report_sentence_hits",
-                        where=dict(report_uid=report_id),
+                        where={"report_uid": report_id},
                         data=techs_update_data,
                         return_sql=True,
                     )

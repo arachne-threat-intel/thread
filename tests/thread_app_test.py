@@ -1,36 +1,32 @@
-import aiohttp_jinja2
 import asyncio
-import jinja2
 import logging
 import os
 import random
 import sqlite3
+from contextlib import suppress
+from unittest.mock import MagicMock, patch
 
+import aiohttp_jinja2
+import jinja2
 from aiohttp import web
 from aiohttp.test_utils import AioHTTPTestCase
-from contextlib import suppress
 from stix2.base import _STIXBase
-from tests.misc import delete_db_file, SCHEMA_FILE
 
+from tests.misc import SCHEMA_FILE, delete_db_file
 from threadcomponents.constants import UID as UID_KEY
-from threadcomponents.enums import ReportStatus
-
 from threadcomponents.database.dao import Dao
 from threadcomponents.database.thread_sqlite3 import ThreadSQLite
-
+from threadcomponents.enums import ReportStatus
 from threadcomponents.handlers.web_api import WebAPI
 from threadcomponents.reports.report_exporter import ReportExporter
-
 from threadcomponents.service import attack_data_svc
 from threadcomponents.service.attack_data_svc import AttackDataService
-from threadcomponents.service.data_svc import DataService, NO_DESC
+from threadcomponents.service.data_svc import NO_DESC, DataService
 from threadcomponents.service.ml_svc import MLService
 from threadcomponents.service.reg_svc import RegService
 from threadcomponents.service.rest_svc import RestService
 from threadcomponents.service.token_svc import TokenService
 from threadcomponents.service.web_svc import WebService
-
-from unittest.mock import MagicMock, patch
 
 
 class ThreadAppTest(AioHTTPTestCase):
@@ -38,8 +34,8 @@ class ThreadAppTest(AioHTTPTestCase):
 
     DB_TEST_FILE = os.path.join("tests", "threadtest.db")
     # Any loggers to mute during test
-    mute_logger_warnings = []
-    mute_logger_errors = []
+    mute_logger_warnings = ()
+    mute_logger_errors = ()
 
     @classmethod
     def setUpClass(cls):
@@ -48,8 +44,8 @@ class ThreadAppTest(AioHTTPTestCase):
         # Log only errors to omit warnings when triggering bad/not-allowed requests and executing asyncio Tasks
         # Ignore htmldate errors as we are testing with non-existent URLs
         to_mute = [
-            (cls.mute_logger_warnings + ["asyncio"], logging.ERROR),
-            (cls.mute_logger_errors + ["htmldate"], logging.CRITICAL),
+            (cls.mute_logger_warnings + ("asyncio",), logging.ERROR),
+            (cls.mute_logger_errors + ("htmldate",), logging.CRITICAL),
         ]
         for logger_names, logger_level in to_mute:
             for logger_name in logger_names:
@@ -66,7 +62,7 @@ class ThreadAppTest(AioHTTPTestCase):
         cls.data_svc = DataService(dao=cls.dao, web_svc=cls.web_svc)
         cls.token_svc = TokenService()
         cls.ml_svc = MLService(token_svc=cls.token_svc)
-        cls.attack_data_svc = AttackDataService(attack_file_settings=dict(update=False))
+        cls.attack_data_svc = AttackDataService(attack_file_settings={"update": False})
         cls.rest_svc = RestService(
             web_svc=cls.web_svc,
             reg_svc=cls.reg_svc,
@@ -76,16 +72,16 @@ class ThreadAppTest(AioHTTPTestCase):
             dao=cls.dao,
             attack_data_svc=cls.attack_data_svc,
         )
-        services = dict(
-            dao=cls.dao,
-            data_svc=cls.data_svc,
-            token_svc=cls.token_svc,
-            ml_svc=cls.ml_svc,
-            reg_svc=cls.reg_svc,
-            web_svc=cls.web_svc,
-            rest_svc=cls.rest_svc,
-            attack_data_svc=cls.attack_data_svc,
-        )
+        services = {
+            "dao": cls.dao,
+            "data_svc": cls.data_svc,
+            "token_svc": cls.token_svc,
+            "ml_svc": cls.ml_svc,
+            "reg_svc": cls.reg_svc,
+            "web_svc": cls.web_svc,
+            "rest_svc": cls.rest_svc,
+            "attack_data_svc": cls.attack_data_svc,
+        }
         report_exporter = ReportExporter(services=services)
         cls.web_api = WebAPI(services=services, report_exporter=report_exporter)
         # Duplicate resources so we can test the queue limit without causing limit-exceeding test failures elsewhere
@@ -104,7 +100,7 @@ class ThreadAppTest(AioHTTPTestCase):
         report_exporter = ReportExporter(services=services_with_limit)
         cls.web_api_with_limit = WebAPI(services=services_with_limit, report_exporter=report_exporter)
         # Some test-attack data
-        cls.attacks = dict(d99999="Drain", f12345="Fire", f32451="Firaga", s00001="requiem", s12345="Yevon")
+        cls.attacks = {"d99999": "Drain", "f12345": "Fire", "f32451": "Firaga", "s00001": "requiem", "s12345": "Yevon"}
 
     @classmethod
     def tearDownClass(cls):
@@ -118,11 +114,11 @@ class ThreadAppTest(AioHTTPTestCase):
         await self.db.build(self.schema)
         await self.db.build(self.backup_schema, is_partial=True)
         # Insert some attack data
-        attack_1 = dict(uid="f12345", tid="T1562", name=self.attacks.get("f12345"))
-        attack_2 = dict(uid="f32451", tid="T1562.004", name=self.attacks.get("f32451"))
-        attack_3 = dict(uid="d99999", tid="T1029", name=self.attacks.get("d99999"))
-        attack_4 = dict(uid="s00001", tid="T1485", name=self.attacks.get("s00001"), inactive=1)
-        attack_5 = dict(uid="s12345", tid="S1030", name=self.attacks.get("s12345"))
+        attack_1 = {"uid": "f12345", "tid": "T1562", "name": self.attacks.get("f12345")}
+        attack_2 = {"uid": "f32451", "tid": "T1562.004", "name": self.attacks.get("f32451")}
+        attack_3 = {"uid": "d99999", "tid": "T1029", "name": self.attacks.get("d99999")}
+        attack_4 = {"uid": "s00001", "tid": "T1485", "name": self.attacks.get("s00001"), "inactive": 1}
+        attack_5 = {"uid": "s12345", "tid": "S1030", "name": self.attacks.get("s12345")}
 
         for attack in [attack_1, attack_2, attack_3, attack_4, attack_5]:
             # Ignoring Integrity Error in case other test case already has inserted this data (causing duplicate UIDs)
@@ -130,31 +126,31 @@ class ThreadAppTest(AioHTTPTestCase):
                 await self.db.insert("attack_uids", attack)
 
         # Insert some category, keyword & country data
-        cat_1 = dict(uid="c010101", keyname="aerospace", name="Aerospace")
-        cat_2 = dict(uid="c123456", keyname="music", name="Music")
-        cat_3 = dict(uid="c898989", keyname="film", name="Film")
-        cat_4 = dict(uid="c000001", keyname="rockets", name="Rockets")
-        group_1 = dict(uid="apt1", name="APT1")
-        group_2 = dict(uid="apt2", name="APT2")
-        group_3 = dict(uid="apt3", name="APT3")
-        self.data_svc.country_dict = dict(HB="Hobbiton", TA="Tatooine", WA="Wakanda")
+        cat_1 = {"uid": "c010101", "keyname": "aerospace", "name": "Aerospace"}
+        cat_2 = {"uid": "c123456", "keyname": "music", "name": "Music"}
+        cat_3 = {"uid": "c898989", "keyname": "film", "name": "Film"}
+        cat_4 = {"uid": "c000001", "keyname": "rockets", "name": "Rockets"}
+        group_1 = {"uid": "apt1", "name": "APT1"}
+        group_2 = {"uid": "apt2", "name": "APT2"}
+        group_3 = {"uid": "apt3", "name": "APT3"}
+        self.data_svc.country_dict = {"HB": "Hobbiton", "TA": "Tatooine", "WA": "Wakanda"}
 
         for cat, group in [(cat_1, group_1), (cat_2, group_2), (cat_3, group_3)]:
             with suppress(sqlite3.IntegrityError):
                 await self.db.insert("categories", cat)
                 await self.db.insert("keywords", group)
-            self.web_svc.categories_dict[cat["keyname"]] = dict(name=cat["name"], sub_categories=[])
+            self.web_svc.categories_dict[cat["keyname"]] = {"name": cat["name"], "sub_categories": []}
 
-        self.web_svc.categories_dict["rockets"] = dict(name="Rockets", sub_categories=[], auto_select=["aerospace"])
+        self.web_svc.categories_dict["rockets"] = {"name": "Rockets", "sub_categories": [], "auto_select": ["aerospace"]}
         with suppress(sqlite3.IntegrityError):
             await self.db.insert("categories", cat_4)
             await self.db.insert(
                 "categories_auto_add",
-                dict(
-                    uid="aa000001",
-                    selected="rockets",
-                    auto_add="aerospace",
-                ),
+                {
+                    "uid": "aa000001",
+                    "selected": "rockets",
+                    "auto_add": "aerospace",
+                },
             )
 
         # Carry out pre-launch tasks except for prepare_queue(): replace the call of this to return (and do) nothing
@@ -198,7 +194,7 @@ class ThreadAppTest(AioHTTPTestCase):
                 rest_svc.queue.get_nowait()
                 rest_svc.queue.task_done()
         # Reset the other variables
-        rest_svc.queue_map = dict()
+        rest_svc.queue_map = {}
         rest_svc.clean_current_tasks()
 
     async def patches_on_insert(self):
@@ -255,7 +251,7 @@ class ThreadAppTest(AioHTTPTestCase):
         self.create_patch(
             target=AttackDataService, attribute="ml_and_reg_split", return_value=([], list(self.attacks.items()))
         )
-        self.create_patch(target=MLService, attribute="build_pickle_file", return_value=(False, dict()))
+        self.create_patch(target=MLService, attribute="build_pickle_file", return_value=(False, {}))
         self.create_patch(target=MLService, attribute="analyze_html", return_value=html)
 
         # Update relevant queue and insert report in DB as these tasks would have been done before submission
@@ -267,7 +263,7 @@ class ThreadAppTest(AioHTTPTestCase):
 
         if post_confirm_attack:
             # Get the report sentences for this report
-            db_sentences = await self.db.get("report_sentences", equal=dict(report_uid=report[UID_KEY]))
+            db_sentences = await self.db.get("report_sentences", equal={"report_uid": report[UID_KEY]})
             sen_id = None
             for sen in db_sentences:
                 # Find the sentence that has an attack for this test
@@ -276,21 +272,21 @@ class ThreadAppTest(AioHTTPTestCase):
             if not sen_id:
                 return
             await self.client.post(
-                "/rest", json=dict(index="add_attack", sentence_id=sen_id, attack_uid=confirm_attack)
+                "/rest", json={"index": "add_attack", "sentence_id": sen_id, "attack_uid": confirm_attack}
             )
 
     async def confirm_report_sentence_attacks(self, report_id, sentence_index, attack_list):
         """Accepts a list of attacks for a given test-sentence index."""
-        sentence = await self.db.get("report_sentences", equal=dict(report_uid=report_id, sen_index=sentence_index))
+        sentence = await self.db.get("report_sentences", equal={"report_uid": report_id, "sen_index": sentence_index})
 
         for accept in attack_list:
             await self.client.post(
                 "/rest",
-                json=dict(
-                    index="add_attack",
-                    sentence_id=sentence[0][UID_KEY],
-                    attack_uid=accept,
-                ),
+                json={
+                    "index": "add_attack",
+                    "sentence_id": sentence[0][UID_KEY],
+                    "attack_uid": accept,
+                },
             )
 
     def mock_current_attack_data(self, attack_list=None):
@@ -301,29 +297,29 @@ class ThreadAppTest(AioHTTPTestCase):
         for attack in attack_list:
             tid = attack.get("tid", "Txxxx")
             new_attack_list.append(
-                dict(
-                    type="attack-pattern",
-                    modified="2022-03-7T00:00:00.000Z",
-                    name=attack.get("name", "No name"),
-                    created="2001-07-19T00:00:00.000Z",
-                    id=attack.get("uid", random.randint(0, 999999999)),
-                    spec_version="2.1",
-                    description=attack.get("description", NO_DESC),
-                    external_references=[
+                {
+                    "type": "attack-pattern",
+                    "modified": "2022-03-7T00:00:00.000Z",
+                    "name": attack.get("name", "No name"),
+                    "created": "2001-07-19T00:00:00.000Z",
+                    "id": attack.get("uid", random.randint(0, 999999999)),
+                    "spec_version": "2.1",
+                    "description": attack.get("description", NO_DESC),
+                    "external_references": [
                         {
                             "url": "https://attack.mitre.org/techniques/" + tid,
                             "external_id": tid,
                             "source_name": "mitre-attack",
                         }
                     ],
-                    x_mitre_attack_spec_version="2.1.0",
-                    x_mitre_domains=["enterprise-attack"],
-                    x_mitre_version="1.0",
-                )
+                    "x_mitre_attack_spec_version": "2.1.0",
+                    "x_mitre_domains": ["enterprise-attack"],
+                    "x_mitre_version": "1.0",
+                }
             )
         # Mock the fetch-data method to return our mocked list
         self.create_patch(
-            target=attack_data_svc, attribute="fetch_attack_stix_data_json", return_value=dict(objects=new_attack_list)
+            target=attack_data_svc, attribute="fetch_attack_stix_data_json", return_value={"objects": new_attack_list}
         )
         # Prevent the Stix library flagging incorrect data
         self.create_patch(target=_STIXBase, attribute="_check_property", return_value=False)

@@ -1,7 +1,7 @@
 import logging
-import nltk
 import re
 
+import nltk
 from html2text import html2text
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
@@ -32,6 +32,7 @@ IPV4_REGEX = re.compile(
     re.VERBOSE,
 )
 IPV6_REGEX = re.compile(r"\b((?:[a-f0-9]{1,4}:|:){2,7}(?:[a-f0-9]{1,4}|:))\b", re.IGNORECASE | re.VERBOSE)
+logger = logging.getLogger(__name__)
 
 
 class TokenService:
@@ -132,7 +133,7 @@ class TokenService:
             # Further split by break tags as this might misplace highlighting in the front end
             no_breaks = [x for x in current.split("<br>") if x]
             for fragment in no_breaks:
-                sentence_data = dict()
+                sentence_data = {}
                 sentence_data["html"] = fragment
                 sentence_data["text"] = html2text(fragment)
                 sentence_data["ml_techniques_found"] = []
@@ -164,14 +165,14 @@ class TokenService:
     async def check_packs(self):
         try:
             nltk.data.find("tokenizers/punkt_tab/english/")
-            logging.info("[*] Found punkt_tab")
+            logger.info("[*] Found punkt_tab")
         except LookupError:
-            logging.warning("Could not find the punkt_tab pack, downloading now")
+            logger.warning("Could not find the punkt_tab pack, downloading now")
             nltk.download("punkt_tab")
 
         try:
             nltk.data.find("corpora/stopwords")
-            logging.info("[*] Found stopwords")
+            logger.info("[*] Found stopwords")
         except LookupError:
-            logging.warning("Could not find the stopwords pack, downloading now")
+            logger.warning("Could not find the stopwords pack, downloading now")
             nltk.download("stopwords")

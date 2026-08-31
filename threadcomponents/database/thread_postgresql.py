@@ -1,10 +1,13 @@
 import logging
 import os
+from getpass import getpass
+
 import psycopg
+from psycopg.rows import dict_row, tuple_row
 
 from .thread_db import ThreadDB
-from getpass import getpass
-from psycopg.rows import dict_row, tuple_row
+
+logger = logging.getLogger(__name__)
 
 
 def get_connection_string(host, port, database, user, password):
@@ -50,17 +53,16 @@ def _create_db(db_name, username, password, host, port):
     # Set up and use a connection-string using inputted credentials
     conn_info = get_connection_string(host=host, port=port, database="postgres", user=username, password=password)
     try:
-        with psycopg.connect(conninfo=conn_info, autocommit=True) as connection:
-            with connection.cursor() as cursor:
-                try:
-                    cursor.execute(f"CREATE DATABASE {db_name}")
-                    print(f"Database {db_name} created.")
+        with psycopg.connect(conninfo=conn_info, autocommit=True) as connection, connection.cursor() as cursor:
+            try:
+                cursor.execute(f"CREATE DATABASE {db_name}")
+                print(f"Database {db_name} created.")
 
-                except psycopg.errors.DuplicateDatabase:
-                    print(f"Database {db_name} already exists.")
+            except psycopg.errors.DuplicateDatabase:
+                print(f"Database {db_name} already exists.")
 
     except Exception as e:
-        logging.error(f"Encountered error: {e}")
+        logger.error(f"Encountered error: {e}")
 
 
 def _create_tables(db_name, username, password, host, port, schema="", is_partial=False):
@@ -71,8 +73,8 @@ def _create_tables(db_name, username, password, host, port, schema="", is_partia
     schema = schema.replace(f"{boolean_default} 0", f"{boolean_default} FALSE")
 
     # Keyword arguments for when we want to log an error pending if we are building the full schema
-    not_partial_log = dict(log_error=(not is_partial))
-    partial_log = dict(log_error=is_partial)
+    not_partial_log = {"log_error": (not is_partial)}
+    partial_log = {"log_error": is_partial}
     start_date_field = "start_date TIMESTAMP WITH TIME ZONE"
     end_date_field = "end_date TIMESTAMP WITH TIME ZONE"
 
@@ -98,20 +100,19 @@ def _create_tables(db_name, username, password, host, port, schema="", is_partia
                 schema = ThreadDB.add_column_to_schema(schema, table, sql_field, **kwargs)
             else:
                 schema = ThreadDB.add_column_to_schema(schema, table, sql_field)
-        except ValueError as e:
+        except ValueError:
             if not ignore_value_error:
-                raise e
+                raise
 
     conn_info = get_connection_string(host=host, port=port, database=db_name, user=username, password=password)
     try:
-        with psycopg.connect(conninfo=conn_info) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(schema)
+        with psycopg.connect(conninfo=conn_info) as connection, connection.cursor() as cursor:
+            cursor.execute(schema)
 
         print("Schema successfully run.")
 
     except Exception as e:
-        logging.error(f"Encountered error: {e}")
+        logger.error(f"Encountered error: {e}")
 
 
 class ThreadPostgreSQL(ThreadDB):
@@ -120,7 +121,7 @@ class ThreadPostgreSQL(ThreadDB):
 
     def __init__(self, db_connection_func=None):
         # Define the PostgreSQL function to find a substring position in a string
-        function_name_map = dict()
+        function_name_map = {}
         function_name_map[self.FUNC_STR_POS] = "STRPOS"
         function_name_map[self.FUNC_TIME_NOW] = "NOW"
         function_name_map[self.FUNC_DATE_TO_STR] = "TO_CHAR"
@@ -147,7 +148,7 @@ class ThreadPostgreSQL(ThreadDB):
 
     async def build(self, schema, is_partial=False):
         """Implements ThreadDB.build()"""
-        logging.warning(
+        logger.warning(
             "Re-building the database cannot be done when config 'db-engine' is 'postgresql'. "
             "Please run `main.py --build-db` separately instead."
         )
@@ -166,12 +167,14 @@ class ThreadPostgreSQL(ThreadDB):
         )
 
         try:
-            with psycopg.connect(conninfo=conn_info) as connection:
-                with connection.cursor(row_factory=row_factory) as cursor:
-                    return_val = method(cursor)
+            with (
+                psycopg.connect(conninfo=conn_info) as connection,
+                connection.cursor(row_factory=row_factory) as cursor,
+            ):
+                return_val = method(cursor)
 
         except Exception as e:
-            logging.error(f"Encountered error: {e}")
+            logger.error(f"Encountered error: {e}")
             success = False
 
         # If we're returning a success-boolean, return that; else return any value obtained

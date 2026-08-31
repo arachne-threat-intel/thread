@@ -8,13 +8,14 @@ import sqlite3
 from .thread_db import ThreadDB
 
 ENABLE_FOREIGN_KEYS = "PRAGMA foreign_keys = ON;"
+logger = logging.getLogger(__name__)
 
 
 class ThreadSQLite(ThreadDB):
     IS_SQL_LITE = True
 
     def __init__(self, database):
-        function_name_map = dict()
+        function_name_map = {}
         function_name_map[self.FUNC_TIME_NOW] = "DATETIME"
         super().__init__(mapped_functions=function_name_map)
         self.database = database
@@ -30,8 +31,8 @@ class ThreadSQLite(ThreadDB):
         # Ensure the foreign-keys line is prepended to the schema
         schema = ENABLE_FOREIGN_KEYS + "\n" + schema
         # Keyword arguments for when we want to log an error pending if we are building the full schema
-        not_partial_log = dict(log_error=(not is_partial))
-        partial_log = dict(log_error=is_partial)
+        not_partial_log = {"log_error": (not is_partial)}
+        partial_log = {"log_error": is_partial}
         # sqlite3 does not support date fields (see 2.2. here: https://www.sqlite.org/datatype3.html)
         start_date_field, end_date_field = "start_date TEXT", "end_date TEXT"
         # Explanation of parameters can be found in comments in thread_postgresql._create_tables()
@@ -52,16 +53,16 @@ class ThreadSQLite(ThreadDB):
                     schema = self.add_column_to_schema(schema, table, sql_field, **kwargs)
                 else:
                     schema = self.add_column_to_schema(schema, table, sql_field)
-            except ValueError as e:
+            except ValueError:
                 if not ignore_value_error:
-                    raise e
+                    raise
         try:  # Execute the schema's SQL statements
             with sqlite3.connect(self.database) as conn:
                 cursor = conn.cursor()
                 cursor.executescript(schema)
                 conn.commit()
         except Exception as exc:
-            logging.error("! error building db : {}".format(exc))
+            logger.error(f"! error building db : {exc}")
 
     async def _get_column_names(self, sql):
         """Implements ThreadDB._get_column_names()"""
@@ -138,6 +139,6 @@ class ThreadSQLite(ThreadDB):
                 # Finish by committing the changes from the list
                 conn.commit()
         except sqlite3.Error as e:
-            logging.error("Encountered error: " + str(e))
+            logger.error("Encountered error: " + str(e))
             return False
         return True

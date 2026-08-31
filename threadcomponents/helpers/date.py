@@ -1,7 +1,8 @@
 from datetime import datetime
+
 from dateutil.relativedelta import relativedelta
 
-from threadcomponents.constants import DATETIME_OBJ
+from threadcomponents.constants import APP_TZ, DATETIME_OBJ
 
 
 def to_datetime_obj(date_val, raise_error=False):
@@ -10,10 +11,10 @@ def to_datetime_obj(date_val, raise_error=False):
         return date_val  # nothing to do if already converted
 
     try:
-        return datetime.strptime(date_val, "%Y-%m-%d")
-    except (TypeError, ValueError) as e:
+        return datetime.strptime(date_val, "%Y-%m-%d").astimezone(APP_TZ)
+    except (TypeError, ValueError):
         if raise_error:
-            raise e
+            raise
 
     return None
 
@@ -25,7 +26,7 @@ def check_input_date(date_str):
     given_date = to_datetime_obj(date_str, raise_error=True)
 
     # Establish the min and max date ranges we want dates to fall in
-    date_now = datetime.now()
+    date_now = datetime.now(APP_TZ)
     max_date = datetime(date_now.year + 5, month=date_now.month, day=date_now.day, tzinfo=date_now.tzinfo)
     min_date = datetime(1970, month=1, day=1, tzinfo=date_now.tzinfo)
 
@@ -38,7 +39,7 @@ def check_input_date(date_str):
 
 def pre_save_date_checks(date_dict_list, mandatory_field_list, success_response):
     """Function to carry out checks when dealing with date fields. :return data-to-save, errors"""
-    update_data, converted_dates, invalid_dates = dict(), dict(), []
+    update_data, converted_dates, invalid_dates = {}, {}, []
 
     # If we need to check date ranges
     lower_bound_key, upper_bound_key = None, None
@@ -71,7 +72,7 @@ def pre_save_date_checks(date_dict_list, mandatory_field_list, success_response)
         start_date_conv, end_date_conv = converted_dates.get(lower_bound_key), converted_dates.get(upper_bound_key)
 
         if (start_date_conv and end_date_conv) and (end_date_conv < start_date_conv):
-            return None, dict(error="Incorrect ordering of dates provided.", alert_user=1)
+            return None, {"error": "Incorrect ordering of dates provided.", "alert_user": 1}
 
     # Checks have passed but update success response over invalid dates
     if invalid_dates:
@@ -79,7 +80,7 @@ def pre_save_date_checks(date_dict_list, mandatory_field_list, success_response)
             "The following dates were ignored for being too far in the past/future, and/or being in an "
             "incorrect format: " + ", ".join(str(val) for val in invalid_dates)
         )
-        success_response.update(dict(info=msg, alert_user=1))
+        success_response.update({"info": msg, "alert_user": 1})
 
     return update_data, None
 
@@ -87,10 +88,10 @@ def pre_save_date_checks(date_dict_list, mandatory_field_list, success_response)
 def generate_report_expiry(data=None, **date_kwargs):
     """Function to generate an expiry date from today and add it to a data-dictionary, if provided."""
     # Prepare expiry date as str
-    expiry_date = datetime.now() + relativedelta(**date_kwargs)
-    expiry_date_str = expiry_date.strftime("%Y-%m-%d %H:%M:%S")
+    expiry_date = datetime.now(APP_TZ) + relativedelta(**date_kwargs)
+    expiry_date_str = expiry_date.strftime("%Y-%m-%d %H:%M:%S%z")
 
     if data:
-        data.update(dict(expires_on=expiry_date_str))
+        data.update({"expires_on": expiry_date_str})
 
     return expiry_date_str
