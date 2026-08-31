@@ -49,8 +49,9 @@ class TestDBSQL(IsolatedAsyncioTestCase):
         """
         # If we don't have a way to do the check, fail this test
         if not callable(found_check):
-            message = (f"{method_name}: Not provided with method to "
-                       f"check data is{'' if expect_found else ' not'} in table.")
+            message = (
+                f"{method_name}: Not provided with method to check data is{'' if expect_found else ' not'} in table."
+            )
             self.fail(message)
         # Prefix failure message with test-method calling this method
         fail_msg_suffix = fail_msg if fail_msg else f"expected {expect_found}"

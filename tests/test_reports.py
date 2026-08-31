@@ -236,7 +236,9 @@ class TestReports(ThreadAppTest):
         report_id, report_title = str(uuid4()), "Look For The Light"
         # Submit and analyse a test report
         attacks = ([("d99999", "Drain")], [("d99999", "Drain"), ("f12345", "Fire")])
-        await self.submit_test_report({"uid": report_id, "title": report_title, "url": "fire.flies"}, attacks_found=attacks)
+        await self.submit_test_report(
+            {"uid": report_id, "title": report_title, "url": "fire.flies"}, attacks_found=attacks
+        )
         # Check the unreviewed attack counts are correct
         unchecked_count = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id)
         unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id, return_detail=True)
@@ -482,7 +484,9 @@ class TestReports(ThreadAppTest):
         await self.submit_test_report({"uid": report_id, "title": report_title, "url": "add.categories"})
         # Add an invalid category
         data = {
-            "index": "set_report_keywords", "report_title": report_title, "victims": {"category": ["notACategory", "reallyNot"]}
+            "index": "set_report_keywords",
+            "report_title": report_title,
+            "victims": {"category": ["notACategory", "reallyNot"]},
         }
         await self.client.post("/rest", json=data)
         # Check that these invalid categories were not saved
@@ -490,7 +494,9 @@ class TestReports(ThreadAppTest):
         self.assertFalse(current, msg="Invalid categories saved to report.")
         # Add valid categories
         data = {
-            "index": "set_report_keywords", "report_title": report_title, "victims": {"category": ["aerospace", "music"]}
+            "index": "set_report_keywords",
+            "report_title": report_title,
+            "victims": {"category": ["aerospace", "music"]},
         }
         resp = await self.client.post("/rest", json=data)
         self.assertTrue(resp.status < 300, msg="Adding categories resulted in a non-200 response.")
@@ -522,7 +528,11 @@ class TestReports(ThreadAppTest):
         }
         await self.client.post("/rest", json=data)
         # Remove a category
-        data = {"index": "set_report_keywords", "report_title": report_title, "victims": {"category": ["music", "film"]}}
+        data = {
+            "index": "set_report_keywords",
+            "report_title": report_title,
+            "victims": {"category": ["music", "film"]},
+        }
         resp = await self.client.post("/rest", json=data)
         self.assertTrue(resp.status < 300, msg="Removing categories resulted in a non-200 response.")
         current = await self.data_svc.get_report_category_keynames(report_id)

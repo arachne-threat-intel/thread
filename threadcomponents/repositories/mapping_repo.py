@@ -240,24 +240,16 @@ class MappingRepository:
             current_end = to_datetime_obj(entries[0]["end_date"])
 
             invalid_start = (
-                start_date_object
-                and (not end_date_object)
-                and current_end
-                and (start_date_object > current_end)
+                start_date_object and (not end_date_object) and current_end and (start_date_object > current_end)
             )
             invalid_end = (
-                end_date_object
-                and (not start_date_object)
-                and current_start
-                and (end_date_object < current_start)
+                end_date_object and (not start_date_object) and current_start and (end_date_object < current_start)
             )
             if invalid_start or invalid_end:
                 continue
 
             mapping_updates.append(
-                await self.dao.update(
-                    "report_sentence_hits", where={"uid": mapping}, data=update_data, return_sql=True
-                )
+                await self.dao.update("report_sentence_hits", where={"uid": mapping}, data=update_data, return_sql=True)
             )
 
         # If there are updates, check if the report start/end dates should be updated

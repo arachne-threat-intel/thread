@@ -141,7 +141,11 @@ class ThreadAppTest(AioHTTPTestCase):
                 await self.db.insert("keywords", group)
             self.web_svc.categories_dict[cat["keyname"]] = {"name": cat["name"], "sub_categories": []}
 
-        self.web_svc.categories_dict["rockets"] = {"name": "Rockets", "sub_categories": [], "auto_select": ["aerospace"]}
+        self.web_svc.categories_dict["rockets"] = {
+            "name": "Rockets",
+            "sub_categories": [],
+            "auto_select": ["aerospace"],
+        }
         with suppress(sqlite3.IntegrityError):
             await self.db.insert("categories", cat_4)
             await self.db.insert(

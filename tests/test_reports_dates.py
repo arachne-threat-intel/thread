@@ -17,7 +17,11 @@ class TestReportDates(ThreadAppTest):
         await self.submit_test_report({"uid": report_id, "title": report_title, "url": "dance.moves"})
         # Attempt to complete this newly-analysed report
         data = {
-            "index": "update_report_dates", "report_title": report_title, "date_of": None, "start_date": None, "end_date": None
+            "index": "update_report_dates",
+            "report_title": report_title,
+            "date_of": None,
+            "start_date": None,
+            "end_date": None,
         }
         resp = await self.client.post("/rest", json=data)
         resp_json = await resp.json()
@@ -39,7 +43,10 @@ class TestReportDates(ThreadAppTest):
         )
         # Attempt to complete this newly-analysed report
         data = {
-            "index": "update_report_dates", "report_title": report_title, "start_date": "2022-01-01", "end_date": "2021-12-25"
+            "index": "update_report_dates",
+            "report_title": report_title,
+            "start_date": "2022-01-01",
+            "end_date": "2021-12-25",
         }
         resp = await self.client.post("/rest", json=data)
         resp_json = await resp.json()
@@ -90,7 +97,12 @@ class TestReportDates(ThreadAppTest):
             }
         )
         # Attempt to complete this newly-analysed report
-        data = {"index": "update_report_dates", "report_title": report_title, "start_date": "2020-01-01", "same_dates": True}
+        data = {
+            "index": "update_report_dates",
+            "report_title": report_title,
+            "start_date": "2020-01-01",
+            "same_dates": True,
+        }
         # Check a successful response was sent and the dates were unset
         resp = await self.client.post("/rest", json=data)
         report = await self.db.get("reports", {"uid": report_id})
@@ -104,7 +116,12 @@ class TestReportDates(ThreadAppTest):
         # Submit and analyse a test report
         await self.submit_test_report(
             {
-                "uid": report_id, "title": report_title, "url": "dance.moves", "date_written": None, "start_date": None, "end_date": None
+                "uid": report_id,
+                "title": report_title,
+                "url": "dance.moves",
+                "date_written": None,
+                "start_date": None,
+                "end_date": None,
             }
         )
         # Attempt to complete this newly-analysed report
@@ -162,7 +179,12 @@ class TestReportDates(ThreadAppTest):
             post_confirm_attack=True,
         )
         # Attempt to call rest endpoint without a start date
-        data = {"index": "update_attack_time", "report_title": report_title, "end_date": "2020-08-16", "mapping_list": []}
+        data = {
+            "index": "update_attack_time",
+            "report_title": report_title,
+            "end_date": "2020-08-16",
+            "mapping_list": [],
+        }
         resp = await self.client.post("/rest", json=data)
         resp_json = await resp.json()
         # Check an unsuccessful response was sent

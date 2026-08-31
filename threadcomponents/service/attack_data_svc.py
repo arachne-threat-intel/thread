@@ -37,7 +37,12 @@ def attack_data_get_tid(attack_data):
     tid = None
     for ref in external_refs:
         source = ref.get("url", "")
-        if not source.startswith(("https://attack.mitre.org/", "http://attack.mitre.org/",)):
+        if not source.startswith(
+            (
+                "https://attack.mitre.org/",
+                "http://attack.mitre.org/",
+            )
+        ):
             continue
         tid = ref.get("external_id")
         break

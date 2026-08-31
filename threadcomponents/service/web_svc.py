@@ -42,7 +42,11 @@ class WebService:
         "\ufe63",
         "\uff0d",
     )
-    PERIODS = (".", "\ufe52", "\uff0e",)
+    PERIODS = (
+        ".",
+        "\ufe52",
+        "\uff0e",
+    )
     QUOTES = (
         '"',
         "''",
@@ -62,7 +66,16 @@ class WebService:
         "\u275d",
         "\u275e",
     )
-    BULLET_POINTS = ("\u2022", "\u2023", "\u2043", "\u2219", "\u25cb", "\u25cf", "\u25e6", "\u30fb",)
+    BULLET_POINTS = (
+        "\u2022",
+        "\u2023",
+        "\u2043",
+        "\u2219",
+        "\u25cb",
+        "\u25cf",
+        "\u25e6",
+        "\u30fb",
+    )
 
     def __init__(self, route_prefix=None, is_local=True):
         self.is_local = is_local

@@ -210,11 +210,9 @@ class DataService:
         for item in attack_dict["objects"]:
             # Filter down
             if ("external_references" in item) and (
-                    any(x for x in item["external_references"] if x["source_name"] == "mitre-attack")
+                any(x for x in item["external_references"] if x["source_name"] == "mitre-attack")
             ):
-                items = [
-                    x["external_id"] for x in item["external_references"] if x["source_name"] == "mitre-attack"
-                ]
+                items = [x["external_id"] for x in item["external_references"] if x["source_name"] == "mitre-attack"]
 
                 if len(items) == 1:
                     tid = items[0]
@@ -249,9 +247,7 @@ class DataService:
                     if item["target_ref"] in loaded_items:
                         loaded_items[item["target_ref"]]["example_uses"].append(normalized_example)
                     else:
-                        logger.critical(
-                            "[!] Found target_ref not in loaded data: {}".format(item["target_ref"])
-                        )
+                        logger.critical("[!] Found target_ref not in loaded data: {}".format(item["target_ref"]))
 
         logger.info(f"[#] {len(loaded_items)} Techniques found in input file")
         # Deduplicate input data from existing items in the DB
@@ -503,7 +499,12 @@ class DataService:
 
         # Set up the dictionary to return the results split by aggressor and victim
         r_template = {
-            "groups": [], "categories_all": False, "region_ids": [], "regions_all": False, "country_codes": [], "countries_all": False
+            "groups": [],
+            "categories_all": False,
+            "region_ids": [],
+            "regions_all": False,
+            "country_codes": [],
+            "countries_all": False,
         }
 
         if include_display:

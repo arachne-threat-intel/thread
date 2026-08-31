@@ -51,7 +51,8 @@ class ReportManager(ReportEntityManager):
                     "attack" + ("" if unchecked == 1 else "s"),
                 )
                 return {
-                    "error": f"There {partial_msg} unconfirmed or with no start date for this report.", "alert_user": 1
+                    "error": f"There {partial_msg} unconfirmed or with no start date for this report.",
+                    "alert_user": 1,
                 }
 
             # Check the report status is not queued (because queued reports will have 0 unchecked attacks)
@@ -318,15 +319,12 @@ class ReportManager(ReportEntityManager):
             return {"error": "Specified same dates but different dates provided.", "alert_user": 1}
 
         # Check that if one date in the date range is given, it fits with previously-saved/other date in range
-        far_start_date = (
-            start_date_conv and (not end_date_conv) and r_end and (start_date_conv > r_end)
-        )
-        near_end_date = (
-            end_date_conv and (not start_date_conv) and r_start and (end_date_conv < r_start)
-        )
+        far_start_date = start_date_conv and (not end_date_conv) and r_end and (start_date_conv > r_end)
+        near_end_date = end_date_conv and (not start_date_conv) and r_start and (end_date_conv < r_start)
         if far_start_date or near_end_date:
             return {
-                "error": "The start/end dates do not follow the order of the existing start/end dates.", "alert_user": 1
+                "error": "The start/end dates do not follow the order of the existing start/end dates.",
+                "alert_user": 1,
             }
 
         # Are there any techniques that have start/end dates that don't fit with these new report dates?

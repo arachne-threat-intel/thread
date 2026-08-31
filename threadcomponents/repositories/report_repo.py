@@ -153,7 +153,11 @@ class ReportRepository:
 
                     if not currently_is_all:
                         # Requesting all when not currently-all: add an entry in the select-all table for this report
-                        db_entry = {"report_uid": report_id, "association_type": assoc_type, "association_with": request_k}
+                        db_entry = {
+                            "report_uid": report_id,
+                            "association_type": assoc_type,
+                            "association_with": request_k,
+                        }
                         sql_list.append(
                             await self.dao.insert_generate_uid("report_all_assoc", db_entry, return_sql=True)
                         )

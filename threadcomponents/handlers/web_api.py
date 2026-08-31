@@ -208,7 +208,9 @@ class WebAPI:
                     # Add to the display name the fraction of the queue limit used
                     page_data[status.value]["display_name"] += " ({}/{})".format(*queue_ratio)
                     # Also add a fuller sentence describing the fraction
-                    page_data[status.value]["column_info"] = "{} report(s) pending in Queue out of MAX {}".format(*queue_ratio)
+                    page_data[status.value]["column_info"] = "{} report(s) pending in Queue out of MAX {}".format(
+                        *queue_ratio
+                    )
 
                 # Queued reports can't be deleted (unless errored)
                 page_data[status.value]["allow_delete"] = False
