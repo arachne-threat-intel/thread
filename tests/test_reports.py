@@ -1,10 +1,10 @@
 import os
+from urllib.parse import quote
+from uuid import uuid4
 
 from tests.thread_app_test import ThreadAppTest
 from threadcomponents.constants import UID as UID_KEY
 from threadcomponents.enums import ReportStatus
-from uuid import uuid4
-from urllib.parse import quote
 
 
 class TestReports(ThreadAppTest):
@@ -16,7 +16,7 @@ class TestReports(ThreadAppTest):
         """Function to test loading an edit-report page is successful."""
         # Insert a report
         report_title = "Will this load?"
-        report = dict(title=report_title, url="please.load", current_status=ReportStatus.IN_REVIEW.value)
+        report = {"title": report_title, "url": "please.load", "current_status": ReportStatus.IN_REVIEW.value}
         await self.db.insert_generate_uid("reports", report)
         # Check the report edit page loads
         resp = await self.client.get("/edit/" + quote(report_title, safe=""))
@@ -26,7 +26,7 @@ class TestReports(ThreadAppTest):
         """Function to test loading an edit-report page for a queued report fails."""
         # Insert a report
         report_title = "Queued-reports shall not pass!"
-        report = dict(title=report_title, url="dont.load", current_status=ReportStatus.QUEUE.value)
+        report = {"title": report_title, "url": "dont.load", "current_status": ReportStatus.QUEUE.value}
         await self.db.insert_generate_uid("reports", report)
         # Check the report edit page loads
         resp = await self.client.get("/edit/" + quote(report_title, safe=""))
@@ -35,8 +35,8 @@ class TestReports(ThreadAppTest):
     async def test_incorrect_rest_endpoint(self):
         """Function to test incorrect REST endpoints do not result in a server error."""
         # Two examples of bad request data to test
-        invalid_index = dict(index="insert_report!!!", data="data.doesnt.matter")
-        no_index_supplied = dict(woohoo="send me!")
+        invalid_index = {"index": "insert_report!!!", "data": "data.doesnt.matter"}
+        no_index_supplied = {"woohoo": "send me!"}
         resp = await self.client.post("/rest", json=invalid_index)
         self.assertTrue(resp.status == 404, msg="Incorrect `index` parameter resulted in a non-404 response.")
         resp = await self.client.post("/rest", json=no_index_supplied)
@@ -45,7 +45,7 @@ class TestReports(ThreadAppTest):
     async def test_update_queue(self):
         """Function to test the queue is updated with a single submission."""
         # Request data to test
-        test_data = dict(index="insert_report", url="twinkle.twinkle", title="Little Star")
+        test_data = {"index": "insert_report", "url": "twinkle.twinkle", "title": "Little Star"}
         # Check internal queues before submission
         q1 = self.rest_svc.queue
         q2 = self.rest_svc.queue_map
@@ -69,9 +69,9 @@ class TestReports(ThreadAppTest):
         # Populate some test reports that will exceed the queue's limit
         csv_str = "title,url\n"
         for n in range(limit + 1):
-            title, url = ("title%s" % n), ("url%s" % n)
+            title, url = f"title{n}", f"url{n}"
             csv_str = csv_str + title + "," + url + "\n"
-        data = dict(index="insert_csv", file=csv_str)
+        data = {"index": "insert_csv", "file": csv_str}
         # Begin relevant patches
         await self.patches_on_insert()
 
@@ -100,12 +100,12 @@ class TestReports(ThreadAppTest):
     async def test_malformed_csv(self):
         """Function to test the behaviour of submitting a malformed CSV."""
         # Test cases for malformed CSVs
-        wrong_columns = dict(file="titles,urls\nt1,url.1\nt2,url.2\n")
-        wrong_param = dict(data="title,url\nt1,url.1\nt2,url.2\n")
-        too_many_columns = dict(file="title,url,title\nt1,url.1,t1\nt2,url.2,t2\n")
-        uneven_columns = dict(file="title,url\nt1,url.1\nt2,url.2,url.3\n")
-        urls_missing = dict(file="title,url\nt1,\nt2,\n")
-        empty_val = dict(file="title,url\n    ,url.1\nt2,url.2\n")
+        wrong_columns = {"file": "titles,urls\nt1,url.1\nt2,url.2\n"}
+        wrong_param = {"data": "title,url\nt1,url.1\nt2,url.2\n"}
+        too_many_columns = {"file": "title,url,title\nt1,url.1,t1\nt2,url.2,t2\n"}
+        uneven_columns = {"file": "title,url\nt1,url.1\nt2,url.2,url.3\n"}
+        urls_missing = {"file": "title,url\nt1,\nt2,\n"}
+        empty_val = {"file": "title,url\n    ,url.1\nt2,url.2\n"}
         # The test cases paired with expected error messages
         col_error = "Two columns have not been specified"
         missing_text = "CSV is missing text in at least one row"
@@ -128,7 +128,7 @@ class TestReports(ThreadAppTest):
 
     async def test_trimmed_values_in_csv(self):
         """Function to test if values are trimmed in a CSV."""
-        data = dict(index="insert_csv", file=" title ,  url   \n  t1  , url.1 \n t2  ,  url.2   \n")
+        data = {"index": "insert_csv", "file": " title ,  url   \n  t1  , url.1 \n t2  ,  url.2   \n"}
         cleaned = self.rest_svc.verify_csv(data["file"])
         self.assertEqual(cleaned["title"].to_list(), ["t1", "t2"], msg="CSV title-values not trimmed/unobtainable.")
         self.assertEqual(cleaned["url"].to_list(), ["url.1", "url.2"], msg="CSV url-values not trimmed/unobtainable.")
@@ -136,7 +136,7 @@ class TestReports(ThreadAppTest):
     async def test_empty_parameters(self):
         """Function to test the behaviour of submitting a report with empty parameters."""
         # Request data to test
-        full_test_data = dict(index="insert_report", url="twinkle.twinkle.2", title="How I Wonder")
+        full_test_data = {"index": "insert_report", "url": "twinkle.twinkle.2", "title": "How I Wonder"}
         # Begin relevant patches
         await self.patches_on_insert()
         for argument in ["url", "title"]:
@@ -147,17 +147,17 @@ class TestReports(ThreadAppTest):
             resp = await self.client.post("/rest", json=test_data)
             resp_json = await resp.json()
             error_msg = resp_json.get("error")
-            predicted_msg = "Missing value for %s." % argument
-            self.assertTrue(resp.status >= 400, msg="Empty %s resulted in successful response." % argument)
-            self.assertTrue(predicted_msg in error_msg, msg="Error message formed incorrectly for empty %s." % argument)
+            predicted_msg = f"Missing value for {argument}."
+            self.assertTrue(resp.status >= 400, msg=f"Empty {argument} resulted in successful response.")
+            self.assertTrue(predicted_msg in error_msg, msg=f"Error message formed incorrectly for empty {argument}.")
 
     async def test_start_analysis_success(self):
         """Function to test the behaviour of start analysis when successful."""
         report_id = str(uuid4())
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title="Analyse This!", url="analysing.this"))
+        await self.submit_test_report({"uid": report_id, "title": "Analyse This!", "url": "analysing.this"})
         # Check in the DB that the status got updated
-        report_db = await self.db.get("reports", equal=dict(uid=report_id))
+        report_db = await self.db.get("reports", equal={"uid": report_id})
         self.assertEqual(
             report_db[0].get("current_status"),
             ReportStatus.NEEDS_REVIEW.value,
@@ -170,8 +170,8 @@ class TestReports(ThreadAppTest):
             msg="Analysed report unexpectedly has its error flag as True.",
         )
         # Check that two sentences for this report got added to the report sentences table and its backup
-        sen_db = await self.db.get("report_sentences", equal=dict(report_uid=report_id))
-        sen_db_backup = await self.db.get("report_sentences_initial", equal=dict(report_uid=report_id))
+        sen_db = await self.db.get("report_sentences", equal={"report_uid": report_id})
+        sen_db_backup = await self.db.get("report_sentences_initial", equal={"report_uid": report_id})
         self.assertEqual(len(sen_db), 2, msg="Analysed report did not create 2 sentences in DB.")
         self.assertEqual(len(sen_db_backup), 2, msg="Analysed report did not create 2 sentences in backup DB table.")
 
@@ -180,10 +180,10 @@ class TestReports(ThreadAppTest):
         report_id = str(uuid4())
         # Submit and analyse a test report
         await self.submit_test_report(
-            dict(uid=report_id, title="Analyse This!", url="analysing.this"), fail_map_html=True
+            {"uid": report_id, "title": "Analyse This!", "url": "analysing.this"}, fail_map_html=True
         )
         # Check in the DB that the status did not change
-        report_db = await self.db.get("reports", equal=dict(uid=report_id))
+        report_db = await self.db.get("reports", equal={"uid": report_id})
         self.assertEqual(
             report_db[0].get("current_status"),
             ReportStatus.QUEUE.value,
@@ -200,9 +200,9 @@ class TestReports(ThreadAppTest):
         """Function to test setting the status of a report."""
         report_id, report_title = str(uuid4()), "To Set or Not to Set"
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url="analysing.this"))
+        await self.submit_test_report({"uid": report_id, "title": report_title, "url": "analysing.this"})
         # Attempt to complete this newly-analysed report
-        data = dict(index="set_status", set_status=ReportStatus.COMPLETED.value, report_title=report_title)
+        data = {"index": "set_status", "set_status": ReportStatus.COMPLETED.value, "report_title": report_title}
         resp = await self.client.post("/rest", json=data)
         resp_json = await resp.json()
         # Check an unsuccessful response was sent
@@ -214,7 +214,7 @@ class TestReports(ThreadAppTest):
         )
         self.assertEqual(alert_user, 1, msg="User is not notified over unconfirmed attacks in report.")
         # Delete the sentence that has an attack
-        await self.db.delete("report_sentences", dict(report_uid=report_id, found_status=self.db.val_as_true))
+        await self.db.delete("report_sentences", {"report_uid": report_id, "found_status": self.db.val_as_true})
         # Re-attempt setting the status
         resp = await self.client.post("/rest", json=data)
         resp_json = await resp.json()
@@ -227,7 +227,7 @@ class TestReports(ThreadAppTest):
         )
         self.assertEqual(alert_user, 1, msg="User is not notified over missing report date.")
         # Update report date, try again and check a successful response was sent
-        await self.db.update("reports", where=dict(uid=report_id), data=dict(date_written="2022-07-29"))
+        await self.db.update("reports", where={"uid": report_id}, data={"date_written": "2022-07-29"})
         resp = await self.client.post("/rest", json=data)
         self.assertTrue(resp.status < 300, msg="Completing a report resulted in a non-200 response.")
 
@@ -236,7 +236,9 @@ class TestReports(ThreadAppTest):
         report_id, report_title = str(uuid4()), "Look For The Light"
         # Submit and analyse a test report
         attacks = ([("d99999", "Drain")], [("d99999", "Drain"), ("f12345", "Fire")])
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url="fire.flies"), attacks_found=attacks)
+        await self.submit_test_report(
+            {"uid": report_id, "title": report_title, "url": "fire.flies"}, attacks_found=attacks
+        )
         # Check the unreviewed attack counts are correct
         unchecked_count = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id)
         unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id, return_detail=True)
@@ -250,7 +252,7 @@ class TestReports(ThreadAppTest):
         self.assertEqual(unchecked_vals[1][1]["attack_uid"], "f12345", msg=error_msg + " Incorrect details.")
         # Reject an attack and retest the above
         sen2_id = list(unchecked.keys())[1]
-        data = dict(index="reject_attack", sentence_id=sen2_id, attack_uid="f12345")
+        data = {"index": "reject_attack", "sentence_id": sen2_id, "attack_uid": "f12345"}
         await self.client.post("/rest", json=data)
         unchecked_count = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id)
         unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id, return_detail=True)
@@ -265,9 +267,9 @@ class TestReports(ThreadAppTest):
         """Function to test setting the status of a report back to its initial status of 'Queue'."""
         report_id, report_title = str(uuid4()), "To Set or Not to Set: The Sequel"
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url="analysing.this"))
+        await self.submit_test_report({"uid": report_id, "title": report_title, "url": "analysing.this"})
         # Attempt to revert the status for this newly-analysed report back into the queue
-        data = dict(index="set_status", set_status=ReportStatus.QUEUE.value, report_title=report_title)
+        data = {"index": "set_status", "set_status": ReportStatus.QUEUE.value, "report_title": report_title}
         resp = await self.client.post("/rest", json=data)
         resp_json = await resp.json()
         # Check an unsuccessful response was sent
@@ -281,9 +283,9 @@ class TestReports(ThreadAppTest):
         """Function to test adding a new attack to a sentence."""
         report_id, attack_id = str(uuid4()), "f12345"
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title="Analyse This!", url="analysing.this"))
+        await self.submit_test_report({"uid": report_id, "title": "Analyse This!", "url": "analysing.this"})
         # Get the report sentences for this report
-        sentences = await self.db.get("report_sentences", equal=dict(report_uid=report_id))
+        sentences = await self.db.get("report_sentences", equal={"report_uid": report_id})
         sen_id = None
         for sen in sentences:
             # Find the sentence that has no prior-attacks for this test
@@ -292,14 +294,14 @@ class TestReports(ThreadAppTest):
         if not sen_id:
             self.skipTest("Could not test adding an attack as report test sentences have attacks already.")
         # Proceed to add an attack
-        data = dict(index="add_attack", sentence_id=sen_id, attack_uid=attack_id)
+        data = {"index": "add_attack", "sentence_id": sen_id, "attack_uid": attack_id}
         resp = await self.client.post("/rest", json=data)
         self.assertTrue(resp.status < 300, msg="Adding an attack to a sentence resulted in a non-200 response.")
         # Confirm this sentence is marked as a false negative (and not present in the other tables)
-        tps = await self.db.get("true_positives", equal=dict(sentence_id=sen_id, attack_uid=attack_id))
-        tns = await self.db.get("true_negatives", equal=dict(sentence_id=sen_id, attack_uid=attack_id))
-        fps = await self.db.get("false_positives", equal=dict(sentence_id=sen_id, attack_uid=attack_id))
-        fns = await self.db.get("false_negatives", equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        tps = await self.db.get("true_positives", equal={"sentence_id": sen_id, "attack_uid": attack_id})
+        tns = await self.db.get("true_negatives", equal={"sentence_id": sen_id, "attack_uid": attack_id})
+        fps = await self.db.get("false_positives", equal={"sentence_id": sen_id, "attack_uid": attack_id})
+        fns = await self.db.get("false_negatives", equal={"sentence_id": sen_id, "attack_uid": attack_id})
         self.assertTrue(len(fns) == 1, msg="New, accepted attack did not appear as 1 record in false negatives table.")
         self.assertTrue(
             len(tps) + len(tns) + len(fps) == 0,
@@ -310,12 +312,12 @@ class TestReports(ThreadAppTest):
         """Function to test adding an invalid attack to a sentence."""
         report_id, attack_id = str(uuid4()), "s00001"
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title="Analyse This!", url="analysing.this"))
+        await self.submit_test_report({"uid": report_id, "title": "Analyse This!", "url": "analysing.this"})
         # Pick any sentence from this report
-        sentences = await self.db.get("report_sentences", equal=dict(report_uid=report_id))
+        sentences = await self.db.get("report_sentences", equal={"report_uid": report_id})
         sen_id = sentences[0][UID_KEY]
         # Proceed to add an attack
-        data = dict(index="add_attack", sentence_id=sen_id, attack_uid=attack_id)
+        data = {"index": "add_attack", "sentence_id": sen_id, "attack_uid": attack_id}
         resp = await self.client.post("/rest", json=data)
         resp_json = await resp.json()
         # Check an unsuccessful response was sent
@@ -330,9 +332,9 @@ class TestReports(ThreadAppTest):
         """Function to test confirming a predicted attack of a sentence."""
         report_id, attack_id = str(uuid4()), "d99999"
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title="Analyse This!", url="analysing.this"))
+        await self.submit_test_report({"uid": report_id, "title": "Analyse This!", "url": "analysing.this"})
         # Get the report sentences for this report
-        sentences = await self.db.get("report_sentences", equal=dict(report_uid=report_id))
+        sentences = await self.db.get("report_sentences", equal={"report_uid": report_id})
         sen_id = None
         for sen in sentences:
             # Find the sentence that has an attack for this test
@@ -341,14 +343,14 @@ class TestReports(ThreadAppTest):
         if not sen_id:
             self.skipTest("Could not test confirming an attack as report test sentences do not have attacks.")
         # Proceed to confirm an attack
-        data = dict(index="add_attack", sentence_id=sen_id, attack_uid=attack_id)
+        data = {"index": "add_attack", "sentence_id": sen_id, "attack_uid": attack_id}
         resp = await self.client.post("/rest", json=data)
         self.assertTrue(resp.status < 300, msg="Confirming an attack of a sentence resulted in a non-200 response.")
         # Confirm this sentence is marked as a true positive (and not present in the other tables)
-        tps = await self.db.get("true_positives", equal=dict(sentence_id=sen_id, attack_uid=attack_id))
-        tns = await self.db.get("true_negatives", equal=dict(sentence_id=sen_id, attack_uid=attack_id))
-        fps = await self.db.get("false_positives", equal=dict(sentence_id=sen_id, attack_uid=attack_id))
-        fns = await self.db.get("false_negatives", equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        tps = await self.db.get("true_positives", equal={"sentence_id": sen_id, "attack_uid": attack_id})
+        tns = await self.db.get("true_negatives", equal={"sentence_id": sen_id, "attack_uid": attack_id})
+        fps = await self.db.get("false_positives", equal={"sentence_id": sen_id, "attack_uid": attack_id})
+        fns = await self.db.get("false_negatives", equal={"sentence_id": sen_id, "attack_uid": attack_id})
         self.assertTrue(len(tps) == 1, msg="Confirmed attack did not appear as 1 record in true positives table.")
         self.assertTrue(
             len(tns) + len(fps) + len(fns) == 0,
@@ -359,9 +361,9 @@ class TestReports(ThreadAppTest):
         """Function to test rejecting an attack to a sentence."""
         report_id, attack_id = str(uuid4()), "d99999"
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title="Analyse This!", url="analysing.this"))
+        await self.submit_test_report({"uid": report_id, "title": "Analyse This!", "url": "analysing.this"})
         # Get the report sentences for this report
-        sentences = await self.db.get("report_sentences", equal=dict(report_uid=report_id))
+        sentences = await self.db.get("report_sentences", equal={"report_uid": report_id})
         sen_id = None
         for sen in sentences:
             # Find the sentence that has an attack for this test
@@ -370,14 +372,14 @@ class TestReports(ThreadAppTest):
         if not sen_id:
             self.skipTest("Could not test rejecting an attack as report test sentences do not have attacks.")
         # Proceed to reject an attack
-        data = dict(index="reject_attack", sentence_id=sen_id, attack_uid=attack_id)
+        data = {"index": "reject_attack", "sentence_id": sen_id, "attack_uid": attack_id}
         resp = await self.client.post("/rest", json=data)
         self.assertTrue(resp.status < 300, msg="Rejecting an attack of a sentence resulted in a non-200 response.")
         # Confirm this sentence is marked as a false positive (and not present in the other tables)
-        tps = await self.db.get("true_positives", equal=dict(sentence_id=sen_id, attack_uid=attack_id))
-        tns = await self.db.get("true_negatives", equal=dict(sentence_id=sen_id, attack_uid=attack_id))
-        fps = await self.db.get("false_positives", equal=dict(sentence_id=sen_id, attack_uid=attack_id))
-        fns = await self.db.get("false_negatives", equal=dict(sentence_id=sen_id, attack_uid=attack_id))
+        tps = await self.db.get("true_positives", equal={"sentence_id": sen_id, "attack_uid": attack_id})
+        tns = await self.db.get("true_negatives", equal={"sentence_id": sen_id, "attack_uid": attack_id})
+        fps = await self.db.get("false_positives", equal={"sentence_id": sen_id, "attack_uid": attack_id})
+        fns = await self.db.get("false_negatives", equal={"sentence_id": sen_id, "attack_uid": attack_id})
         self.assertTrue(len(fps) == 1, msg="Rejected attack did not appear as 1 record in false positives table.")
         self.assertTrue(
             len(tps) + len(tns) + len(fns) == 0,
@@ -388,9 +390,9 @@ class TestReports(ThreadAppTest):
         """Function to test obtaining the data for a report sentence."""
         report_id = str(uuid4())
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title="Analyse This!", url="analysing.this"))
+        await self.submit_test_report({"uid": report_id, "title": "Analyse This!", "url": "analysing.this"})
         # Get the report sentences for this report
-        sentences = await self.db.get("report_sentences", equal=dict(report_uid=report_id))
+        sentences = await self.db.get("report_sentences", equal={"report_uid": report_id})
         sen_id = None
         for sen in sentences:
             # Find the sentence that has an attack for this test
@@ -399,8 +401,8 @@ class TestReports(ThreadAppTest):
         if not sen_id:
             self.skipTest("Could not test getting sentence data as report test sentences do not have attacks.")
         # Obtain the sentence info
-        resp_context = await self.client.post("/rest", json=dict(index="sentence_context", sentence_id=sen_id))
-        resp_attacks = await self.client.post("/rest", json=dict(index="confirmed_attacks", sentence_id=sen_id))
+        resp_context = await self.client.post("/rest", json={"index": "sentence_context", "sentence_id": sen_id})
+        resp_attacks = await self.client.post("/rest", json={"index": "confirmed_attacks", "sentence_id": sen_id})
         resp_context_json = await resp_context.json()
         resp_all_techniques = resp_context_json["techniques"]
         resp_attacks_json = await resp_attacks.json()
@@ -414,10 +416,10 @@ class TestReports(ThreadAppTest):
         )
         self.assertEqual(len(resp_attacks_json), 0, msg="Confirmed attacks associated with sentence unexpectedly.")
         # Confirm attack
-        await self.client.post("/rest", json=dict(index="add_attack", sentence_id=sen_id, attack_uid="d99999"))
+        await self.client.post("/rest", json={"index": "add_attack", "sentence_id": sen_id, "attack_uid": "d99999"})
         # Confirm this doesn't change sentence context but changes confirmed attacks
-        resp_context = await self.client.post("/rest", json=dict(index="sentence_context", sentence_id=sen_id))
-        resp_attacks = await self.client.post("/rest", json=dict(index="confirmed_attacks", sentence_id=sen_id))
+        resp_context = await self.client.post("/rest", json={"index": "sentence_context", "sentence_id": sen_id})
+        resp_attacks = await self.client.post("/rest", json={"index": "confirmed_attacks", "sentence_id": sen_id})
         resp_context_json = await resp_context.json()
         resp_all_techniques = resp_context_json["techniques"]
         resp_attacks_json = await resp_attacks.json()
@@ -440,30 +442,30 @@ class TestReports(ThreadAppTest):
         report_id, report_title = str(uuid4()), "Never Gonna Rollback This Up"
         # Submit and analyse a test report
         await self.submit_test_report(
-            dict(uid=report_id, title=report_title, url="analysing.this", date_written="2022-08-15")
+            {"uid": report_id, "title": report_title, "url": "analysing.this", "date_written": "2022-08-15"}
         )
         # Get the report sentences for this report
         sentences = await self.db.get(
-            "report_sentences", equal=dict(report_uid=report_id), order_by_asc=dict(sen_index=1)
+            "report_sentences", equal={"report_uid": report_id}, order_by_asc={"sen_index": 1}
         )
         # Obtain one of the sentence IDs
         sen_id = sentences[0].get(UID_KEY)
         # Delete the sentence
-        data = dict(index="remove_sentence", sentence_id=sen_id)
+        data = {"index": "remove_sentence", "sentence_id": sen_id}
         await self.client.post("/rest", json=data)
         # Confirm the sentence got deleted
         new_sentences = await self.db.get(
-            "report_sentences", equal=dict(report_uid=report_id), order_by_asc=dict(sen_index=1)
+            "report_sentences", equal={"report_uid": report_id}, order_by_asc={"sen_index": 1}
         )
         if len(sentences) - 1 != len(new_sentences) or new_sentences[0].get(UID_KEY) == sen_id:
             self.fail("Could not test report rollback as removing a sentence did not work as expected.")
         # Rollback the report
-        data = dict(index="rollback_report", report_title=report_title)
+        data = {"index": "rollback_report", "report_title": report_title}
         resp = await self.client.post("/rest", json=data)
         self.assertTrue(resp.status < 300, msg="Report-rollback resulted in a non-200 response.")
         # Check the DB that the number of sentences are the same
         rollback_sentences = await self.db.get(
-            "report_sentences", equal=dict(report_uid=report_id), order_by_asc=dict(sen_index=1)
+            "report_sentences", equal={"report_uid": report_id}, order_by_asc={"sen_index": 1}
         )
         self.assertEqual(
             len(sentences),
@@ -479,19 +481,23 @@ class TestReports(ThreadAppTest):
         """Function to test successfully adding categories to a report."""
         report_id, report_title = str(uuid4()), "Add Categories to Me!"
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url="add.categories"))
+        await self.submit_test_report({"uid": report_id, "title": report_title, "url": "add.categories"})
         # Add an invalid category
-        data = dict(
-            index="set_report_keywords", report_title=report_title, victims=dict(category=["notACategory", "reallyNot"])
-        )
+        data = {
+            "index": "set_report_keywords",
+            "report_title": report_title,
+            "victims": {"category": ["notACategory", "reallyNot"]},
+        }
         await self.client.post("/rest", json=data)
         # Check that these invalid categories were not saved
         current = await self.data_svc.get_report_category_keynames(report_id)
         self.assertFalse(current, msg="Invalid categories saved to report.")
         # Add valid categories
-        data = dict(
-            index="set_report_keywords", report_title=report_title, victims=dict(category=["aerospace", "music"])
-        )
+        data = {
+            "index": "set_report_keywords",
+            "report_title": report_title,
+            "victims": {"category": ["aerospace", "music"]},
+        }
         resp = await self.client.post("/rest", json=data)
         self.assertTrue(resp.status < 300, msg="Adding categories resulted in a non-200 response.")
         current = await self.data_svc.get_report_category_keynames(report_id)
@@ -500,9 +506,9 @@ class TestReports(ThreadAppTest):
     async def test_adding_report_categories_auto_add(self):
         """Function to test successfully adding categories to a report which auto-adds another category."""
         report_id, report_title = str(uuid4()), "Auto-Add Categories to Me!"
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url="auto.add.categories"))
+        await self.submit_test_report({"uid": report_id, "title": report_title, "url": "auto.add.categories"})
 
-        data = dict(index="set_report_keywords", report_title=report_title, victims=dict(category=["rockets"]))
+        data = {"index": "set_report_keywords", "report_title": report_title, "victims": {"category": ["rockets"]}}
         resp = await self.client.post("/rest", json=data)
         self.assertTrue(resp.status < 300, msg="Adding categories resulted in a non-200 response.")
 
@@ -513,22 +519,26 @@ class TestReports(ThreadAppTest):
         """Function to test successfully removing categories from a report."""
         report_id, report_title = str(uuid4()), "Remove Categories From Me!"
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url="remove.categories"))
+        await self.submit_test_report({"uid": report_id, "title": report_title, "url": "remove.categories"})
         # Add categories
-        data = dict(
-            index="set_report_keywords",
-            report_title=report_title,
-            victims=dict(category=["aerospace", "music", "film"]),
-        )
+        data = {
+            "index": "set_report_keywords",
+            "report_title": report_title,
+            "victims": {"category": ["aerospace", "music", "film"]},
+        }
         await self.client.post("/rest", json=data)
         # Remove a category
-        data = dict(index="set_report_keywords", report_title=report_title, victims=dict(category=["music", "film"]))
+        data = {
+            "index": "set_report_keywords",
+            "report_title": report_title,
+            "victims": {"category": ["music", "film"]},
+        }
         resp = await self.client.post("/rest", json=data)
         self.assertTrue(resp.status < 300, msg="Removing categories resulted in a non-200 response.")
         current = await self.data_svc.get_report_category_keynames(report_id)
         self.assertEqual(set(current), {"film", "music"}, msg="Categories were not removed.")
         # Remove last two categories
-        data = dict(index="set_report_keywords", report_title=report_title, victims=dict(category=[]))
+        data = {"index": "set_report_keywords", "report_title": report_title, "victims": {"category": []}}
         resp = await self.client.post("/rest", json=data)
         self.assertTrue(resp.status < 300, msg="Removing all categories resulted in a non-200 response.")
         current = await self.data_svc.get_report_category_keynames(report_id)
@@ -538,14 +548,14 @@ class TestReports(ThreadAppTest):
         """Function to test successfully adding keywords to a report."""
         report_id, report_title = str(uuid4()), "Add Keywords To Me!"
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url="add.keywords"))
+        await self.submit_test_report({"uid": report_id, "title": report_title, "url": "add.keywords"})
         # Add keywords
-        data = dict(
-            index="set_report_keywords",
-            report_title=report_title,
-            aggressors=dict(country=["HB", "TA"], group=["APT1"]),
-            victims=dict(countries_all=True),
-        )
+        data = {
+            "index": "set_report_keywords",
+            "report_title": report_title,
+            "aggressors": {"country": ["HB", "TA"], "group": ["APT1"]},
+            "victims": {"countries_all": True},
+        }
         resp = await self.client.post("/rest", json=data)
         self.assertTrue(resp.status < 300, msg="Adding keywords resulted in a non-200 response.")
         # Test the database contains these additions
@@ -568,22 +578,22 @@ class TestReports(ThreadAppTest):
         """Function to test successfully removing keywords from a report."""
         report_id, report_title = str(uuid4()), "Remove Keywords From Me!"
         # Submit and analyse a test report
-        await self.submit_test_report(dict(uid=report_id, title=report_title, url="remove.keywords"))
+        await self.submit_test_report({"uid": report_id, "title": report_title, "url": "remove.keywords"})
         # Add keywords
-        data = dict(
-            index="set_report_keywords",
-            report_title=report_title,
-            aggressors=dict(country=["HB", "TA"], group=["APT1"]),
-            victims=dict(countries_all=True),
-        )
+        data = {
+            "index": "set_report_keywords",
+            "report_title": report_title,
+            "aggressors": {"country": ["HB", "TA"], "group": ["APT1"]},
+            "victims": {"countries_all": True},
+        }
         await self.client.post("/rest", json=data)
         # Update keywords by removing some of them
-        data = dict(
-            index="set_report_keywords",
-            report_title=report_title,
-            aggressors=dict(country=["WA"], group=["APT2"]),
-            victims=dict(country=["HB"], categories_all=True),
-        )
+        data = {
+            "index": "set_report_keywords",
+            "report_title": report_title,
+            "aggressors": {"country": ["WA"], "group": ["APT2"]},
+            "victims": {"country": ["HB"], "categories_all": True},
+        }
         resp = await self.client.post("/rest", json=data)
         self.assertTrue(resp.status < 300, msg="Updating and removing keywords resulted in a non-200 response.")
         # Test the database contains these updates

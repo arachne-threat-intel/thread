@@ -14,17 +14,15 @@ class RegService:
     def analyze_document(regex_pattern, sentence):
         cleaned_sentence = sentence["text"]
         if re.findall(regex_pattern["regex_pattern"], cleaned_sentence, re.IGNORECASE):
-            print("Found {} in {}".format(regex_pattern, cleaned_sentence))
+            print(f"Found {regex_pattern} in {cleaned_sentence}")
             return True
         else:
             return False
 
     def analyze_html(self, regex_patterns, html_sentences):
         for regex_pattern in regex_patterns:
-            count = 0
             for sentence in html_sentences:
                 sentence_analysis = self.analyze_document(regex_pattern, sentence)
                 if sentence_analysis:
-                    html_sentences[count]["reg_techniques_found"].append(regex_pattern["attack_uid"])
-                count += 1
+                    sentence["reg_techniques_found"].append(regex_pattern["attack_uid"])
         return html_sentences

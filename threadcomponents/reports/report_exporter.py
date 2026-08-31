@@ -1,8 +1,9 @@
 import json
 
 from aiohttp_jinja2 import web
+
+from threadcomponents.constants import TITLE, UID, URL
 from threadcomponents.enums import ReportStatus
-from threadcomponents.constants import UID, URL, TITLE
 from threadcomponents.reports.afb_exporter import AFBExporter
 
 STATUS = "current_status"
@@ -47,7 +48,7 @@ class ReportExporter:
         except (KeyError, IndexError):
             raise web.HTTPNotFound()
         # Found a valid report, check if protected by token
-        await self.web_svc.action_allowed(request, action, context=dict(report=report))
+        await self.web_svc.action_allowed(request, action, context={"report": report})
         # A queued report would pass the above checks but be blank; raise an error instead
         if report_status not in [
             ReportStatus.NEEDS_REVIEW.value,
@@ -92,8 +93,8 @@ class ReportExporter:
             "domain": "mitre-enterprise",
             "description": enterprise_layer_description,
             "version": MITRE_ATTACK_VERSION,
-            "aggressors": dict(),
-            "victims": dict(),
+            "aggressors": {},
+            "victims": {},
             "article_date_published": date_of,
             "report_start_date": start_date,
             "report_end_date": end_date,
@@ -131,7 +132,7 @@ class ReportExporter:
             report=report, report_id=report_id, flatten_sentences=flatten_sentences
         )
         sentences = report_data.get("sentences", [])
-        keywords = dict(aggressors=report_data["aggressors"], victims=report_data["victims"])
+        keywords = {"aggressors": report_data["aggressors"], "victims": report_data["victims"]}
         indicators_of_compromise = report_data.get("indicators_of_compromise", [])
         all_regions = {
             r for sub_r in [keywords[k].get("region_ids", []) for k in ["aggressors", "victims"]] for r in sub_r
@@ -147,17 +148,17 @@ class ReportExporter:
     @staticmethod
     def pdfmake_create_initial_dd():
         """Initialises and returns a dictionary to use with pdfmake."""
-        dd = dict()
+        dd = {}
         # Default background which will be replaced by logo via client-side
         dd["background"] = "Report by Vrax"
         dd["content"] = []
         # The styles for this pdf - hyperlink styling needed to be added manually
-        dd["styles"] = dict(
-            header=dict(fontSize=25, bold=True, alignment="center"),
-            bold=dict(bold=True),
-            sub_header=dict(fontSize=15, bold=True),
-            url=dict(color="blue", decoration="underline"),
-        )
+        dd["styles"] = {
+            "header": {"fontSize": 25, "bold": True, "alignment": "center"},
+            "bold": {"bold": True},
+            "sub_header": {"fontSize": 15, "bold": True},
+            "url": {"color": "blue", "decoration": "underline"},
+        }
         return dd
 
     @staticmethod
@@ -165,42 +166,42 @@ class ReportExporter:
         """Adds report data to existing pdfmake-dictionary-data, dd."""
         # Document MetaData Info
         # See https://pdfmake.github.io/docs/document-definition-object/document-medatadata/
-        dd["info"] = dict()
+        dd["info"] = {}
         dd["info"]["title"] = sanitise_filename(title)
         dd["info"]["creator"] = url
 
         # Add the text to the document
-        dd["content"].append(dict(text=title, style="header"))  # begin with title of document
-        dd["content"].append(dict(text="\n"))  # Blank line after title
+        dd["content"].append({"text": title, "style": "header"})  # begin with title of document
+        dd["content"].append({"text": "\n"})  # Blank line after title
         # Extra content if this report hasn't been completed: highlight it's a draft
         if status != ReportStatus.COMPLETED.value:
             dd["content"].append(
-                dict(
-                    text="DRAFT: Please note this report is still being analysed. "
+                {
+                    "text": "DRAFT: Please note this report is still being analysed. "
                     "Techniques listed here may change later on.",
-                    style="sub_header",
-                )
+                    "style": "sub_header",
+                }
             )
-            dd["content"].append(dict(text="\n"))  # Blank line before report's URL
-            dd["watermark"] = dict(text="DRAFT", opacity=0.3, bold=True, angle=70)
+            dd["content"].append({"text": "\n"})  # Blank line before report's URL
+            dd["watermark"] = {"text": "DRAFT", "opacity": 0.3, "bold": True, "angle": 70}
 
-        dd["content"].append(dict(text="Original work at the below link\n\n", style="sub_header"))
-        dd["content"].append(dict(text="URL:", style="bold"))  # State report's source
-        dd["content"].append(dict(text=url, style="url"))
-        dd["content"].append(dict(text="\n"))  # Blank line after URL
-        dd["content"].append(dict(text="Article Publication Date: %s" % date_of, style="bold"))
-        dd["content"].append(dict(text="\n"))  # Blank line after report date
-        dd["content"].append(dict(text="Techniques Start Date: %s" % start_date, style="bold"))
-        dd["content"].append(dict(text="\n"))
-        dd["content"].append(dict(text="Techniques End Date: %s" % end_date, style="bold"))
-        dd["content"].append(dict(text="\n"))  # Blank line after technique dates
+        dd["content"].append({"text": "Original work at the below link\n\n", "style": "sub_header"})
+        dd["content"].append({"text": "URL:", "style": "bold"})  # State report's source
+        dd["content"].append({"text": url, "style": "url"})
+        dd["content"].append({"text": "\n"})  # Blank line after URL
+        dd["content"].append({"text": f"Article Publication Date: {date_of}", "style": "bold"})
+        dd["content"].append({"text": "\n"})  # Blank line after report date
+        dd["content"].append({"text": f"Techniques Start Date: {start_date}", "style": "bold"})
+        dd["content"].append({"text": "\n"})
+        dd["content"].append({"text": f"Techniques End Date: {end_date}", "style": "bold"})
+        dd["content"].append({"text": "\n"})  # Blank line after technique dates
 
     @staticmethod
     def pdfmake_add_keywords_table(dd, keywords, all_regions):
         """Adds report-keywords to existing pdfmake-dictionary-data, dd."""
         # Table for keywords
-        k_table = dict(headerRows=1, widths=["28%", "36%", "36%"], body=[])
-        k_table["body"].append(["", dict(text="Aggressors", style="bold"), dict(text="Victims", style="bold")])
+        k_table = {"headerRows": 1, "widths": ["28%", "36%", "36%"], "body": []}
+        k_table["body"].append(["", {"text": "Aggressors", "style": "bold"}, {"text": "Victims", "style": "bold"}])
         k_table_cols = ["aggressors", "victims"]
 
         # For each row, build up the column values based on the keywords dictionary
@@ -213,36 +214,36 @@ class ReportExporter:
         ]
 
         for r_name, r_key, rk_all in rows:
-            row = [dict(text=r_name, style="bold")]
+            row = [{"text": r_name, "style": "bold"}]
 
             for col in k_table_cols:
                 k_vals, k_is_all = keywords[col].get(r_key, []), keywords[col].get(rk_all)
                 # We're either flagging 'All' values, listing the values or listing no values ('-')
                 if k_is_all:
-                    row.append(dict(text="All", style="bold"))
+                    row.append({"text": "All", "style": "bold"})
                 elif k_vals:
-                    row.append(dict(ul=k_vals))
+                    row.append({"ul": k_vals})
                 else:
                     row.append("-")
 
             k_table["body"].append(row)
 
-        dd["content"].append(dict(table=k_table))
-        dd["content"].append(dict(text="\n"))  # Blank line after keywords
+        dd["content"].append({"table": k_table})
+        dd["content"].append({"text": "\n"})  # Blank line after keywords
 
     def pdfmake_add_sentences_attack_ioc_tables(self, dd, sentences, iocs, flatten_sentences=True):
         """Adds report-sentences to existing pdfmake-dictionary-data, dd."""
         # Table for found attacks
         header_row = []
         for column_header in ["ID", "Name", "Identified Sentence", "Start Date", "End Date"]:
-            header_row.append(dict(text=column_header, style="bold"))
-        table = dict(headerRows=1, widths=["10%", "16%", "50%", "12%", "12%"], body=[header_row])
+            header_row.append({"text": column_header, "style": "bold"})
+        table = {"headerRows": 1, "widths": ["10%", "16%", "50%", "12%", "12%"], "body": [header_row]}
 
         # Table for indicators of compromise
         ioc_header_row = []
         for column_header in ["Indicators of Compromise"]:
-            ioc_header_row.append(dict(text=column_header, style="bold"))
-        ioc_table = dict(headerRows=1, widths=["100%"], body=[ioc_header_row])
+            ioc_header_row.append({"text": column_header, "style": "bold"})
+        ioc_table = {"headerRows": 1, "widths": ["100%"], "body": [ioc_header_row]}
 
         if flatten_sentences:
             sen_rows, ioc_rows = self._pdfmake_add_flattened_sentences(dd, sentences, iocs)
@@ -251,10 +252,10 @@ class ReportExporter:
 
         # Append tables to the end
         table["body"] += sen_rows if sen_rows else []
-        dd["content"].append(dict(table=table))
-        dd["content"].append(dict(text="\n"))
+        dd["content"].append({"table": table})
+        dd["content"].append({"text": "\n"})
         ioc_table["body"] += ioc_rows if ioc_rows else [["-"]]
-        dd["content"].append(dict(table=ioc_table))
+        dd["content"].append({"table": ioc_table})
 
     def _pdfmake_add_flattened_sentences(self, dd, sentences, indicators_of_compromise):
         """Adds a list of report-sentences to existing dictionary, dd, and returns table rows for sentences and IoCs."""
@@ -273,7 +274,7 @@ class ReportExporter:
             if sentence["attack_tid"] and sentence["active_hit"] and not sentence["inactive_attack"]:
                 # Append any attack for this sentence to the table; prefix parent-tech for any sub-technique
                 tech_name, parent_tech = sentence["attack_technique_name"], sentence.get("attack_parent_name")
-                tech_name = "%s: %s" % (parent_tech, tech_name) if parent_tech else tech_name
+                tech_name = f"{parent_tech}: {tech_name}" if parent_tech else tech_name
                 sen_table_rows.append(
                     [
                         sentence["attack_tid"],
@@ -299,11 +300,11 @@ class ReportExporter:
         for attack in sentences:
             # Prefix parent-tech for any sub-technique
             tech_name, parent_tech = attack["attack_technique_name"], attack.get("attack_parent_name")
-            tech_name = "%s: %s" % (parent_tech, tech_name) if parent_tech else tech_name
+            tech_name = f"{parent_tech}: {tech_name}" if parent_tech else tech_name
             mappings = attack["mappings"] or []
             mappings_added = 0
-            tid_cell = dict(text=attack["attack_tid"])
-            attack_name_cell = dict(text=tech_name)
+            tid_cell = {"text": attack["attack_tid"]}
+            attack_name_cell = {"text": tech_name}
 
             for mapping in mappings:
                 sen_id, sen_text = mapping["uid"], mapping["text"]
@@ -343,18 +344,18 @@ class ReportExporter:
             "Any countries listed in this report - from predefined lists by Vrax; excluding those "
             "quoted from the article text - have been taken from open-source lists."
         )
-        dd["content"].append(dict(text="\n" + note))
+        dd["content"].append({"text": "\n" + note})
 
         # Expansion on regions if applicable
         if all_regions:
-            dd["content"].append(dict(text="\n*Vrax defines these regions as follows:\n\n", pageBreak="before"))
-            regions_table = dict(widths=["35%", "65%"], body=[])
+            dd["content"].append({"text": "\n*Vrax defines these regions as follows:\n\n", "pageBreak": "before"})
+            regions_table = {"widths": ["35%", "65%"], "body": []}
 
             for region_id in all_regions:
                 country_codes = self.data_svc.region_countries_dict.get(region_id, [])
                 country_list = [self.data_svc.country_dict.get(c, "") for c in country_codes]
                 country_list.sort()
-                r_row = [dict(text=self.data_svc.region_dict.get(region_id)), dict(ul=country_list)]
+                r_row = [{"text": self.data_svc.region_dict.get(region_id)}, {"ul": country_list}]
                 regions_table["body"].append(r_row)
 
-            dd["content"].append(dict(table=regions_table))
+            dd["content"].append({"table": regions_table})

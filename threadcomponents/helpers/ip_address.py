@@ -1,5 +1,4 @@
 import re
-
 from ipaddress import IPv4Address, IPv4Interface, IPv6Address, IPv6Interface
 
 
@@ -34,7 +33,9 @@ def check_if_public_ip(ip_address, clean=False):
             try:
                 address_obj = obj_class(cleaned_ip)
                 break
-            except Exception:
+            except Exception:  # noqa: S112
+                # We're expecting exceptions to be raised until we find the right obj_class
+                # or deal with address_obj remaining None
                 continue
         if address_obj:
             break

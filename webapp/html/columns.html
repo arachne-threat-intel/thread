@@ -86,7 +86,7 @@
     {% endfor %}
   </div>
   <div class="col col-sm-4">
-    <div class="missingTechniquesView bg-dark rounded" id="sentenceContextSection">
+    <div class="missingTechniquesView rounded" id="sentenceContextSection">
       {% if not completed %}{# Incomplete reports: list techniques user still needs to review #}
         <span class='spanAwaitingTechniqueView'><b>Techniques Awaiting Confirmation</b></span>
         <br><br>
@@ -108,13 +108,13 @@
         <span class='spanMissingTechniqueView'><b>Techniques Found</b></span>
         <br><br>
         <div id="sentenceInformation">
-          <table id="tableSentenceInfo" class="table table-dark"><tbody></tbody></table>
+          <table id="tableSentenceInfo" class="table"><tbody></tbody></table>
         </div>
       {% endif %}
       <span class='spanMissingTechniqueView'><b>Confirmed Techniques</b></span>
       <br>
       <div id="confirmedsentenceInformation">
-        <table id="confirmedSentenceInfo" class="table table-dark"><tbody></tbody></table>
+        <table id="confirmedSentenceInfo" class="table"><tbody></tbody></table>
       </div>
       {% if not completed %}
         <form id="ttpDatesForm" hidden>{# Date of TTP mapping #}

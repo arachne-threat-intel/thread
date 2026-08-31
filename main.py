@@ -2,18 +2,20 @@
 # This file has been renamed from `tram.py`
 # To see its full history, please use `git log --follow <filename>` to view previous commits and additional contributors
 
-import aiohttp_jinja2
-import asyncio
 import argparse
-import jinja2
+import asyncio
 import logging
 import os
 import sys
-import yaml
-
-from aiohttp import web
 from datetime import datetime
-from threadcomponents.database.dao import Dao, DB_POSTGRESQL, DB_SQLITE
+
+import aiohttp_jinja2
+import jinja2
+import yaml
+from aiohttp import web
+
+from threadcomponents.constants import APP_TZ
+from threadcomponents.database.dao import DB_POSTGRESQL, DB_SQLITE, Dao
 from threadcomponents.handlers.web_api import WebAPI
 from threadcomponents.reports.report_exporter import ReportExporter
 from threadcomponents.service.attack_data_svc import AttackDataService
@@ -33,6 +35,8 @@ OFFLINE_BUILD_SOURCE = "local-json"
 # Have we scheduled the attack-data-update function?
 ATTACK_DATA_UPDATES_SCHEDULED = False
 
+logger = logging.getLogger(__name__)
+
 
 async def repeat(interval, func, *args, **kwargs):
     """Run a function (func) every interval seconds. Credit to https://stackoverflow.com/a/55505152"""
@@ -50,16 +54,24 @@ async def update_attack_data_scheduler():
         ATTACK_DATA_UPDATES_SCHEDULED = True
         return
     # Check if we are at the beginning of the month, if so, it's the right day for updates
-    today = datetime.now()
+    today = datetime.now(APP_TZ)
     if today.day != 1:
         return
-    logging.info("UPDATE ATTACK DATA: START")
+    logger.info("UPDATE ATTACK DATA: START")
     # Pick a quiet/suitable time to do the update (early in the next morning)
-    update_datetime = datetime(today.year, today.month, today.day + 1, 1, 0, 0)
+    update_datetime = datetime(
+        today.year,
+        today.month,
+        today.day + 1,
+        1,
+        0,
+        0,
+        tzinfo=today.tzinfo,
+    )
     update_time_diff = update_datetime - today
     await asyncio.sleep(update_time_diff.seconds)
     await website_handler.fetch_and_update_attack_data()
-    logging.info("UPDATE ATTACK DATA: END")
+    logger.info("UPDATE ATTACK DATA: END")
 
 
 async def background_tasks(taxii_local=ONLINE_BUILD_SOURCE, build=False, json_file=None):
@@ -76,11 +88,11 @@ async def background_tasks(taxii_local=ONLINE_BUILD_SOURCE, build=False, json_fi
             try:
                 await rest_svc.fetch_and_update_attack_data()
             except Exception as exc:
-                logging.critical(
+                logger.critical(
                     "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-                    "COULD NOT CONNECT TO TAXII SERVERS: {}\nPLEASE UPDATE CONFIG `taxii-local` "
+                    f"COULD NOT CONNECT TO TAXII SERVERS: {exc}\nPLEASE UPDATE CONFIG `taxii-local` "
                     "FOR OFFLINE DATABASE BUILDING\n"
-                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!".format(exc)
+                    "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
                 )
                 sys.exit()
         elif taxii_local == OFFLINE_BUILD_SOURCE and json_file:
@@ -103,9 +115,9 @@ async def init(host, port, app_setup_func=None):
     # Run any required functions before the app is launched
     await website_handler.pre_launch_init()
 
-    logging.info("server starting: %s:%s" % (host, port))
+    logger.info(f"server starting: {host}:{port}")
     webapp_dir = os.path.join(dir_prefix, "webapp")
-    logging.info("webapp dir is %s" % webapp_dir)
+    logger.info(f"webapp dir is {webapp_dir}")
 
     app = web.Application(middlewares=[WebAPI.req_handler])
     app.router.add_route("GET", web_svc.get_route(WebService.HOME_KEY), website_handler.index)
@@ -186,7 +198,11 @@ def retrain_deps(directory_prefix=""):
     # Initialise DAO, start services and initiate main function
     token_svc = TokenService()
     ml_svc = MLService(token_svc=token_svc, dir_prefix=directory_prefix)
-    attack_file_settings = dict(filepath=json_file_path, update=update_json_file, indent=json_file_indent)
+    attack_file_settings = {
+        "filepath": json_file_path,
+        "update": update_json_file,
+        "indent": json_file_indent,
+    }
     attack_data_svc = AttackDataService(dir_prefix=directory_prefix, attack_file_settings=attack_file_settings)
 
     return ml_svc, attack_data_svc
@@ -199,7 +215,7 @@ def main(directory_prefix="", route_prefix=None, app_setup_func=None, db_connect
     logging.basicConfig(
         format="%(asctime)s.%(msecs)03d %(levelname)-8s %(message)s", level=logging.INFO, datefmt="%Y-%m-%d %H:%M:%S"
     )
-    logging.info("Welcome to Thread")
+    logger.info("Welcome to Thread")
 
     # Read from config
     with open(os.path.join(dir_prefix, "threadcomponents", "conf", "config.yml")) as c:
@@ -222,7 +238,7 @@ def main(directory_prefix="", route_prefix=None, app_setup_func=None, db_connect
 
     # Set the attack dictionary filepath if applicable
     if conf_build and taxii_local == OFFLINE_BUILD_SOURCE and json_file_path and os.path.isfile(json_file_path):
-        logging.info("Will build model from static file")
+        logger.info("Will build model from static file")
         attack_dict = os.path.abspath(json_file_path)
 
     # Check int parameters are ints
@@ -269,7 +285,11 @@ def main(directory_prefix="", route_prefix=None, app_setup_func=None, db_connect
     data_svc = DataService(dao=dao, web_svc=web_svc, dir_prefix=dir_prefix)
     token_svc = TokenService()
     ml_svc = MLService(token_svc=token_svc, dir_prefix=dir_prefix)
-    attack_file_settings = dict(filepath=json_file_path, update=update_json_file, indent=json_file_indent)
+    attack_file_settings = {
+        "filepath": json_file_path,
+        "update": update_json_file,
+        "indent": json_file_indent,
+    }
     attack_data_svc = AttackDataService(dir_prefix=dir_prefix, attack_file_settings=attack_file_settings)
     rest_svc = RestService(
         web_svc=web_svc,
@@ -283,16 +303,16 @@ def main(directory_prefix="", route_prefix=None, app_setup_func=None, db_connect
         max_tasks=max_tasks,
         attack_data_svc=attack_data_svc,
     )
-    services = dict(
-        dao=dao,
-        data_svc=data_svc,
-        ml_svc=ml_svc,
-        reg_svc=reg_svc,
-        web_svc=web_svc,
-        rest_svc=rest_svc,
-        token_svc=token_svc,
-        attack_data_svc=attack_data_svc,
-    )
+    services = {
+        "dao": dao,
+        "data_svc": data_svc,
+        "ml_svc": ml_svc,
+        "reg_svc": reg_svc,
+        "web_svc": web_svc,
+        "rest_svc": rest_svc,
+        "token_svc": token_svc,
+        "attack_data_svc": attack_data_svc,
+    }
     report_exporter = ReportExporter(services=services)
     website_handler = WebAPI(services=services, report_exporter=report_exporter, js_src=js_src)
     start(host, port, taxii_local=taxii_local, build=conf_build, json_file=attack_dict, app_setup_func=app_setup_func)

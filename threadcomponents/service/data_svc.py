@@ -2,21 +2,24 @@
 # This file has been moved into a different directory
 # To see its full history, please use `git log --follow <filename>` to view previous commits and additional contributors
 
-import os
-import re
 import json
 import logging
-
+import os
+import re
 from contextlib import suppress
 from copy import deepcopy
 from datetime import datetime
-from threadcomponents.constants import TTP, IOC
 from urllib.parse import quote
+
+import anyio
+
+from threadcomponents.constants import IOC, TTP
 
 # Text to set on attack descriptions where this originally was not set
 NO_DESC = "No description provided"
 # A name for a temporary table representing the output of SQL_PAR_ATTACK
 FULL_ATTACK_INFO = "full_attack_info"
+logger = logging.getLogger(__name__)
 
 
 def defang_text(text):
@@ -79,16 +82,20 @@ class DataService:
         self.SQL_PAR_ATTACK_INC_INACTIVE = sql_par_attack_base.format(inactive_AND="", inactive_WHERE="")
         self.SQL_WITH_PAR_ATTACK_INC_INACTIVE = with_par_attack % self.SQL_PAR_ATTACK_INC_INACTIVE
 
-    async def reload_database(self, schema_file=os.path.join("threadcomponents", "conf", "schema.sql")):
+    async def reload_database(self, schema_file=None):
         """
         Function to reinitialize the database with the packaged schema
         :param schema_file: SQL schema file to build database from
         :return: nil
         """
         # Begin by obtaining the text from the schema file
+        if schema_file is None:
+            schema_file = os.path.join("threadcomponents", "conf", "schema.sql")
         schema_file = os.path.join(self.dir_prefix, schema_file)  # prefix directory path if there is one
-        with open(schema_file) as schema_opened:
-            schema = schema_opened.read()
+
+        async with await anyio.open_file(schema_file) as schema_opened:
+            schema = await schema_opened.read()
+
         # Given the schema, generate a new schema for tables that need to have a copied structure
         copied_tables_schema = self.dao.generate_copied_tables(schema=schema)
         # Proceed to build both schemas
@@ -99,7 +106,7 @@ class DataService:
         """
         Function to take attack_data and update the database
         """
-        logging.info("Saving attack data to database")
+        logger.info("Saving attack data to database")
 
         cur_attacks = await self.dao.get_dict_value_as_key("uid", table="attack_uids", columns=["name", "inactive"])
         cur_uids = set(cur_attacks.keys())
@@ -108,10 +115,10 @@ class DataService:
 
         for attack_uid, attack_item in attack_data.items():
             # If this loop takes long, the below logging-statement will help track progress
-            # logging.info(f'Processing attack {list(attack_data.keys()).index(k) + 1} of {len(attack_data)}.')
+            # logger.info(f'Processing attack {list(attack_data.keys()).index(k) + 1} of {len(attack_data)}.')
             if attack_uid not in cur_uids:
                 await self.dao.insert(
-                    "attack_uids", dict(uid=attack_uid, tid=attack_item["tid"], name=attack_item["name"])
+                    "attack_uids", {"uid": attack_uid, "tid": attack_item["tid"], "name": attack_item["name"]}
                 )
                 await self.add_related_attack_data(attack_uid, attack_item, "regex_patterns", "regex_pattern")
                 await self.add_related_attack_data(attack_uid, attack_item, "similar_words", "similar_word")
@@ -123,16 +130,16 @@ class DataService:
                 )
             else:
                 # If the attack is already in the DB, check the name hasn't changed; update if so
-                retrieved_name = (attack_data.get(attack_uid, dict())).get("name")
-                current_attack_data = cur_attacks.get(attack_uid, dict())
+                retrieved_name = (attack_data.get(attack_uid, {})).get("name")
+                current_attack_data = cur_attacks.get(attack_uid, {})
                 current_name = current_attack_data.get("name")
 
                 if retrieved_name and (retrieved_name != current_name):
-                    await self.dao.update("attack_uids", where=dict(uid=attack_uid), data=dict(name=retrieved_name))
+                    await self.dao.update("attack_uids", where={"uid": attack_uid}, data={"name": retrieved_name})
                     await self.dao.update(
                         "report_sentence_hits",
-                        where=dict(attack_uid=attack_uid),
-                        data=dict(attack_technique_name=retrieved_name),
+                        where={"attack_uid": attack_uid},
+                        data={"attack_technique_name": retrieved_name},
                     )
                     await self.web_svc.on_attack_name_change(attack_uid, retrieved_name)
                     name_changes.append((attack_uid, retrieved_name, current_name))
@@ -141,7 +148,7 @@ class DataService:
                     for name in [retrieved_name, current_name]:
                         if name:  # proceed if there is a value
                             # Check an attack doesn't already have a similar-word with this name
-                            db_criteria = dict(attack_uid=attack_uid, similar_word=name)
+                            db_criteria = {"attack_uid": attack_uid, "similar_word": name}
                             stored = await self.dao.get("similar_words", equal=db_criteria)
                             # If not, update the attack's similar-words to include this name
                             if not stored:
@@ -150,7 +157,7 @@ class DataService:
                 # Confirm this attack is considered active
                 if current_attack_data.get("inactive"):
                     await self.dao.update(
-                        "attack_uids", where=dict(uid=attack_uid), data=dict(inactive=self.dao.db_false_val)
+                        "attack_uids", where={"uid": attack_uid}, data={"inactive": self.dao.db_false_val}
                     )
 
         # Inactive attack IDs have been calculated by using what is in the database currently
@@ -162,11 +169,11 @@ class DataService:
         inactive_attacks = (cur_uids - retrieved_uids) - set(already_inactive)
         # TODO: Could just do a mass update like `UPDATE attack_uids SET inactive = true WHERE uid IN (blah, blah, blah, blah)`
         for inactive_id in inactive_attacks:
-            await self.dao.update("attack_uids", where=dict(uid=inactive_id), data=dict(inactive=self.dao.db_true_val))
+            await self.dao.update("attack_uids", where={"uid": inactive_id}, data={"inactive": self.dao.db_true_val})
 
         db_items = await self.dao.get("attack_uids")
         db_item_count = len(db_items)
-        logging.info(f"[!] DB Item Count: {db_item_count}")
+        logger.info(f"[!] DB Item Count: {db_item_count}")
 
     async def add_related_attack_data(
         self, attack_uid, attack_item, related_data_type, db_column_name, db_table_name=None
@@ -192,85 +199,97 @@ class DataService:
         :return: nil
         """
         cur_uids = await self.dao.get_column_as_list(table="attack_uids", column="uid")
-        logging.info("[#] {} Existing items in the DB".format(len(cur_uids)))
-        with open(buildfile, "r") as infile:
-            attack_dict = json.load(infile)
-            loaded_items = {}
-            # Extract all TIDs
-            for item in attack_dict["objects"]:
-                if "external_references" in item:
-                    # Filter down
-                    if any(x for x in item["external_references"] if x["source_name"] == "mitre-attack"):
-                        items = [
-                            x["external_id"] for x in item["external_references"] if x["source_name"] == "mitre-attack"
-                        ]
-                        if len(items) == 1:
-                            tid = items[0]
-                            # Add in
-                            if tid.startswith("T") and not tid.startswith("TA"):
-                                if item["type"] == "attack-pattern":
-                                    loaded_items[item["id"]] = {
-                                        "id": tid,
-                                        "name": item["name"],
-                                        "examples": [],
-                                        "similar_words": [],
-                                        "description": item.get("description", NO_DESC),
-                                        "example_uses": [],
-                                    }
-                        else:
-                            logging.critical("[!] Error: multiple MITRE sources: {} {}".format(item["id"], items))
-            # Extract uses for all TIDs
-            for item in attack_dict["objects"]:
-                if item["type"] == "relationship":
-                    if item["relationship_type"] == "uses":
-                        if "description" in item:
-                            normalized_example = (
-                                item["description"]
-                                .replace("<code>", "")
-                                .replace("</code>", "")
-                                .replace("\n", "")
-                                .encode("ascii", "ignore")
-                                .decode("ascii")
-                            )
-                            # Remove att&ck reference (name)[link to site]
-                            normalized_example = re.sub(r"\[.*?\]\(.*?\)", "", normalized_example)
-                            if item["target_ref"].startswith("attack-pattern"):
-                                if item["target_ref"] in loaded_items:
-                                    loaded_items[item["target_ref"]]["example_uses"].append(normalized_example)
-                                else:
-                                    logging.critical(
-                                        "[!] Found target_ref not in loaded data: {}".format(item["target_ref"])
-                                    )
-        logging.info("[#] {} Techniques found in input file".format(len(loaded_items)))
+        logger.info(f"[#] {len(cur_uids)} Existing items in the DB")
+
+        async with await anyio.open_file(buildfile, "r") as infile:
+            contents = await infile.read()
+
+        attack_dict = json.loads(contents)
+        loaded_items = {}
+        # Extract all TIDs
+        for item in attack_dict["objects"]:
+            # Filter down
+            if ("external_references" in item) and (
+                any(x for x in item["external_references"] if x["source_name"] == "mitre-attack")
+            ):
+                items = [x["external_id"] for x in item["external_references"] if x["source_name"] == "mitre-attack"]
+
+                if len(items) == 1:
+                    tid = items[0]
+                    # Add in
+                    if tid.startswith("T") and (not tid.startswith("TA")) and (item["type"] == "attack-pattern"):
+                        loaded_items[item["id"]] = {
+                            "id": tid,
+                            "name": item["name"],
+                            "examples": [],
+                            "similar_words": [],
+                            "description": item.get("description", NO_DESC),
+                            "example_uses": [],
+                        }
+                else:
+                    logger.critical("[!] Error: multiple MITRE sources: {} {}".format(item["id"], items))
+
+        # Extract uses for all TIDs
+        for item in attack_dict["objects"]:
+            if (item["type"] == "relationship") and (item["relationship_type"] == "uses") and ("description" in item):
+                normalized_example = (
+                    item["description"]
+                    .replace("<code>", "")
+                    .replace("</code>", "")
+                    .replace("\n", "")
+                    .encode("ascii", "ignore")
+                    .decode("ascii")
+                )
+
+                # Remove att&ck reference (name)[link to site]
+                normalized_example = re.sub(r"\[.*?\]\(.*?\)", "", normalized_example)
+                if item["target_ref"].startswith("attack-pattern"):
+                    if item["target_ref"] in loaded_items:
+                        loaded_items[item["target_ref"]]["example_uses"].append(normalized_example)
+                    else:
+                        logger.critical("[!] Found target_ref not in loaded data: {}".format(item["target_ref"]))
+
+        logger.info(f"[#] {len(loaded_items)} Techniques found in input file")
         # Deduplicate input data from existing items in the DB
         to_add = {x: y for x, y in loaded_items.items() if x not in cur_uids}
-        logging.info("[#] {} Techniques found that are not in the existing database".format(len(to_add)))
+        logger.info(f"[#] {len(to_add)} Techniques found that are not in the existing database")
         for k, v in to_add.items():
-            await self.dao.insert("attack_uids", dict(uid=k, tid=v["id"], name=v["name"]))
+            await self.dao.insert("attack_uids", {"uid": k, "tid": v["id"], "name": v["name"]})
             if "example_uses" in v:
                 [
                     await self.dao.insert_generate_uid(
-                        "true_positives", dict(attack_uid=k, true_positive=self.dao.truncate_str(defang_text(x), 800))
+                        "true_positives", {"attack_uid": k, "true_positive": self.dao.truncate_str(defang_text(x), 800)}
                     )
                     for x in v["example_uses"]
                 ]
 
-    async def set_regions_data(self, buildfile=os.path.join("threadcomponents", "conf", "country-regions.json")):
+    async def set_regions_data(self, buildfile=None):
         """Function to read in the regions json file."""
+        if buildfile is None:
+            buildfile = os.path.join("threadcomponents", "conf", "country-regions.json")
         buildfile = os.path.join(self.dir_prefix, buildfile)
-        with open(buildfile, "r") as regions_file:
-            loaded_regions = json.load(regions_file)
+
+        async with await anyio.open_file(buildfile, "r") as regions_file:
+            contents = await regions_file.read()
+
+        loaded_regions = json.loads(contents)
 
         self.region_dict = {}
         for region in loaded_regions:
             self.region_dict[region["id"]] = region["name"]
 
-    async def set_countries_data(self, buildfile=os.path.join("threadcomponents", "conf", "countries-iso2.json")):
+    async def set_countries_data(self, buildfile=None):
         """Function to read in the countries json file."""
+        if buildfile is None:
+            buildfile = os.path.join("threadcomponents", "conf", "countries-iso2.json")
         buildfile = os.path.join(self.dir_prefix, buildfile)  # prefix directory path if there is one
+
         # Load the JSON file and set the country dictionary with the ISO2 value mapped to the country name
-        with open(buildfile, "r") as infile:
-            loaded_countries = json.load(infile)
+        async with await anyio.open_file(buildfile, "r") as infile:
+            contents = await infile.read()
+
+        loaded_countries = json.loads(contents)
+
         self.country_dict = {}
         self.country_region_dict = {}
         self.region_countries_dict = {}
@@ -283,17 +302,19 @@ class DataService:
                 region_countries_list.add(country_code)
                 self.region_countries_dict[region_id] = region_countries_list
 
-    async def insert_category_json_data(
-        self, buildfile=os.path.join("threadcomponents", "conf", "categories", "industry.json")
-    ):
+    async def insert_category_json_data(self, buildfile=None):
         """Function to read in the categories json file and insert data into the database."""
+        if buildfile is None:
+            buildfile = os.path.join("threadcomponents", "conf", "categories", "industry.json")
         buildfile = os.path.join(self.dir_prefix, buildfile)  # prefix directory path if there is one
         # The current categories saved in the db
         cur_categories = await self.dao.get_column_as_list(table="categories", column="keyname")
 
         # Load the JSON file
-        with open(buildfile, "r") as infile:
-            categories_dict = self.web_svc.categories_dict = json.load(infile)
+        async with await anyio.open_file(buildfile, "r") as infile:
+            contents = await infile.read()
+
+        categories_dict = self.web_svc.categories_dict = json.loads(contents)
 
         # Dictionaries to hold the display names and parent-category names for categories
         parent_cat_names, display_names = {}, {}
@@ -339,7 +360,7 @@ class DataService:
         """Function to insert a category entry into the database."""
         if keyname not in current_categories:
             await self.dao.insert_generate_uid(
-                "categories", dict(keyname=keyname, name=entry["name"], display_name=display_name)
+                "categories", {"keyname": keyname, "name": entry["name"], "display_name": display_name}
             )
 
         # Get currently-saved auto-add entries and see what needs updating
@@ -350,20 +371,26 @@ class DataService:
 
         for auto_selected_category in to_add:
             await self.dao.insert_generate_uid(
-                "categories_auto_add", dict(selected=keyname, auto_add=auto_selected_category)
+                "categories_auto_add", {"selected": keyname, "auto_add": auto_selected_category}
             )
 
         for rm_auto_selected_category in to_delete:
-            await self.dao.delete("categories_auto_add", dict(selected=keyname, auto_add=rm_auto_selected_category))
+            await self.dao.delete("categories_auto_add", {"selected": keyname, "auto_add": rm_auto_selected_category})
 
-    async def insert_keyword_json_data(self, buildfile=os.path.join("spindle", "cta_names_mappings.json")):
+    async def insert_keyword_json_data(self, buildfile=None):
         """Function to read in the keywords json file and insert data into the database."""
+        if buildfile is None:
+            buildfile = os.path.join("spindle", "cta_names_mappings.json")
         buildfile = os.path.join(self.dir_prefix, buildfile)  # prefix directory path if there is one
         # The current keywords saved in the db
         cur_keywords = await self.dao.get_column_as_list(table="keywords", column="name")
+
         # Load the JSON file
-        with open(buildfile, "r") as infile:
-            keywords_dict = json.load(infile)
+        async with await anyio.open_file(buildfile, "r") as infile:
+            contents = await infile.read()
+
+        keywords_dict = json.loads(contents)
+
         # Obtain all the unique keywords and aliases into a set
         to_add = set()
         for keyword, entry in keywords_dict.items():
@@ -373,12 +400,12 @@ class DataService:
         # Check which ones are not in the database and add them if so
         to_add = to_add - set(cur_keywords)
         for adding_keyword in to_add:
-            await self.dao.insert_generate_uid("keywords", dict(name=adding_keyword))
+            await self.dao.insert_generate_uid("keywords", {"name": adding_keyword})
         return to_add
 
     async def status_grouper(self, status, criteria=None):
         # The search based on the given status
-        search = dict(current_status=status)
+        search = {"current_status": status}
         # If extra search criteria has been passed, update the current search dictionary
         if isinstance(criteria, dict):
             search.update(criteria)
@@ -393,8 +420,8 @@ class DataService:
             if isinstance(expires_on, datetime):
                 # Replace the expiry date with a formatted string
                 is_expired = expires_on < datetime.now(tz=expires_on.tzinfo)
-                report.update(dict(expires_on=expires_on.strftime("%Y-%m-%d %H:%M %Z"), is_expired=is_expired))
-            report.update(dict(link=edit_link, title_quoted=title_quoted))
+                report.update({"expires_on": expires_on.strftime("%Y-%m-%d %H:%M %Z"), "is_expired": is_expired})
+            report.update({"link": edit_link, "title_quoted": title_quoted})
         return reports
 
     async def get_all_categories(self):
@@ -421,7 +448,7 @@ class DataService:
     async def get_report_category_keynames(self, report_id):
         """Function to retrieve the category keynames for a report given a report ID."""
         query = f"SELECT category_keyname FROM report_categories WHERE report_uid = {self.dao.db_qparam}"
-        return await self.dao.raw_select(query, parameters=tuple([report_id]), single_col=True)
+        return await self.dao.raw_select(query, parameters=(report_id,), single_col=True)
 
     async def get_report_categories_for_display(self, report_id, include_keynames=False):
         """Function to retrieve the categories for a report given a report ID."""
@@ -439,10 +466,10 @@ class DataService:
 
         # If we are including keynames, return a dictionary where each entry is searchable by the keyname
         if include_keynames:
-            return await self.dao.get_dict_value_as_key("keyname", sql=query, sql_params=tuple([report_id]))
+            return await self.dao.get_dict_value_as_key("keyname", sql=query, sql_params=(report_id,))
 
         # Else return the list of display names for this report
-        return await self.dao.raw_select(query, parameters=tuple([report_id]), single_col=len(columns) == 1)
+        return await self.dao.raw_select(query, parameters=(report_id,), single_col=len(columns) == 1)
 
     async def get_report_aggressors_victims(self, report_id, include_display=False):
         """Function to retrieve the aggressors and victims for a report given a report ID."""
@@ -450,35 +477,40 @@ class DataService:
         query = (
             "SELECT keyword, NULL AS region, NULL AS country, association_type "
             "FROM report_keywords "
-            "WHERE report_uid = {sel} "
+            f"WHERE report_uid = {self.dao.db_qparam} "
             "UNION "
             "SELECT NULL AS keyword, region, NULL AS country, association_type "
             "FROM report_regions "
-            "WHERE report_uid = {sel} "
+            f"WHERE report_uid = {self.dao.db_qparam} "
             "UNION "
             "SELECT NULL AS keyword, NULL AS region, country, association_type "
             "FROM report_countries "
-            "WHERE report_uid = {sel}".format(sel=self.dao.db_qparam)
+            f"WHERE report_uid = {self.dao.db_qparam}"
         )
 
-        db_results = await self.dao.raw_select(query, parameters=tuple([report_id, report_id, report_id]))
+        db_results = await self.dao.raw_select(query, parameters=(report_id, report_id, report_id))
 
         # Check if this report is flagged at having all victims
         query = (
             f"SELECT association_type, association_with FROM report_all_assoc WHERE report_uid = {self.dao.db_qparam}"
         )
 
-        all_assoc = await self.dao.raw_select(query, parameters=tuple([report_id]))
+        all_assoc = await self.dao.raw_select(query, parameters=(report_id,))
 
         # Set up the dictionary to return the results split by aggressor and victim
-        r_template = dict(
-            groups=[], categories_all=False, region_ids=[], regions_all=False, country_codes=[], countries_all=False
-        )
+        r_template = {
+            "groups": [],
+            "categories_all": False,
+            "region_ids": [],
+            "regions_all": False,
+            "country_codes": [],
+            "countries_all": False,
+        }
 
         if include_display:
-            r_template.update(dict(countries=[], regions=[]))
+            r_template.update({"countries": [], "regions": []})
 
-        results = dict(aggressors=deepcopy(r_template), victims=deepcopy(r_template))
+        results = {"aggressors": deepcopy(r_template), "victims": deepcopy(r_template)}
 
         # Flag select-all in results: only doing this for victims
         for results_key, db_assoc_type in [("victims", "victim")]:
@@ -503,14 +535,14 @@ class DataService:
                 updating = results["victims"]
 
             else:
-                logging.error(f"INVALID report association `{assoc_type}` saved in db, uid `{entry.get('uid')}`")
+                logger.error(f"INVALID report association `{assoc_type}` saved in db, uid `{entry.get('uid')}`")
                 continue
 
             # Then determine if this result is for a group, region or country: append value if not flagged as select-all
             assoc_value_g, assoc_value_r = entry.get("keyword"), entry.get("region")
             assoc_value_c = entry.get("country")
             if not (assoc_value_g or assoc_value_r or assoc_value_c):
-                logging.error(f"GROUP, REGION or COUNTRY missing in db entry uid `{entry.get('uid')}`")
+                logger.error(f"GROUP, REGION or COUNTRY missing in db entry uid `{entry.get('uid')}`")
                 continue
 
             if assoc_value_g:
@@ -532,11 +564,11 @@ class DataService:
 
     async def get_report_sentences(self, report_id):
         """Function to retrieve all report sentences for a given report ID."""
-        return await self.dao.get("report_sentences", equal=dict(report_uid=report_id), order_by_asc=dict(sen_index=1))
+        return await self.dao.get("report_sentences", equal={"report_uid": report_id}, order_by_asc={"sen_index": 1})
 
     async def get_report_sentence_indicators_of_compromise(self, report_id):
         """Function to retrieve all indicators of compromise for a given report ID."""
-        return await self.dao.get("report_sentence_indicators_of_compromise", equal=dict(report_id=report_id))
+        return await self.dao.get("report_sentence_indicators_of_compromise", equal={"report_id": report_id})
 
     async def get_report_sentences_with_attacks(self, report_id="", group_by_attack=False):
         """Function to retrieve all report sentences and any attacks they may have given a report ID."""
@@ -585,12 +617,12 @@ class DataService:
                 f"attack_parent_name, inactive_attack"
             )
 
-        return await self.dao.raw_select(query, parameters=tuple([report_id]))
+        return await self.dao.raw_select(query, parameters=(report_id,))
 
     async def get_techniques(self, get_parent_info=False):
         # If we are not getting the parent-attack info (for sub-techniques), then return all results as normal
         if not get_parent_info:
-            return await self.dao.get("attack_uids", equal=dict(inactive=self.dao.db_false_val))
+            return await self.dao.get("attack_uids", equal={"inactive": self.dao.db_false_val})
         # Else run the SQL query which returns the parent info
         return await self.dao.raw_select(self.SQL_PAR_ATTACK)
 
@@ -599,8 +631,8 @@ class DataService:
         if not sentence_id:
             return None
         # Determine if sentence or image
-        sentence_dict = await self.dao.get("report_sentences", dict(uid=sentence_id))
-        img_dict = await self.dao.get("original_html", dict(uid=sentence_id))
+        sentence_dict = await self.dao.get("report_sentences", {"uid": sentence_id})
+        img_dict = await self.dao.get("original_html", {"uid": sentence_id})
         # Get the report ID from either
         report_id = None
         with suppress(KeyError, IndexError):
@@ -629,7 +661,7 @@ class DataService:
             "ORDER BY report_sentence_hits.attack_tid"
         )
         # Run the above query and return its results
-        return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
+        return await self.dao.raw_select(select_join_query, parameters=(sentence_id,))
 
     async def get_unconfirmed_undated_attack_count(self, report_id="", return_detail=False):
         """Function to retrieve the number of unconfirmed attacks without a start-date for a report."""
@@ -642,7 +674,7 @@ class DataService:
             f"AND report_sentence_hits.confirmed = {self.dao.db_false_val} "
             "ORDER BY report_sentences.sen_index"
         )
-        all_unconfirmed = await self.dao.raw_select(all_unconfirmed_query, parameters=tuple([report_id]))
+        all_unconfirmed = await self.dao.raw_select(all_unconfirmed_query, parameters=(report_id,))
 
         # Ignore entries in the database where the model was incorrect (i.e. is unconfirmed because it was rejected and
         # we are storing in report_sentence_hits that initial_model_match=1 so confirmed=0): these are false positives
@@ -654,11 +686,11 @@ class DataService:
             f"AND (report_sentence_hits.confirmed = {self.dao.db_false_val} "
             "OR report_sentence_hits.start_date IS NULL)"
         )
-        ignore = await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
+        ignore = await self.dao.raw_select(select_join_query, parameters=(report_id,))
         # Ideally would use an SQL MINUS query but this caused errors
 
         # If returning details, set up a dictionary and convert the dictionaries in ignore to tuples (for matching)
-        unconfirmed_by_sentence = dict()
+        unconfirmed_by_sentence = {}
         tuple_ig = [
             (x.get("attack_uid", "error"), x.get("sentence_id", "error"), x.get("attack_tid", "error")) for x in ignore
         ]
@@ -671,7 +703,7 @@ class DataService:
                 continue
 
             current_list = unconfirmed_by_sentence.get(sen_id, [])
-            attack_info = dict(attack_uid=a_id, attack_tid=a_tid)
+            attack_info = {"attack_uid": a_id, "attack_tid": a_tid}
             if attack_info not in current_list:
                 current_list.append(attack_info)
                 unconfirmed_by_sentence[sen_id] = current_list
@@ -696,7 +728,7 @@ class DataService:
             f"WHERE report_sentence_indicators_of_compromise.report_id = {self.dao.db_qparam}"
         )
 
-        return await self.dao.raw_select(select_query, parameters=tuple([TTP, report_id, IOC, report_id]))
+        return await self.dao.raw_select(select_query, parameters=(TTP, report_id, IOC, report_id))
 
     async def get_confirmed_techniques_for_nav_export(self, report_id):
         # Ensure date fields are converted into strings
@@ -717,7 +749,7 @@ class DataService:
         )
 
         # Get the confirmed hits as the above SQL query
-        hits = await self.dao.raw_select(select_join_query, parameters=tuple([report_id]))
+        hits = await self.dao.raw_select(select_join_query, parameters=(report_id,))
         techniques = []
         for hit in hits:
             # For each confirmed technique returned,
@@ -759,7 +791,7 @@ class DataService:
             "ORDER BY report_sentence_hits.attack_tid"
         )
         # Run the above query and return its results
-        return await self.dao.raw_select(select_join_query, parameters=tuple([sentence_id]))
+        return await self.dao.raw_select(select_join_query, parameters=(sentence_id,))
 
     async def get_report_unique_techniques_count(self, report_id) -> int:
         """Function to return the amount of unique techniques found in a report."""
@@ -768,13 +800,13 @@ class DataService:
             "FROM report_sentence_hits "
             f"WHERE report_uid = {self.dao.db_qparam}"
         )
-        count_query_result = await self.dao.raw_select(count_query, parameters=tuple([report_id]))
+        count_query_result = await self.dao.raw_select(count_query, parameters=(report_id,))
         return count_query_result[0]["count"]
 
     async def remove_expired_reports(self):
         """Function to delete expired reports."""
         # The query below uses a timestamp function which differs across DB engines; obtain the correct one
-        logging.info("DELETE EXPIRED REPORTS: START")
+        logger.info("DELETE EXPIRED REPORTS: START")
         time_now = self.dao.db_func(self.dao.db.FUNC_TIME_NOW) + "()"
 
         # Expired reports are where its timestamp is behind the current time (hence less-than)
@@ -784,15 +816,15 @@ class DataService:
 
         if expired_urls:
             for url in expired_urls:
-                logging.info(f"Expired URL will be deleted: `{url}`")
+                logger.info(f"Expired URL will be deleted: `{url}`")
 
         delete_query = "DELETE" + query
         await self.dao.run_sql_list(sql_list=[(delete_query,)])
-        logging.info("DELETE EXPIRED REPORTS: END")
+        logger.info("DELETE EXPIRED REPORTS: END")
 
     async def remove_report_by_id(self, report_id=""):
         """Function to delete a report by its ID."""
-        await self.dao.delete("reports", dict(uid=report_id))
+        await self.dao.delete("reports", {"uid": report_id})
 
     async def get_report_by_id_or_title(self, by_id=False, by_title=False, report="", add_expiry_bool=True):
         """Given a report ID or title, returns matching report records."""
@@ -814,7 +846,7 @@ class DataService:
 
         column = "title" if by_title else "uid"
         query = f"SELECT *, {', '.join(fields)} FROM reports WHERE {column} = {self.dao.db_qparam}"
-        return await self.dao.raw_select(query, parameters=tuple([report]))
+        return await self.dao.raw_select(query, parameters=(report,))
 
     async def get_report_by_title(self, report_title="", add_expiry_bool=True):
         """Given a report title, returns matching report records."""
@@ -829,9 +861,9 @@ class DataService:
         # The list of SQL statements to run for this operation
         sql_list = [
             # Delete the report sentences - this will trigger related true/false positives/negatives to be deleted
-            await self.dao.delete("report_sentences", dict(report_uid=report_id), return_sql=True),
+            await self.dao.delete("report_sentences", {"report_uid": report_id}, return_sql=True),
             # Delete related images for this report
-            await self.dao.delete("original_html", dict(report_uid=report_id), return_sql=True),
+            await self.dao.delete("original_html", {"report_uid": report_id}, return_sql=True),
         ]
 
         # For each table that contains the initial report data
@@ -845,10 +877,10 @@ class DataService:
             )
 
             # Table names can't be parameters so state the report ID as a parameter for the above statement
-            parameters = tuple([report_id])
+            parameters = (report_id,)
 
             # Append to the SQL list the statement itself and the parameters to use
-            sql_list.append(tuple([sql, parameters]))
+            sql_list.append((sql, parameters))
 
         # Run the deletions and insertions for this method altogether; return if it was successful
         return await self.dao.run_sql_list(sql_list=sql_list)
@@ -878,7 +910,7 @@ class DataService:
         keywords["victims"].pop("groups")
         keywords["victims"]["categories"] = [row.get("display_name", cat_code) for cat_code, row in categories.items()]
         keywords["victims"]["category_codes"] = list(categories.keys())
-        all_data = dict(report=report, sentences=sentences, indicators_of_compromise=indicators_of_compromise)
+        all_data = {"report": report, "sentences": sentences, "indicators_of_compromise": indicators_of_compromise}
         all_data.update(keywords)
         return all_data
 
@@ -889,7 +921,7 @@ class DataService:
         :return: A title that will be unique in the reports table of the database.
         """
         # Check for any duplicates of the given title
-        existing = await self.dao.get("reports", dict(title=title))
+        existing = await self.dao.get("reports", {"title": title})
 
         # If there is already a report with this title...
         if existing:

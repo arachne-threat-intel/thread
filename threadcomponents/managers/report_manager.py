@@ -2,9 +2,11 @@ import logging
 
 from threadcomponents.constants import DATETIME_OBJ, REST_IGNORED, REST_SUCCESS, UID
 from threadcomponents.enums import AssociationWith, ReportStatus
-from threadcomponents.helpers.date import to_datetime_obj, pre_save_date_checks, generate_report_expiry
+from threadcomponents.helpers.date import generate_report_expiry, pre_save_date_checks, to_datetime_obj
 from threadcomponents.managers.base_manager import ReportEntityManager
 from threadcomponents.repositories.report_repo import ReportRepository
+
+logger = logging.getLogger(__name__)
 
 
 class ReportManager(ReportEntityManager):
@@ -27,7 +29,7 @@ class ReportManager(ReportEntityManager):
 
     async def set_status(self, request, criteria=None):
         """Function to set the status of a report."""
-        default_error = dict(error="Error setting status.")
+        default_error = {"error": "Error setting status."}
         # Do initial report checks
         report_dict, error = await self.check_report_request_data_valid(
             request, criteria, "set-status", [UID, "current_status", "date_written"], ["set_status"]
@@ -43,24 +45,25 @@ class ReportManager(ReportEntityManager):
             # Check there are no unconfirmed attacks
             unchecked = await self.data_svc.get_unconfirmed_undated_attack_count(report_id=report_id)
             if unchecked:
-                partial_msg = "%s %s %s" % (
+                partial_msg = "{} {} {}".format(
                     "is" if unchecked == 1 else "are",
                     unchecked,
                     "attack" + ("" if unchecked == 1 else "s"),
                 )
-                return dict(
-                    error="There %s unconfirmed or with no start date for this report." % partial_msg, alert_user=1
-                )
+                return {
+                    "error": f"There {partial_msg} unconfirmed or with no start date for this report.",
+                    "alert_user": 1,
+                }
 
             # Check the report status is not queued (because queued reports will have 0 unchecked attacks)
             if r_status not in [ReportStatus.NEEDS_REVIEW.value, ReportStatus.IN_REVIEW.value]:
                 return default_error
             if not date_written:
-                return dict(error="Please set an Article Publication Date for this report.", alert_user=1)
+                return {"error": "Please set an Article Publication Date for this report.", "alert_user": 1}
 
-            update_data = dict(current_status=new_status)
+            update_data = {"current_status": new_status}
             self.add_report_expiry(data=update_data, days=1)
-            await self.dao.update("reports", where=dict(uid=report_id), data=update_data)
+            await self.dao.update("reports", where={"uid": report_id}, data=update_data)
 
             self.seen_report_status[report_id] = new_status
             # Before finishing, do any post-complete tasks if necessary
@@ -75,7 +78,7 @@ class ReportManager(ReportEntityManager):
 
     async def rollback_report(self, request, criteria=None):
         """Function to rollback a report to its post-queue state."""
-        default_error = dict(error="Error completing rollback of report.")
+        default_error = {"error": "Error completing rollback of report."}
 
         # Do initial report checks
         report, error = await self.check_report_request_data_valid(
@@ -91,29 +94,29 @@ class ReportManager(ReportEntityManager):
             return default_error
 
         # Proceed with the rollback; first, hide the report from the UI and give it a temp status
-        await self.dao.update("reports", where=dict(uid=report_id), data=dict(current_status="HIDDEN"))
+        await self.dao.update("reports", where={"uid": report_id}, data={"current_status": "HIDDEN"})
 
         success = await self.data_svc.rollback_report(report_id=report_id)
         if success:
             # Finish by setting the status to 'Needs Review' and removing error (if error was added previously)
             await self.dao.update(
                 "reports",
-                where=dict(uid=report_id),
-                data=dict(current_status=ReportStatus.NEEDS_REVIEW.value, error=self.dao.db_false_val),
+                where={"uid": report_id},
+                data={"current_status": ReportStatus.NEEDS_REVIEW.value, "error": self.dao.db_false_val},
             )
             self.seen_report_status[report_id] = ReportStatus.NEEDS_REVIEW.value
             return REST_SUCCESS
         else:
             # If unsuccessful: log this, change report status back to what it was and add error flag
-            logging.error("Report %s failed to rollback." % report_id)
+            logger.error(f"Report {report_id} failed to rollback.")
             await self.dao.update(
-                "reports", where=dict(uid=report_id), data=dict(current_status=r_status, error=self.dao.db_true_val)
+                "reports", where={"uid": report_id}, data={"current_status": r_status, "error": self.dao.db_true_val}
             )
             return default_error
 
     async def delete_report(self, request, criteria=None):
         """Function to delete a report."""
-        default_error = dict(error="Error deleting report.")
+        default_error = {"error": "Error deleting report."}
         # Do initial report checks
         report, error = await self.check_report_request_data_valid(
             request, criteria, "delete-report", [UID, "current_status", "error"], None
@@ -131,12 +134,12 @@ class ReportManager(ReportEntityManager):
             return default_error
 
         # Proceed with delete
-        await self.dao.delete("reports", dict(uid=report_id))
+        await self.dao.delete("reports", {"uid": report_id})
         return REST_SUCCESS
 
     async def set_report_categories(self, request, criteria=None):
         """Function to set the categories of a report."""
-        default_error, success = dict(error="Error updating report categories."), REST_SUCCESS.copy()
+        default_error, success = {"error": "Error updating report categories."}, REST_SUCCESS.copy()
         # Do initial report checks
         report, error = await self.check_report_request_data_valid(
             request, criteria, "update-report-categories", [UID, "current_status"], None
@@ -168,13 +171,13 @@ class ReportManager(ReportEntityManager):
         updates = await self.report_repo.set_report_categories(report_id, to_add, to_delete)
 
         if updates:
-            success.update(dict(info="The report categories have been updated.", alert_user=1))
+            success.update({"info": "The report categories have been updated.", "alert_user": 1})
 
         return success
 
     async def set_report_keywords(self, request, criteria=None):
         """Function to set the keywords of a report."""
-        default_error, success = dict(error="Error updating aggressors and victims."), REST_SUCCESS.copy()
+        default_error, success = {"error": "Error updating aggressors and victims."}, REST_SUCCESS.copy()
 
         # Do initial report checks
         report, error = await self.check_report_request_data_valid(
@@ -185,8 +188,8 @@ class ReportManager(ReportEntityManager):
             return default_error
 
         # Check all request parameters
-        aggressors = criteria.get("aggressors", dict())
-        victims = criteria.get("victims", dict())
+        aggressors = criteria.get("aggressors", {})
+        victims = criteria.get("victims", {})
         report_id, r_status = report[UID], report["current_status"]
 
         if not (isinstance(aggressors, dict) and isinstance(victims, dict)):
@@ -271,13 +274,13 @@ class ReportManager(ReportEntityManager):
         updates = await self.report_repo.set_report_keywords(report_id, to_compare, to_process)
 
         if updates:
-            success.update(dict(info="The report aggressors and victims have been updated.", alert_user=1))
+            success.update({"info": "The report aggressors and victims have been updated.", "alert_user": 1})
 
         return success
 
     async def update_report_dates(self, request, criteria=None):
         """Function to update the date-fields of a report."""
-        default_error, success = dict(error="Error updating report dates."), REST_SUCCESS.copy()
+        default_error, success = {"error": "Error updating report dates."}, REST_SUCCESS.copy()
         # Do initial report checks
         report, error = await self.check_report_request_data_valid(
             request, criteria, "update-report-dates", [UID, "current_status", "date_written"], None
@@ -298,13 +301,13 @@ class ReportManager(ReportEntityManager):
 
         # Has a date-written not been provided if the report entry in db is lacking one?
         if (not r_written) and not date_of:
-            return dict(error="Article Publication Date missing.", alert_user=1)
+            return {"error": "Article Publication Date missing.", "alert_user": 1}
 
         # Do date-format and range checks
-        start_dict = dict(field="start_date", value=start_date, is_lower=True)
-        end_dict = dict(field="end_date", value=end_date, is_upper=True)
+        start_dict = {"field": "start_date", "value": start_date, "is_lower": True}
+        end_dict = {"field": "end_date", "value": end_date, "is_upper": True}
 
-        dates = [dict(field="date_written", value=date_of), start_dict, end_dict]
+        dates = [{"field": "date_written", "value": date_of}, start_dict, end_dict]
         update_data, checks = pre_save_date_checks(dates, ["date_written"], success)
 
         if checks:
@@ -313,19 +316,16 @@ class ReportManager(ReportEntityManager):
         # Carry out further checks and final data tidy up before updating the database
         start_date_conv, end_date_conv = start_dict.get(DATETIME_OBJ), end_dict.get(DATETIME_OBJ)
         if (start_date_conv and end_date_conv) and same_dates and (end_date_conv != start_date_conv):
-            return dict(error="Specified same dates but different dates provided.", alert_user=1)
+            return {"error": "Specified same dates but different dates provided.", "alert_user": 1}
 
         # Check that if one date in the date range is given, it fits with previously-saved/other date in range
-        far_start_date = (
-            start_date_conv and (not end_date_conv) and r_end and (start_date_conv > r_end.replace(tzinfo=None))
-        )
-        near_end_date = (
-            end_date_conv and (not start_date_conv) and r_start and (end_date_conv < r_start.replace(tzinfo=None))
-        )
+        far_start_date = start_date_conv and (not end_date_conv) and r_end and (start_date_conv > r_end)
+        near_end_date = end_date_conv and (not start_date_conv) and r_start and (end_date_conv < r_start)
         if far_start_date or near_end_date:
-            return dict(
-                error="The start/end dates do not follow the order of the existing start/end dates.", alert_user=1
-            )
+            return {
+                "error": "The start/end dates do not follow the order of the existing start/end dates.",
+                "alert_user": 1,
+            }
 
         # Are there any techniques that have start/end dates that don't fit with these new report dates?
         if (not apply_to_all) and (start_date or end_date):
@@ -338,7 +338,7 @@ class ReportManager(ReportEntityManager):
                     f"{' has' if number == 1 else 's have'} "
                     "start/end dates outside specified range."
                 )
-                return dict(error=error_msg, alert_user=1)
+                return {"error": error_msg, "alert_user": 1}
 
         if same_dates and start_date_conv:
             update_data["end_date"] = start_date
@@ -348,6 +348,6 @@ class ReportManager(ReportEntityManager):
             await self.report_repo.set_report_dates(report_id, update_data, apply_to_all)
 
         if not success.get("info"):  # the success response hasn't already been updated with info
-            success.update(dict(info="The report dates have been updated.", alert_user=1))
+            success.update({"info": "The report dates have been updated.", "alert_user": 1})
 
         return success

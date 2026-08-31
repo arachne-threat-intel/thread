@@ -3,19 +3,20 @@
 # To see its full history, please use `git log --follow <filename>` to view previous commits and additional contributors
 
 import logging
-import newspaper
-import requests
-
-from aiohttp import web
-from bs4 import BeautifulSoup
 from contextlib import suppress
 from ipaddress import ip_address
+from urllib.parse import urlparse
+
+import newspaper
+import requests
+from aiohttp import web
+from bs4 import BeautifulSoup
 from lxml import etree, html
 from newspaper.article import ArticleDownloadState
-from urllib.parse import urlparse
 
 # Blocked image types
 BLOCKED_IMG_TYPES = {"gif", "apng", "webp", "avif", "mng", "flif"}
+logger = logging.getLogger(__name__)
 
 
 class WebService:
@@ -25,7 +26,7 @@ class WebService:
     HOW_IT_WORKS_KEY, WHAT_TO_SUBMIT_KEY = "how_it_works", "what_to_submit"
     REPORT_PARAM = "file"
     # Variations of punctuation we want to note
-    HYPHENS = [
+    HYPHENS = (
         "-",
         "\u058a",
         "\u05be",
@@ -40,9 +41,13 @@ class WebService:
         "\ufe5b",
         "\ufe63",
         "\uff0d",
-    ]
-    PERIODS = [".", "\ufe52", "\uff0e"]
-    QUOTES = [
+    )
+    PERIODS = (
+        ".",
+        "\ufe52",
+        "\uff0e",
+    )
+    QUOTES = (
         '"',
         "''",
         "\u02ba",
@@ -60,14 +65,23 @@ class WebService:
         "\uff02",
         "\u275d",
         "\u275e",
-    ]
-    BULLET_POINTS = ["\u2022", "\u2023", "\u2043", "\u2219", "\u25cb", "\u25cf", "\u25e6", "\u30fb"]
+    )
+    BULLET_POINTS = (
+        "\u2022",
+        "\u2023",
+        "\u2043",
+        "\u2219",
+        "\u25cb",
+        "\u25cf",
+        "\u25e6",
+        "\u30fb",
+    )
 
     def __init__(self, route_prefix=None, is_local=True):
         self.is_local = is_local
-        self.cached_responses = dict()
+        self.cached_responses = {}
         # A dictionary keeping track of the possible report categories
-        self.categories_dict = dict()
+        self.categories_dict = {}
         # Initialise app route info
         self.__app_routes = self._initialise_route_values(route_prefix_param=route_prefix)
         self.app = None
@@ -83,12 +97,12 @@ class WebService:
         routes = {
             self.HOME_KEY: home_route,
             self.COOKIE_KEY: route_prefix + "/cookies",
-            self.EDIT_KEY: route_prefix + "/edit/{%s}" % self.REPORT_PARAM,
+            self.EDIT_KEY: route_prefix + f"/edit/{{{self.REPORT_PARAM}}}",
             self.ABOUT_KEY: route_prefix + "/using-thread",
             self.REST_KEY: route_prefix + "/rest",
-            self.EXPORT_PDF_KEY: route_prefix + "/export/pdf/{%s}" % self.REPORT_PARAM,
-            self.EXPORT_NAV_KEY: route_prefix + "/export/nav/{%s}" % self.REPORT_PARAM,
-            self.EXPORT_AFB_KEY: route_prefix + "/export/afb/{%s}" % self.REPORT_PARAM,
+            self.EXPORT_PDF_KEY: route_prefix + f"/export/pdf/{{{self.REPORT_PARAM}}}",
+            self.EXPORT_NAV_KEY: route_prefix + f"/export/nav/{{{self.REPORT_PARAM}}}",
+            self.EXPORT_AFB_KEY: route_prefix + f"/export/afb/{{{self.REPORT_PARAM}}}",
             self.HOW_IT_WORKS_KEY: route_prefix + "/how-thread-works",
             self.STATIC_KEY: route_prefix + "/theme/",
         }
@@ -105,14 +119,14 @@ class WebService:
             route = self.__app_routes[route_key]
             if param is None:
                 return route
-            return route.replace("{%s}" % self.REPORT_PARAM, str(param))
+            return route.replace(f"{{{self.REPORT_PARAM}}}", str(param))
         # If the method doesn't receive a valid key, return None
         except KeyError:
             return None
 
     def check_and_clear_cached_responses(self):
         if len(self.cached_responses) > 100:
-            self.cached_responses = dict()
+            self.cached_responses = {}
 
     async def _call_app_method(
         self,
@@ -134,7 +148,7 @@ class WebService:
             return await app_method(*args, **kwargs)
 
         except Exception as e:
-            logging.error(f"Misconfigured app: {method_name}() error: {e}")
+            logger.error(f"Misconfigured app: {method_name}() error: {e}")
             return return_val_on_error
 
     async def action_allowed(self, request, action, context=None):
@@ -149,7 +163,7 @@ class WebService:
             return await request.app.permission_checker(request, action, context)
 
         except (TypeError, AttributeError) as e:
-            logging.error(f"Misconfigured app: permission_checker() error: {e}")
+            logger.error(f"Misconfigured app: permission_checker() error: {e}")
             raise web.HTTPInternalServerError()
 
     async def url_allowed(self, request, url):
@@ -163,7 +177,7 @@ class WebService:
             return await request.app.url_checker(request, url)
 
         except (TypeError, AttributeError) as e:
-            logging.error(f"Misconfigured app: url_checker() error: {e}")
+            logger.error(f"Misconfigured app: url_checker() error: {e}")
             raise SystemError("Apologies, this URL could not be processed at this time, please contact us.")
 
     async def on_report_complete(self, request, report_data):
@@ -223,7 +237,7 @@ class WebService:
         if not a.text:  # HTML may have been retrieved but if there is no text, ignore this url
             return None, None
         results, plaintext, images, seen_images = [], [], [], []
-        images = await self._collect_all_images(a.images)
+        images = list(a.images)
         plaintext = await self._extract_text_as_list(a.text)
         html_elements, htmltags, htmltext = self._extract_html_as_list(a.article_html)
         text_count = 0
@@ -338,7 +352,7 @@ class WebService:
 
     async def get_url(self, url, returned_format=None):
         if returned_format == "html":
-            logging.info("[!] HTML support is being refactored. Currently data is being returned plaintext")
+            logger.info("[!] HTML support is being refactored. Currently data is being returned plaintext")
         r = self.get_response_from_url(url)
         # Use the response text to get contents for this url
         b = newspaper.fulltext(r.text)
@@ -365,30 +379,30 @@ class WebService:
                 return response_clone
         except requests.exceptions.RequestException as e:
             if log_errors:
-                logging.error(f"URL retrieval failure: {e}")
+                logger.error(f"URL retrieval failure: {e}")
 
             if not allow_error:
-                raise e
+                raise
 
     def urls_match(self, testing_url="", matches_with=""):
         """Function to check if two URLs are the same."""
         # Quick initial check that both strings are identical
         if testing_url == matches_with:
             return True
+
         # Handle any redirects (e.g. https redirects; added '/'s at the end of a url)
         req1 = self.get_response_from_url(testing_url, log_errors=False)
         req2 = self.get_response_from_url(matches_with, log_errors=False)
         if not req1.url:
             raise ValueError("A URL has not been specified")
-        if req1.url == req2.url:
-            return True
+
         # There can be many further things to check here (e.g. https://stackoverflow.com/questions/5371992)
         # but leaving as this for now
-        return False
+        return req1.url == req2.url
 
     async def verify_url(self, request, url=""):
         """Function to check a URL can be parsed. Returns None if successful."""
-        url_error = "Unable to parse URL %s" % url
+        url_error = f"Unable to parse URL {url}"
         # Check the url can be parsed by the urllib module
         try:
             parsed_url = urlparse(url)
@@ -414,7 +428,7 @@ class WebService:
 
     @staticmethod
     def _build_final_image_dict(element):
-        final_element = dict()
+        final_element = {}
         final_element["uid"] = element["uid"]
         final_element["text"] = element["text"]
         final_element["tag"] = element["tag"]
@@ -423,20 +437,13 @@ class WebService:
 
     @staticmethod
     def _build_final_html_text(sentence, tag):
-        final_element = dict()
+        final_element = {}
         final_element["uid"] = sentence["uid"]
         final_element["text"] = sentence["text"]
         final_element["tag"] = tag
         final_element["found_status"] = sentence["found_status"]
         final_element["is_ioc"] = sentence["is_ioc"]
         return final_element
-
-    @staticmethod
-    async def _collect_all_images(image_set):
-        images = []
-        for image in image_set:
-            images.append(image)
-        return images
 
     @staticmethod
     async def _extract_text_as_list(plaintext_doc):
@@ -480,10 +487,10 @@ class WebService:
 
     @staticmethod
     async def _match_and_construct_img(images, source):
-        for i in range(0, len(images)):
+        for i in range(len(images)):
             if source in images[i]:
                 source = images[i]
-        img_dict = dict()
+        img_dict = {}
         img_dict["text"] = source
         img_dict["tag"] = "img"
         img_dict["ml_techniques_found"] = []
@@ -492,7 +499,7 @@ class WebService:
 
     @staticmethod
     def _construct_text_dict(plaintext, tag):
-        res_dict = dict()
+        res_dict = {}
         res_dict["text"] = plaintext
         res_dict["tag"] = tag
         res_dict["ml_techniques_found"] = []

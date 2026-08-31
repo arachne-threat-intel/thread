@@ -5,14 +5,16 @@
 import asyncio
 import logging
 import os
-
-import numpy as np
 import pickle
 import random
 
+import anyio
+import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
+
+logger = logging.getLogger(__name__)
 
 
 class MLService:
@@ -28,7 +30,7 @@ class MLService:
 
         tech_name = None
         lst1, lst2, false_candidates, false_labels = [], [], [], []
-        for k, v in techniques.items():
+        for v in techniques.values():
             if v["id"] == tech_id:
                 tech_name = v["name"]
                 # Collect the example uses for positive training data
@@ -37,24 +39,22 @@ class MLService:
                     lst2.append(True)
 
                 # Collect the true_positive and false_negative samples from reviewed reports for positive training data
-                if "true_positives" in v.keys():
+                if "true_positives" in v:
                     for tp in v["true_positives"]:
                         lst1.append(await self.token_svc.tokenize(tp))
                         lst2.append(True)
-                if "false_negatives" in v.keys():
+                if "false_negatives" in v:
                     for fn in v["false_negatives"]:
                         lst1.append(await self.token_svc.tokenize(fn))
                         lst2.append(True)
 
                 # Collect the false_positive samples from reviewed reports for negative training data
-                if "false_positives" in v.keys():
-                    for fp in v["false_positives"]:
-                        false_labels.append(fp)
+                if "false_positives" in v:
+                    false_labels += list(v["false_positives"])
             else:
-                for i in v["example_uses"]:
-                    false_candidates.append(i)
+                false_candidates += list(v["example_uses"])
 
-        logging.info(f"Building Model | {tech_id=} {tech_name=}")
+        logger.info(f"Building Model | {tech_id=} {tech_name=}")
 
         await asyncio.sleep(0.001)  # Random sleep to avoid blocking the event loop
 
@@ -85,7 +85,7 @@ class MLService:
         logreg.fit(x_train, y_train)
 
         model_score = logreg.score(x_test, y_test)
-        logging.info(f"\tScore: {model_score}")
+        logger.info(f"\tScore: {model_score}")
 
         await asyncio.sleep(0.001)  # Random sleep to avoid blocking the event loop
 
@@ -117,12 +117,12 @@ class MLService:
         model_dict = {}
         total = len(list_of_techs)
         count = 1
-        logging.info(
+        logger.info(
             "Building Classification Models.. This could take anywhere from ~30-60+ minutes. "
             "Please do not close terminal."
         )
         for tech_id, _ in list_of_techs:
-            logging.info("[#] Building.... {}/{}".format(count, total))
+            logger.info(f"[#] Building.... {count}/{total}")
             count += 1
             built_model = await self.build_models(tech_id, techniques)
             if built_model:
@@ -130,12 +130,14 @@ class MLService:
                 rebuilt = True
 
         if rebuilt:
-            logging.info("[#] Saving models to pickled file: " + os.path.basename(self.dict_loc))
+            logger.info("[#] Saving models to pickled file: " + os.path.basename(self.dict_loc))
             # Save the newly-built models
-            with open(self.dict_loc, "wb") as saved_dict:
-                pickle.dump(model_dict, saved_dict)
+            model_bytes = pickle.dumps(model_dict)
 
-            logging.info("[#] Finished saving models.")
+            async with await anyio.open_file(self.dict_loc, "wb") as saved_dict:
+                await saved_dict.write(model_bytes)
+
+            logger.info("[#] Finished saving models.")
 
         return rebuilt, model_dict
 
@@ -164,10 +166,12 @@ class MLService:
                 failed_to_update.append(tech)
 
         if len(techs_to_rebuild) > len(failed_to_update):
-            with open(self.dict_loc, "wb") as saved_dict:
-                pickle.dump(current_dict, saved_dict)
+            model_bytes = pickle.dumps(current_dict)
 
-            logging.info("Finished updating models.")
+            async with await anyio.open_file(self.dict_loc, "wb") as saved_dict:
+                await saved_dict.write(model_bytes)
+
+            logger.info("Finished updating models.")
 
         return failed_to_update
 
@@ -177,36 +181,38 @@ class MLService:
             dictionary_location = self.dict_loc
         # Check the given location is a valid filepath
         if os.path.isfile(dictionary_location):
-            logging.info("[#] Loading models from pickled file: " + os.path.basename(dictionary_location))
+            logger.info("[#] Loading models from pickled file: " + os.path.basename(dictionary_location))
+
             # Open the model file
             with open(dictionary_location, "rb") as pre_saved_dict:
                 # Attempt to load the model file's contents
                 try:
                     # A UserWarning can appear stating the risks of using a different pickle version from sklearn
                     loaded = pickle.load(pre_saved_dict)
-                    logging.info("[#] Successfully loaded models from pickled file")
+                    logger.info("[#] Successfully loaded models from pickled file")
                     return loaded
                 # sklearn.linear_model.logistic has been required in a previous run; might be related to UserWarning
                 except ModuleNotFoundError as mnfe:
-                    logging.warning("Could not load existing models: " + str(mnfe))
+                    logger.warning("Could not load existing models: " + str(mnfe))
                 # An empty file has been passed to pickle.load()
                 except EOFError as eofe:
-                    logging.warning("Existing models file may be empty: " + str(eofe))
+                    logger.warning("Existing models file may be empty: " + str(eofe))
+
         # The provided location was not a valid filepath
         else:
-            logging.warning("Invalid location given for existing models file.")
+            logger.warning("Invalid location given for existing models file.")
         # return None if pickle.load() was not successful or a valid filepath was not provided
         return None
 
     async def analyze_html(self, list_of_techs, model_dict, list_of_sentences):
         for tech_id, tech_name in list_of_techs:
             # If this loop takes long, the below logging-statement will help track progress
-            # logging.info('%s/%s tech analysed' % (list_of_techs.index((tech_id, tech_name)), len(list_of_techs)))
+            # logger.info('%s/%s tech analysed' % (list_of_techs.index((tech_id, tech_name)), len(list_of_techs)))
             # If an older model_dict has been loaded, its keys may be out of sync with list_of_techs
             try:
                 cv, logreg = model_dict[tech_id]
             except KeyError:  # Report to user if a model can't be retrieved
-                logging.warning(
+                logger.warning(
                     "Technique `"
                     + tech_id
                     + ", "
@@ -218,11 +224,9 @@ class MLService:
                 continue
 
             categories = await self.analyze_document(cv, logreg, list_of_sentences)
-            count = 0
-            for vals in categories:
+            for count, vals in enumerate(categories):
                 await asyncio.sleep(0.001)
                 if vals:
                     list_of_sentences[count]["ml_techniques_found"].append((tech_id, tech_name))
-                count += 1
 
         return list_of_sentences

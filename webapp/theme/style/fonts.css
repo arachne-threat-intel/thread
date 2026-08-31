@@ -1,23 +1,76 @@
+/* Fonts for the offline asset path (js-libraries: js-local-src). The online path pulls
+   the same two families from Google Fonts in base.html - keep the two in step.
+   Exo is no longer declared here: nothing on the page uses it after the Vrax type
+   change. Its files stay in fonts/Exo/ because exported PDFs still render in Exo. */
+
+/* Montserrat ships as a variable font, so one file covers every weight we use */
 @font-face {
-  font-family: 'Exo';
-  src: url(../fonts/Exo/static/Exo-Light.ttf);
+  font-family: 'Montserrat';
+  src: url(../fonts/Montserrat/Montserrat-VariableFont_wght.ttf) format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
 }
 
 @font-face {
-  font-family: 'Exo';
+  font-family: 'Montserrat';
+  src: url(../fonts/Montserrat/Montserrat-Italic-VariableFont_wght.ttf) format('truetype');
+  font-weight: 100 900;
   font-style: italic;
-  src: url(../fonts/Exo/static/Exo-Italic.ttf);
+}
+
+/* Roboto was already bundled but never declared; these are static per-weight files */
+@font-face {
+  font-family: 'Roboto';
+  src: url(../fonts/Roboto/Roboto-Light.ttf);
+  font-weight: 300;
+  font-style: normal;
 }
 
 @font-face {
-  font-family: 'Exo';
-  font-weight: bold;
-  src: url(../fonts/Exo/static/Exo-Bold.ttf);
-}
-
-@font-face {
-  font-family: 'Exo';
+  font-family: 'Roboto';
+  src: url(../fonts/Roboto/Roboto-LightItalic.ttf);
+  font-weight: 300;
   font-style: italic;
-  font-weight: bold;
-  src: url(../fonts/Exo/static/Exo-BoldItalic.ttf);
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url(../fonts/Roboto/Roboto-Regular.ttf);
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url(../fonts/Roboto/Roboto-Italic.ttf);
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url(../fonts/Roboto/Roboto-Medium.ttf);
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url(../fonts/Roboto/Roboto-MediumItalic.ttf);
+  font-weight: 500;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url(../fonts/Roboto/Roboto-Bold.ttf);
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Roboto';
+  src: url(../fonts/Roboto/Roboto-BoldItalic.ttf);
+  font-weight: 700;
+  font-style: italic;
 }

@@ -2,11 +2,12 @@ import json
 import logging
 import os
 import re
-import requests
 
+import requests
 from stix2 import Filter, MemoryStore
 
 NO_DESC = "No description provided"
+logger = logging.getLogger(__name__)
 
 
 def fetch_attack_stix_data_json():
@@ -36,7 +37,12 @@ def attack_data_get_tid(attack_data):
     tid = None
     for ref in external_refs:
         source = ref.get("url", "")
-        if not (source.startswith("https://attack.mitre.org/") or source.startswith("http://attack.mitre.org/")):
+        if not source.startswith(
+            (
+                "https://attack.mitre.org/",
+                "http://attack.mitre.org/",
+            )
+        ):
             continue
         tid = ref.get("external_id")
         break
@@ -49,7 +55,7 @@ class AttackDataService:
         self.list_of_legacy = []
         self.list_of_techs = []
 
-        attack_file_settings = attack_file_settings or dict()
+        attack_file_settings = attack_file_settings or {}
         default_attack_filepath = os.path.join(dir_prefix, "threadcomponents", "models", "attack_dict.json")
         self.attack_dict_loc = attack_file_settings.get("filepath", default_attack_filepath)
         self.update_attack_file = attack_file_settings.get("update", False)  # Are we updating this file periodically?
@@ -77,7 +83,7 @@ class AttackDataService:
         """
         Function to retrieve ATT&CK data and load it into a Stix memory store
         """
-        logging.info("Downloading ATT&CK data from GitHub repo `mitre-attack/attack-stix-data`")
+        logger.info("Downloading ATT&CK data from GitHub repo `mitre-attack/attack-stix-data`")
         stix_json = fetch_attack_stix_data_json()
         return MemoryStore(stix_data=stix_json["objects"])
 
@@ -86,7 +92,7 @@ class AttackDataService:
         """
         Function that takes a Stix Memory store and flattens the data into something that we work with
         """
-        logging.info("Flattening stix data into attack data")
+        logger.info("Flattening stix data into attack data")
         attack_data = {}
 
         # Techniques / attack-patterns #
@@ -194,7 +200,7 @@ class AttackDataService:
                 self.json_tech[attack_uid] = attack_item
                 self.json_tech[attack_uid]["id"] = self.json_tech[attack_uid].pop("tid")
 
-                logging.info(
+                logger.info(
                     f"New attack found, consider adding example uses for {attack_uid} to {self.attack_dict_loc} and make sure you update the attack JSON file."
                 )
             else:
@@ -233,21 +239,21 @@ class AttackDataService:
                 if updated:
                     updated_count += 1
 
-        logging.info(
+        logger.info(
             f"Added {added_count} new attacks and updated {updated_count} existing attacks to in memory attack dictionary"
         )
 
         self.set_internal_attack_data(load_attack_dict=False)
 
         if self.update_attack_file:
-            logging.info(f"Writing updated attack dictionary to {self.attack_dict_loc}")
+            logger.info(f"Writing updated attack dictionary to {self.attack_dict_loc}")
             with open(self.attack_dict_loc, "w", encoding="utf-8") as json_file_opened:
                 json.dump(self.json_tech, json_file_opened, ensure_ascii=False, indent=self.attack_file_indent)
 
     @staticmethod
     def ml_and_reg_split(techniques):
         list_of_legacy, list_of_techs = [], []
-        for k, v in techniques.items():
+        for v in techniques.values():
             try:
                 if len(v["example_uses"]) > 8:
                     list_of_techs.append((v["id"], v["name"]))

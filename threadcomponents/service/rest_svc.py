@@ -4,28 +4,28 @@
 
 import asyncio
 import logging
-import pandas as pd
 import re
-
 from contextlib import suppress
 from functools import partial
-from htmldate import find_date
 from io import StringIO
+
+import pandas as pd
+from htmldate import find_date
 from requests.exceptions import RequestException
 
-from threadcomponents.constants import REST_SUCCESS, UID, URL, TITLE
+from threadcomponents.constants import REST_SUCCESS, TITLE, UID, URL
 from threadcomponents.enums import ReportStatus
 from threadcomponents.helpers.date import check_input_date
-
 from threadcomponents.managers.ioc_manager import IoCManager
 from threadcomponents.managers.mapping_manager import MappingManager
-from threadcomponents.managers.sentence_manager import SentenceManager
 from threadcomponents.managers.report_manager import ReportManager
+from threadcomponents.managers.sentence_manager import SentenceManager
 
 PUBLIC = "public"
 
 # The minimum amount of tecniques for a report to not be discarded
 REPORT_TECHNIQUES_MINIMUM = 5
+logger = logging.getLogger(__name__)
 
 
 class RestService:
@@ -53,19 +53,19 @@ class RestService:
         self.ml_svc = ml_svc
         self.reg_svc = reg_svc
         self.is_local = self.web_svc.is_local
-        self.queue_map = dict()  # map each user to their own queue
+        self.queue_map = {}  # map each user to their own queue
 
         try:
             self.queue = asyncio.Queue()  # task queue
         except RuntimeError as e:  # a RuntimeError may occur if there is no event loop
-            logging.error("Encountered error %s; attempting to resolve by setting new event loop" % str(e))
+            logger.error(f"Encountered error {e}; attempting to resolve by setting new event loop")
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             self.queue = asyncio.Queue()
 
         self.current_tasks = []  # tasks that are currently being executed
         # A dictionary to keep track of report statuses we have seen
-        self.seen_report_status = dict()
+        self.seen_report_status = {}
 
         manager_args = (
             self.web_svc,
@@ -111,16 +111,16 @@ class RestService:
     async def prepare_queue(self):
         """Function to add to the queue any reports left from a previous session."""
         reports = await self.dao.get(
-            "reports", dict(error=self.dao.db_false_val, current_status=ReportStatus.QUEUE.value)
+            "reports", {"error": self.dao.db_false_val, "current_status": ReportStatus.QUEUE.value}
         )
         for report in reports:
             # Sentences from this report may have previously populated other db tables
             # Being selected from the queue will begin analysis again so delete previous progress
             report_id = report[UID]
-            await self.dao.delete("report_sentences", dict(report_uid=report_id))
-            await self.dao.delete("report_sentence_queue_progress", dict(report_uid=report_id))
-            await self.dao.delete("report_sentence_hits", dict(report_uid=report_id))
-            await self.dao.delete("original_html", dict(report_uid=report_id))
+            await self.dao.delete("report_sentences", {"report_uid": report_id})
+            await self.dao.delete("report_sentence_queue_progress", {"report_uid": report_id})
+            await self.dao.delete("report_sentence_hits", {"report_uid": report_id})
+            await self.dao.delete("original_html", {"report_uid": report_id})
             # Get the relevant queue for this user
             queue = self.get_queue_for_user(token=report.get("token"))
             # Add to the queue
@@ -165,7 +165,7 @@ class RestService:
             # Obtain the value from the request; return an error if an argument is missing
             value = str(criteria.get(column, "")).strip()
             if not value:
-                return dict(error="Missing value for %s." % column, alert_user=1)
+                return {"error": f"Missing value for {column}.", "alert_user": 1}
 
             # Place title and URL in list to be compatible with _insert_batch_reports()
             criteria[column] = [value]
@@ -186,7 +186,7 @@ class RestService:
         try:
             df = self.verify_csv(criteria["file"])
         except (TypeError, ValueError) as e:  # Any errors occurring from the csv-checks
-            return dict(error=str(e), alert_user=1)
+            return {"error": str(e), "alert_user": 1}
 
         return await self._insert_batch_reports(request, df, df.shape[0], token=criteria.get("token"))
 
@@ -196,7 +196,7 @@ class RestService:
             # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
             request_data[key]
         except (KeyError, TypeError):
-            return dict(error="Error inserting report(s).")
+            return {"error": "Error inserting report(s)."}
 
         # If running locally, there are no further checks but ensure the token is None (to avoid mix of ''s and Nones)
         if self.is_local:
@@ -206,27 +206,27 @@ class RestService:
         # If automatically generated, check associated-data is valid
         if request_data.get("automatically_generated"):
             if not await self.web_svc.auto_gen_data_is_valid(request, request_data):
-                return dict(error="Report(s) not submitted. Invalid data for automatically-generated submission.")
+                return {"error": "Report(s) not submitted. Invalid data for automatically-generated submission."}
         # If not running locally, check if the user is requesting a private submission
         elif request_data.get("private"):
             # Obtain the token to make this submission private
-            username, token = await self.web_svc.get_current_arachne_user(request)
+            _username, token = await self.web_svc.get_current_arachne_user(request)
             # Update report-data with token or alert user if this was not possible
             if token:
                 request_data.update(token=token)
             else:
-                return dict(
-                    error="Report(s) not submitted. Please ensure you are logged into Arachne for this "
+                return {
+                    "error": "Report(s) not submitted. Please ensure you are logged into Arachne for this "
                     "to be private. If this error is persistent, please contact us.",
-                    alert_user=1,
-                )
+                    "alert_user": 1,
+                }
         # If public (no token), blank data with None (to avoid mix of empty strings and Nones)
         else:
             request_data.update(token=None)
 
     async def _insert_batch_reports(self, request, batch, row_count, token=None):
         # Possible responses to the request
-        default_error, success = dict(error="Error inserting report(s)."), REST_SUCCESS.copy()
+        default_error, success = {"error": "Error inserting report(s)."}, REST_SUCCESS.copy()
         # Different counts for different reasons why reports are not queued
         limit_exceeded, duplicate_urls, malformed_urls, long_titles, long_urls = 0, 0, 0, 0, 0
         # Get the relevant queue for this user
@@ -240,7 +240,7 @@ class RestService:
             try:
                 title, url = batch["title"][row].strip(), batch[URL][row].strip()
                 automatically_generated = (
-                    batch["automatically_generated"][row] if "automatically_generated" in batch.keys() else None
+                    batch["automatically_generated"][row] if "automatically_generated" in batch else None
                 )
             # Check for malformed request parameters; AttributeError thrown if not strings
             except (AttributeError, KeyError):
@@ -265,18 +265,18 @@ class RestService:
                 else:
                     error_prefix = "Request-error:"
 
-                return dict(error=f"{error_prefix} {ve}", alert_user=1)
+                return {"error": f"{error_prefix} {ve}", "alert_user": 1}
 
             # Ensure the report has a unique title
             title = await self.data_svc.get_unique_title(title)
             # Set up a temporary dictionary to represent db object
-            temp_dict = dict(
-                title=title,
-                url=url,
-                current_status=ReportStatus.QUEUE.value,
-                automatically_generated=automatically_generated,
-                token=token,
-            )
+            temp_dict = {
+                "title": title,
+                "url": url,
+                "current_status": ReportStatus.QUEUE.value,
+                "automatically_generated": automatically_generated,
+                "token": token,
+            }
 
             self.report_manager.add_report_expiry(data=temp_dict, weeks=1)
             # Are we skipping this report?
@@ -318,15 +318,15 @@ class RestService:
         if limit_exceeded or duplicate_urls or malformed_urls or long_titles or long_urls:
             total_skipped = sum([limit_exceeded, duplicate_urls, malformed_urls, long_titles, long_urls])
             message = (
-                "%s of %s " % (total_skipped, row_count)
+                f"{total_skipped} of {row_count} "
                 + "report(s) not added to the queue."
-                + "\n- %s exceeded queue limit." % limit_exceeded
-                + "\n- %s already in the queue/duplicate URL(s)." % duplicate_urls
-                + "\n- %s malformed URL(s)." % malformed_urls
-                + "\n- %s report-title(s) exceeded 200-character limit." % long_titles
-                + "\n- %s URL(s) exceeded 500-character limit." % long_urls
+                + f"\n- {limit_exceeded} exceeded queue limit."
+                + f"\n- {duplicate_urls} already in the queue/duplicate URL(s)."
+                + f"\n- {malformed_urls} malformed URL(s)."
+                + f"\n- {long_titles} report-title(s) exceeded 200-character limit."
+                + f"\n- {long_urls} URL(s) exceeded 500-character limit."
             )
-            success.update(dict(info=message, alert_user=1))
+            success.update({"info": message, "alert_user": 1})
 
         asyncio.create_task(self.check_queue())
         return success
@@ -351,7 +351,7 @@ class RestService:
             raise ValueError(columns_error)
 
         # Rename the columns to ensure the column names have the same case (lower case)
-        new_columns = dict()
+        new_columns = {}
         # Check that both 'title' and 'url' appear in the columns; raise error for anything different
         for col in columns:
             if col.strip().lower() == title:
@@ -373,7 +373,7 @@ class RestService:
 
             # If any value in this column is an empty string or not a string (missing values become NaNs), raise error
             if values.map(lambda x: not isinstance(x, str)).any() or values.map(lambda x: len(x) == 0).any():
-                raise ValueError("Column `%s` in CSV is missing text in at least one row" % col)
+                raise ValueError(f"Column `{col}` in CSV is missing text in at least one row")
 
         # All previous checks passed: return the new df
         return new_df
@@ -384,11 +384,11 @@ class RestService:
         input: nil
         output: nil
         """
-        logging.info("CHECKING QUEUE")
+        logger.info("CHECKING QUEUE")
         self.clean_current_tasks()
 
         while self.queue.qsize() > 0:  # while there are still tasks to do...
-            logging.info("QUEUE SIZE: " + str(self.queue.qsize()))
+            logger.info("QUEUE SIZE: " + str(self.queue.qsize()))
             await asyncio.sleep(1)  # allow other tasks to run while waiting
 
             while len(self.current_tasks) >= self.MAX_TASKS:  # check resource pool until a task is finished
@@ -405,7 +405,7 @@ class RestService:
                 await task
 
             except Exception as e:
-                logging.error(f"Report analysis failed: {e}")
+                logger.error(f"Report analysis failed: {e}")
                 await self.error_report(criteria, log_error=e)
                 continue
 
@@ -423,7 +423,7 @@ class RestService:
     async def error_report(self, report, log_error=None):
         """Function to error a given report."""
         report_id = report[UID]
-        await self.dao.update("reports", where=dict(uid=report_id), data=dict(error=self.dao.db_true_val))
+        await self.dao.update("reports", where={"uid": report_id}, data={"error": self.dao.db_true_val})
         self.remove_report_from_queue_map(report)
         await self.remove_report_if_automatically_generated(report_id)
 
@@ -432,18 +432,18 @@ class RestService:
 
     async def start_analysis(self, criteria=None):
         report_id = criteria[UID]
-        logging.info("Beginning analysis for " + report_id)
+        logger.info("Beginning analysis for " + report_id)
 
         original_html, newspaper_article = await self.web_svc.map_all_html(
             criteria[URL], sentence_limit=self.SENTENCE_LIMIT
         )
         if original_html is None and newspaper_article is None:
-            logging.error("Skipping report; could not download url " + criteria[URL])
+            logger.error("Skipping report; could not download url " + criteria[URL])
             await self.error_report(criteria)
             return
 
         html_data = newspaper_article.text.replace("\n", "<br>")
-        article = dict(title=criteria[TITLE], html_text=html_data)
+        article = {"title": criteria[TITLE], "html_text": html_data}
         # Obtain the article date if possible
         article_date = None
         with suppress(ValueError):
@@ -455,16 +455,16 @@ class RestService:
         # Here we build the sentence dictionary
         html_sentences = self.token_svc.tokenize_sentence(article["html_text"], sentence_limit=self.SENTENCE_LIMIT)
         if not html_sentences:
-            logging.error("Skipping report; could not retrieve sentences from url " + criteria[URL])
+            logger.error("Skipping report; could not retrieve sentences from url " + criteria[URL])
             await self.error_report(criteria)
             return
 
         html_sentences = html_sentences[: self.SENTENCE_LIMIT]
         await self.dao.insert_generate_uid(
-            "report_sentence_queue_progress", dict(report_uid=report_id, sentence_count=len(html_sentences))
+            "report_sentence_queue_progress", {"report_uid": report_id, "sentence_count": len(html_sentences)}
         )
 
-        rebuilt, model_dict = await self.ml_svc.build_pickle_file(
+        _rebuilt, model_dict = await self.ml_svc.build_pickle_file(
             self.attack_data_svc.list_of_techs, self.attack_data_svc.json_tech
         )
 
@@ -485,43 +485,43 @@ class RestService:
             elif sentence["reg_techniques_found"]:
                 await self.report_manager.save_reg_techniques(report_id, sentence, s_idx, tech_start_date=article_date)
             else:
-                data = dict(
-                    report_uid=report_id,
-                    text=sentence["text"],
-                    html=sentence["html"],
-                    sen_index=s_idx,
-                    found_status=self.dao.db_false_val,
-                )
+                data = {
+                    "report_uid": report_id,
+                    "text": sentence["text"],
+                    "html": sentence["html"],
+                    "sen_index": s_idx,
+                    "found_status": self.dao.db_false_val,
+                }
                 await self.dao.insert_with_backup("report_sentences", data)
 
         for e_idx, element in enumerate(original_html):
             element["text"] = self.dao.truncate_str(element["text"], 800)
-            html_element = dict(
-                report_uid=report_id,
-                text=element["text"],
-                tag=element["tag"],
-                elem_index=e_idx,
-                found_status=self.dao.db_false_val,
-            )
+            html_element = {
+                "report_uid": report_id,
+                "text": element["text"],
+                "tag": element["tag"],
+                "elem_index": e_idx,
+                "found_status": self.dao.db_false_val,
+            }
             await self.dao.insert_with_backup("original_html", html_element)
 
         # The report is about to be moved out of the queue
-        update_data = dict(current_status=ReportStatus.NEEDS_REVIEW.value)
+        update_data = {"current_status": ReportStatus.NEEDS_REVIEW.value}
         # Save the article-date if we have one
         if article_date:
-            update_data.update(dict(date_written=article_date))
+            update_data.update({"date_written": article_date})
 
         # Add expiry date (now + 1 month)
         self.report_manager.add_report_expiry(data=update_data, months=1)
 
         # Update card to reflect the end of queue
-        await self.dao.update("reports", where=dict(uid=report_id), data=update_data)
+        await self.dao.update("reports", where={"uid": report_id}, data=update_data)
         # Update the relevant queue for this user
         self.remove_report_from_queue_map(criteria)
-        logging.info("Finished analysing report " + report_id)
+        logger.info("Finished analysing report " + report_id)
 
         # DB tidy-up including removing report if low quality
-        await self.dao.delete("report_sentence_queue_progress", dict(report_uid=report_id))
+        await self.dao.delete("report_sentence_queue_progress", {"report_uid": report_id})
 
         min_report_techniques = criteria.get("techniques_threshold")
         await self.remove_report_if_low_quality(report_id, min_report_techniques=min_report_techniques)
@@ -529,11 +529,9 @@ class RestService:
     @staticmethod
     def combine_ml_and_reg(ml_analyzed_html, reg_analyzed_html):
         analyzed_html = []
-        index = 0
-        for sentence in ml_analyzed_html:
+        for index, sentence in enumerate(ml_analyzed_html):
             sentence["reg_techniques_found"] = reg_analyzed_html[index]["reg_techniques_found"]
             analyzed_html.append(sentence)
-            index += 1
         return analyzed_html
 
     async def remove_report_if_low_quality(self, report_id, min_report_techniques=None):
@@ -553,10 +551,10 @@ class RestService:
 
         if unique_techniques_count < report_techs_threshold:
             await self.data_svc.remove_report_by_id(report_id=report_id)
-            logging.info(f"Deleted report with {str(unique_techniques_count)} technique(s) found: {report[URL]}")
+            logger.info(f"Deleted report with {unique_techniques_count} technique(s) found: {report[URL]}")
             return
 
-        logging.info(f"{str(unique_techniques_count)} technique(s) found for report {report_id}")
+        logger.info(f"{unique_techniques_count} technique(s) found for report {report_id}")
 
     async def remove_report_if_automatically_generated(self, report_id):
         """Function that removes a report if it has been automatically generated."""
@@ -569,7 +567,7 @@ class RestService:
             return
 
         await self.data_svc.remove_report_by_id(report_id=report_id)
-        logging.info(f"Deleted skipped report: {report[URL]}")
+        logger.info(f"Deleted skipped report: {report[URL]}")
 
     async def add_attack(self, *args, **kwargs):
         """Function to add a mapping on a sentence."""

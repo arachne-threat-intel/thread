@@ -12,23 +12,30 @@ class TestAttackData(ThreadAppTest):
         """Function to test the attack list for the dropdown was created successfully."""
         # For our test attack data, we predict 2 will not be sub attacks (no Txx.xx TID) and 1 will be
         predicted = [
-            dict(uid="d99999", name="Drain", tid="T1029", inactive=0, parent_tid=None, parent_name=None),
-            dict(uid="f12345", name="Fire", tid="T1562", inactive=0, parent_tid=None, parent_name=None),
-            dict(uid="f32451", name="Firaga", tid="T1562.004", inactive=0, parent_tid="T1562", parent_name="Fire"),
+            {"uid": "d99999", "name": "Drain", "tid": "T1029", "inactive": 0, "parent_tid": None, "parent_name": None},
+            {"uid": "f12345", "name": "Fire", "tid": "T1562", "inactive": 0, "parent_tid": None, "parent_name": None},
+            {
+                "uid": "f32451",
+                "name": "Firaga",
+                "tid": "T1562.004",
+                "inactive": 0,
+                "parent_tid": "T1562",
+                "parent_name": "Fire",
+            },
         ]
         # The generated dropdown list to check against our prediction
         result = self.web_api.attack_dropdown_list
         for attack_dict in predicted:
-            self.assertTrue(attack_dict in result, msg="Attack %s was expected but not present." % str(attack_dict))
+            self.assertTrue(attack_dict in result, msg=f"Attack {attack_dict} was expected but not present.")
         # Check that inactive attacks are in the database but not in the dropdown list
-        inactive_attack_all = await self.db.get("attack_uids", equal=dict(inactive=1))
+        inactive_attack_all = await self.db.get("attack_uids", equal={"inactive": 1})
         for inactive_attack in inactive_attack_all:
             self.assertFalse(inactive_attack in result, msg="Inactive attack was found in dropdown list.")
 
     async def test_update_attacks(self):
         """Function to test when new attacks are added to the database."""
         # Create a new attack to mock being added; confirm it is not already in the database
-        new_attack = dict(uid="b12345", tid="T1489", name="Blizzard")
+        new_attack = {"uid": "b12345", "tid": "T1489", "name": "Blizzard"}
         attacks = await self.db.get("attack_uids")
         if (new_attack in attacks) or (new_attack in self.web_api.attack_dropdown_list):
             self.skipTest("Could not test added attacks as database has specified attack already.")

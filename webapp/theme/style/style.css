@@ -1,5 +1,21 @@
 /* NOTICE: As required by the Apache License v2.0, this notice is to state this file has been modified by Arachne Digital */
 
+/* Vrax brand tokens (issue #235).
+   Declared here rather than as Bootstrap --bs-* overrides because Thread ships two
+   Bootstraps: 5.3.8 from the CDN and 5.0.2 bundled locally. Only 5.3 understands the
+   --bs-btn-* API, but style.css is loaded last on both paths, so plain properties are
+   the one hook that brands the interface either way. */
+:root {
+  --vrax-white: #FFFFFF;
+  --vrax-anti-flash-white: #EEEEEE;
+  --vrax-charcoal: #292929;
+  --vrax-coral: #FF7B54;
+  --vrax-coral-dark: #E5643D;
+  --vrax-light-green: #A7FFB9;
+  --vrax-light-green-dark: #8CE3A0;
+  --vrax-border: #DDDDDD;
+}
+
 /*Overall styling*/
 html {
   font-size: 100%;
@@ -7,7 +23,34 @@ html {
 
 body {
   min-height: 100%;
-  font-family: 'Exo', sans-serif;
+  font-family: 'Roboto', sans-serif;
+  background-color: var(--vrax-white);
+  color: var(--vrax-charcoal);
+}
+
+/* Montserrat carries titles, headings and interface labels */
+h1, h2, h3, h4, h5, h6,
+.nav-link, label,
+.btn:not([class*='fa-']),
+.btn :not([class*='fa-']) {
+  font-family: 'Montserrat', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+}
+
+/* Both lockups need a definite height, not max-height: the Vrax SVGs carry only a
+   viewBox with no intrinsic width/height, so inside a flex row a max-height image
+   collapses to zero width and disappears while still occupying the DOM. */
+#vraxLogo {
+  height: 56px;
+  width: auto;
+}
+
+.footer-logo {
+  height: 34px;
+  width: auto;
 }
 
 .thread-header {
@@ -15,23 +58,38 @@ body {
   margin-top: .5rem;
 }
 
+/* Shared chrome for the header and footer bars */
 .thread-navbar {
-  background-color: #495057;
-  text-shadow: 0 .05rem .1rem rgba(0, 0, 0, .5);
-  box-shadow: inset 0 0 5rem rgba(0, 0, 0, .5);
+  background-color: var(--vrax-white);
+  border-bottom: 1px solid var(--vrax-border);
   padding-right: 1rem;
+}
+
+/* Charcoal is the one dark tone the brand allows, used here to anchor the footer */
+.footer.thread-navbar {
+  background-color: var(--vrax-charcoal);
+  border-bottom: none;
+  color: var(--vrax-white);
+}
+
+.footer a {
+  color: var(--vrax-light-green);
+}
+
+.footer a:hover,
+.footer a:focus {
+  color: var(--vrax-light-green-dark);
 }
 
 label, input { margin-bottom: .5rem; }
 
-footer .footer-link {
-  color: #ffffff;
-}
-
 footer .twitter-btn { float: right; }
 
+/* Sits on the charcoal footer, so it needs its own light surface */
 .cookie-alert {
-  text-shadow: none;
+  background-color: var(--vrax-anti-flash-white);
+  border-color: var(--vrax-border);
+  color: var(--vrax-charcoal);
 }
 
 /*Override some bootstrap defaults*/
@@ -53,25 +111,21 @@ footer .twitter-btn { float: right; }
 } 
 
 /*Navigation and links*/
-.navbar-orange {
-  background-color: #c63f1d;
-}
-.navbar-orange > a > .nav-link {
-  color: white;
-}
 #navbarCollapse .nav-tabs {
   border-bottom: none;
 }
 #navbarCollapse .nav-tabs .nav-link {
-  color: white;
+  color: var(--vrax-charcoal);
 }
 #navbarCollapse .nav-tabs .nav-link:focus,
 #navbarCollapse .nav-tabs .nav-link.active {
-  color: white;
+  color: var(--vrax-charcoal);
   border: none;
   border-top-left-radius: 0rem;
   border-top-right-radius: 0rem;
   text-decoration: underline;
+  text-decoration-color: var(--vrax-coral);
+  text-decoration-thickness: .15rem;
 }
 
 .nav-tabs .nav-link:hover:not(.active) {
@@ -83,57 +137,25 @@ footer .twitter-btn { float: right; }
 #navbarCollapse .nav-link {
   font-size: 1rem;
   padding: .3rem 1rem;
-  color: #596877;
+  color: rgba(41, 41, 41, .65);
 }
 .nav-link.expand-title {
   font-size: 1.1rem;
-  color: black;
-}
-/* .nav-link.side {
-    padding: .3rem .3rem;
-    word-break: break-word;
-} */
-.nav-link.side:hover {
-  background-color: #c63f1d;
-  color: white;
-}
-.nav-link.side.active {
-  background-color:#f3f3f3;
-  color: #c63f1e;
-  border-right: 3px solid #c63f1e;
+  color: var(--vrax-charcoal);
 }
 
-.breadcrumb {
-  background-color: white;
-}
-.heading {
-  font-size: 1.6rem;
-  color: #596877;
-  letter-spacing: 3px;
-}
-.heading-dropdown {
-  font-size: 1.2rem;
-  color: #062f4f;
-  letter-spacing: 3px;
-}
-.expand-all {
-  background-image: url('../images/search.png');
-  height: 30px;
-  width: 30px;
-  background-size: contain;
-}
 a {
-  color: #4F7CAC;
+  color: var(--vrax-charcoal);
 }
 
-.card-data {
-  margin-bottom: 0.5rem;
-  color: #555555;
+a:hover,
+a:focus {
+  color: var(--vrax-coral-dark);
 }
 
 .card-title {
   font-size: 1.1rem;
-  color: #000000;
+  color: var(--vrax-charcoal);
 }
 
 .external-icon {
@@ -141,66 +163,93 @@ a {
   margin-top: -5px;
 }
 
-.expand-icon {
-  font-size: 5%;
-  color: #343434;
-  margin-top: 7px;
-}
-
 /*colors*/
-.gray-text {
-  color: #99958F;
-}
-.bg-orange {
-  /*ATT&CK Evals Green*/
-  background-color: #317b22;
-  background-color: #c63f1e;
-  
-  color: white;
-}
 .bg-light {
-  background-color: #ffffff !important;
-}
-.bg-navy {
-  background-color: #062f4f;
-}
-
-.bg-accord-light {
-  background-color: #f8f9fa;
-}
-
-.bg-accord-dark {
-  background-color: #e9ecef;
+  background-color: var(--vrax-white) !important;
 }
 
 /*buttons*/
 .btn-default {
-  border-color: gray;
+  border-color: var(--vrax-border);
 }
 
-.btn-navy {
-  color: #fff;
-  background-color: #062f4f;
-  border-color: 1px solid #062f4f;
+/* Coral carries every primary call to action. The text is charcoal, not white:
+   white on coral measures 2.5:1 and fails WCAG, charcoal on coral clears it at ~5.7:1. */
+.btn-primary {
+  background-color: var(--vrax-coral);
+  border-color: var(--vrax-coral);
+  color: var(--vrax-charcoal);
 }
 
-.btn-navy:hover {
-  color: #fff;
-  background-color: #1C415F;
-  background-image: none;
-  border-color: 1px solid #062f4f;
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary.active,
+.btn-primary:disabled,
+.btn-primary.disabled {
+  background-color: var(--vrax-coral-dark);
+  border-color: var(--vrax-coral-dark);
+  color: var(--vrax-charcoal);
+}
+
+.btn-primary:disabled,
+.btn-primary.disabled {
+  background-color: var(--vrax-coral);
+  border-color: var(--vrax-coral);
+}
+
+.btn-primary:focus {
+  box-shadow: 0 0 0 .25rem rgba(255, 123, 84, .35);
+}
+
+/* Light green backs secondary calls to action and positive confirmations */
+.btn-success {
+  background-color: var(--vrax-light-green);
+  border-color: var(--vrax-light-green);
+  color: var(--vrax-charcoal);
+}
+
+.btn-success:hover,
+.btn-success:focus,
+.btn-success:active,
+.btn-success.active {
+  background-color: var(--vrax-light-green-dark);
+  border-color: var(--vrax-light-green-dark);
+  color: var(--vrax-charcoal);
+}
+
+.btn-success:focus {
+  box-shadow: 0 0 0 .25rem rgba(167, 255, 185, .5);
 }
 
 .btn.fas {
   width: auto;
 }
 
+/*alerts*/
+/* Coral marks highlighted and critical information; light green confirms.
+   All three keep charcoal text so they stay readable on the light tints. */
+.alert-primary {
+  background-color: rgba(255, 123, 84, .18);
+  border-color: var(--vrax-coral);
+  color: var(--vrax-charcoal);
+}
+
+.alert-warning {
+  background-color: rgba(255, 123, 84, .35);
+  border-color: var(--vrax-coral-dark);
+  color: var(--vrax-charcoal);
+}
+
+.alert-success {
+  background-color: var(--vrax-light-green);
+  border-color: var(--vrax-light-green-dark);
+  color: var(--vrax-charcoal);
+}
+
 /*tables*/
 table {
   empty-cells: hide;
-}
-.table-light {
-  background-color: #f3f3f3;
 }
 
 /*Footer styling*/
@@ -209,33 +258,11 @@ table {
   bottom: 0;
   left: 0;
   right: 0;
-
-  > .container-fluid {
-    padding-right: 0 !important;
-    padding-left: 0 !important;
-  }
-
-  .footer-link {
-    color: on-color(secondary);
-    &:hover {
-      /* add some link color to this so that it resembles a link,
-      but is still visible if normal link color is not visible on footer color */
-      color: mix(on-color(secondary), color(link));
-    }
-  }
 }
 
-@media only screen and (max-width: 1450px) {
-  .heading-dropdown {
-    font-size: 1rem;
-    color: #062f4f;
-    letter-spacing: 1px;
-  }
-  .heading {
-    font-size: 1.2rem;
-    color: #596877;
-    letter-spacing: 3px;
-  }
+.footer > .container-fluid {
+  padding-right: 0 !important;
+  padding-left: 0 !important;
 }
 
 /*base.html*/
@@ -254,8 +281,8 @@ table {
 }
 
 .missingTechniquesView {
-  background-color: #FFFFFF;
-  border: 2px solid gray;
+  background-color: var(--vrax-white);
+  border: 2px solid var(--vrax-border);
   position: sticky;
   right: 20px;
   top: 90px;
@@ -286,7 +313,7 @@ select#missingTechniqueSelect ~ div.dropdown-menu {
 }
 
 .droppable {
-  background-color: var(--success);
+  background-color: var(--vrax-light-green);
   min-height: 150px;
   margin-bottom: 5rem;
 }
@@ -305,16 +332,21 @@ select#missingTechniqueSelect ~ div.dropdown-menu {
   border-color: inherit;
 }
 
-.report-card {
-  margin-top: .5rem;
+/* Anti-flash white columns holding white cards: the depth the dark theme used to get
+   from bg-dark now comes from the two light surfaces sitting against each other. */
+.status-column {
+  background-color: var(--vrax-anti-flash-white);
+  border-color: var(--vrax-border);
 }
 
-.accordion-button.bg-dark {
-  --bs-bg-opacity: .4;
+.report-card {
+  margin-top: .5rem;
+  background-color: var(--vrax-white);
+  border-color: var(--vrax-border);
 }
 
 div#submitReportForm .nav-link:not(.active), #confirmedSentenceInfo, #tableSentenceInfo {
-  color: white;
+  color: var(--vrax-charcoal);
 }
 
 /* Use this class for anchor elements with tooltips rather than .disabled */
@@ -390,12 +422,14 @@ input[type="checkbox"].confirmed-technique {
   text-decoration: underline;
 }
 
+/* The analyst's sentence-selection cues. These were dark greys built for the old dark
+   theme; on white they need to read as light tints so the sentence text stays legible. */
 .highlight-sentence {
-  background-color: #66666e;
+  background-color: var(--vrax-light-green);
 }
 
 .report-sentence:hover {
-  background-color: #8b8a9c;
+  background-color: var(--vrax-anti-flash-white);
 }
 
 .report-sentence-clicked {
@@ -403,7 +437,7 @@ input[type="checkbox"].confirmed-technique {
 }
 
 .imgHighlight {
-  border: 25px solid #ffc107;
+  border: 25px solid var(--vrax-coral);
 }
 
 .btn:disabled {

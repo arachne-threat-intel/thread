@@ -1,5 +1,6 @@
-from aiohttp import web
 from urllib.parse import unquote
+
+from aiohttp import web
 
 from threadcomponents.constants import UID
 from threadcomponents.enums import ReportStatus
@@ -59,7 +60,7 @@ class ReportEntityManager:
                 return None, True
 
         # Found a valid report, check if protected by token
-        await self.web_svc.action_allowed(request, action, context=dict(report=report[0]))
+        await self.web_svc.action_allowed(request, action, context={"report": report[0]})
         return report[0], False
 
     async def check_report_permission(self, request, report_id="", action="unspecified"):
@@ -78,7 +79,7 @@ class ReportEntityManager:
 
         # Run the checker
         if not self.is_local:
-            await self.web_svc.action_allowed(request, action, context=dict(report=report[0]))
+            await self.web_svc.action_allowed(request, action, context={"report": report[0]})
 
         # Checks have passed, return report for further use
         return report[0]
@@ -94,7 +95,7 @@ class ReportEntityManager:
             return True
 
         # Check the db
-        report_dict = await self.dao.get("reports", dict(uid=report_id))
+        report_dict = await self.dao.get("reports", {"uid": report_id})
         try:
             db_status = report_dict[0]["current_status"]
         except (KeyError, IndexError):
@@ -110,7 +111,7 @@ class ReportEntityManager:
         # Report status is not a match; finally update db (if requested) and return boolean
         if update_if_false:
             # Update the report status in the db and the dictionary variable for future checks
-            await self.dao.update("reports", where=dict(uid=report_id), data=dict(current_status=status))
+            await self.dao.update("reports", where={"uid": report_id}, data={"current_status": status})
             self.seen_report_status[report_id] = status
             return True
         else:
@@ -127,7 +128,7 @@ class ReportEntityManager:
             return True
 
         # Check the db
-        report_dict = await self.dao.get("reports", dict(uid=report_id))
+        report_dict = await self.dao.get("reports", {"uid": report_id})
         try:
             db_status = report_dict[0]["current_status"]
         except (KeyError, IndexError):
@@ -137,10 +138,8 @@ class ReportEntityManager:
         # Else a status for this report was retrieved, continue with the method
         # Before returning result, update dictionary for future checks
         self.seen_report_status[report_id] = db_status
-        if db_status in statuses:
-            return True  # Report status matches
-        # Report status is not a match
-        return False
+
+        return db_status in statuses
 
     async def check_and_get_sentence_id(self, request, request_data=None):
         """Function to verify request data contains a valid sentence ID and return it."""
@@ -172,7 +171,7 @@ class ReportEntityManager:
     ):
         """Function to check a request to edit a sentence is permitted. Returns sentence (ID or data), report ID, error.
         Strict mode: when False, allows matching image-IDs to be checked, else will strictly check sentences only."""
-        default_error = default_error or dict(error="Error editing sentence.")
+        default_error = default_error or {"error": "Error editing sentence."}
 
         try:
             # Check for malformed request parameters (KeyError) or criteria being None (TypeError)
@@ -183,7 +182,7 @@ class ReportEntityManager:
         report_id, sentence_data = None, None
 
         if strict:
-            sentences = await self.dao.get("report_sentences", dict(uid=sen_id))
+            sentences = await self.dao.get("report_sentences", {"uid": sen_id})
             try:
                 sentence_data = sentences[0]
                 report_id, _ = sentence_data["report_uid"], sentence_data["text"]
@@ -217,13 +216,13 @@ class ReportEntityManager:
             _, _ = sentence_dict[0]["text"], sentence_dict[0]["found_status"]
             report_id = sentence_dict[0]["report_uid"]
         except (KeyError, IndexError):  # sentence error (SE) occurred
-            return dict(error="Error. Please quote SE%s when contacting admin." % sen_id, alert_user=1), None
+            return {"error": f"Error. Please quote SE{sen_id} when contacting admin.", "alert_user": 1}, None
 
         # Check there is attack data to access
         try:
             attack_dict[0]["name"], attack_dict[0]["tid"]
         except (KeyError, IndexError):  # attack-info error (AE) occurred
-            return dict(error="Error. Please quote AE%s when contacting admin." % attack_id, alert_user=1), None
+            return {"error": f"Error. Please quote AE{attack_id} when contacting admin.", "alert_user": 1}, None
 
         # Check permissions
         report = await self.check_report_permission(request, report_id=report_id, action="add-reject-attack")
@@ -232,6 +231,6 @@ class ReportEntityManager:
         if not await self.check_report_status_multiple(
             report_id=report_id, statuses=[ReportStatus.IN_REVIEW.value, ReportStatus.NEEDS_REVIEW.value]
         ):
-            return dict(error="Error. Please quote RSE%s when contacting admin." % report_id, alert_user=1), None
+            return {"error": f"Error. Please quote RSE{report_id} when contacting admin.", "alert_user": 1}, None
 
         return None, report
