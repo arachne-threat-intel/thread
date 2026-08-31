@@ -12,6 +12,7 @@ from aiohttp_jinja2 import template, web
 from aiohttp_security import authorized_userid
 from aiohttp_session import get_session
 
+from threadcomponents.constants import APP_TZ
 from threadcomponents.enums import ReportStatus
 
 # The config options to load JS dependencies
@@ -98,7 +99,7 @@ class WebAPI:
             return
         # Update data with the base page data
         data.update(self.BASE_PAGE_DATA)
-        data.update(current_year=datetime.now().astimezone().strftime("%Y"))
+        data.update(current_year=datetime.now(APP_TZ).strftime("%Y"))
         # Non-local sessions include cookies, update context data for this
         if not self.is_local:
             # Check request if the cookie banner has been dismissed

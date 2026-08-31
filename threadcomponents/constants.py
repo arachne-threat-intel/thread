@@ -1,3 +1,7 @@
+import datetime
+
+APP_TZ = datetime.UTC
+
 REST_IGNORED = {"ignored": 1}
 REST_SUCCESS = {"success": 1}
 

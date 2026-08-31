@@ -14,6 +14,7 @@ import jinja2
 import yaml
 from aiohttp import web
 
+from threadcomponents.constants import APP_TZ
 from threadcomponents.database.dao import DB_POSTGRESQL, DB_SQLITE, Dao
 from threadcomponents.handlers.web_api import WebAPI
 from threadcomponents.reports.report_exporter import ReportExporter
@@ -53,7 +54,7 @@ async def update_attack_data_scheduler():
         ATTACK_DATA_UPDATES_SCHEDULED = True
         return
     # Check if we are at the beginning of the month, if so, it's the right day for updates
-    today = datetime.now().astimezone()
+    today = datetime.now(APP_TZ)
     if today.day != 1:
         return
     logger.info("UPDATE ATTACK DATA: START")

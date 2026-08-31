@@ -3,6 +3,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from tests.thread_app_test import ThreadAppTest
+from threadcomponents.constants import APP_TZ
 from threadcomponents.constants import UID as UID_KEY
 
 
@@ -173,7 +174,7 @@ class TestAFBExport(ThreadAppTest):
         properties = dict(flow_objects[0]["properties"])
         self.assertEqual(properties["name"], self.report_title, "Report title not set in export.")
 
-        today = datetime.now().astimezone()
+        today = datetime.now(APP_TZ)
         exported_date = datetime.strptime(
             properties["created"],
             "%Y-%m-%dT%H:%M:%S.%fZ",

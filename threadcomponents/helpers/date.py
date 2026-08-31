@@ -2,7 +2,7 @@ from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
 
-from threadcomponents.constants import DATETIME_OBJ
+from threadcomponents.constants import APP_TZ, DATETIME_OBJ
 
 
 def to_datetime_obj(date_val, raise_error=False):
@@ -11,7 +11,7 @@ def to_datetime_obj(date_val, raise_error=False):
         return date_val  # nothing to do if already converted
 
     try:
-        return datetime.strptime(date_val, "%Y-%m-%d").astimezone()
+        return datetime.strptime(date_val, "%Y-%m-%d").astimezone(APP_TZ)
     except (TypeError, ValueError):
         if raise_error:
             raise
@@ -26,7 +26,7 @@ def check_input_date(date_str):
     given_date = to_datetime_obj(date_str, raise_error=True)
 
     # Establish the min and max date ranges we want dates to fall in
-    date_now = datetime.now().astimezone()
+    date_now = datetime.now(APP_TZ)
     max_date = datetime(date_now.year + 5, month=date_now.month, day=date_now.day, tzinfo=date_now.tzinfo)
     min_date = datetime(1970, month=1, day=1, tzinfo=date_now.tzinfo)
 
@@ -88,8 +88,8 @@ def pre_save_date_checks(date_dict_list, mandatory_field_list, success_response)
 def generate_report_expiry(data=None, **date_kwargs):
     """Function to generate an expiry date from today and add it to a data-dictionary, if provided."""
     # Prepare expiry date as str
-    expiry_date = datetime.now().astimezone() + relativedelta(**date_kwargs)
-    expiry_date_str = expiry_date.strftime("%Y-%m-%d %H:%M:%S")
+    expiry_date = datetime.now(APP_TZ) + relativedelta(**date_kwargs)
+    expiry_date_str = expiry_date.strftime("%Y-%m-%d %H:%M:%S%z")
 
     if data:
         data.update({"expires_on": expiry_date_str})

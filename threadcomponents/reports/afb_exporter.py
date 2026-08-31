@@ -2,7 +2,7 @@ from datetime import datetime
 from ipaddress import IPv4Address, IPv6Address, ip_address
 from uuid import uuid4
 
-from threadcomponents.constants import IOC, TTP
+from threadcomponents.constants import APP_TZ, IOC, TTP
 
 START_X = 0
 START_Y = -2000
@@ -124,7 +124,7 @@ class AFBExporter:
                     ],
                 ],
                 ["scope", "attack-tree"],
-                ["created", datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S.%fZ")],
+                ["created", datetime.now(APP_TZ).strftime("%Y-%m-%dT%H:%M:%S.%fZ")],
             ],
             "objects": list(self.current_ids),
         }
