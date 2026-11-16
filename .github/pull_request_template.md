@@ -27,7 +27,11 @@ Related issues, pull requests, specifications, or design documents:
 
 ## Why
 
-<!-- Explain the problem, user or business outcome, and why this approach was chosen. Include enough context that the reviewer does not need to reconstruct the rationale from the issue or code. -->
+<!-- Explain in plain language who is affected, what happens today, and why it
+matters. Say what this change helps them do or avoid and which user, operational,
+or business outcome it supports. Include the technical cause and why this
+approach was chosen when they help the reviewer decide. Support measured impact
+with evidence and describe expected impact as an intended outcome. -->
 
 
 ## Impact and dependencies
