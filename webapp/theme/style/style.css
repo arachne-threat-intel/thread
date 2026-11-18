@@ -92,6 +92,24 @@ footer .twitter-btn { float: right; }
   color: var(--vrax-charcoal);
 }
 
+/* Links inside this light panel must override the surrounding dark footer. */
+.footer .cookie-alert a {
+  color: var(--vrax-charcoal);
+  text-decoration: underline;
+  text-underline-offset: .15em;
+}
+
+.footer .cookie-alert a:hover,
+.footer .cookie-alert a:focus-visible {
+  color: var(--vrax-charcoal);
+  text-decoration-thickness: 2px;
+}
+
+.footer .cookie-alert a:focus-visible {
+  outline: 2px solid var(--vrax-charcoal);
+  outline-offset: 2px;
+}
+
 /*Override some bootstrap defaults*/
 .jumbotron {
   padding: 0;
