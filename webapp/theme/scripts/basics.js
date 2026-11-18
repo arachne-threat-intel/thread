@@ -783,7 +783,7 @@ function scrollAndSelectSentence(sentenceId) {
 function suggestIoC() {
   if (sentence_id) {
     restRequest("POST", {"index": "suggest_indicator_of_compromise", "sentence_id": sentence_id}, function(data) {
-      $(iocSuggestionBoxSelector).val(data);
+      $(iocSuggestionBoxSelector).val(typeof data === "string" ? data : "");
     });
   }
 }
@@ -791,6 +791,10 @@ function suggestIoC() {
 function suggestSaveIoC() {
   if (sentence_id) {
     restRequest("POST", {"index": "suggest_and_save_ioc", "sentence_id": sentence_id}, function(data) {
+      if (data?.ignored) {
+        $(iocSuggestionBoxSelector).val("");
+        return;
+      }
       if (data?.ioc_text) {
         $("#" + iocSavedBoxId).val(data.ioc_text);
         $(`#elmt${sentence_id}`).attr("data-ioc", "true");
