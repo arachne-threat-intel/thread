@@ -4,6 +4,21 @@ from threadcomponents.constants import REST_IGNORED, REST_SUCCESS, UID
 from threadcomponents.helpers.ip_address import check_if_public_ip
 from threadcomponents.managers.base_manager import ReportEntityManager
 
+_DOMAIN_LABEL = r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?"
+_DOMAIN_DOT = r"(?:\.|\[\.\]|\(\.\)|\[dot\]|\(dot\))"
+_DOMAIN_IN_TEXT = re.compile(
+    r"""(?:^|[\s("'`“‘<])"""
+    rf"((?:{_DOMAIN_LABEL}{_DOMAIN_DOT})+[a-z]{{2,63}})"
+    r"""(?=[.,;:!?)}\]>"'`”’]*(?:\s|$))""",
+    re.IGNORECASE | re.ASCII,
+)
+
+_URL_IN_TEXT = re.compile(
+    r"\b(?:https?|hxxps?)\s*(?::|\[\s*:\s*\]|\(\s*:\s*\))"
+    r'\s*/\s*/\s*[^\s<>"“”]+',
+    re.IGNORECASE,
+)
+
 
 class IoCManager(ReportEntityManager):
     """Manages business logic and validation for Sentence-IoCs."""
@@ -36,6 +51,19 @@ class IoCManager(ReportEntityManager):
         text = sentence_data["text"]
         if not text:
             return REST_IGNORED
+
+        text_without_urls, url_count = _URL_IN_TEXT.subn(" ", text)
+        domains = {self.__refang(match.group(1).lower()) for match in _DOMAIN_IN_TEXT.finditer(text_without_urls)}
+
+        if len(domains) > 1 or (domains and url_count):
+            return {
+                **REST_IGNORED,
+                "alert_user": 1,
+                "info": "This sentence contains multiple possible IoCs. Enter the one you want to save.",
+            }
+
+        if domains:
+            return next(iter(domains))
 
         cleaned_ioc_text = self.__refang(text)
         _is_public_ip, cleaned_ioc_text = check_if_public_ip(cleaned_ioc_text, clean=True)

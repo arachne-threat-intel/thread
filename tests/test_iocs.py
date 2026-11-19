@@ -310,3 +310,53 @@ class TestIoCs(ThreadAppTest):
         # Check initially-saved valid IoC has not been changed in the db
         existing = await self.dao.get(self.TABLE, {"report_id": report_id, "sentence_id": sen_id})
         self.assertEqual(valid_ioc, existing[0][self.FIELD], "IoC value changed after suggest-&-save.")
+
+    async def test_suggest_domain_from_hazy_hawk_prose_without_saving(self):
+        report_id, sentence_id = await self.create_report_with_sentence(
+            "After several redirects, the browser reached viralclipnow.xyz ."
+        )
+
+        response = await self.client.post(
+            "/rest",
+            json={
+                "index": "suggest_indicator_of_compromise",
+                "sentence_id": sentence_id,
+            },
+        )
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(await response.json(), "viralclipnow.xyz")
+        saved = await self.db.get(self.TABLE, equal={"report_id": report_id, "sentence_id": sentence_id})
+        self.assertEqual(saved, [])
+
+    async def test_suggest_defanged_nested_domain_from_prose(self):
+        await self.check_suggested_ioc(
+            "go.edge.example.net",
+            dirty_text="Traffic passed through (go[.]edge[dot]example.net), then continued.",
+        )
+
+    async def test_ambiguous_iocs_require_manual_selection(self):
+        cases = (
+            "The report at docs.example.org identifies https://edge.example.net/login.",
+            "The report at docs.example.org identifies hxxps[:]//edge[.]example[.]net/login.",
+            "The redirect went from one.example.org to two.example.net.",
+        )
+
+        for sentence in cases:
+            with self.subTest(sentence=sentence):
+                report_id, sentence_id = await self.create_report_with_sentence(sentence)
+                ioc_query = {"report_id": report_id, "sentence_id": sentence_id}
+
+                for endpoint in ("suggest_indicator_of_compromise", "suggest_and_save_ioc"):
+                    with self.subTest(endpoint=endpoint):
+                        response = await self.client.post(
+                            "/rest",
+                            json={"index": endpoint, "sentence_id": sentence_id},
+                        )
+                        self.assertEqual(response.status, 202)
+                        result = await response.json()
+                        self.assertEqual(result["ignored"], 1)
+                        self.assertEqual(result["alert_user"], 1)
+                        self.assertIn("Enter the one you want to save", result["info"])
+                        self.assertNotIn("ioc_text", result)
+                        self.assertEqual(await self.db.get(self.TABLE, equal=ioc_query), [])
