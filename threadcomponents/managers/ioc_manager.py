@@ -4,7 +4,6 @@ from threadcomponents.constants import REST_IGNORED, REST_SUCCESS, UID
 from threadcomponents.helpers.ip_address import check_if_public_ip
 from threadcomponents.managers.base_manager import ReportEntityManager
 
-
 _DOMAIN_LABEL = r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?"
 _DOMAIN_DOT = r"(?:\.|\[\.\]|\(\.\)|\[dot\]|\(dot\))"
 _DOMAIN_IN_TEXT = re.compile(
@@ -15,7 +14,7 @@ _DOMAIN_IN_TEXT = re.compile(
 )
 
 _URL_IN_TEXT = re.compile(
-    r'\b(?:https?|hxxps?)\s*(?::|\[\s*:\s*\]|\(\s*:\s*\))'
+    r"\b(?:https?|hxxps?)\s*(?::|\[\s*:\s*\]|\(\s*:\s*\))"
     r'\s*/\s*/\s*[^\s<>"“”]+',
     re.IGNORECASE,
 )
